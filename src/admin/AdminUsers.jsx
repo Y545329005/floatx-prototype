@@ -106,6 +106,10 @@ export default function AdminUsers({ navigate, detailId, admin }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawerOpen]);
 
+  // 关闭抽屉（2026-08-27 修复：定义移到 useDrawerFocus 之前，原 109 行引用时处于 TDZ 导致
+  // ReferenceError: Cannot access 'closeDrawer' before initialization）
+  const closeDrawer = () => { setMgrSelect(''); setMgrSaved(false); setConfirmDisable(false); goList(); };
+
   const drawerRef = useDrawerFocus(drawerOpen, closeDrawer);
 
   // B-1 修复：切换用户（页面内 hash 导航不经 closeDrawer）时重置操作区状态，防 mgrSelect 残留
@@ -116,8 +120,6 @@ export default function AdminUsers({ navigate, detailId, admin }) {
     setTab('profile');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
-
-  const closeDrawer = () => { setMgrSelect(''); setMgrSaved(false); setConfirmDisable(false); goList(); };
 
   // 抽屉数据：KYC 档案（kycSubmissions 优先，testAccounts 兜底）+ 业务记录
   const selProfile = sel ? (() => {
