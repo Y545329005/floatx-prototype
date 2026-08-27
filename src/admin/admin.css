@@ -1,0 +1,3458 @@
+/* ============================================================
+ * 后台管理系统专属样式（src/admin/）
+ * ============================================================
+ * 与用户侧（src/pages/ + src/components/）样式分离，独立维护。
+ * 分离原则：
+ *  - 本文件只含 admin 专属布局/组件/配色（.admin-* / .kyc-review-* / .detail-field 等）
+ *  - 通用基元（.card / .btn / .form-group / .form-input / .status-badge / .tag /
+ *    .text-muted 及 Design Tokens :root）仍共享 src/styles.css
+ *  - 后台后续改动只动本文件 + src/admin/*.jsx，不触碰用户侧样式
+ *
+ * 2026-08-12 后台配色修复（侧边栏菜单对比度 + 状态色 token 化）：
+ *  - 侧边栏深蓝背景改用 --text-on-dark 系 token（此前误用浅色文字 token，对比度仅 1.05:1）
+ *  - active 项改白底主色字（导航反色高亮，对比度 16:1）
+ *  - 状态徽章/阶段标签硬编码色值 → Design Tokens 语义色
+ * ============================================================ */
+
+/* ---- 布局 ---- */
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+/* ---- 侧边栏（深蓝背景专用 --text-on-dark 系） ---- */
+.admin-sidebar {
+  width: 240px;
+  background: var(--primary);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 50;
+}
+
+.admin-sidebar-header {
+  flex-shrink: 0;  /* 吸顶：不随 nav 内容增高/滚动而移动 */
+  padding: var(--space-6) 20px 16px 28px;  /* left 28px = nav padding(14) + item padding(14)，标题与菜单 icon 左列对齐 */
+  border-bottom: 0.5px solid rgba(255,255,255,0.08);
+}
+
+/* 侧边栏标题 = 品牌入口（2026-08-20 二轮：点击回首页，替代首页菜单） */
+.admin-sidebar-brand {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--bg-card);
+  letter-spacing: -0.02em;
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.15s ease;
+}
+.admin-sidebar-brand:hover {
+  opacity: 0.75;
+}
+
+.admin-sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+.admin-sidebar-user:hover {
+  background: rgba(255,255,255,0.08);
+}
+.admin-sidebar-user .admin-sidebar-user-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.admin-sidebar-user-name {
+  color: var(--bg-card);
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+.admin-sidebar-user-role {
+  color: var(--text-on-dark-tertiary);
+  font-size: var(--text-sm);
+}
+.admin-sidebar-user-chevron {
+  color: var(--text-on-dark-secondary);
+  transition: transform 0.2s;
+}
+.admin-sidebar-user.open .admin-sidebar-user-chevron {
+  transform: rotate(180deg);
+}
+
+/* 账户下拉菜单（账户信息 = 常驻入口：修改密码 / 退出登录；footer 内向上弹出） */
+.admin-user-menu {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: calc(100% + 8px);
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 6px;
+  z-index: 60;
+  animation: adminMenuIn 0.18s ease;
+}
+@keyframes adminMenuIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.admin-user-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text);
+  font-size: var(--text-md);
+  font-weight: 500;
+  min-height: 40px;
+}
+.admin-user-menu-item:hover {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.admin-nav-group-title {
+  /* 菜单分组标题（2026-08-14 初版：Section Title 静态；2026-08-14 P2 升级：分区折叠可点击） */
+  font-size: var(--text-xs);            /* 11px */
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-on-dark-secondary); /* 半透明白 */
+  padding: var(--space-3) var(--space-3) var(--space-2);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.15s;
+}
+
+.admin-nav-group-title:hover {
+  color: var(--text-on-dark); /* hover 时全白（与 .admin-nav-item 视觉一致） */
+}
+
+.admin-nav-group-chevron {
+  transition: transform 0.2s ease;
+}
+
+.admin-nav-group-title.collapsed .admin-nav-group-chevron {
+  transform: rotate(-90deg); /* 折叠态 chevron 向上 */
+}
+
+.admin-sidebar-nav {
+  flex: 1;
+  min-height: 0;      /* 允许收缩到剩余空间内滚动（flex 子项默认 min-height:auto 会被内容撑开） */
+  overflow-y: auto;   /* 菜单展示不下时 nav 区滚动，footer 吸底不移位 */
+  padding: var(--space-3);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.25) transparent;
+}
+.admin-sidebar-nav::-webkit-scrollbar { width: 6px; }
+.admin-sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.25);
+  border-radius: var(--radius-sm);
+}
+
+.admin-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: var(--radius-md);
+  color: var(--text-on-dark-secondary);
+  font-size: var(--text-md);
+  font-weight: 500;
+  width: 100%;
+  text-align: left;
+  transition: all 0.15s;
+}
+
+.admin-nav-item:hover {
+  background: rgba(255,255,255,0.08);
+  color: var(--text-on-dark);
+}
+
+.admin-nav-item.active {
+  background: var(--bg-card);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* 菜单待办 Badge（2026-08-14：工作台移除，待办信号下沉菜单角标——AntD Sider Badge 惯例）
+   红底白字圆角胶囊，label 后右对齐（margin-left:auto）；>0 才渲染，语义 = 该模块待处理数 */
+.admin-nav-badge {
+  margin-left: auto;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px; /* impeccable-disable-line design-system-radius: 刻意小号角标（AntD Badge 微缩惯例），不入 4-8-12-16 档位（2026-08-24 拍板豁免） */
+  background: var(--danger);
+  color: var(--bg-card);
+  font-size: 11px; /* impeccable-disable-line design-system-font-size: 同上，11px 仅此一处 */
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.admin-sidebar-footer {
+  flex-shrink: 0;  /* 吸底：始终贴侧边栏底部，不随菜单展开而下移 */
+  padding: var(--space-3);
+  border-top: 0.5px solid rgba(255,255,255,0.08);
+  position: relative;  /* 账户下拉菜单（admin-user-menu）向上弹出锚点 */
+}
+
+/* ---- 内容区 ---- */
+.admin-content {
+  flex: 1;
+  margin-left: 240px;
+  padding: var(--space-8);
+  min-height: 100vh;
+  max-width: 1200px; /* 画板基准 1440 内（AntD 惯例：内容区限宽防扫读超长） */
+}
+
+/* 后台首页（2026-08-20：独立欢迎页，替代登录落地问候横幅） */
+.admin-home {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - var(--space-8) * 2); /* 扣除内容区上下 padding */
+  padding: var(--space-8);
+}
+.admin-home-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-3);
+  max-width: 440px;
+}
+.admin-home-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--radius-lg);
+  background: var(--primary-light);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-2);
+}
+.admin-home-title {
+  font-size: var(--text-4xl);
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+.admin-home-sub {
+  font-size: var(--text-md);
+  color: var(--text-secondary);
+}
+/* 大屏响应式分档（方案 C · AntD 标准）：>1440 内容区全宽，利用外接大屏；
+   表格列已用 minmax(贴合, fr) 弹性（2026-08-12），全宽下等比放大填满容器 */
+@media (min-width: 1440px) {
+  .admin-content {
+    max-width: none;
+  }
+}
+
+.admin-page h1 {
+  font-size: var(--text-4xl);
+  font-weight: 700;
+  margin-bottom: var(--space-6);
+  letter-spacing: -0.02em;
+}
+
+.admin-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-6);
+}
+
+.admin-page-header h1 { margin-bottom: 0; }
+.admin-page-header .admin-header-summary {
+  margin-left: auto;   /* 摘要 + 主按钮右对齐（A-6 统计摘要） */
+  margin-right: var(--space-4);
+}
+/* 页头操作区（摘要 + 主操作按钮同行右对齐，对齐 AdminEvents/AdminNotifications 页头形态） */
+.admin-page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.admin-page-header-actions .text-muted { margin-right: var(--space-2); }
+
+/* 页头搜索框（主要功能入口：跨状态用户查询，姓名/手机/邮箱匹配） */
+.admin-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 320px;
+  height: 40px;
+  padding: 0 var(--space-3);
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  transition: border-color 0.15s;
+}
+
+.admin-search-wrap:focus-within {
+  border-color: var(--primary);
+}
+
+.admin-search-icon {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.admin-search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: var(--text-md);
+  color: var(--text);
+}
+
+.admin-search-input::placeholder { color: var(--text-tertiary); }
+
+.admin-search-wrap .btn-icon {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+}
+
+/* 分页控件（表底：上一页/页码信息/下一页） */
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-4) 0 var(--space-2);
+}
+.admin-page-btn {
+  height: 36px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: var(--text-md);
+  cursor: pointer;
+}
+.admin-page-btn:hover:not(:disabled) { color: var(--primary); border-color: var(--primary-border); }
+.admin-page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.admin-page-info {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+/* ---- 工作台（Dashboard）：待办行式列表（DESIGN_SYSTEM §三 7 操作列表项；无 icon 无 badge） ---- */
+.admin-todo-list { overflow: hidden; margin-bottom: 28px; }
+.admin-todo-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  min-height: var(--min-touch-target); /* 48px 触控目标 */
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  border-bottom: 1px solid var(--border-light);
+  transition: background 0.15s;
+}
+.admin-todo-row:last-child { border-bottom: none; }
+.admin-todo-row:hover { background: var(--primary-light); }
+.admin-todo-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.admin-todo-label { font-size: var(--text-md); font-weight: 600; color: var(--text); }
+/* 待办金额副行（资金类动作带金额盘口，A-6 扩展） */
+.admin-todo-amount {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+/* count = 行尾唯一数字焦点（20px 主色；预警行 warning 覆盖） */
+.admin-todo-count {
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+.admin-todo-chevron { color: var(--text-tertiary); flex-shrink: 0; }
+/* 冻结到期预警行（预防性动作，warning 语义区别于普通待办） */
+.admin-alert-row { background: var(--warning-light); }
+.admin-alert-row:hover { background: var(--warning-bg); }
+.admin-alert-row .admin-todo-label { color: var(--warning); }
+.admin-alert-row .admin-todo-count { color: var(--warning); }
+
+/* ---- 后台表格 ---- */
+.admin-table {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden; /* 圆角/阴影裁内容 */
+}
+
+.admin-table-header {
+  display: grid; /* 表头即网格行（与 .admin-table-row 同构）：header 容器直接放 span 单元格，列模板由 --xxx 修饰类提供 */
+  gap: 8px;
+  padding: var(--space-3) var(--space-4);  /* 与 .admin-table-row 的 var(--space-4) 同 padding，header/数据内容起点对齐 */
+  background: var(--bg);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-table-row {
+  display: grid;
+  gap: 8px;
+  padding: var(--space-4);
+  align-items: center;
+  border-bottom: 1px solid var(--border-light);
+  font-size: var(--text-md);
+  transition: background 0.15s;
+}
+
+.admin-table-row:last-child { border-bottom: none; }
+.admin-table-row:hover { background: var(--bg); }
+
+/* 空态行（§四 4.5）：跨全列 + 居中，禁止空白表格 */
+.admin-table-row > .admin-table-empty {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: var(--text-md);
+  padding: var(--space-4) 0;
+}
+
+/* ---- 表格列模板（硬约束：每张表必须显式定义 grid-template-columns，ADMIN_DESIGN_SYSTEM §四） ---- */
+/* 修饰类作用于外层 .admin-table，列模板 header/row 成对。 */
+.admin-table--tx .admin-table-header,
+.admin-table--tx .admin-table-row {
+  /* 资金流水 5 列（2026-08-14 加流水单号；同日 二改：列序调整 + 列宽贴合 + gap 16px + 金额精确值）
+     列序：单号/类型/金额/时间/关联——金额右对齐 + 时间居中（消除右对齐+左对齐相邻紧贴），关联 fr 吸收剩余放最后
+     类型/金额固定宽（短内容防 fr 放大）；单号/关联 fr；金额 formatExactAmount 精确到分 */
+  grid-template-columns: minmax(150px, 15fr) 70px 120px minmax(160px, 16fr) minmax(180px, 18fr);
+  gap: 16px;
+}
+.admin-table--tx .col-date {
+  text-align: center;
+}
+.admin-table--tx .col-project {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 冻结明细模板已删（2026-08-14 冻结 tab 移除：冻结非流水子场景、明细/操作在申购记录页，资金运营页仅盘口展示冻结总额） */
+.admin-table--projects .admin-table-header,
+.admin-table--projects .admin-table-row {
+  /* 列宽弹性：min = 贴合内容值（1280 视口时 fr 无剩余 → 精确贴合）；
+     fr 权重 ∝ 各列 min 值 → 宽视口时 8 列按比例等比放大，任何容器宽度都填满、无右侧空洞 */
+  grid-template-columns:
+    minmax(178px, 18fr)
+    minmax(92px, 9fr)
+    minmax(82px, 8fr)
+    minmax(102px, 10fr)
+    minmax(66px, 7fr)
+    minmax(102px, 10fr)
+    minmax(87px, 9fr)
+    minmax(119px, 12fr);
+  gap: 16px;
+}
+.admin-table--events .admin-table-header,
+.admin-table--events .admin-table-row {
+  grid-template-columns: minmax(180px, 1.8fr) minmax(120px, 1fr) 110px 90px 110px 100px 100px;
+}
+
+/* 单元格对齐（列宽由模板控制，内部对齐按语义） */
+.admin-table .col-id {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+/* header 与数据同侧对齐（AntD 惯例：数值列 header 右对齐；操作列 header 是标题文本保持左对齐，按钮组靠右） */
+.admin-table-header .col-amount,
+.admin-table-header .col-count {
+  text-align: right;
+}
+.admin-table .col-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+}
+.admin-table .col-actions .btn-icon { flex-shrink: 0; }
+
+.admin-table-row .col-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.admin-table-row .col-name strong {
+  font-size: var(--text-lg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+.admin-table-row .col-project { display: flex; flex-direction: column; gap: 2px; }
+
+.admin-table .col-amount {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-base);
+  text-align: right;
+  white-space: nowrap;   /* 2026-08-20：长金额（如 +HKD 2,950,000.00）防换行；换汇复合信息改用 .col-amount--stack 两行 */
+}
+/* 意向人数列（数值右对齐等宽，次级色） */
+.admin-table .col-count {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--text-secondary);
+}
+.admin-table .col-date {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+/* 行内操作按钮 disabled（删除保护：有引用禁删） */
+.admin-table .btn-icon:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+/* 行内快捷归档按钮（upcoming 且已过结束时间，warning 橙语义突出） */
+.admin-table .btn-icon.admin-archive-btn {
+  color: var(--warning);
+}
+.admin-table .btn-icon.admin-archive-btn:hover {
+  color: var(--warning-strong);
+  background: var(--warning-light);
+}
+
+/* 超时标识 = 标题列（col-name 空间最富裕）标题最后一个字后固定间距（2026-08-12 用户方案）
+   限定 events 表；strong 不撑满（flex 0 1 auto）→ 标识紧跟标题文字，gap 固定间距 */
+.admin-table--events .col-name-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.admin-table--events .col-name-title strong {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.admin-table--events .admin-overdue-tag {
+  flex-shrink: 0;
+  color: var(--warning);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* 活动时间 = 双 time 输入（开始/结束 + 至 分隔） */
+.admin-time-range {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.admin-time-input {
+  flex: 1;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+.admin-time-sep {
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+  flex-shrink: 0;
+}
+
+/* ---- 后台表单/详情 ---- */
+.admin-form {
+  margin-bottom: var(--space-6);
+}
+
+.admin-form h3 {
+  font-size: var(--text-xl);
+  margin-bottom: var(--space-5);
+}
+
+.admin-form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* admin 表单组间距由 .admin-form-fields 的 gap 14px 承担（防与 margin-bottom 叠加成 28px） */
+.admin-form-fields .form-group {
+  margin-bottom: 0;
+}
+
+.admin-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: var(--space-5);
+}
+
+/* 详情卡头部（标题 + 状态徽章并排；全站 .admin-detail-header 此前无样式定义，补统一） */
+.admin-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+.admin-detail-header h3 {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 报名管理：入场凭证码 + 签到留痕 */
+.admin-reg-code {
+  font-size: var(--text-lg);
+  letter-spacing: 0.5px;
+  font-variant-numeric: tabular-nums;
+}
+.admin-reg-checkin {
+  font-size: var(--text-md);
+  color: var(--text-secondary);
+}
+
+/* ---- 右侧抽屉（B2 新建/编辑表单 · AntD Drawer 惯例：列表保持可见） ---- */
+.admin-drawer-mask {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay-mask);
+  z-index: 90;
+}
+.admin-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 520px;
+  max-width: 92vw;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-lg);
+  z-index: 91;
+  display: flex;
+  flex-direction: column;
+  animation: adminDrawerIn 0.22s ease;
+}
+@keyframes adminDrawerIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+.admin-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-5) var(--space-6);
+  border-bottom: 1px solid var(--border-light);
+  flex-shrink: 0;
+}
+.admin-drawer-head h3 {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.admin-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-5) var(--space-6);
+}
+.admin-drawer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: var(--space-5) var(--space-6);
+  border-top: 1px solid var(--border-light);
+  flex-shrink: 0;
+}
+
+/* 用户管理抽屉 body padding-top 收紧（仅作用于用户抽屉，避免影响其他 8 个抽屉） */
+.admin-drawer--user .admin-drawer-body {
+  padding-top: var(--space-4);
+}
+
+
+/* ---- 表单补充组件（披露文档列表） ---- */
+.admin-doc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: var(--space-3);
+}
+.admin-doc-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg);
+  border-radius: var(--radius-md);
+  font-size: var(--text-md);
+}
+.admin-doc-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- 管理员登录页 ---- */
+.admin-login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  padding: var(--space-6);
+}
+.admin-login-card {
+  width: 100%;
+  max-width: 420px;
+  padding: var(--space-7) var(--space-6);
+}
+.admin-login-head {
+  text-align: center;
+  margin-bottom: var(--space-6);
+}
+.admin-login-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  background: var(--primary);
+  color: var(--bg-card);
+  margin-bottom: var(--space-3);
+}
+.admin-login-head h1 {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.admin-login-form { margin-bottom: var(--space-5); }
+.admin-login-input { position: relative; }
+.admin-login-input-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+}
+.admin-login-input .form-input { padding-left: 36px; }
+.admin-login-demo {
+  background: var(--primary-light);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-4);
+}
+.admin-login-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.admin-login-back:hover { color: var(--primary); }
+
+/* ---- 后台状态徽章（2026-08-14 实色底 → 语义色文字：实测 1.76:1 对比度不足——白字被 .kyc-review-row span 覆盖成灰）
+ *    彩色文字 on 白 ≈ 5.7:1+ 达标且轻量；.status-badge. 前缀提高特异性（0-2-0）压过 .kyc-review-row span（0-1-1） */
+.status-badge.admin-status-pending    { color: var(--warning-text); }      /* 待处理/待审核（2026-08-24 对比度整改：#E65100 小字号 3.79:1 → 文字档 #B24000） */
+.status-badge.admin-status-requires   { color: var(--warning-text); }      /* KYC 需补件（2026-08-13 P1：退回补件待用户补充） */
+.status-badge.admin-status-approved   { color: var(--success); }
+.status-badge.admin-status-rejected   { color: var(--compliance); }
+.status-badge.admin-status-raising    { color: var(--success); }      /* 项目：申购开放 */
+.status-badge.admin-status-upcoming   { color: var(--primary); }      /* 项目/路演：即将上线 */
+.status-badge.admin-status-live       { color: var(--success); }      /* 路演：进行中（时间派生，非手动状态） */
+.status-badge.admin-status-closed     { color: var(--text-secondary); }
+.status-badge.admin-status-sold       { color: var(--text-secondary); }
+.status-badge.admin-status-establishing { color: var(--warning); }     /* SPV：设立中（LPF 注册/文件准备，投资已确定） */
+.status-badge.admin-status-operating    { color: var(--success); }     /* SPV：运作中（已出资，投后管理） */
+.status-badge.admin-status-liquidating  { color: var(--primary); }     /* SPV：清算中（份额退出/资产处置） */
+.status-badge.admin-status-liquidated   { color: var(--text-secondary); } /* SPV：已清算（终态） */
+/* 通知类型语义色（2026-08-14 广播台账化）：对齐用户侧 Notifications.jsx typeMeta 语义——申购主色 / 活动金 / 资金绿 / 服务橙 */
+.status-badge.admin-status-notify-sub     { color: var(--primary); }
+.status-badge.admin-status-notify-event   { color: var(--accent-hover); }
+.status-badge.admin-status-notify-wallet  { color: var(--success); }
+.status-badge.admin-status-notify-service { color: var(--warning); }
+.admin-status-submitted  { background: var(--warning); }      /* 申购：意向已提交 */
+.admin-status-allocated  { background: var(--primary); }
+.admin-status-signed     { background: var(--success); }
+.admin-status-unallocated { background: var(--text-tertiary); }
+
+/* 后台融资阶段标签（统一主色，替代 projectStageColors 花哨彩色） */
+.admin-stage-tag {
+  display: inline-block;
+  background: var(--primary);
+  color: var(--text-on-dark);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+}
+
+/* ---- 后台 tabs ---- */
+.admin-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: var(--space-6);
+  flex-wrap: wrap;
+}
+/* 抽屉内 tabs（2026-08-14 用户管理：档案分 tab 免长滚动；收紧 tabs → body 间距）
+   必须在 .admin-tabs 之后定义（CSS 同 specificity 后定义胜，覆盖上方 .admin-tabs 的 margin-bottom） */
+.admin-drawer-tabs {
+  margin-bottom: 0;
+  padding: 0 var(--space-6) var(--space-2);
+  flex-shrink: 0;
+}
+
+/* 筛选行（B2 列表管理页 · ADMIN_DESIGN_SYSTEM §三 B2；2026-08-13 全后台统一无 label——选项文案自解释维度） */
+.admin-filter-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6);
+  flex-wrap: wrap;
+}
+/* 筛选工具条组（Registrations 筛选工具条：跟进左 + 活动/归属右；组间距隔离维度，
+   无 label——选项文案自解释维度；配合 .admin-filter-row 的 flex-wrap 窄屏自动降行） */
+.admin-filter-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-right: var(--space-4);
+}
+.admin-filter-row > .admin-filter-group:last-child { margin-right: 0; }
+/* 右侧辅助筛选组：低频维度（活动/归属）右对齐成组，高频跟进组靠左 */
+.admin-filter-group--right { margin-left: auto; }
+.admin-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: var(--text-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;   /* 2026-08-27 硬化：行内空间不足时禁止文字换行（90px 巨型按钮事故） */
+  flex-shrink: 0;        /* 同上：禁止被 flex 行压缩 */
+}
+.admin-filter-btn:hover { color: var(--primary); border-color: var(--primary-border); }
+.admin-filter-btn.active {
+  background: var(--primary);
+  color: var(--bg-card);
+  border-color: var(--primary);
+}
+.admin-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  font-size: var(--text-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.admin-tab.active {
+  background: var(--primary);
+  color: var(--bg-card);
+  border-color: var(--primary);
+}
+
+/* 视图控制行：左状态筛选（浏览态）+ 右搜索（检索态）同行（2026-08-13） */
+.admin-view-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+  flex-wrap: wrap;
+}
+.admin-view-row .admin-filter-row { margin-bottom: 0; }   /* view-row 已承担间距 */
+
+/* ---- 审核页全宽列表列模板（2026-08-13 双栏 → 抽屉统一后：列表全宽 + 详情弹抽屉） ---- */
+/* 列宽贴合内容（min = 内容最宽 + 边距）+ fr 弹性（fr ∝ min → 宽屏等比放大填满，2026-08-12 列宽原则） */
+.admin-table--kyc .admin-table-header,
+.admin-table--kyc .admin-table-row {
+  grid-template-columns: minmax(90px, 9fr) minmax(96px, 10fr) minmax(116px, 12fr) minmax(170px, 17fr) minmax(88px, 9fr) minmax(64px, 7fr);
+}
+.admin-table--kyc .col-doc,
+.admin-table--kyc .col-phone {
+  display: flex;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);   /* 辅助信息列对齐 Registrations 基准（12px，2026-08-13 字号收敛） */
+  font-weight: 600;
+}
+.admin-table--kyc .col-actions { gap: 8px; }
+
+/* PI 认证审核（2026-08-14 独立 PI 审核流）：申请人/资格类型/联系方式/提交时间/状态/操作 6 列 */
+.admin-table--pi .admin-table-header,
+.admin-table--pi .admin-table-row {
+  grid-template-columns: minmax(90px, 9fr) minmax(100px, 10fr) minmax(116px, 12fr) minmax(170px, 17fr) minmax(88px, 9fr) minmax(64px, 7fr);
+}
+.admin-table--pi .col-type,
+.admin-table--pi .col-phone {
+  display: flex;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+.admin-table--pi .col-actions { gap: 8px; }
+.admin-pi-check input { cursor: pointer; }
+/* PI 核验判定（2026-08-14 方案 A 逐项三态判定）：符合 ✓ / 不符合 ✗ / 未判定（默认） */
+.admin-pi-judge {
+  min-height: 32px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color .15s, background .15s, color .15s;
+}
+.admin-pi-judge:hover:not(:disabled) { border-color: var(--primary-border); }
+.admin-pi-judge.pass.active { background: var(--success-light); border-color: var(--success); color: var(--success); }
+.admin-pi-judge.fail.active { background: var(--compliance-light); border-color: var(--compliance); color: var(--compliance); }
+.admin-pi-judge:disabled { cursor: not-allowed; opacity: .55; }
+/* PI 核验记录留痕（方案 A）：history 内 approved 动作回显判定明细（✓ 符合 / ✗ 不符合） */
+.admin-pi-checks-record { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.admin-pi-check-tag {
+  font-size: var(--text-xs);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+.admin-pi-check-tag.pass { color: var(--success); background: var(--success-light); }
+.admin-pi-check-tag.miss { color: var(--compliance); background: var(--compliance-light); }
+.admin-table--exits .admin-table-header,
+.admin-table--exits .admin-table-row {
+  /* 持仓退出 6 列（2026-08-14 加申请单号；同日 加操作列对齐资金审核/申购记录审核页——审批动作显式入口）：
+     单号/项目SPV/当前估值/申请时间/状态/操作
+     列宽贴合内容（min = 内容最宽 + 边距，全固定无 fr 弹性——内容少的表 fr 会把列放大过大）；
+     剩余空间 justify-content: space-between 均匀分配到列间空隙（既填满容器无右侧空白、
+     又让空隙均匀 ~80-130px，优于 max 上限导致的右侧留白——2026-08-14 复查修正"贴合 vs 填满"矛盾）；
+     申请时间居中（消除金额右对齐+时间左对齐相邻紧贴）；gap 16px（与其他表统一） */
+  grid-template-columns: 150px 190px 140px 150px 96px 64px;
+  gap: 16px;
+  justify-content: space-between;
+}
+.admin-table--exits .col-date {
+  text-align: center;
+}
+/* 退出分配表单错误提示（发起抽屉校验失败，2026-08-21 事件驱动重构） */
+.admin-form-error {
+  color: var(--danger);
+  font-size: var(--text-sm);
+  margin-top: var(--space-2);
+}
+/* APP 端退出分配状态区（Holdings 持仓卡内，2026-08-21 事件驱动重构） */
+.exit-event-block {
+  border-top: 1px solid var(--border);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+}
+.exit-event-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+.exit-split {
+  background: var(--bg);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  margin-top: var(--space-2);
+}
+.exit-split-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  padding: var(--space-1) 0;
+}
+.exit-split-row.exit-split-net {
+  border-top: 1px solid var(--border);
+  margin-top: var(--space-1);
+  padding-top: var(--space-2);
+  color: var(--text-primary);
+}
+.exit-paying-note {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  margin-top: var(--space-2);
+}
+.admin-table--subs .admin-table-header,
+.admin-table--subs .admin-table-row {
+  /* 列宽贴合内容（min = 内容最宽 + 边距）+ fr 弹性（fr ∝ min → 宽屏等比放大填满，2026-08-12 列宽原则） */
+  /* 7 列：项目 / 累计意向 / 笔数 / 待处理 / SPV / 截止 / 操作 */
+  grid-template-columns: minmax(170px, 17fr) minmax(100px, 10fr) minmax(72px, 7fr) minmax(122px, 12fr) minmax(96px, 9fr) minmax(96px, 10fr) minmax(78px, 8fr);
+}
+.admin-table--subs .col-name strong {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}/* 待处理列（待协调 X · 待签 Y）：运营执行台核心——还有多少笔要我处理
+   居中显示（避免右对齐数值列 count 与左对齐文本列紧贴，2026-08-13） */
+.admin-table--subs .col-pending {
+  font-size: var(--text-md);
+}
+.admin-table--subs .admin-table-header .col-pending { text-align: center; }
+.admin-table--subs .admin-table-row .col-pending {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.admin-pending-badge {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  color: var(--warning-text);
+  font-weight: 600;
+}
+.admin-table--deposits .admin-table-header,
+.admin-table--deposits .admin-table-row,
+.admin-table--withdraws .admin-table-header,
+.admin-table--withdraws .admin-table-row {
+  /* 充值/提现审核 7 列（2026-08-14 加申请单号；同日 二改列宽贴合；同日 六改：时间列中性化 + 新增处理人列——已处理记录时间=处理时间、处理人独立字段，消除双行歧义）
+     贴合（内容最宽 + 边距）：单号150/申请人90/金额120/时间160/处理人90/状态96/操作64；fr ∝ min 等比放大
+     申请人/金额/处理人/状态 = 固定宽（短内容固定，防 fr 放大留白过大）；时间列居中 = 消除"金额右对齐 + 时间左对齐相邻 8px 紧贴" */
+  grid-template-columns: minmax(150px, 15fr) 90px 120px minmax(160px, 16fr) 90px 96px 64px;
+  gap: 16px;
+  cursor: pointer;
+}
+.admin-table--deposits .col-date,
+.admin-table--withdraws .col-date {
+  text-align: center;
+}
+.admin-table--deposits .col-handler,
+.admin-table--withdraws .col-handler {
+  color: var(--text-secondary);
+}
+.admin-table--dividends .admin-table-header,
+.admin-table--dividends .admin-table-row {
+  /* 投后分红 7 列（2026-08-14）：单号/SPV/分红总额/每份金额/发起时间/状态/操作
+     列宽贴合内容 + fr 弹性（单号/SPV/发起时间 三个 fr ∝ min 分担剩余，防单列过宽）；
+     min 总和 ≤ 容器 - padding36 - gap96（1280 视口内容区 976 → 列可用 844，防溢出）；
+     每份金额右对齐、发起时间居中（与金额右对齐相邻不紧贴）；gap 16px */
+  grid-template-columns: minmax(130px, 14fr) minmax(200px, 21fr) 124px 100px minmax(130px, 14fr) 88px 64px;
+  gap: 16px;
+  cursor: pointer;
+}
+.admin-table--dividends .col-date {
+  text-align: center;
+}
+.admin-table--dividends .col-per {
+  text-align: right;
+}
+.admin-table--spvs .admin-table-header,
+.admin-table--spvs .admin-table-row {
+  /* SPV 管理 7 列（2026-08-14）：SPV/注册号/状态/募资总额/持有人/管理费率/操作
+     列宽贴合内容（min = 内容最宽 + 边距，全固定无 fr 弹性——内容少的表 fr 会把名称列放大到 350+px）；
+     剩余空间 justify-content: space-between 均匀分配到列间空隙（既填满容器无右侧空白、
+     又让空隙均匀 ~80-120px，优于 max 上限导致的右侧留白——2026-08-14 复查修正"贴合 vs 填满"矛盾）；
+     持有人/管理费率 = 短内容数值列固定宽 + 右对齐（与募资总额右对齐相邻不紧贴） */
+  grid-template-columns: 220px 130px 64px 120px 56px 70px 96px;
+  gap: 16px;
+  justify-content: space-between;
+  cursor: pointer;
+}
+.admin-table--spvs .col-name strong {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.admin-table--spvs .col-amount { text-align: right; }
+.admin-table--spvs .col-holders,
+.admin-table--spvs .col-fee {
+  text-align: right;
+  color: var(--text-secondary);
+}
+.admin-table--spvs .admin-table-header .col-holders,
+.admin-table--spvs .admin-table-header .col-fee {
+  text-align: right; /* header 跟随数据右对齐（AntD 惯例，2026-08-12） */
+}
+.admin-table--spvs .col-reg { font-size: var(--text-sm); color: var(--text-secondary); }
+.admin-table--spvs .col-actions { gap: 8px; }
+.admin-confirm-delta { margin-top: 6px; }
+.admin-table--kyc .admin-table-row,
+.admin-table--exits .admin-table-row,
+.admin-table--subs .admin-table-row {
+  cursor: pointer;
+}
+/* 可点行键盘可达（2026-08-24 a11y 整改）：--users/--tickets 等行有 onClick 却无 pointer，补齐 */
+.admin-table--users .admin-table-row,
+.admin-table--tickets .admin-table-row,
+.admin-table--admins .admin-table-row,
+.admin-table--leads .admin-table-row,
+.admin-table--spvs .admin-table-row,
+.admin-table--dividends .admin-table-row,
+.admin-table--deposits .admin-table-row,
+.admin-table--withdraws .admin-table-row,
+.admin-table--exchanges .admin-table-row,
+.admin-table--verifications .admin-table-row {
+  cursor: pointer;
+}
+.admin-table-row:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+  border-radius: var(--radius-sm);
+}
+
+/* 详情卡内联拒绝表单（抽屉 body 内展开）：顶部间距对齐卡片间距档位（--space-4）保证节奏统一 */
+.admin-reject-form {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-light);
+}
+
+
+/* ---- KYC 审核 ---- */.kyc-review-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  margin-bottom: var(--space-5);
+}
+.kyc-review-block {
+  padding: var(--space-5);
+}
+.kyc-review-block .card-title { margin-bottom: var(--space-4); }
+.kyc-review-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-light);
+  font-size: var(--text-md);
+}
+.kyc-review-row span {
+  color: var(--text-secondary);
+  min-width: 72px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.kyc-review-row strong { flex: 1; font-weight: 400; }  /* 信息行 value 降权（对齐客户线索抽屉收敛：卡标题 600 承载层级，value 400 靠颜色对比） */
+
+/* 制裁/PEP筛查区块样式（2026-08-26 任务5新增） */
+.kyc-screening-card { border-left: 3px solid var(--warning, #f59e0b); }
+.kyc-screening-hits { margin-top: var(--space-3); }
+.kyc-screening-hits-title { font-size: var(--text-sm); font-weight: 600; color: var(--text-secondary); margin-bottom: var(--space-2); }
+.kyc-screening-hit-item { background: #fef3c7; border: 1px solid #fcd34d; border-radius: var(--radius-md); padding: var(--space-3); margin-bottom: var(--space-2); }
+.kyc-screening-hit-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-1); }
+.kyc-screening-hit-list { font-weight: 600; font-size: var(--text-sm); }
+.kyc-screening-hit-score { font-size: var(--text-xs); color: var(--text-secondary); }
+.kyc-screening-hit-detail { display: flex; flex-direction: column; gap: 2px; font-size: var(--text-xs); color: var(--text-secondary); }
+
+/* 行式字段内状态徽章：badge 的 span 会被 .kyc-review-row span（label 样式 0-1-1）命中——
+   min-width:0 消除 72px 占位、display 恢复 badge 自身（语义色由 .admin-status-* 0-2-0 覆盖保留） */
+.kyc-review-row .status-badge {
+  min-width: 0;
+  display: inline-block;
+}
+/* 退出申请·当前估值：主数字（对齐资金抽屉 admin-fund-amount 16/700 主色——kyc-review-row strong 400 被覆盖） */
+.kyc-review-row .admin-exit-amount {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--primary);
+}
+
+/* 用户管理 · 认证状态卡紧凑（2026-08-14：去胶囊改主色 600 文字 + 去行间分隔线节省空间）
+   2026-08-15 双排：KYC + PI 同行，PI 有效期独行 */
+.admin-kyc-review-tight .kyc-review-row {
+  border-bottom: none;
+  padding: 4px 0;
+}
+.admin-kyc-review-tight .kyc-review-row:first-child { padding-top: 2px; }
+.admin-kyc-review-tight .kyc-review-row:last-child { padding-bottom: 2px; }
+/* 双排容器：2 列 grid，gap 等于抽屉 padding（24px） */
+.admin-kyc-review-tight .kyc-review-double-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: var(--space-5);
+  row-gap: 0;
+}
+.admin-kyc-review-tight .kyc-review-double-row .kyc-review-row {
+  padding: 4px 0;
+}
+/* 认证状态文字：主色 600（替代胶囊色色，14px font-weight 600 在主色上对比度合格）
+   必须用 .kyc-review-row .admin-status-text 提高 specificity，覆盖 .kyc-review-row strong 的 font-weight: 400 */
+.kyc-review-row .admin-status-text {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* 用户抽屉：银行卡卡 2026-08-16 重设计（分行布局 + 中性色币种） */
+.admin-bank-card-item {
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-light);
+}
+.admin-bank-card-item:last-child { border-bottom: none; }
+.admin-bank-card-bank-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.admin-bank-card-bank {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text);
+}
+.admin-bank-card-branch {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.admin-bank-card-no-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.admin-bank-card-no {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
+  color: var(--text);
+}
+.admin-bank-card-currency {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-light);
+}
+
+/* 用户抽屉：操作区面板（2026-08-15：浅橙背景 + 顶部提示，与资料卡群视觉区分）
+   2026-08-16 去"操作区"标题：仅留 Settings icon + tip，tab 已是"操作"避免重复 */
+.admin-action-panel {
+  background: var(--warning-light);
+  border: 1px solid var(--warning-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.admin-action-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: var(--space-3) var(--space-5);
+  background: var(--warning-border);
+  color: var(--warning);
+  font-size: var(--text-sm);
+}
+.admin-action-panel-tip {
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+.admin-action-panel-body {
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.admin-action-block {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-5);
+}
+.admin-action-block-title {
+  font-size: var(--text-md);
+  font-weight: 600;
+  margin-bottom: var(--space-3);
+}
+.kyc-review-doc {
+  display: flex;
+  gap: 10px;
+  padding-top: var(--space-3);
+}
+.kyc-review-img {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: var(--space-4);
+  background: var(--bg);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+/* KYC 审核：证件/地址原件真实预览（base64 或路径，点击放大） */
+.kyc-review-img img {
+  width: 100%;
+  height: 132px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  cursor: zoom-in;
+}
+
+.kyc-review-img-label {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+/* KYC 审核记录时间轴（留痕：谁 / 何时 / 动作 / 依据） */
+.kyc-history-card {
+  margin-top: var(--space-4);
+}
+
+.kyc-history-card .card-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kyc-history-item {
+  display: flex;
+  gap: 12px;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.kyc-history-item:last-child { border-bottom: none; }
+
+.kyc-history-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 5px;
+  background: var(--text-tertiary);
+}
+
+.kyc-history-dot.submitted { background: var(--warning); }
+.kyc-history-dot.approved { background: var(--success); }
+.kyc-history-dot.rejected { background: var(--compliance); }
+.kyc-history-dot.requires { background: var(--warning); } /* 退回补件（与 submitted 同为待处理警告色） */
+
+.kyc-history-body { flex: 1; min-width: 0; }
+
+.kyc-history-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: var(--text-md);
+}
+
+.kyc-history-head strong { font-weight: 600; color: var(--text); }
+
+.kyc-history-operator {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+.kyc-history-note {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-top: 2px;
+  line-height: 1.5;
+}
+
+.kyc-history-time {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+.kyc-review-reject {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  background: var(--compliance-bg);
+  border-radius: var(--radius-md);
+  color: var(--compliance);
+  font-size: var(--text-sm);
+}
+
+/* ---- 系统配置 ---- */
+.admin-config-list {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--space-4);
+}
+.admin-config-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-light);
+  font-size: var(--text-md);
+}
+.admin-config-rate {
+  width: 120px;
+  text-align: right;
+}
+.admin-saved-tag {
+  color: var(--success);
+  font-weight: 600;
+  font-size: var(--text-md);
+}
+.admin-config-account-title {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-3);
+}
+.admin-config-account-title + .admin-config-account-title {
+  margin-top: var(--space-5);
+}
+/* ---- 配置项清单（目录行：icon + 名称 + 当前值摘要 + 编辑，2026-08-14 清单化） ---- */
+.admin-config-catalog {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-2) var(--space-4);
+}
+.admin-config-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  min-height: var(--min-touch-target);
+  border-bottom: 1px solid var(--border-light);
+  cursor: pointer;
+}
+.admin-config-item:last-child { border-bottom: none; }
+.admin-config-item:hover { background: var(--bg); }
+.admin-config-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: rgba(0, 94, 184, 0.06);
+  color: var(--primary);
+  flex-shrink: 0;
+}
+.admin-config-item-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.admin-config-item-body strong { font-size: var(--text-md); font-weight: 600; }
+.admin-config-item-summary {
+  font-size: var(--text-md);
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: right;
+}
+.admin-config-item .admin-saved-tag {
+  font-size: var(--text-sm);
+  flex-shrink: 0;
+}
+
+/* ---- 申购操作历史（后台） ---- */
+.admin-history {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-light);
+}
+.admin-history h4 {
+  font-size: var(--text-md);
+  font-weight: 600;
+  margin-bottom: var(--space-3);
+  color: var(--text-secondary);
+}
+
+/* ---- 后台间距/布局修饰类（替代内联 style） ---- */
+.admin-mt { margin-top: var(--space-4); }
+/* form-group 为 flex column，水平右对齐按钮用 align-items（替代内联 justifyContent:'flex-end'） */
+.admin-flex-end { align-items: flex-end; }
+
+/* ---- 修改密码 sheet（侧边栏账户入口 → 修改密码；复用全局 .sheet-mask/.sheet） ---- */
+.sheet .sheet-body {
+  margin-top: var(--space-3);
+}
+.admin-sidebar .sheet-mask {
+  z-index: 102;
+}
+.form-success {
+  color: var(--success);
+  font-size: var(--text-md);
+  font-weight: 600;
+  margin-bottom: var(--space-3);
+}
+
+/* ---- 编辑项目表单：输入类型区分（文本/下拉/数字+前缀/日期/图片/多行/附件/复选 · ADMIN_DESIGN_SYSTEM §七 对齐用户侧 §三 3） ---- */
+/* 必填红星（--danger 红，替代裸文本星号） */
+.required-mark {
+  color: var(--danger);
+  margin-right: 4px;
+  font-weight: 700;
+}
+/* 必填错误态：input 红边框（与 .form-error 红字组合） */
+.form-input.field-error {
+  border-color: var(--danger);
+}
+.form-input.field-error:focus {
+  border-color: var(--danger);
+}
+/* 内部字段标注（风险等级/分配规则：schema 有但未对客展示） */
+.admin-field-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  vertical-align: 2px;
+}
+/* 数字金额前缀（币种符号 / 百分比后缀）：44px 与 form-input 等高，focus-within 主色边框 */
+.input-affix {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  transition: border-color 0.2s;
+  overflow: hidden;
+}
+.input-affix:focus-within {
+  border-color: var(--primary);
+}
+.input-affix-prefix {
+  padding-left: var(--space-3);
+  font-size: var(--text-md);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.input-affix input {
+  flex: 1;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 0 var(--space-3);
+  font-size: var(--text-md);
+  color: var(--text);
+  min-width: 0;
+}
+.input-affix input::-webkit-outer-spin-button,
+.input-affix input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.input-affix input[type="number"] {
+  -moz-appearance: textfield;
+}
+.input-affix-suffix {
+  padding-right: var(--space-3);
+  font-size: var(--text-md);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+/* 封面图：文件选择按钮 + 实时预览（mock 无后端：FileReader base64 预览）+ 高级 URL 折叠 */
+.admin-upload-row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  flex-wrap: wrap;
+}
+.admin-upload-actions {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  flex-wrap: wrap;
+}
+.admin-upload-actions .btn { font-size: var(--text-sm); }
+.admin-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px;
+}
+.admin-link-btn:hover { text-decoration: underline; }
+.admin-cover-url-input { margin-top: var(--space-3); }
+.admin-cover-preview {
+  width: 84px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background-size: cover;
+  background-position: center;
+  border: 1px solid var(--border-light);
+  flex-shrink: 0;
+}
+.admin-cover-placeholder {
+  width: 84px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+  flex-shrink: 0;
+}
+/* 团队动态行（姓名/职位/背景 + 移除，可增删） */
+.admin-team-row {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  align-items: center;
+}
+.admin-team-row .form-input { font-size: var(--text-sm); }
+.admin-team-name { flex: 1.2; }
+.admin-team-role { flex: 0.8; }
+.admin-team-bg { flex: 2; }
+.admin-team-row .btn-icon { flex-shrink: 0; }
+.admin-team-add {
+  margin-top: var(--space-2);
+}
+
+/* 议程结构化行（时间 type=time 固定宽 + 主题弹性 + 移除） */
+.admin-agenda-row {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  align-items: center;
+}
+.admin-agenda-time { width: 110px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.admin-agenda-topic { flex: 1; min-width: 0; }
+.admin-agenda-row .btn-icon { flex-shrink: 0; }
+
+/* 看点结构化行（内容弹性 + 移除） */
+.admin-line-row {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  align-items: center;
+}
+.admin-line-input { flex: 1; min-width: 0; }
+.admin-line-row .btn-icon { flex-shrink: 0; }
+.admin-line-add {
+  margin-top: var(--space-2);
+}
+
+/* ---- 编辑项目表单 · 模块卡分区（像用户侧一样一卡一主题，填写有秩序感） ---- */
+.admin-form-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-4);
+  overflow: hidden;
+}
+.admin-form-section-title {
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg);
+  border-bottom: 1px solid var(--border-light);
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+.admin-form-section-body {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* 意向截止已过提示（辅助运营决策，不自动切换状态） */
+.admin-form-hint {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+.admin-form-hint-warning {
+  background: var(--warning-light);
+  border: 1px solid var(--warning-border);
+  color: var(--warning);
+}
+/* 列表意向截止已过期标记 */
+.admin-deadline-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+  background: var(--warning-light);
+  color: var(--warning);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  vertical-align: 1px;
+}
+
+/* 关联路演：下拉选择 + 已选 tags（可移除）——AntD Select multiple 降级形态 */
+.admin-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+.admin-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 10px;
+  border-radius: var(--radius-md);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  max-width: 100%;
+}
+.admin-tag-chip span { /* 路演标题 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.admin-tag-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: var(--text-md);
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.admin-tag-remove:hover { background: var(--primary); color: var(--bg-card); }
+
+/* 财务概览三字段（营收/月烧钱率/毛利率）同类短数字字段并排，不独占全宽 */
+.admin-fin-row {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* ---- 查看抽屉 = APP 移动端预览（用户侧只有 APP，运营所见即用户所得） ---- */
+.admin-app-preview {
+  max-width: 430px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.admin-app-preview .project-detail-hero {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.admin-app-preview .project-detail-hero img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  display: block;
+}
+
+/* ==================== 活动报名 · 客户线索（2026-08-12 CRM 重构） ==================== */
+
+/* 活动/归属下拉选择器（optgroup 分组：路演多时可容纳/可搜索，替代平铺卡片概览；
+   2026-08-13 去计数后 select 宽度贴合内容 ~260px——最长选项为活动标题本身 20+ 字符，
+   select 内截断、下拉选项全文保留） */
+.admin-reg-filter {
+  max-width: 260px;
+  width: 100%;
+}
+
+/* 客户线索名单表格（全宽 · 客户按账户去重）
+   列宽 = 内容最宽 + 边距贴合（min），fr 弹性等比放大填满容器（任意视口无空洞）；
+   gap 16px 统一列间距（2026-08-12 间距重设：原 8px + 弹性列撑满导致宽窄悬殊） */
+.admin-table--leads .admin-table-header,
+.admin-table--leads .admin-table-row {
+  grid-template-columns:
+    minmax(110px, 11fr)   /* 客户：脱敏名 + investorNo */
+    minmax(220px, 22fr)   /* 联系方式：脱敏 phone + email（email 串长） */
+    minmax(64px, 6fr)     /* 报名：N 场 */
+    minmax(140px, 14fr)   /* 最近报名：日期到分钟 */
+    minmax(96px, 10fr)    /* 专属顾问：3 字名 */
+    minmax(110px, 11fr)   /* 跟进：状态徽章 */
+    minmax(76px, 8fr);    /* 操作：文字「查看」 */
+  gap: 16px;
+  cursor: pointer;
+}
+
+.admin-lead-phone {
+  font-size: var(--text-base);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.admin-table .col-manager,
+.admin-table .col-contact { display: flex; flex-direction: column; gap: 2px; }
+
+/* 线索跟进状态徽章（5 态 · 销售漏斗色；2026-08-14 实色底 → 语义色文字，与后台状态徽章统一） */
+.status-badge.admin-lead-new        { color: var(--warning); }        /* 待联系 */
+.status-badge.admin-lead-contacted  { color: var(--primary); }        /* 已联系 */
+.status-badge.admin-lead-invited    { color: var(--primary-strong); } /* 已邀约 */
+.status-badge.admin-lead-converted  { color: var(--success); }        /* 已转化 */
+.status-badge.admin-lead-paused     { color: var(--text-tertiary); }  /* 暂不跟进 */
+
+/* 客户线索详情抽屉 */
+.admin-reg-contact {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+  padding: var(--space-4);
+  background: var(--primary-light);
+  border-radius: var(--radius-md);
+}
+.admin-reg-contact-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-lg);
+  color: var(--primary);
+}
+.admin-reg-contact-item svg { flex-shrink: 0; }
+.admin-reg-contact-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 同客户多场报名历史 */
+.admin-reg-history {
+  display: flex;
+  flex-direction: column;
+}
+.admin-reg-history-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-light);
+  min-height: var(--min-touch-target);
+}
+.admin-reg-history-row:last-child { border-bottom: none; }
+.admin-reg-history-row > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.admin-reg-history-row strong {
+  font-size: var(--text-md);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 客户线索抽屉：字号层级收敛 5 档（2026-08-12 审查：原 9 种字号组合无层级）
+   1. 卡标题 16/600 → 2. 主数字 15/700 → 3. 信息行 14/400 → 4. 次级 13/400 → 5. 辅助 12/400
+   活动名/邮箱/INV 均为"信息行"（14/400），不再与电话主数字竞争权重 */
+.admin-drawer--lead .admin-reg-contact-item { font-size: var(--text-md); }
+.admin-drawer--lead .admin-reg-contact-item strong { font-size: var(--text-lg); font-weight: 700; }
+.admin-drawer--lead .admin-reg-history-row strong {
+  font-weight: 400; /* 活动名/跟进状态变更为信息行，降权（原 700 与电话主数字冲突） */
+}
+.admin-drawer--lead .admin-followup-log .admin-reg-history-row strong {
+  font-weight: 600; /* 跟进状态变更（新线索 → 已联系）是时间轴主体，600 区别于普通信息行 */
+}
+/* 跟进记录时间轴（CRM 留痕：状态变更 + 操作人 + 备注；纯纵向列表） */
+.admin-followup-log .admin-reg-history-row {
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+.admin-followup-note {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-top: 2px;
+  line-height: 1.5;
+}
+
+/* 抽屉操作区（2026-08-12 分区 + 折叠：低频操作不常驻空间，默认折叠为一行）
+   操作区与信息区分隔：浅底容器 + 顶部折叠按钮（展开后内容展开） */
+.admin-drawer-action-zone {
+  position: relative;
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+}
+.admin-drawer-action-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  border: none;
+  background: none;
+  color: var(--primary);
+  font-size: var(--text-md);
+  font-weight: 600;
+  padding: var(--space-2) 0;
+  cursor: pointer;
+}
+.admin-drawer-action-chevron {
+  margin-left: auto;
+  font-size: var(--text-lg);
+  transition: transform 0.15s;
+  color: var(--text-secondary);
+}
+.admin-drawer-action-chevron.open { transform: rotate(90deg); }
+.admin-drawer-action-zone .card {
+  background: var(--bg-card);
+  border-color: var(--border-light);
+}
+.admin-drawer-action-zone .admin-lead-status-actions .admin-filter-btn {
+  min-height: 44px;
+}
+.admin-drawer-action-zone .card {
+  background: var(--bg-card);
+  border-color: var(--border-light);
+}
+.admin-lead-status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+/* 操作区跟进状态按钮：继承筛选 chip 视觉但提升触控（操作非筛选，≥44px） */
+.admin-lead-status-actions .admin-filter-btn {
+  min-height: 44px;
+}
+
+/* ==================== 线下活动签到核销（AdminEvents 抽屉 · 从报名管理降级） ==================== */
+.admin-signin-list {
+  display: flex;
+  flex-direction: column;
+}
+.admin-signin-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-light);
+  min-height: var(--min-touch-target);
+}
+.admin-signin-row:last-child { border-bottom: none; }
+.admin-signin-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.admin-signin-info strong { font-size: var(--text-base); }
+.admin-signin-code {
+  font-size: var(--text-sm);
+  color: var(--primary);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.admin-signin-stamp {
+  font-size: var(--text-sm);
+  color: var(--success);
+}
+
+/* 陪同人维护（一人报名多人参加 · 仅后台维护） */
+.admin-companion-add {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+.admin-companion-add .form-input {
+  flex: 1;
+  min-width: 0;
+}
+.admin-companion-add .btn { flex-shrink: 0; }
+
+/* ================================================================
+   申购记录 · 项目维度（2026-08-13 重构）
+   列表 = 项目维度（钱以项目汇总）；抽屉 = 项目申购详情
+   ================================================================ */
+
+/* 抽屉：项目汇总卡 */
+.admin-sub-summary {
+  margin-bottom: var(--space-5);
+}
+.admin-sub-summary-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.admin-sub-summary-value {
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  color: var(--primary);
+}
+.admin-sub-summary-stats {
+  display: flex;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-light);
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+}
+.admin-sub-deadline { margin-top: var(--space-3); }
+
+/* 抽屉：申购明细（行内操作 + 确认态） */
+.admin-sub-detail-list {
+  margin-bottom: var(--space-5);
+}
+.admin-sub-detail-title { margin-bottom: var(--space-3); }
+.admin-sub-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-light);
+}
+.admin-sub-row:last-child { border-bottom: none; }
+.admin-sub-investor {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  width: 130px;
+  flex-shrink: 0;
+}
+.admin-sub-investor strong {
+  /* 抽屉行主标识（投资人）：14px/600——比列表主标识 15px 低一档、比金额 13px 高一档，形成行内主次 */
+  font-size: var(--text-md);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 投资人副行（investorNo · 排队位次 / 提交时间降级小字，2026-08-13） */
+.admin-sub-meta {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.admin-sub-amount {
+  width: 82px;
+  flex-shrink: 0;
+  font-size: var(--text-base);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.admin-sub-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.admin-sub-actions .btn-sm { padding: 0 10px; height: 32px; font-size: var(--text-sm); }
+.admin-sub-shares {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--success);
+}
+.admin-sub-doc {
+  display: inline-flex;
+  color: var(--primary);
+}
+.admin-sub-doc:hover { color: var(--primary-strong); }
+
+/* SPV 签署证据（2026-08-15 方案 B · 香港私募合规留痕审计：协议内容权威源 = 第三方平台，Admin 维护签署结果证据链） */
+.admin-ev-form {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-light);
+}
+.admin-ev-item {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border-light);
+}
+.admin-ev-item:last-child { border-bottom: none; }
+.admin-ev-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--min-touch-target);
+}
+.admin-ev-head strong {
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+.admin-ev-env {
+  color: var(--primary);
+  font-weight: 600;
+}
+.admin-ev-meta {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+/* 文档哈希截断（详情档案卡：sha256 长串，title 承载全量） */
+.admin-hash {
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
+/* 排队位次标记（submitted 行，FIFO——替代独立 Waitlist 卡，2026-08-13） */
+.admin-sub-queue-tag {
+  color: var(--primary);
+  font-weight: 600;
+  font-style: normal;
+  margin-left: 6px;
+}
+
+/* 申购明细标题行（标题 + 上位下一位按钮） */
+.admin-sub-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.admin-sub-detail-note {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.admin-sub-detail-head .btn-sm { flex-shrink: 0; }
+
+/* 汇总卡待处理强调（与列表"待处理"列同口径） */
+.admin-sub-summary-pending { color: var(--warning); }
+
+/* 确认视图（资金动作二次确认，2026-08-13） */
+.admin-confirm-view {
+  padding: var(--space-5) 0 var(--space-6);
+}
+.admin-confirm-title {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: var(--space-3);
+}
+.admin-confirm-desc {
+  font-size: var(--text-md);
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-5);
+}
+.admin-confirm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-light);
+  font-size: var(--text-base);
+}
+.admin-confirm-row span { color: var(--text-secondary); }
+.admin-confirm-row strong { font-weight: 600; }
+
+/* ========== 合规四件套（2026-08-27 审计修复：接入列模板 + 补 stat-chip） ========== */
+/* 列宽原则与全后台一致：minmax(贴合内容, fr)，fr 权重 ∝ min 值等比放大 */
+/* 大额交易审查 6 列：单号 / 投资人·项目 / 金额 / 层级 / 时间 / 状态 */
+.admin-table--large-tx .admin-table-header,
+.admin-table--large-tx .admin-table-row {
+  grid-template-columns: minmax(88px, 9fr) minmax(170px, 17fr) minmax(120px, 12fr) minmax(96px, 10fr) minmax(104px, 11fr) minmax(96px, 10fr);
+  gap: 16px;
+}
+/* 异常检测 5 列：单号 / 规则·用户 / 风险 / 时间 / 状态 */
+.admin-table--anomaly .admin-table-header,
+.admin-table--anomaly .admin-table-row {
+  grid-template-columns: minmax(88px, 9fr) minmax(190px, 19fr) minmax(88px, 9fr) minmax(104px, 11fr) minmax(96px, 10fr);
+  gap: 16px;
+}
+/* STR 5 列：单号（含时限徽章，加宽）/ 来源·用户 / 严重程度 / 时间 / 阶段 */
+.admin-table--str .admin-table-header,
+.admin-table--str .admin-table-row {
+  grid-template-columns: minmax(150px, 15fr) minmax(170px, 17fr) minmax(88px, 9fr) minmax(104px, 11fr) minmax(110px, 11fr);
+  gap: 16px;
+}
+.admin-table--str .col-id .status-badge { margin-left: 6px; }  /* 时限紧张徽章与单号间距 */
+/* EDD 5 列：单号 / 触发·用户 / 尽调类型 / 时间 / 状态 */
+.admin-table--edd .admin-table-header,
+.admin-table--edd .admin-table-row {
+  grid-template-columns: minmax(88px, 9fr) minmax(160px, 16fr) minmax(110px, 11fr) minmax(104px, 11fr) minmax(96px, 10fr);
+  gap: 16px;
+}
+/* 页头统计 chip（STR 待评估/待审批/已提交 · EDD 待审查） */
+.admin-stat-chip {
+  padding: 4px 12px;
+  border-radius: var(--radius-md);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+/* ========== 用户管理（2026-08-13 · 账户全貌列表 + 抽屉） ========== */
+/* 列模板：minmax(贴合, fr) 弹性（fr ∝ min 等比放大填满容器，2026-08-12 列宽原则） */
+.admin-table--users .admin-table-header,
+.admin-table--users .admin-table-row {
+  grid-template-columns: minmax(150px, 15fr) minmax(112px, 11fr) minmax(80px, 8fr) minmax(80px, 8fr) minmax(82px, 8fr) minmax(104px, 10fr) minmax(70px, 7fr) minmax(64px, 6fr);
+  gap: 16px;
+}
+.admin-table--users .col-name strong { font-size: var(--text-lg); font-weight: 700; }
+.admin-table--users .col-name-sub {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-weight: 400;
+  margin-top: 2px;
+}
+.admin-table--users .col-phone,
+.admin-table--users .col-mgr,
+.admin-table--users .col-biz { color: var(--text-secondary); }
+.admin-table--users .col-kyc,
+.admin-table--users .col-pi,
+.admin-table--users .col-state { white-space: nowrap; }
+.admin-user-disabled-row { background: var(--compliance-light); }
+
+/* ========== 我的客户（2026-08-15 · advisor 专属工作视图） ========== */
+/* 列模板：minmax(贴合, fr) 弹性（fr ∝ min 等比放大填满容器，2026-08-12 列宽原则） */
+.admin-table--my-clients .admin-table-header,
+.admin-table--my-clients .admin-table-row {
+  grid-template-columns: minmax(140px, 14fr) minmax(150px, 15fr) minmax(175px, 17fr) minmax(130px, 13fr) minmax(130px, 13fr) minmax(64px, 6fr);
+  gap: 16px;
+}
+.admin-table--my-clients .col-name strong { font-size: var(--text-lg); font-weight: 700; }
+.admin-table--my-clients .col-name-sub {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-weight: 400;
+  margin-top: 2px;
+}
+.admin-table--my-clients .col-contact { color: var(--text-secondary); }
+.admin-table--my-clients .admin-lead-phone { display: block; color: var(--text); }
+
+/* 客户任务徽章（语义色浅底彩字，列表紧凑标签；待跟进/待签 SPV/冻结到期/资金审批） */
+.admin-task-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  margin: 2px 6px 2px 0;
+  white-space: nowrap;
+}
+.admin-task-lead { color: var(--primary); background: var(--primary-light); }
+.admin-task-sign { color: var(--warning); background: var(--warning-light); }
+
+/* 用户抽屉：业务记录行（申购/报名明细） */
+.admin-user-rec {
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-light);
+}
+.admin-user-rec:last-child { border-bottom: none; }
+.admin-user-rec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--text-md);
+}
+.admin-user-rec-head strong { font-weight: 600; }
+.admin-user-rec-meta {
+  margin-top: 4px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+/* 用户抽屉：账户信息 2 列网格（I-5，label 上 value 下） */
+.admin-user-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3) var(--space-5);
+}
+.admin-user-info-item { min-width: 0; }
+.admin-user-info-item span {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+.admin-user-info-item strong {
+  font-size: var(--text-md);
+  font-weight: 400;
+}
+.admin-user-info-ellipsis {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 用户抽屉：业务记录行（2026-08-15 去跳转 + 去 chevron，纯展示） */
+
+/* 用户抽屉：联系方式可点击（P-5 tel:/mailto:） */
+.admin-user-link {
+  color: var(--primary);
+  text-decoration: none;
+  border-bottom: 1px solid var(--primary-border);
+}
+.admin-user-link:hover { color: var(--primary-hover); }
+
+/* 用户抽屉：卡片标题副标（P-1 申购记录累计金额） */
+.card-title-sub {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-weight: 400;
+  margin-left: var(--space-2);
+}
+
+/* 用户抽屉：持仓明细行（P-3） */
+.admin-user-hold-row {
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-light);
+}
+.admin-user-hold-row:last-child { border-bottom: none; }
+.admin-user-hold-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--text-md);
+}
+.admin-user-hold-head strong { font-weight: 600; }
+.admin-user-hold-value {
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+.admin-user-hold-meta {
+  margin-top: 4px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+/* 用户抽屉：通知触达行（P-4） */
+.admin-user-touch {
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-light);
+}
+.admin-user-touch:last-child { border-bottom: none; }
+.admin-user-touch-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--text-md);
+}
+.admin-user-touch-head strong { font-weight: 600; }
+.admin-user-touch-unread {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--warning);
+  white-space: nowrap;
+}
+.admin-user-touch-meta {
+  margin-top: 4px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.admin-drawer-actions-inline {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+/* ========== 审计日志（2026-08-13 · 全局统一留痕视图） ========== */
+.admin-table--audit .admin-table-header,
+.admin-table--audit .admin-table-row {
+  grid-template-columns: minmax(152px, 15fr) minmax(80px, 8fr) minmax(72px, 7fr) minmax(72px, 7fr) minmax(150px, 15fr) minmax(230px, 23fr);
+  gap: 16px;
+}
+.admin-table--audit .col-date {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.admin-table--audit .col-operator { color: var(--text-secondary); }
+.admin-table--audit .col-action { color: var(--text-secondary); }
+.admin-table--audit .col-target strong { font-size: var(--text-md); font-weight: 600; }
+.admin-table--audit .col-note {
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.admin-audit-cat {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: var(--radius-md);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.admin-audit-select {
+  width: auto;
+  min-width: 130px;
+  height: 40px;
+}
+.admin-view-row--audit { align-items: center; }
+.admin-view-row--audit .admin-search-wrap { margin-left: auto; }
+
+
+/* ========== 管理员账号管理（2026-08-13 · P1 · 仅 super 菜单可见） ========== */
+/* 已禁用：语义色文字（2026-08-14 全局"实色底 → 语义色文字"整改——双类对齐 .status-badge.admin-status-approved） */
+.status-badge.admin-status-disabled { color: var(--text-tertiary); }
+
+/* 列模板：minmax(贴合, fr) 弹性（fr ∝ min 等比放大填满容器，2026-08-12 列宽原则）
+   单容器 header（header 容器即网格行，直接放 span，与 .admin-table-row 同构——2026-08-14 对齐修复：
+   此前双容器结构（header→header-row→span）导致 header-row 被塞进容器第 1 列、列退回 min 值且起点右移 18px）
+   2026-08-14 方案 A：账号绑定邮箱（必填，找回/通知/审计唯一化）+ 手机（选填，2FA 预留）→ 5 列加"绑定邮箱"列变 6 列 */
+.admin-table--admins .admin-table-header,
+.admin-table--admins .admin-table-row {
+  grid-template-columns: minmax(110px, 11fr) minmax(110px, 11fr) minmax(170px, 17fr) minmax(110px, 11fr) minmax(72px, 7fr) minmax(64px, 6fr);
+  gap: 16px;
+}
+.admin-table--admins .admin-table-row { cursor: pointer; } /* 仅数据行可点击（header 不显示手型） */
+.admin-table--admins .col-username,
+.admin-table--admins .col-role { color: var(--text-secondary); }
+.admin-table--admins .col-email span {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.admin-table--admins .col-name strong {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ========== 通知触达（2026-08-14 广播台账化 · 方案 A · super/ops/service；同轮抽屉化 · 用户拍板 A） ========== */
+/* 发送表单已改右侧抽屉（与 B2 新建抽屉同构）；以下为抽屉内广播内容边界提示块 */
+
+/* 广播内容边界（2026-08-14 用户拍板 A：合规提示，不硬校验）——可发/禁发语义清晰，私募/SFC 语境 */
+.admin-broadcast-boundary {
+  margin-top: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--primary-light);
+  border-left: 3px solid var(--primary);
+}
+.admin-broadcast-boundary strong {
+  display: block;
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: var(--space-1);
+}
+.admin-broadcast-boundary p {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.admin-broadcast-boundary p:last-child { margin-bottom: 0; }
+
+/* 广播台账表（B2 记录列表）：单号/时间/类型/标题/内容/发送人/状态——7 列贴合 + fr 弹性，时间列居中（对齐 2026-08-14 列宽原则） */
+.admin-table--broadcast .admin-table-header,
+.admin-table--broadcast .admin-table-row {
+  grid-template-columns: minmax(150px, 15fr) minmax(160px, 16fr) minmax(64px, 7fr) minmax(150px, 15fr) minmax(160px, 16fr) minmax(80px, 8fr) minmax(64px, 7fr);
+  gap: 16px;
+}
+.admin-table--broadcast .col-id {
+  color: var(--text-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--text-sm);
+}
+.admin-table--broadcast .col-date {
+  text-align: center;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.admin-table--broadcast .col-title strong {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+.admin-table--broadcast .col-body {
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.admin-table--broadcast .col-operator { color: var(--text-secondary); }
+
+/* 广播状态（2026-08-14 定时发送）：已发送 = 中性灰；已排期（定时待发）= warning 橙 */
+.status-badge.admin-status-broadcast-sent      { color: var(--text-secondary); }
+.status-badge.admin-status-broadcast-scheduled { color: var(--warning); }
+
+/* 发送时间行（立即 / 定时）：mode select 固定宽 + datetime-local 弹性同行 */
+.broadcast-schedule-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.broadcast-schedule-row .broadcast-schedule-mode { width: 140px; flex-shrink: 0; }
+.broadcast-schedule-row .broadcast-schedule-time { flex: 1; }
+
+/* ---- 资金抽屉四卡分区（2026-08-14 资金审核抽屉整改 · 用户拍板 A：对齐 KYC 审核抽屉白卡块形态） ----
+ * 四卡：资金（金额/币种）→ 单据（单号/参考号）→ 账户（银行/完整卡号）→ 状态（人/时间/结果）
+ * 复用 .card / .kyc-review-block（白卡 + 行式字段）；金额 = 主数字 16px/700 主色（唯一焦点）；
+ * 单号/参考号 = monospace 等宽（date-iso 的 tabular-nums 只对齐数字，字母+数字混合需等宽字体）
+ */
+.admin-fund-card + .admin-fund-card {
+  margin-top: var(--space-4);
+}
+.admin-fund-card .kyc-review-row strong.admin-fund-amount {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--primary);
+}
+.admin-fund-card .kyc-review-row strong.date-iso {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+/* ---- SPV 认缴进度（2026-08-21：锚点 = 设立时 planAmount；超募 over 态警示红） ---- */
+.admin-spv-progress { margin-bottom: var(--space-3); }
+.admin-spv-progress-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--space-1);
+}
+.admin-spv-progress-pct { font-size: var(--text-md); font-weight: 700; color: var(--primary); }
+.admin-spv-progress-pct.over { color: var(--danger); }
+.admin-spv-progress-bar {
+  height: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  overflow: hidden;
+}
+.admin-spv-progress-fill {
+  height: 100%;
+  border-radius: var(--radius-sm);
+  background: var(--primary);
+  transition: width 0.3s ease;
+}
+.admin-spv-progress-fill.over { background: var(--danger); }
+.admin-spv-progress-meta { margin-top: var(--space-1); line-height: 1.4; }
+/* 换汇列表金额列两行（2026-08-20 方案：同行+防换行为主，换汇"币种对 + 实际金额"复合信息改两行） */
+.admin-table .col-amount--stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  line-height: 1.25;
+  white-space: normal;
+}
+.admin-table .col-amount--stack .col-amount-sub {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+/* 凭证可查看（2026-08-20）：凭证文件名 + 「查看凭证」按钮同行，按钮不挤压文件名 */
+.admin-evidence-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+.admin-evidence-cell .admin-evidence-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.admin-evidence-cell .btn-sm { flex-shrink: 0; }
+/* 入金核销（2026-08-20 方案 B）：申报金额参考 + 到账金额输入（输入框 + 「与申报一致」按钮同行）
+   2026-08-20 方案确认：申报金额参考改 form-group 同构（label + 参考值，与下方表单统一节奏）；一键填入后输入框/按钮进入确认态；差异录入内联提示留痕 */
+.admin-fund-ref-value {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text);
+}
+.admin-fund-amount-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.admin-fund-amount-input .form-input { flex: 1; min-width: 0; }
+.admin-fund-match-btn { flex-shrink: 0; }
+/* 「与申报一致」已确认：输入框绿描边 + 按钮绿底（与「不一致」橙色差异提示形成明确语义区分） */
+.admin-fund-amount-input .form-input.match-ok {
+  border-color: var(--success);
+  background: var(--success-bg);
+  color: var(--success);
+}
+.admin-fund-match-btn.btn-confirmed {
+  background: var(--success-light);
+  border-color: var(--success);
+  color: var(--success);
+}
+
+/* 资金流水时间范围 select（2026-08-14 流水查询：类型筛选 + 时间范围 + 搜索 + 分页）
+   admin-view-row 内限宽，与搜索框同行（select 左 + 搜索右） */
+.admin-tx-range {
+  width: 130px;
+  flex-shrink: 0;
+}
+
+/* SPV 状态列（项目卡 "SPV" 状态：已运作绿 / 待设立橙 / 清算后灰） */
+.admin-table--subs .col-spv {
+  display: flex;
+  align-items: center;
+  font-size: var(--text-sm);
+}
+.admin-status-spv {
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: var(--text-sm);
+}
+.admin-status-spv.ok { color: var(--success); background: var(--success-light); }
+.admin-status-spv.pending { color: var(--warning); background: var(--warning-light); }
+.admin-status-spv.closed { color: var(--text-secondary); background: var(--border-light); }
+
+/* 项目汇总 SPV 链接（业务时序：先建档后签 SPV） */
+.admin-sub-summary-spv {
+  margin-top: var(--space-2);
+}
+.admin-sub-spv-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 10px;
+  background: var(--primary-light);
+  border-radius: var(--radius-sm);
+  color: var(--primary);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s;
+}
+.admin-sub-spv-link:hover { background: rgba(0, 94, 184, 0.12); }
+.admin-sub-spv-link.pending { background: var(--warning-light); color: var(--warning); }
+.admin-sub-spv-link.pending:hover { background: rgba(230, 81, 0, 0.14); }
+
+/* ---- 角色权限（2026-08-24 · 预置角色可配置：左角色列表 + 右权限面板） ---- */
+.admin-roles-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+/* 左列：角色卡片列表 */
+.admin-roles-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.admin-role-item {
+  display: flex;
+  width: 100%;
+  text-align: left;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.admin-role-item:hover { border-color: var(--primary-border); }
+.admin-role-item.active {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-sm);
+  background: var(--primary-light);
+}
+.admin-role-item-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.admin-role-item-name { font-size: var(--text-md); font-weight: 600; color: var(--text); }
+.admin-role-item.active .admin-role-item-name { color: var(--primary); }
+.admin-role-item-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+.admin-role-super-lock { color: var(--text-secondary); flex-shrink: 0; }.admin-role-customized {
+  font-style: normal;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--warning);
+  background: var(--warning-light);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+}
+.admin-role-customized--head { margin-left: var(--space-2); vertical-align: middle; }
+.admin-roles-list-note {
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  line-height: 1.6;
+  padding: 0 var(--space-1);
+}
+
+/* 右列：权限勾选面板 */
+.admin-roles-panel { padding: var(--space-5); }
+.admin-roles-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.admin-roles-desc {
+  margin-top: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* super 锁定横幅（防自锁说明） */
+.admin-roles-lock-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--border-light);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.admin-roles-lock-banner svg { flex-shrink: 0; color: var(--primary); }
+
+/* 权限分组 + 勾选网格 */
+.admin-perm-group { margin-bottom: var(--space-4); }
+.admin-perm-group-title {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-2);
+}
+.admin-perm-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+}
+.admin-perm-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+.admin-perm-item:hover:not(.locked) { border-color: var(--primary-border); }
+.admin-perm-item.checked { border-color: var(--primary-border); background: var(--primary-light); }
+.admin-perm-item.locked { opacity: 0.72; cursor: not-allowed; }
+.admin-perm-item input[type="checkbox"] {
+  accent-color: var(--primary);
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  flex-shrink: 0;
+}
+.admin-perm-item input[type="checkbox"]:disabled { cursor: not-allowed; }
+.admin-perm-lock-icon { color: var(--text-tertiary); flex-shrink: 0; margin-left: auto; }
+
+/* 底部操作区 */
+.admin-roles-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-light);
+}
+.admin-roles-hint { font-size: var(--text-sm); color: var(--text-secondary); }
+
+/* ---- 客户消息 · 客服工作台（2026-08-24 双端闭环） ---- */
+/* 列模板（ADMIN_DESIGN_SYSTEM §四硬约束：grid 布局必须显式定义列宽；header/row 成对）
+   客户 / 最新消息(fr 吸收+省略) / 状态 / 接待客服 / 最近更新 */
+.admin-table--tickets .admin-table-header,
+.admin-table--tickets .admin-table-row {
+  grid-template-columns: minmax(110px, 11fr) minmax(220px, 22fr) 84px minmax(96px, 10fr) minmax(112px, 11fr);
+  gap: 16px;
+}
+.admin-table--tickets .col-client strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 最新消息单元格：待回复标签 + 文本横排（行内专用，header 纯文本不受影响） */
+.admin-table--tickets .col-last-msg {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.admin-table--tickets .col-last-msg .text-secondary {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.admin-table--tickets .col-updated {
+  color: var(--text-secondary);
+}
+
+.admin-ticket-pending {
+  font-style: normal;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--warning-text);
+  background: var(--warning-light);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+/* 对话抽屉：上下三段式（头部 / 气泡流 / 输入区） */
+.admin-drawer--chat { display: flex; flex-direction: column; }
+.admin-chat-stream {
+  flex: 1;
+  min-height: 200px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+.admin-chat-row {
+  display: flex;
+  flex-direction: column;
+  max-width: 82%;
+}
+.admin-chat-row.user { align-self: flex-end; align-items: flex-end; }
+.admin-chat-row.staff, .admin-chat-row.bot { align-self: flex-start; align-items: flex-start; }
+.admin-chat-meta {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  margin-bottom: 2px;
+}
+.admin-bubble {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.admin-bubble.user {
+  background: var(--primary);
+  color: var(--bg-card);
+  border-bottom-right-radius: var(--radius-sm);
+}
+.admin-bubble.staff {
+  background: var(--success-light);
+  border: 1px solid rgba(27, 107, 50, 0.18);
+  border-bottom-left-radius: var(--radius-sm);
+}
+.admin-bubble.bot {
+  background: var(--border-light);
+  color: var(--text-secondary);
+  border-bottom-left-radius: var(--radius-sm);
+}
+
+.admin-chat-opmsg { margin: 0 var(--space-4) var(--space-2); }
+
+.admin-chat-input-zone {
+  border-top: 1px solid var(--border-light);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+}
+.admin-chat-textarea { resize: none; width: 100%; }
+.admin-chat-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.admin-chat-actions .btn-primary { margin-left: auto; }
+.admin-chat-closed-note {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+/* ========== 交易监控样式（2026-08-26 新增；2026-08-27 删统计卡片：与标签页功能重叠，列表页规范 = 标签页 + 筛选 + 表格） ========== */
+
+/* 标签页 */
+.admin-tabs {
+  display: flex;
+  gap: var(--space-2);
+  border-bottom: 1px solid var(--border-light);
+  margin-bottom: var(--space-4);
+}
+
+.admin-tab {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: none;
+  background: none;
+  font-size: var(--text-md);
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.2s;
+}
+
+.admin-tab:hover {
+  color: var(--text);
+  background: var(--bg-hover);
+}
+
+.admin-tab-badge {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.admin-tab-badge.warning {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* AML 标记 */
+.aml-flag-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  border: 1px solid;
+  margin-right: var(--space-1);
+  margin-bottom: 4px;
+}
+
+.aml-note {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.row-suspicious {
+  background: #fef2f2 !important;
+}
+
+.row-suspicious:hover {
+  background: var(--danger-light) !important;
+}
+
+/* ============================================================
+ * 交易监控页面（2026-08-26 新增）
+ * ============================================================ */
+
+/* 统计卡片图标颜色 */
+.stat-icon-primary { color: var(--primary); background: var(--primary-light); }
+.stat-icon-warning { color: var(--warning); background: var(--warning-light); }
+.stat-icon-danger { color: var(--danger); background: var(--danger-light); }
+.stat-icon-accent { color: var(--accent); background: var(--accent-light); }
+
+/* AML 标签徽章 */
+.aml-flag-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  border: 1px solid transparent;
+}
+
+.aml-flag-warning {
+  background: var(--warning-light);
+  color: var(--warning-text);
+  border-color: var(--warning-border);
+}
+
+.aml-flag-danger {
+  background: var(--danger-light);
+  color: var(--danger);
+  border-color: var(--danger-border);
+}
+
+.aml-flag-primary {
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary-border);
+}
+
+.aml-flag-compliance {
+  background: var(--compliance-light);
+  color: var(--compliance);
+  border-color: var(--compliance-border);
+}
+
+.aml-flag-default {
+  background: var(--bg);
+  color: var(--text-secondary);
+  border-color: var(--border);
+}
+
+/* 图表容器 */
+.admin-chart-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.admin-chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.admin-chart-card h3 {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: var(--space-4);
+}
+
+/* 柱状图 */
+.admin-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  height: 200px;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.admin-chart-bar-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+}
+
+.admin-chart-bar-wrapper {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.admin-chart-bar {
+  width: 60%;
+  max-width: 40px;
+  background: linear-gradient(180deg, var(--primary) 0%, var(--primary-hover) 100%);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  transition: height 0.3s ease;
+  min-height: 4px;
+}
+
+.admin-chart-bar:hover {
+  opacity: 0.8;
+}
+
+.admin-chart-label {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  margin-top: var(--space-2);
+}
+
+.admin-chart-value {
+  font-size: var(--text-xs);
+  color: var(--text);
+  font-weight: 500;
+}
+
+.admin-chart-legend {
+  text-align: center;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  margin-top: var(--space-2);
+}
+
+/* 分布图 */
+.admin-chart-distribution {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.admin-chart-dist-item {
+  display: grid;
+  grid-template-columns: 60px 1fr 100px;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.admin-chart-dist-label {
+  font-size: var(--text-sm);
+  color: var(--text);
+}
+
+.admin-chart-dist-bar-bg {
+  height: 20px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.admin-chart-dist-bar {
+  height: 100%;
+  background: var(--primary);
+  border-radius: var(--radius-sm);
+  transition: width 0.3s ease;
+}
+
+.admin-chart-dist-value {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+/* 响应式 */
+@media (max-width: 1024px) {
+  .admin-chart-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-tabs {
+    flex-wrap: wrap;
+  }
+
+  .admin-tab {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+/* ============================================================
+ * 交易监控页面样式（2026-08-27 重构：去卡片/加操作列/sheet→抽屉）
+ * 设计原则：宁少勿多，专业简约；结构对齐后台列表页规范
+ * ============================================================ */
+
+/* 页面头部右侧 */
+.admin-page-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+/* 筛选行（类型 + 时间 + 搜索，同一行） */
+.admin-filter-row {
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.admin-filter-types {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.admin-filter-right {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  margin-left: auto;
+}
+
+.admin-tx-range {
+  min-width: 120px;
+}
+
+/* 交易监控 6 列模板（独立于资金流水页的 --tx 5 列模板，勿合并）
+   列：单号/类型/金额/时间/关联/操作——操作列固定 56px 放单个图标按钮 */
+.admin-table--tx-monitor .admin-table-header,
+.admin-table--tx-monitor .admin-table-row {
+  grid-template-columns: minmax(150px, 15fr) 70px 120px minmax(140px, 14fr) minmax(160px, 16fr) 56px;
+  gap: 16px;
+}
+
+.admin-table--tx-monitor .col-date {
+  text-align: center;
+}
+
+.admin-table--tx-monitor .col-project {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-table--tx-monitor .col-actions {
+  gap: 8px;
+}
+
+.admin-table--tx-monitor .admin-table-row {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.admin-table--tx-monitor .admin-table-row:hover {
+  background: var(--bg-hover);
+}
+
+/* 处置状态标签（列表单号后） */
+.disposition-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  margin-left: 6px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 500;
+  vertical-align: middle;
+}
+
+.disposition-badge.status-pending {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.disposition-badge.status-reported {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.disposition-badge.status-excluded {
+  background: #e5e7eb;
+  color: #6b7280;
+}
+
+.disposition-badge.status-rejected {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* 抽屉内详情样式（admin-drawer-body 内） */
+.detail-section {
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.detail-section:last-child {
+  border-bottom: none;
+}
+
+.detail-section h4 {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* 状态/操作区：负 margin 撑满 drawer body 左右（body padding: space-5 space-6） */
+.detail-section--status {
+  background: var(--bg-secondary);
+  margin: 0 calc(-1 * var(--space-6));
+  padding: var(--space-4) var(--space-6);
+}
+
+.detail-section--action {
+  background: var(--bg);
+  margin: 0 calc(-1 * var(--space-6));
+  padding: var(--space-4) var(--space-6);
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: var(--space-2) 0;
+  gap: var(--space-4);
+}
+
+.detail-label {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.detail-value {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text);
+  text-align: right;
+}
+
+.detail-value--flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+/* 无审批权时的流转提示 */
+.detail-hint {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+/* 标记/审批表单 */
+.mark-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.mark-form textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.mark-form-actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}
+
+.approval-actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+/* 响应式适配 */
+@media (max-width: 1024px) {
+  .admin-filter-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-filter-right {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .admin-search-wrap {
+    flex: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-page-header-right {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+
+  .admin-filter-types {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    width: 100%;
+    padding-bottom: var(--space-2);
+  }
+
+  .admin-filter-btn {
+    flex-shrink: 0;
+  }
+}
+

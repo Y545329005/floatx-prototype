@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="300" viewBox="0 0 600 300">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#E8F5E9"/>
+      <stop offset="50%" style="stop-color:#C8E6C9"/>
+      <stop offset="100%" style="stop-color:#A5D6A7"/>
+    </linearGradient>
+    <linearGradient id="overlay" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#81C784;stop-opacity:0.3"/>
+      <stop offset="100%" style="stop-color:#66BB6A;stop-opacity:0"/>
+    </linearGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="600" height="300" fill="url(#bg)"/>
+  <rect width="600" height="300" fill="url(#overlay)"/>
+  <!-- Medical cross (subtle) -->
+  <g transform="translate(420,130)" opacity="0.15">
+    <rect x="-8" y="-30" width="16" height="60" rx="3" fill="#2E7D32"/>
+    <rect x="-30" y="-8" width="60" height="16" rx="3" fill="#2E7D32"/>
+  </g>
+  <g transform="translate(420,130)" opacity="0.08">
+    <rect x="-14" y="-50" width="28" height="100" rx="5" fill="#2E7D32"/>
+    <rect x="-50" y="-14" width="100" height="28" rx="5" fill="#2E7D32"/>
+  </g>
+  <!-- Heartbeat line -->
+  <g transform="translate(40,170)" opacity="0.2">
+    <polyline points="0,30 20,30 30,30 35,30 40,10 45,45 50,45 55,45 60,30 75,30 80,30 85,10 90,45 95,45 100,45 105,30 120,30 125,30 130,30"
+      fill="none" stroke="#D32F2F" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+  </g>
+  <!-- Second heartbeat -->
+  <g transform="translate(40,195)" opacity="0.1">
+    <polyline points="0,20 25,20 30,20 35,20 40,5 45,30 50,30 55,30 60,20 80,20 85,20 90,5 95,30 100,30 105,30 110,20 130,20"
+      fill="none" stroke="#D32F2F" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+  </g>
+  <!-- DNA helix variant -->
+  <g transform="translate(150,100)" opacity="0.06">
+    <path d="M0,0 C10,-10 20,-10 30,0 C40,10 50,10 60,0 C70,-10 80,-10 90,0 C100,10 110,10 120,0" fill="none" stroke="#2E7D32" stroke-width="2"/>
+    <path d="M0,5 C10,15 20,15 30,5 C40,-5 50,-5 60,5 C70,15 80,15 90,5 C100,-5 110,-5 120,5" fill="none" stroke="#2E7D32" stroke-width="2"/>
+  </g>
+  <!-- AI / neural dots -->
+  <g opacity="0.06" fill="#2E7D32">
+    <circle cx="60" cy="60" r="2"/><circle cx="120" cy="50" r="2"/><circle cx="180" cy="60" r="2"/>
+    <circle cx="240" cy="55" r="2"/><circle cx="300" cy="65" r="2"/>
+    <circle cx="100" cy="240" r="2"/><circle cx="200" cy="250" r="2"/>
+    <circle cx="300" cy="240" r="2"/><circle cx="400" cy="250" r="2"/>
+  </g>
+  <!-- Subtle shield -->
+  <g transform="translate(530,230)" opacity="0.08">
+    <path d="M0,-15 L12,-10 L12,5 C12,15 0,22 0,22 C0,22 -12,15 -12,5 L-12,-10 Z" fill="none" stroke="#2E7D32" stroke-width="1.5"/>
+  </g>
+  <!-- Top right dots pattern -->
+  <g opacity="0.05" fill="#2E7D32">
+    <circle cx="520" cy="30" r="1.5"/><circle cx="540" cy="25" r="1.5"/>
+    <circle cx="560" cy="30" r="1.5"/><circle cx="530" cy="45" r="1.5"/>
+    <circle cx="550" cy="40" r="1.5"/>
+  </g>
+</svg>

@@ -1,0 +1,945 @@
+// English dictionary — key is the Simplified Chinese source text
+export const en = {
+  // Bottom nav
+  '项目市场': 'Projects',
+  '路演活动': 'Events',
+  '我的资产': 'Assets',
+  '我的': 'Me',
+
+  // Common actions
+  '返回': 'Back',
+  '确认': 'Confirm',
+  '取消': 'Cancel',
+  '提交': 'Submit',
+  '查看全部': 'View all',
+  '立即申购': 'Subscribe now',
+  '充值': 'Deposit',
+  '提现': 'Withdraw',
+  '退出登录': 'Sign out',
+  '已提交': 'Submitted',
+
+  // Page titles
+  '钱包': 'Wallet',
+  '申购记录': 'Subscriptions',
+  '基金产品': 'Funds',
+  '我的持仓': 'Holdings',
+  '合规报告': 'Compliance Reports',
+  '消息通知': 'Notifications',
+  '账户设置': 'Account Settings',
+  '帮助中心': 'Help Center',
+  '关于': 'About',
+  '银行卡管理': 'Bank Accounts',
+  '换汇': 'Currency Exchange',
+  '申购热度': 'Subscription Demand',
+  '资产走势': 'Asset Trend',
+  '持仓概览': 'Holdings Overview',
+  '总资产（折合 HKD）': 'Total Assets (HKD eq.)',
+
+  // Status labels
+  '申购开放': 'Open for subscription',
+  '即将上线': 'Coming soon',
+  '分配完成': 'Allocated',
+  '已分配': 'Allocated',
+  '意向已提交': 'Intention submitted',
+  '已获配额': 'Quota allocated',
+  '已签 SPV': 'SPV signed',
+  '未获配额': 'No quota allocated',
+  'SPV 认购协议': 'SPV Subscription Agreement',
+
+  // Subscription eligibility (2026-08-17 · mandatory KYC + PI check)
+  '完成实名认证后再申购': 'Complete identity verification before subscribing',
+  'PI 认证审核中，暂不可申购': 'PI certification under review',
+  'PI 认证已过期，请重新认证': 'PI certification expired — please re-certify',
+  '完成专业投资者认证后再申购': 'Complete professional investor certification to subscribe',
+
+  // Project detail
+  '总部': 'HQ',
+  '融资阶段': 'Funding Round',
+  '上市计划': 'IPO Plan',
+  '意向收集截止': 'Intention Deadline',
+  '本轮情况': 'This Round',
+  '项目亮点': 'Highlights',
+  '项目简介': 'Overview',
+  '财务概览': 'Financials',
+  '营收': 'Revenue',
+  '月净烧钱': 'Monthly Burn',
+  '毛利率': 'Gross Margin',
+  '核心团队': 'Team',
+  '相关路演': 'Related Events',
+  '尽调材料': 'Due Diligence',
+  '有疑问？联系您的专属顾问': 'Questions? Contact your advisor',
+  '已提交申购意向': 'Intention submitted',
+  '本轮份额已分配完毕': 'This round is fully allocated',
+  '提交申购意向': 'Submit intention',
+  '重新提交申购意向': 'Resubmit intention',
+  '我的意向提交次序': 'My queue position',
+  '当前排位': 'Position',
+  '投资人': 'Investor',
+  '提交时间': 'Submitted',
+
+  // Events
+  '参与方式': 'Participation',
+  '线上会议': 'Online meeting',
+  '报名参加': 'Register',
+  '已报名': 'Registered',
+  '取消报名': 'Cancel registration',
+  '活动看点': 'Highlights',
+  '主讲人': 'Speaker',
+  '报名': 'Register',
+
+  // Assets
+  '可用资金': 'Available',
+  '持仓市值': 'Holdings Value',
+  '冻结资金': 'Frozen',
+  '本月净入金': 'Net Inflow (This Month)',
+  '估值变动（按最新轮）': 'Valuation Change (Latest Round)',
+  '交易记录': 'Transactions',
+  '全部时间': 'All time',
+  '近 7 天': 'Last 7 days',
+  '近 30 天': 'Last 30 days',
+  '近 90 天': 'Last 90 days',
+  '加载更多': 'Load more',
+  '暂无交易记录': 'No transactions yet',
+  '共 {} 条': '{} items',
+  '币种余额': 'Currency Balances',
+  '基金': 'Funds',
+
+  // Me
+  '专属客户经理': 'Account Manager',
+  '联系专属经理': 'Contact manager',
+  '您的专属顾问': 'Your Account Manager',
+  '个人信息': 'Personal Info',
+  'PI 认证': 'PI Certification',
+  '登录安全': 'Security',
+  '双重验证 (2FA)': 'Two-Factor Auth (2FA)',
+  '修改登录密码': 'Change Password',
+  '最近登录': 'Last Login',
+  '常见问题': 'FAQ',
+  '联系客服': 'Contact Support',
+  '服务热线': 'Hotline',
+
+  // FAQ (Help page)
+  '申购意向提交后需要做什么？': 'What should I do after submitting a subscription intent?',
+  '意向提交后，平台会记录您的意向次序并作为协调额度的参考。后续是否获配、签署 SPV 等由平台与项目方协调后线下联系您，期间无需额外操作。': 'After submitting your intent, the platform will record your order of preference as a reference for allocation. Whether you receive an allocation and the signing of SPV will be coordinated offline by the platform and the project team, who will contact you directly. No additional action is required from you during this period.',
+  '意向会冻结资金吗？': 'Will the intent freeze my funds?',
+  '不会。申购意向仅为兴趣表达，不冻结任何资金。实际出资发生在与项目方协商并签署 SPV 文件之后。': 'No. A subscription intent is simply an expression of interest and does not freeze any funds. Actual capital contribution occurs only after negotiation with the project team and signing of the SPV document.',
+  '「未获配额」是什么意思？': 'What does "unallocated" mean?',
+  '本轮份额有限，您本轮未获得分配额度。项目若仍开放，可关注后续轮次并重新提交意向。': 'This round had limited availability and you did not receive an allocation. If the project remains open, you may watch for subsequent rounds and resubmit your intent.',
+  '如何联系我的专属客户经理？': 'How do I contact my dedicated account manager?',
+  '在「我的」页面点击客户经理卡片即可查看其联系方式，包括电话、邮箱与 WhatsApp。经理未响应时可转在线客服。': 'Click on your dedicated account manager card in the "My" section to view their contact information, including phone, email and WhatsApp. If your manager does not respond, you may escalate to online customer service.',
+  '合规报告在哪里查看？': 'Where can I find compliance reports?',
+  '在「我的」页面进入「合规报告」，可查看月度资产报告、季度投资组合报告及合规披露文件。': 'Access the "Compliance Reports" section in the "My" page to view monthly asset reports, quarterly investment portfolio reports and compliance disclosure documents.',
+  '如何保证我的信息与资金安全？': 'How is my information and funds security guaranteed?',
+  '平台采用金融级数据加密，账户已开启双重验证（2FA），资金托管于持牌托管机构，交易全程合规留痕。': 'The platform uses financial-grade data encryption, your account has two-factor authentication (2FA) enabled, funds are custodied with licensed custodians, and all transactions leave a full compliance audit trail.',
+
+  // Wallet
+  '可用资金（HKD）': 'Available (HKD)',
+  '冻结': 'Frozen',
+  '到账账户': 'Account',
+  '金额': 'Amount',
+  '币种': 'Currency',
+  '确认入金': 'Confirm Deposit',
+  '确认提现': 'Confirm Withdrawal',
+  '可用余额不足': 'Insufficient balance',
+  '请输入有效金额': 'Enter a valid amount',
+
+  // Subscription
+  '意向收集': 'Intention',
+  '申购意向即将开放': 'Subscription opening soon',
+
+  // Funds
+  '基金申购即将开放，敬请期待': 'Fund subscription will open soon',
+  '基金产品为长远规划，首期暂不开放申购': 'Fund products are part of the long-term roadmap; subscription will not open in the initial phase',
+  '年化收益': 'Annual Return',
+  '期限': 'Term',
+  '起投': 'Min. Investment',
+
+  // Reports / About
+  '报告预览即将开放': 'Report preview coming soon',
+  '下载功能即将开放': 'Download coming soon',
+  '文档预览即将开放': 'Document preview coming soon',
+  '公司政策文件': 'Company Policies',
+  '隐私政策': 'Privacy Policy',
+  '用户协议': 'User Agreement',
+  '风险披露声明': 'Risk Disclosure',
+  '公司简介': 'Company Profile',
+  '牌照及监管信息': 'License & Regulatory Info',
+
+  // Sectors (business data)
+  '量子计算': 'Quantum Computing',
+  '生物医药': 'Biotech',
+  '机器人': 'Robotics',
+  '新能源': 'New Energy',
+  '金融科技': 'Fintech',
+  '健康科技': 'Health Tech',
+
+  // Rounds
+  'B轮': 'Series B',
+  'C轮': 'Series C',
+  'C+轮': 'Series C+',
+  'Pre-IPO轮': 'Pre-IPO',
+
+  // Login
+  '登录': 'Sign In',
+  '邮箱': 'Email',
+  '密码': 'Password',
+  '请输入密码': 'Enter your password',
+  '登录中...': 'Signing in...',
+  '忘记密码？': 'Forgot password?',
+
+  // Settings
+  '语言设置': 'Language',
+  '姓名': 'Name',
+  '手机': 'Phone',
+  '已认证': 'Certified',
+  '有效': 'Valid',
+  '认证编号': 'Certification No.',
+  '有效期至': 'Valid until',
+  '已开启': 'Enabled',
+  '未开启': 'Disabled',
+
+  // Wallet extras
+  '申购': 'Subscribe',
+  '退出': 'Exit',
+  '分红': 'Dividend',
+  '累计分红': 'Total dividends',
+  '充值入金': 'Deposit Funds',
+  '提现出金': 'Withdraw Funds',
+  '当前可用': 'Available',
+  '入金后即时到账': 'credited instantly',
+  '请输入金额': 'Enter amount',
+  '余额增值': 'Grow Your Balance',
+  '您有': 'You have',
+  '年化': 'APR',
+  '入金失败，请重试': 'Deposit failed, please retry',
+
+  // Profile extras
+  '资产报告 · 合规披露': 'Asset reports · Compliance',
+  '申购 · 路演 · 资金动态': 'Subscriptions · Events · Funding',
+  '个人信息 · 认证 · 安全': 'Personal · Certification · Security',
+  '常见问题 · 客服支持': 'FAQ · Support',
+  '公司信息 · 政策文件': 'Company · Policies',
+  'PI 认证投资者': 'PI Certified Investor',
+
+  // Help Center
+  '需要人工帮助？': 'Need a human?',
+  '在线客服服务时间 09:00 – 21:00': 'Live chat available 09:00 – 21:00',
+  '服务热线 400-888-0000': 'Hotline 400-888-0000',
+
+  // Compliance Reports
+  '根据香港证监会（SFC）相关规定，持牌机构需定期向专业投资者提供资产报告及合规披露文件。': 'Under SFC regulations, licensed institutions must periodically provide asset reports and compliance disclosures to professional investors.',
+
+  // Bank Cards
+  '用于充值入金与提现出金的收款账户，账户信息仅用于资金往来登记。': 'Receiving account for deposits and withdrawals; details used only for fund transfer records.',
+  '暂无绑定银行卡': 'No linked bank account',
+  '添加银行卡': 'Add Bank Account',
+  '解绑银行卡': 'Unlink Bank Account',
+  '演示阶段：支持选择银行与币种，真实绑卡将通过银行验证。': 'Demo stage: pick a bank and currency; real card linking will pass bank verification.',
+  '银行': 'Bank',
+  '账户币种': 'Account Currency',
+  '银行卡号': 'Card Number',
+  '请输入银行卡号': 'Enter card number',
+  '提交验证': 'Verify & Submit',
+  '确认解绑': 'Unlink',
+  '解绑后该账户将无法用于资金往来': 'After unlinking, this account can no longer be used for fund transfers.',
+
+  // Notifications
+  '全部已读': 'Mark all read',
+  '暂无相关通知': 'No notifications here',
+  '全部': 'All',
+  '活动': 'Events',
+  '资金': 'Funding',
+  '服务': 'Service',
+
+  // Asset domain additions
+  '共': 'Total',
+  '项持仓': 'holdings',
+  '暂无持仓': 'No holdings',
+  '持仓份额': 'Shares',
+  '持有份额': 'Units held',
+  '份': 'units',
+  '持有标的': 'Holding vehicle',
+  '该 SPV 持有目标公司股份，本持仓为投资者持有的 SPV 份额。': 'This SPV holds shares of the target company; this holding represents the SPV units held by the investor.',
+  '成本价': 'Cost Basis',
+  '当前估值': 'Current Value',
+  '最近更新': 'Latest update',
+  '申请退出': 'Request Exit',
+  '确认退出': 'Exit',
+  '的全部份额？': ' all shares?',
+  '将回到可用余额。': 'will return to your available balance.',
+  '确认申请退出': 'Confirm Exit Request',
+  '退出需经平台审批，最终成交价格以实际退出日为准。预计 5-10 个工作日完成。': 'Exit is subject to platform approval. The final price is based on the actual exit date. Estimated 5-10 business days.',
+  '暂无申购记录': 'No subscription records',
+  '获得份额': 'Shares Allocated',
+  '查看项目详情': 'View Project Details',
+  '资金闲置期间的选择，低门槛灵活配置': 'A choice for idle funds — low barrier, flexible allocation',
+  '可申购': 'Open',
+  '换汇已提交': 'Exchange Submitted',
+  '换汇申请已提交': 'Exchange request submitted',
+  '预计1-2个工作日到账': 'Estimated 1-2 business days',
+  '选择币种对': 'Select Currency Pair',
+  '卖出': 'Sell',
+  '买入': 'Buy',
+  '输入金额': 'Enter amount',
+  '可用余额': 'Available balance',
+  '汇率': 'Exchange rate',
+  '提交换汇': 'Submit Exchange',
+  '资产趋势': 'Trend',
+  '近3月': '3M',
+  '近6月': '6M',
+  '今年': 'This Year',
+  '区间末值': 'Period end',
+
+  // Content domain additions (Projects)
+  '搜索': 'Search',
+  '进行中': 'Ongoing',
+  '已结束': 'Ended',
+  '暂无进行中的项目': 'No ongoing projects',
+  '暂无已结束的项目': 'No ended projects',
+  '到底了': 'End of list',
+  '已申购': 'Subscribed',
+
+  // Content domain additions (Project detail)
+  '项目未找到': 'Project not found',
+  '我的申购': 'My Subscription',
+  '本轮分配完成': 'Allocation date',
+  '意向开放时间': 'Intention opens',
+  '待项目方确认': 'TBD by project',
+  '以平台沟通为准': 'Subject to platform coordination',
+  '本轮共 {} 位投资人参与': '{} investors participated this round',
+  '{} 位投资人已提交意向': '{} investors submitted intention',
+  '提交于 {}': 'Submitted at {}',
+  '第 {} 位': 'Rank #{}',
+  '我': 'Me',
+  '查看全部 {} 位提交': 'View all {} submissions',
+  '尚未产生收入': 'No revenue yet',
+  '关于本项目的任何疑问，可直接联系您的客户经理': 'For any questions about this project, please contact your account manager directly',
+  '状态': 'Status',
+  '您之前 {} 位（共 {} 位）': '{} ahead of you ({} total)',
+  '我的当前位次': 'My current position',
+  '共 {} 位投资人 · 您之前 {} 位': '{} investors · {} ahead of you',
+  '本轮共 {} 位投资人参与，您的提交记录已登记。': '{} investors participated this round; your submission has been recorded.',
+  '已提交意向': 'Intention submitted',
+  '{} 位投资人': '{} investors',
+  '份额有限 · 先提交先协调': 'Limited shares · First come, first served',
+  '本项目份额有限，将按意向提交的先后次序作为协调额度的参考，最终以平台与项目方协调结果为准。': 'Shares are limited. Submission order serves as a reference for quota coordination; final allocation is subject to platform and project coordination.',
+  '本轮份额已分配完毕，以下为本轮意向提交记录。': 'This round is fully allocated. Below are this round\'s intention records.',
+  '位次': 'Rank',
+  '列表仅展示脱敏信息，投资人身份信息已加密保护': 'The list shows anonymized info only; investor identities are encrypted',
+  '上一轮未获配额，新一轮已开放，可再次提交': 'No quota last round. A new round is open; you may submit again',
+  '提交后即可查看您的位次': 'Submit to see your rank',
+
+  // Content domain additions (Events)
+  '即将开始': 'Upcoming',
+  '往期回顾': 'Past',
+  '{} 人报名': '{} registered',
+  '{}/{} 人报名': '{}/{} registered',
+  '暂无即将开始的路演': 'No upcoming events',
+  '暂无往期回顾': 'No past events',
+  '活动未找到': 'Event not found',
+  '线上路演': 'Online roadshow',
+  '线下活动': 'In-person event',
+  '{} 人': '{} people',
+  '地点': 'Location',
+  '已报 {}/{} 人': '{}/{} registered',
+  '名额已满': 'Full',
+  '余 {} 位': '{} seats left',
+  '活动介绍': 'About this event',
+  '活动议程': 'Agenda',
+  '关于 {}': 'About {}',
+  '估值': 'Valuation',
+  '活动已结束': 'Event ended',
+  '已报名 · 席位已确认': 'Registered · seat confirmed',
+  '复制会议链接': 'Copy meeting link',
+  '入场凭证码': 'Check-in code',
+  '活动现场请出示凭证码并凭报名手机号签到': 'Present your check-in code and register with your sign-up phone number on site',
+  '报名信息': 'Registration',
+  '我同意接收活动通知及会议链接': 'I agree to receive event notifications and the meeting link',
+  '确认报名': 'Confirm registration',
+  '报名成功，届时请准时参加': 'Registration successful. Please attend on time',
+  '已取消报名': 'Registration cancelled',
+  '会议链接已复制，活动前 24 小时亦会短信提醒': 'Meeting link copied. You will also receive an SMS reminder 24 hours before the event',
+  '复制失败，请长按链接手动复制': 'Copy failed. Please long-press the link to copy it manually',
+
+  // Content domain additions (Search)
+  '搜索项目或路演名称...': 'Search projects or events...',
+  '行业': 'Industry',
+  '医疗健康': 'Health Tech',
+  '项目结果': 'Project Results',
+  '路演结果': 'Event Results',
+  '输入关键词搜索项目或路演': 'Enter keywords to search projects or events',
+  '选择行业筛选': 'Or select an industry filter',
+  '未找到匹配的项目或路演': 'No matching projects or events',
+  '未找到匹配的项目': 'No matching projects',
+  '清除搜索': 'Clear search',
+  '清除筛选': 'Clear filters',
+  '猜你想搜': 'You may be looking for',
+  '推荐行业': 'Recommended industries',
+
+  // Business partnerships (public-facing entry, visible to visitors)
+  '洽谈合作': 'Partnership Inquiries',
+  '机构 · 项目 · 服务合作': 'Institution · Project · Service',
+  '联系合作': 'Contact Us',
+  '商务邮箱': 'Business Email',
+  '商务电话': 'Business Phone',
+  '商务 WhatsApp': 'Business WhatsApp',
+  '如有意向将项目提交至本平台路演、寻求机构合作或其他业务合作，请通过以下方式联系我们。': 'If you would like to submit a project for our roadshow, seek institutional collaboration, or explore other business partnerships, please reach out through the channels below.',
+  '邮箱已复制': 'Email copied',
+  '电话号码已复制': 'Phone number copied',
+
+  // ===== 2026-08-07 Design system audit: component i18n coverage =====
+
+  // SubscribeSheet intent submission sheet
+  '本意向仅为兴趣表达，不构成法律约束力的投资承诺；正式认购时另行安排': 'This intent is an expression of interest only and does not constitute a legally binding investment commitment; the actual subscription will be arranged separately.',
+  '您确认本人为香港《证券及期货条例》定义的专业投资者': 'You confirm that you are a Professional Investor as defined under the Hong Kong Securities and Futures Ordinance.',
+  '我已阅读并确认以上事项': 'I have read and confirm the above',
+  '确认提交': 'Confirm Submission',
+
+  // AccountManager dedicated relationship manager
+  '关于投资事宜的任何疑问，可直接联系您的客户经理': 'For any questions about your investments, please contact your relationship manager directly.',
+  '对接人未响应？转在线客服': 'Advisor not responding? Switch to live chat',
+  '全程为您服务': 'At your service',
+
+  // SubscriptionMilestone progress steps
+  '本轮份额稀缺，未获配额，可关注后续轮次': 'This round of allocations is full; please follow future rounds',
+
+  // Notifications category tabs
+
+  // Support live chat
+  '在线客服': 'Live Chat',
+  '您的专属客户经理暂时未能及时响应，在线客服已接入为您跟进': 'Your relationship manager is temporarily unavailable. Live chat has been engaged to follow up on your behalf.',
+  '请输入您的问题…': 'Please enter your question…',
+  '您好，我是平台在线客服，已收到您的问题，并已为您转达相关团队跟进。': 'Hello, I am the platform live chat assistant. I have received your question and forwarded it to the relevant team for follow-up.',
+  '收到。涉及额度与 SPV 签署安排的事项，我们会与您的专属客户经理同步，有结果第一时间通知您。': 'Got it. For matters involving allocation and SPV signing, we will coordinate with your relationship manager and notify you as soon as there is progress.',
+  '如情况紧急，您也可以直接拨打客服热线 400-888-0000，或稍后在「消息通知」中查看跟进进度。': 'If urgent, you can also call our hotline at 400-888-0000, or check follow-up progress later in Notifications.',
+  '您好，我是平台在线客服。您的专属客户经理暂时未能及时响应，我将为您跟进。请问有什么可以帮您？': 'Hello, I am the platform live chat assistant. Your relationship manager is temporarily unavailable, and I will follow up on your behalf. How can I help you?',
+
+  // BankCards add bank card sheet
+
+  // Funds funds page
+
+  // Reports reports page
+
+  // Holdings holdings page
+
+  // Subscription related
+
+  // AssetOverview net asset card
+  '共 {} 项持仓': '{} holdings in total',
+
+  // AssetTrend
+
+  // Exchange currency exchange
+
+  // BankCards placeholders
+
+  // Common
+  '分钟': 'min',
+  '秒': 'sec',
+  '今日': 'Today',
+
+  // ProjectDetail sections
+
+  // Settings
+  '专业投资者': 'Professional Investor',
+
+  // Help center
+
+  // Notifications
+  '客服跟进中': 'Support following up',
+
+  // Notification types
+
+  // Profile manager
+  '联系专属顾问': 'Contact Advisor',
+
+  // Toast common
+
+  // Notifications body
+  '申购意向已登记': 'Subscription intent registered',
+  '您已成功提交 {} 申购意向，平台将与项目方协调额度。': 'Your subscription intent for {} has been submitted. We will coordinate allocation with the project team.',
+
+  // ===== 2026-08-07 2nd-round leak fix: AuthPages + ErrorBoundary + misc =====
+
+  // Error messages (shared by LoginPage / RegisterPage / ForgotPasswordPage / ResetPasswordPage)
+  '请输入有效的邮箱或手机号': 'Enter a valid email or phone number',
+  '密码至少需要 6 个字符': 'Password must be at least 6 characters',
+  '两次输入的密码不一致': 'The two passwords do not match',
+  '请输入姓名': 'Please enter your name',
+  '请输入新密码': 'Please enter a new password',
+  '请设置新密码': 'Set a new password',
+  '请设置密码': 'Set your password',
+  '至少 8 位，含字母和数字': 'At least 8 characters, letters & numbers',
+  '请再次输入新密码': 'Please re-enter the new password',
+
+  // Login / register flow
+  '登录成功': 'Logged in',
+  '邮箱或密码错误，请重试': 'Incorrect email or password. Please try again.',
+  '注册成功': 'Registered',
+  '还没有账号？': "Don't have an account?",
+  '立即注册': 'Sign up now',
+  '已有账号？': 'Already have an account?',
+  '立即登录': 'Log in now',
+  '返回登录': 'Back to login',
+  '注册中...': 'Signing up...',
+  '重置中...': 'Resetting...',
+  '发送中...': 'Sending...',
+
+  // Register page
+  '注册': 'Sign Up',
+  '创建您的财富账号': 'Create your wealth account',
+  '请再次输入密码': 'Please re-enter the password',
+  '我已阅读并同意': 'I have read and agree to the',
+  '服务条款': 'Terms of Service',
+
+  // Forgot password (email / phone)
+  '验证信息已发送': 'Verification sent',
+  '我们已向 {} 发送验证信息': 'We have sent verification to {}',
+  '验证信息已发送，请查收': 'Verification sent. Please check.',
+  '忘记密码': 'Forgot password',
+  '输入您的邮箱或手机号，我们将发送验证信息': 'Enter your email or phone and we will send verification',
+  '发送重置链接': 'Send reset link',
+  '邮箱 / 手机号': 'Email / Phone',
+  '请输入邮箱或手机号': 'Enter email or phone number',
+
+  // Reset password
+  '密码重置成功，请重新登录': 'Password reset successful. Please log in again.',
+  '重置密码': 'Reset password',
+  '请输入您的新密码': 'Please enter your new password',
+  '确认新密码': 'Confirm new password',
+
+  // ErrorBoundary
+  '页面遇到了意外错误': 'An unexpected error occurred',
+  '请刷新页面重试。': 'Please refresh the page and try again.',
+  '刷新页面': 'Refresh page',
+
+  // Misc (dates / unit / fallback)
+  '专业投资者': 'Professional Investor',
+
+  // AuthPages remaining keys
+  '确认密码': 'Confirm Password',
+  '和': 'and',
+
+  // ===== 2026-08-07 Auth pages brand-immersive redesign: brand hero + welcome + footer =====
+  '登录您的财富账户': 'Sign in to your Wealth Account',
+  '选择语言': 'Select language',
+  '一级私募股权 · 稀缺份额分配制': 'Private Equity · Scarce Allocation',
+  '香港证监会持牌机构': 'SFC licensed institution',
+  '记住账号': 'Remember account',
+  '密码至少需要 8 个字符': 'Password must be at least 8 characters',
+  '密码需同时包含字母和数字': 'Password must contain both letters and numbers',
+  '请先阅读并同意服务条款': 'Please read and agree to the Terms of Service',
+  '本平台由香港证监会持牌机构运营，仅面向专业投资者': 'Operated by an SFC-licensed institution, available to professional investors only',
+
+  // Date units (single-character keys for inline use)
+  '月': '/',
+  '日': '/',
+
+  // ===== 2026-08-07 Funding Loop Round 3: Amount Presets + Allocation Rule + History + Countdown =====
+
+  // Amount preset form
+  '意向金额（HKD）': 'Intent Amount (HKD)',
+  '意向金额': 'Intent amount',
+  '自定义': 'Custom',
+  '万': 'K',
+  '请选择或填写有效金额': 'Please select or enter a valid amount',
+
+  // Compliance (funding loop)
+  '意向金额非合同承诺，最终以 SPV 文件为准': 'Intent amount is non-binding; final terms per SPV',
+  '获配额后意向金额将被冻结（不扣款），请在 24 小时内签署 SPV 确认出资，逾期未签署将自动顺延': 'Upon allocation, your intended amount will be frozen (not deducted). Please sign the SPV within 24 hours to confirm your investment; failure to sign will trigger auto-deferral.',
+  '冻结 = 锁定意向金额（不扣款），签署 SPV 时实际出资；逾期未签署将自动顺延': 'Frozen = intended amount locked (not deducted); actual payment happens upon SPV signing. Unsign by deadline will auto-defer.',
+  '签署 SPV 协议': 'Sign SPV Agreement',
+  '签署将在第三方电子签署平台（DocuSign / Adobe Sign 类）完成，您将收到签署邀请。': 'Signing will be completed on a third-party e-signature platform (e.g. DocuSign / Adobe Sign); you will receive a signing invitation.',
+  '签署对象': 'Signing subject',
+  '收到邀请': 'Invite',
+  '平台签署': 'Sign',
+  '扣款持仓': 'Deduct & Hold',
+  '前往签署平台': 'Go to Signing Platform',
+
+  // Frozen / countdown
+  '已冻结': 'Frozen',
+  '宽限期已过': 'Grace period expired',
+  '演示：重置冻结宽限期倒计时': 'Demo: Reset freeze grace countdown',
+  '小时': 'h',
+  '分': 'm',
+  '秒': 's',
+
+  // Status (CTA)
+  '已获配额 · 等待签署 SPV': 'Allocated · Awaiting SPV signing',
+  '已签 SPV · 查看持仓': 'SPV signed · View holdings',
+
+  // Operation history
+  '操作历史 · {} 条': 'History · {} entries',
+  '提交意向': 'Submitted',
+  '资金冻结': 'Funds frozen',
+  '资金释放': 'Funds released',
+  '签署 SPV': 'SPV signed',
+  '扣款结算': 'Settled',
+  '本人': 'You',
+  '平台': 'Platform',
+  '系统': 'System',
+
+  // ===== 2026-08-07 Page Restructure: CTA Dual State + MySubscription Page =====
+
+  // CTA status (project detail sticky bottom)
+  '已签 SPV': 'SPV signed',
+  '已获配额': 'Allocated',
+  '已提交意向': 'Intent submitted',
+  '本轮未获配额': 'No allocation this round',
+  '项目仍开放，可重新提交意向': 'Project is still open, you may resubmit intent',
+  '意向金额': 'Intent amount',
+  '获得份额': 'Units received',
+  '已冻结 · 等待签署 SPV': 'Frozen · Awaiting SPV signing',
+  '等待线下协调额度': 'Awaiting offline allocation',
+  '重新提交意向': 'Resubmit intent',
+  '查看持仓 ›': 'View holdings ›',
+  '查看我的申购 ›': 'View my subscription ›',
+
+  // MySubscription page
+  '我的申购': 'My Subscription',
+  '未找到该申购记录': 'Subscription not found',
+  '本项目情况': 'This project',
+  '查看项目': 'View project',
+  '查看项目详情': 'View project details',
+
+  // ProjectHeat restructured (rank card removed + top link)
+  '查看我的申购进度 ›': 'View my subscription progress ›',
+  '本轮份额已分配完毕': 'This round has been fully allocated',
+  '份额有限 · 先提交先协调': 'Limited units · submit early for allocation',
+
+  // ===== Profile PI entry =====
+  '成为专业投资者': 'Become a Professional Investor',
+  '解锁优先认购权，享稀缺份额优先配置': 'Unlock priority subscription rights and preferred allocation',
+
+  // ===== 2026-08-10 KYC 3-page optimization + PI qualification =====
+  // Step 1 - Basic Info + PI Declaration
+  '请准备以下材料': 'Please prepare the following documents',
+  '专业投资者认证': 'Professional Investor Verification',
+  '预计完成时间：5-10 分钟': 'Estimated time: 5-10 minutes',
+  '预计完成时间：1-2 分钟': 'Estimated time: 1-2 minutes',
+  '身份证件': 'ID Document',
+  '地址证明': 'Address Proof',
+  '手机号码': 'Phone Number',
+  '资产证明': 'Asset Proof',
+  '专业投资者资格声明': 'Professional Investor Declaration',
+  '根据香港证监会规定，专业投资者需满足以下条件之一：': 'Under SFC regulations, Professional Investors must meet one of the following:',
+  '资格类型': 'Qualification Type',
+  '资产达标': 'Asset Threshold',
+  '持有 HK$800 万以上投资组合': 'Holding investment portfolio of HK$8,000,000+',
+  '专业投资者': 'Professional Investor',
+  '持牌人士或注册机构': 'Licensed person or registered entity',
+  '资产证明文件': 'Asset Proof Document',
+  '点击上传资产证明': 'Upload asset proof',
+  '银行月结单或投资组合账单（不超过 10MB）': 'Bank statement or portfolio statement (max 10MB)',
+  '我确认上述信息真实有效，并同意签署专业投资者声明': 'I confirm the above information is true and agree to sign the Professional Investor Declaration',
+  '《证券及期货条例》附表1定义的专业投资者，您需持有至少 HK$8,000,000 的投资组合或为持牌人士': 'As defined in Part 1 of Schedule 1 to the SFO, you must hold a portfolio of at least HK$8,000,000 or be a licensed person',
+  '基本信息': 'Basic Information',
+  '请确保姓名与证件上的信息一致': 'Please ensure your name matches your ID document',
+  '英文姓名（与证件一致）': 'English Name (as on ID)',
+  '例如：CHAN Tai Man': 'e.g. CHAN Tai Man',
+  '中文姓名': 'Chinese Name',
+  '可选': 'Optional',
+  '性别': 'Gender',
+  '男': 'Male',
+  '女': 'Female',
+  '国籍': 'Nationality',
+  '请选择国籍': 'Select nationality',
+  'Hong Kong SAR': 'Hong Kong SAR',
+  'China mainland': 'China mainland',
+  'Macau SAR': 'Macau SAR',
+  'Taiwan': 'Taiwan',
+  'United Kingdom': 'United Kingdom',
+  'United States': 'United States',
+  'Singapore': 'Singapore',
+  'Other': 'Other',
+  // 国籍选项（English name as key，value=简体）
+  'Hong Kong SAR': '香港特别行政区',
+  'China mainland': '中国内地',
+  'Macau SAR': '澳门特别行政区',
+  'Taiwan': '台湾',
+  'United Kingdom': '英国',
+  'United States': '美国',
+  'Singapore': '新加坡',
+  '出生日期': 'Date of Birth',
+  // KYC 进度条步骤名
+  '基本信息': 'Basic Info',
+  '身份验证': 'ID Verification',
+  '地址证明': 'Address Proof',
+  '提交认证': 'Submit',
+  '下一步：上传证件': 'Next: Upload Documents',
+  '请输入英文姓名': 'Please enter your English name',
+  '请选择性别': 'Please select gender',
+  '请选择专业投资者资格类型': 'Please select your PI qualification type',
+  '请上传资产证明文件': 'Please upload asset proof document',
+  '请阅读并同意签署专业投资者声明': 'Please read and agree to sign the PI Declaration',
+
+  // Step 2 - Document Upload
+  '上传证件': 'Upload Documents',
+  '证件类型': 'Document Type',
+  '香港身份证': 'Hong Kong ID',
+  '护照': 'Passport',
+  '内地通行证': 'Mainland Travel Permit',
+  '香港身份证正面': 'Hong Kong ID (Front)',
+  '护照封面': 'Passport Cover',
+  '通行证正面': 'Permit Front',
+  '点击上传证件正面': 'Upload front of document',
+  '支持 JPG、PNG，不超过 10MB': 'JPG/PNG, max 10MB',
+  '香港身份证背面': 'Hong Kong ID (Back)',
+  '通行证背面': 'Permit Back',
+  '点击上传证件背面': 'Upload back of document',
+  '请确保证件照片清晰可辨，边角完整无遮挡': 'Please ensure the document is clear, with full corners visible',
+  '证明类型': 'Proof Type',
+  '水电费账单': 'Utility Bill',
+  '银行月结单': 'Bank Statement',
+  '政府文件': 'Government Document',
+  '上传地址证明': 'Upload Address Proof',
+  '点击上传地址证明': 'Upload address proof',
+  '支持 JPG、PNG、PDF，不超过 10MB': 'JPG/PNG/PDF, max 10MB',
+  '请上传证件正面': 'Please upload front of document',
+  '请上传证件背面': 'Please upload back of document',
+  '请上传地址证明': 'Please upload address proof',
+  '文件须显示姓名及地址，且发出日期在三个月内': 'Document must show name and address, issued within 3 months',
+
+  // Bind Phone (account security feature, separated from KYC)
+  '绑定手机': 'Bind Phone',
+  '已验证': 'Verified',
+  '未验证': 'Not Verified',
+  '更换手机号': 'Change Phone',
+  '取消更换': 'Cancel Change',
+  '手机号换绑成功': 'Phone rebind successful',
+  '手机号绑定成功': 'Phone bound successfully',
+  '当前已绑定手机号，可点击下方按钮更换新手机号。': 'Your phone is currently bound. Click the button below to change to a new phone number.',
+  '请输入您的新香港手机号码，我们将发送验证码短信。': 'Please enter your new Hong Kong phone number. We will send a verification code via SMS.',
+
+  // Change Email
+  '更换邮箱': 'Change Email',
+  '邮箱换绑成功': 'Email rebind successful',
+  '当前已绑定邮箱，点击下方按钮更换为新邮箱。': 'Your email is currently bound. Click the button below to change to a new email.',
+  '请输入您的新邮箱地址，我们将发送验证码邮件。': 'Please enter your new email address. We will send a verification code via email.',
+  '新邮箱地址': 'New Email Address',
+  '例如：name@example.com': 'e.g. name@example.com',
+  '发送验证码': 'Send Code',
+  '确认更换': 'Confirm Change',
+  '请输入有效的邮箱地址': 'Please enter a valid email address',
+  '新邮箱不能与当前邮箱相同': 'New email must be different from current email',
+  '请验证您本人名下的香港手机号码，我们将发送验证码短信': 'Please verify your Hong Kong mobile number, we will send an SMS code',
+  '香港手机号码': 'Hong Kong Mobile Number',
+  '例如：51234567': 'e.g. 51234567',
+  '获取验证码': 'Get Code',
+  '验证码': 'Verification Code',
+  '请输入6位验证码': 'Enter 6-digit code',
+  '验证码将在 5 分钟内有效': 'Code valid for 5 minutes',
+  '演示模式：验证码为 123456（控制台输出）': 'Demo mode: code is 123456 (output to console)',
+  '验证手机号': 'Verify Phone Number',
+  '请输入有效的香港手机号码': 'Please enter a valid HK mobile number',
+  '验证码错误，请重试': 'Incorrect code, please try again',
+  '手机号绑定成功': 'Phone bound successfully',
+
+  // Submit Verification (button label)
+  '提交认证': 'Submit Verification',
+
+  // Submission Success
+  '认证完成': 'Verification Complete',
+  '认证资料已提交': 'Documents Submitted',
+  '您的专业投资者认证资料已成功提交，我们将在 1-3 个工作日内完成审核。': 'Your PI verification documents have been submitted. We will complete review within 1-3 business days.',
+  '审核结果将通过短信及站内通知发送，请保持手机畅通。': 'You will receive the result via SMS and in-app notification. Please keep your phone accessible.',
+  '审核周期': 'Review Timeline',
+  '一般情况下审核将在 1-3 个工作日内完成。如需补充材料，我们的客服团队将提前与您联系。': 'Review typically completes within 1-3 business days. Our team will contact you if additional documents are needed.',
+  '如有疑问，请联系您的专属客户经理或拨打客服热线': 'Questions? Contact your dedicated account manager or our support hotline',
+  '返回我的': 'Return to My Account',
+
+  // Nationalities (key=simplified Chinese, value=English)
+  '中国香港': 'Hong Kong SAR',
+  '中国大陆': 'China mainland',
+  '中国澳门': 'Macau SAR',
+  '中国台湾': 'Taiwan',
+  '英国': 'United Kingdom',
+  '美国': 'United States',
+  '新加坡': 'Singapore',
+  '其他': 'Other',
+
+  // Nationalities (alternative keys, from zhHK.js)
+  '香港特别行政区': 'Hong Kong SAR',
+  '中国内地': 'China mainland',
+  '澳门特别行政区': 'Macau SAR',
+  '台湾': 'Taiwan',
+
+  // Upload hints (Document Type / Proof Type helper text)
+  '请上传 1 张': 'Upload 1 image',
+  '请上传 2 张（正面 + 背面）': 'Upload 2 images (front + back)',
+  '请上传 1 份文件': 'Upload 1 document',
+  '下一步：提交认证': 'Next: Submit Verification',
+
+  // ===== 2026-08-14 PI 认证独立审核流 =====
+  'PI 认证审核中': 'PI Verification in Review',
+  '已提交申请，1-3 个工作日内完成审核': 'Submitted. Review completes within 1-3 business days',
+  '重新提交 PI 认证': 'Resubmit PI Certification',
+  '上次申请未通过，点击重新提交': 'Previous application was not approved. Click to resubmit',
+  'PI 认证已过期': 'PI Certification Expired',
+  '重新认证以恢复参与资格': 'Re-certify to restore eligibility',
+  'PI 认证已通过': 'PI Certification Approved',
+  '认证有效期至': 'Valid until',
+  'PI 认证未通过': 'PI Certification Not Approved',
+  '很抱歉，您的专业投资者资格申请未通过审核。请根据以下原因修正后重新提交。': 'We are sorry, your PI qualification application was not approved. Please review the reason below and resubmit.',
+  '您的专业投资者资格已到期，需重新提交认证资料以恢复参与资格。': 'Your PI qualification has expired. Please resubmit certification documents to restore eligibility.',
+  '重新认证': 'Re-certify',
+  '您的专业投资者认证申请已成功提交，我们将在 1-3 个工作日内完成审核。': 'Your PI certification application has been submitted. We will complete review within 1-3 business days.',
+  '平台将核验您的资产证明或持牌资质，确认符合香港证监会专业投资者标准。': 'We will verify your asset proof or licensed status against the SFC professional investor standard.',
+  '审核内容': 'Review Scope',
+  'PI 认证审核': 'PI Certification Review',
+
+  // Date picker (iOS compact mode wheel picker)
+  '选择出生日期': 'Select Date of Birth',
+  '演示模式：日期预设为 mock 数据': 'Demo mode: date is preset to mock data',
+  '完成': 'Done',
+
+  // Month full names (English display)
+  'Jan': 'Jan',
+  'Feb': 'Feb',
+  'Mar': 'Mar',
+  'Apr': 'Apr',
+  'May': 'May',
+  'Jun': 'Jun',
+  'Jul': 'Jul',
+  'Aug': 'Aug',
+  'Sep': 'Sep',
+  'Oct': 'Oct',
+  'Nov': 'Nov',
+  'Dec': 'Dec',
+
+  // Offline event address actions
+  '复制地址': 'Copy address',
+  '打开地图': 'Open in Maps',
+  '地址已复制': 'Address copied',
+  '复制失败，请长按手动复制': 'Failed to copy. Please copy manually.',
+
+  // Offline event live stream
+  '直播': 'Live stream',
+  '复制链接': 'Copy link',
+  '直播链接已复制': 'Live stream link copied',
+
+  // Live status
+  '进行中': 'LIVE',
+
+  // Accompanying persons
+  '陪同人员': 'Companions',
+  '仅本人': 'Only me',
+  '人': '',
+  '线下活动最多可携带 3 人同行': 'Offline events allow up to 3 companions',
+  '报名成功，您已报名 {} 人（含本人 {} 人），届时请准时参加': 'Registration confirmed! You registered for {} attendees (including yourself). See you there!',
+  '共 {} 人': '{} attendees',
+
+  // Online/Offline filter
+  '全部': 'All',
+  '线上': 'Online',
+  '线下': 'Offline',
+  '全部活动': 'All Events',
+  '暂无符合条件的路演': 'No matching events',
+
+  // Admin-linked: fund approval / exit review
+  '提交入金申请': 'Submit deposit request',
+  '提交提现申请': 'Submit withdrawal request',
+  '入金申请已提交': 'Deposit request submitted',
+  '提现申请已提交': 'Withdrawal request submitted',
+  '待审核': 'Pending review',
+  '审核中': 'Under review',
+  '已到账': 'Arrived',
+  '已拒绝': 'Rejected',
+  '资金申请': 'Fund requests',
+  '提交退出申请': 'Submit exit request',
+  '退出审批中': 'Exit under review',
+  '退出申请已提交，请等待平台审批': 'Exit request submitted, pending platform approval',
+  '审批通过后资金将回到可用余额': 'Funds return to available balance after approval',
+
+  // KYC status sync back (KYCSubmitted 3-state, 2026-08-13)
+  '认证已通过': 'Verification Approved',
+  '您已获得专业投资者资格，可参与平台的稀缺份额申购。': 'You are now a Professional Investor and can subscribe to scarce shares on the platform.',
+  '去申购项目': 'Browse Projects',
+  '认证未通过': 'Verification Rejected',
+  '很抱歉，您的专业投资者认证资料未通过审核。请根据以下原因修正后重新提交。': 'Sorry, your Professional Investor verification was not approved. Please correct the following and resubmit.',
+  '未通过原因': 'Reason',
+  '重新提交认证': 'Resubmit Verification',
+  '清空': 'Clear',
+  '删除': 'Delete',
+  '清空全部通知？此操作不可恢复。': 'Clear all notifications? This cannot be undone.',
+  '通知触达': 'Notifications',
+  '发送给投资人': 'Send to investors',
+  '通知类型': 'Type',
+  '标题': 'Title',
+  '内容': 'Content',
+  '发送通知': 'Send',
+  '发送成功': 'Notification sent',
+  '发送历史': 'Send history',
+  '目标': 'Audience',
+  '全部投资人': 'All investors',
+  '材料需补充': 'Additional materials required',
+  '补件原因': 'Reason',
+  '补充材料并重新提交': 'Add materials & resubmit',
+  '您的认证资料需要补充以下材料，补充完整后请重新提交。': 'Your verification application requires additional materials. Please resubmit once complete.',
+
+  // Offline fund-flow loop (2026-08-19: deposit/whitelist/eDDA/exchange)
+  '转账至平台收款账户': 'Transfer to platform account',
+  '户名': 'Account Name',
+  '账号': 'Account No.',
+  '入金方式': 'Deposit method',
+  '银行转账': 'Bank Transfer',
+  'eDDA 快捷入金': 'eDDA Fast Deposit',
+  '模拟授权': 'Simulate authorization',
+  '付款银行卡（白名单）': 'Paying card (whitelisted)',
+  '收款银行卡（白名单）': 'Receiving card (whitelisted)',
+  '暂无白名单银行卡，请先完成白名单验证': 'No whitelisted card yet. Please complete whitelist verification first.',
+  '银行转账参考号（可选）': 'Bank transfer reference (optional)',
+  '上传转账凭证': 'Upload transfer receipt',
+  '点击重新上传': 'Click to re-upload',
+  '提交 eDDA 入金申请': 'Submit eDDA deposit',
+  '到账时间以财务核对为准，不承诺到账时效': 'Crediting time depends on finance review. No timeline is guaranteed.',
+  '线下转账 + 凭证核销：请转账至平台收款账户，财务核对后上账': 'Offline transfer + receipt verification: transfer to the platform account; funds are credited after finance review.',
+  '换汇由人工在银行内处理，不承诺时效与汇率，以银行实际成交汇率为准': 'FX is processed manually at the bank. No timeline or rate is guaranteed; the actual bank rate applies.',
+  '参考汇率': 'Reference rate',
+  '估算结果仅供参考，实际以银行成交汇率为准': 'Estimate only. Actual bank rate applies.',
+  '提交换汇申请': 'Submit FX request',
+  '由人工在银行内处理，以实际成交汇率上账': 'Processed manually at the bank. Credited at the actual rate.',
+  '出入金仅限「白名单」银行卡。新卡需通过转账验证（≥1万 HKD 或等值 USD）后方可用于资金往来。': 'Deposits/withdrawals require a whitelisted card. New cards must pass transfer verification (≥ HK$10,000 or equivalent USD).',
+  '白名单 · 已验证': 'Whitelisted',
+  '验证中': 'Verifying',
+  '未验证': 'Unverified',
+  '不能用于出入金': 'Not usable for deposits/withdrawals',
+  '财务核对中': 'Pending finance review',
+  '发起白名单验证': 'Start whitelist verification',
+  '查看/重新验证': 'View / re-verify',
+  '白名单验证': 'Whitelist verification',
+  '收款银行': 'Receiving bank',
+  '验证款币种': 'Verification currency',
+  '验证转账金额': 'Verification amount',
+  '转账附言': 'Transfer remark',
+  '提交验证': 'Submit',
+  '最低 1万 HKD 或等值 USD；请务必填写转账附言以便核对归属': 'Minimum HK$10,000 or equivalent USD. Always add a remark so the finance team can match the transfer.',
+  '已授权从': 'Authorized to deduct from',
+  '快捷扣款入金': 'for fast deposits',
+  '授权后充值可直接选择 eDDA 快捷入金通道（香港本土）。': 'After authorization, eDDA fast deposit is available (HK local).',
+  '模拟完成 eDDA 授权': 'Simulate eDDA authorization',
+  '提交（待白名单验证）': 'Submit (pending whitelist)',
+  '新卡添加后需通过白名单验证（≥1万 HKD 转账）方可处理出入金。': 'New cards must pass whitelist verification (≥ HK$10,000 transfer) before deposits/withdrawals.',
+  '待补凭证': 'Receipt required',
+  '处理中': 'Processing',
+  '已完成': 'Completed',
+  '换汇申请详情': 'FX Request Details',
+  '币种对': 'Currency pair',
+  '卖出金额': 'Sell amount',
+  '估算到账（仅供参考）': 'Est. credit (reference only)',
+  '实际成交汇率': 'Actual rate',
+  '实际到账': 'Actual credit',
+  '付款账户': 'Paying account',
+  '收款账户': 'Receiving account',
+  '通道': 'Channel',
+  '转账凭证': 'Transfer receipt',
+  '查看凭证': 'View receipt',
+  '补传原因': 'Reason',
+  '补传转账凭证': 'Upload receipt',
+  '上传清晰凭证后重新提交核对（演示阶段仅模拟文件名）': 'Upload a clear receipt to re-submit for review (demo simulates file name only).',
+  '请选择已通过白名单验证的付款银行卡': 'Please choose a whitelisted paying card.',
+  '请选择已通过白名单验证的收款银行卡': 'Please choose a whitelisted receiving card.',
+  '请先在银行卡管理完成 eDDA 授权': 'Please complete eDDA authorization in Card Management first.',
+  '请上传银行转账凭证': 'Please upload the bank transfer receipt.',
+  '入金申请提交失败，请检查付款卡与凭证': 'Deposit submission failed. Please check the paying card and receipt.',
+};
