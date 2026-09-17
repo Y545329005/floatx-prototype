@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Smartphone, Lock, User, ShieldCheck, Globe, Check, X } from "lucide-react";
+import { Smartphone, Lock, ShieldCheck, Globe, Check, X, HelpCircle } from "lucide-react";
 import { useLang, LANGUAGES } from "../i18n";
 import BusinessContact from "./BusinessContact";
-import { platformBrand, sendResetCode, verifyResetCode, resetPassword } from "../mock/data";
+import AgreementModal from "./AgreementModal";
+import { platformBrand, sendResetCode, verifyResetCode, resetPassword, recordAgreement } from "../mock/data";
 
 // 账号校验：邮箱 或 香港手机号（+852 可选，8 位，首位 5/6/9）
 const isValidAccount = (v) =>
@@ -257,11 +258,17 @@ export function RegisterPage({ navigate, setIsLoggedIn, setUser, setToast }) {
     account: "",
     password: "",
     confirmPassword: "",
-    name: "",
+    // 协议签署（2026-09-15 · 对齐公司实践 §2：三件套必选 + 营销选填，默认全部不勾选）
     terms: false,
+    marketing: false,
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [agreementDoc, setAgreementDoc] = useState(null);   // 当前查看的协议（AgreementModal）
+  const [marketingInfo, setMarketingInfo] = useState(false); // 营销信息收集说明弹窗
+
+  // 注册三件套（对齐实践案例：用户协议 / 隐私条款 / 风险披露声明）
+  const REGISTER_AGREEMENT_IDS = ['user-agreement', 'privacy-policy', 'risk-disclosure'];
 
   const validateForm = () => {
     const newErrors = {};
@@ -282,10 +289,6 @@ export function RegisterPage({ navigate, setIsLoggedIn, setUser, setToast }) {
 
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = t("两次输入的密码不一致");
-    }
-
-    if (!formData.name) {
-      newErrors.name = t("请输入姓名");
     }
 
     if (!formData.terms) {
@@ -310,8 +313,16 @@ export function RegisterPage({ navigate, setIsLoggedIn, setUser, setToast }) {
       const userData = {
         id: `user-${Date.now()}`,
         email: formData.account,
-        name: formData.name,
       };
+      // 协议签署留痕（2026-09-15 · 对齐公司实践：注册三件套版本 + 时间固化；营销同意单独记录）
+      recordAgreement({
+        type: 'register',
+        agreementIds: REGISTER_AGREEMENT_IDS,
+        userId: userData.id,
+      });
+      if (formData.marketing) {
+        recordAgreement({ type: 'register', agreementIds: ['marketing-consent'], userId: userData.id });
+      }
       setIsLoggedIn(true);
       setUser(userData);
       setToast(t("注册成功"));
@@ -353,22 +364,6 @@ export function RegisterPage({ navigate, setIsLoggedIn, setUser, setToast }) {
             </div>
 
             <div className="form-group">
-              <label className="form-label">{t('姓名')}</label>
-              <div className="auth-input-wrap">
-                <User size={16} />
-                <input
-                  type="text"
-                  name="name"
-                  className={`form-input ${errors.name ? 'error' : ''}`}
-                  placeholder={t('请输入姓名')}
-                  value={formData.name}
-                  onChange={handleChange}
-                />
-              </div>
-              {errors.name && <span className="error-text">{errors.name}</span>}
-            </div>
-
-            <div className="form-group">
               <label className="form-label">{t('密码')}</label>
               <div className="auth-input-wrap">
                 <Lock size={16} />
@@ -403,6 +398,7 @@ export function RegisterPage({ navigate, setIsLoggedIn, setUser, setToast }) {
 
             <p className="auth-pi-note">{t('您确认本人为香港《证券及期货条例》定义的专业投资者')}</p>
 
+            {/* 协议勾选区（2026-09-15 · 对齐公司实践 §2.1/§2.3：三件套 + 链接弹窗 + 默认不勾选） */}
             <div className="form-checkbox-group">
               <input
                 type="checkbox"
@@ -412,18 +408,48 @@ export function RegisterPage({ navigate, setIsLoggedIn, setUser, setToast }) {
                 onChange={handleChange}
               />
               <label htmlFor="terms">
-                {t('我已阅读并同意')} <a href="#terms">{t('服务条款')}</a> {t('和')} <a href="#privacy">{t('隐私政策')}</a>
+                {t('我同意')}
+                <a href="#terms" onClick={e => { e.preventDefault(); setAgreementDoc('user-agreement'); }}>{t('用户协议')}</a>
+                、<a href="#privacy" onClick={e => { e.preventDefault(); setAgreementDoc('privacy-policy'); }}>{t('隐私条款')}</a>
+                {t('和')}<a href="#risk" onClick={e => { e.preventDefault(); setAgreementDoc('risk-disclosure'); }}>{t('风险披露声明')}</a>
               </label>
             </div>
             {errors.terms && <span className="error-text">{errors.terms}</span>}
 
+            {/* 营销信息（选填，对齐实践案例 §2.5：勾选 + 问号弹窗说明个人信息收集） */}
+            <div className="form-checkbox-group auth-marketing-row">
+              <input
+                type="checkbox"
+                id="marketing"
+                name="marketing"
+                checked={formData.marketing}
+                onChange={handleChange}
+              />
+              <label htmlFor="marketing">
+                {t('同意接收营销信息（新闻通讯、产品资讯、活动邀请）')}
+              </label>
+              <button
+                type="button"
+                className="auth-marketing-help"
+                aria-label={t('说明')}
+                onClick={() => setMarketingInfo(true)}
+              >
+                <HelpCircle size={14} />
+              </button>
+            </div>
+
+            {/* 对齐实践案例 §2.3：未勾选协议时注册按钮禁用 */}
             <button
               type="submit"
               className="auth-button primary"
-              disabled={isLoading}
+              disabled={isLoading || !formData.terms}
+              style={(!formData.terms && !isLoading) ? { opacity: 0.45 } : undefined}
             >
               {isLoading ? t('注册中...') : t('注册')}
             </button>
+            {!formData.terms && !isLoading && (
+              <p className="auth-terms-hint text-muted">{t('请先阅读并勾选同意上述协议')}</p>
+            )}
           </form>
         </div>
       </div>
@@ -432,6 +458,29 @@ export function RegisterPage({ navigate, setIsLoggedIn, setUser, setToast }) {
         <span>{t('已有账号？')}</span>
         <a href="#login" className="auth-footer-link">{t('立即登录')}</a>
       </AuthFooter>
+
+      {/* 协议全文弹窗 */}
+      {agreementDoc && <AgreementModal agreementId={agreementDoc} onClose={() => setAgreementDoc(null)} />}
+
+      {/* 营销信息收集说明弹窗（对齐实践案例 §2.5） */}
+      {marketingInfo && (
+        <>
+          <div className="sheet-mask" onClick={() => setMarketingInfo(false)} />
+          <div className="sheet auth-marketing-sheet">
+            <div className="sheet-header">
+              <h3>{t('营销信息收集说明')}</h3>
+              <button className="btn-icon" onClick={() => setMarketingInfo(false)}><X size={18} /></button>
+            </div>
+            <ul className="auth-marketing-list">
+              <li>{t('个人信息收集目的：新闻通讯、产品信息、活动介绍，商业及营销目的')}</li>
+              <li>{t('个人信息收集项目：手机号码、电子邮箱')}</li>
+              <li>{t('保留和使用期限：退出会员资格或撤回同意接收营销信息')}</li>
+              <li>{t('您可拒绝同意上述政策；拒绝后通知邮件和新闻资讯将受到限制')}</li>
+            </ul>
+            <button className="btn btn-primary btn-full" onClick={() => setMarketingInfo(false)}>{t('我知道了')}</button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
