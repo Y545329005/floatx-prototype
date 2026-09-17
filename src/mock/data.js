@@ -2697,43 +2697,57 @@ export function markNotificationRead(id) {
   if (n) n.read = true;
 }
 
-export function pushNotification(item) {
+export function pushNotification(item, userId) {
+  // userId 为空 = 全员（系统自动通知/全员广播）；给定时写入 toUserId，收件箱侧按当前用户过滤
   notifications.unshift({
     id: `n${Date.now()}`,
     read: false,
+    ...(userId ? { toUserId: userId } : {}),
     ...item,
   });
   Storage.save();
 }
 
-// 用户侧通知收口（2026-08-13 P1 #25）：单条删除 / 清空
+// 用户侧通知收口（2026-08-13 P1 #25）：单条删除 / 清空（2026-09-11 定向通知后：清空仅作用于当前用户可见通知，保留其他用户的定向通知）
 export function removeNotification(id) {
   const idx = notifications.findIndex(n => n.id === id);
   if (idx >= 0) { notifications.splice(idx, 1); Storage.save(); }
 }
-export function clearNotifications() {
-  notifications.length = 0;
+export function clearNotifications(userId) {
+  if (!userId) {
+    notifications.length = 0;
+  } else {
+    const kept = notifications.filter(n => n.toUserId && n.toUserId !== userId);
+    notifications.splice(0, notifications.length, ...kept);
+  }
   Storage.save();
 }
 
-// 实际派发广播（立即发送 / 定时到期共用）：推收件箱（mock 单用户演示）+ 审计留痕 + 台账状态置已发送
+// 实际派发广播（立即发送 / 定时到期共用）：推收件箱（定向按 userId 逐个推送；全员单次）+ 审计留痕 + 台账状态置已发送
 function deliverBroadcast(log) {
-  pushNotification({ type: log.type, title: log.title, body: log.body, fromAdmin: log.operator });
+  const payload = { type: log.type, title: log.title, body: log.body, fromAdmin: log.operator };
+  if (log.targetUserIds && log.targetUserIds.length) {
+    log.targetUserIds.forEach(uid => pushNotification(payload, uid));
+  } else {
+    pushNotification(payload);
+  }
   logAudit({ operator: log.operator, category: 'admin', action: 'broadcast', target: log.title, note: `发送通知（${log.type}）${log.target ? `· ${log.target}` : ''}` });
   log.status = 'sent';
 }
 
-// 后台运营发广播（通知触达管理，2026-08-14 广播台账化 · 方案 A；同轮定时发送）：
+// 后台运营发广播（通知触达管理，2026-08-14 广播台账化 · 方案 A；同轮定时发送；2026-09-11 定向发送）：
 // 立即发送 = 三写（broadcastLogs 台账 + notifications 收件箱 + logAudit 审计）；
 // 定时发送（scheduledAt 晚于当前）= 先写台账（status scheduled 已排期），到点由 processDueBroadcasts 派发（收件箱 + 审计 + status sent）。
+// target 显示文案（全部投资人 / 定向 N 人）；targetUserIds 数组非空 = 定向（空/缺省 = 全员）。
 // 接后端：broadcastLogs 由服务端广播记录替换、notifications 由各用户收件箱替换（台账 vs 收件箱数据模型已分离，零返工）
-export function sendBroadcastNotification({ type, title, body, target, scheduledAt }, operator = '') {
+export function sendBroadcastNotification({ type, title, body, target, targetUserIds, scheduledAt }, operator = '') {
   const createdAt = formatNow();
   const log = {
     id: `b${Date.now()}`,
     orderNo: genOrderNo('BR', createdAt),
     type, title, body,
     target: target || '全部投资人',
+    targetUserIds: targetUserIds && targetUserIds.length ? [...new Set(targetUserIds)] : undefined,
     operator: operator || '系统',
     createdAt,
     status: 'sent',
@@ -2871,6 +2885,269 @@ export const companyPolicies = [
     size: '1.0 MB',
   },
 ];
+
+// ========== 协议中心（2026-09-15 · 对齐公司协议签署实践案例） ==========
+// 第一性原理：凡用户做出法律承诺/授权的节点，必须满足 ① 明示同意（默认不勾）② 同意对象可查（文档可达、版本可追溯）③ 同意行为留痕（版本+时间固化）。
+// 协议全文（多语言）放本数据源，不进 i18n 对象——防止 I18N 大文件膨胀引发渲染 key 静默丢失（2026-08-31 教训八）。
+// 结构：{ id, version, effectiveAt, titleKey(三语标题), sections: [{ h, p }] }；titleKey.i18n = i18n 对象中的标题 key（UI 标签），正文全在 sections。
+
+const AG = (zhCN, zhHK, en) => ({ 'zh-CN': zhCN, 'zh-HK': zhHK, en });
+
+export const agreements = [
+  {
+    id: 'user-agreement',
+    version: 'v1.2',
+    effectiveAt: '2026-09-01',
+    title: AG('用户协议', '用戶協議', 'Terms of Use'),
+    sections: [
+      { h: AG('一、服务范围', '一、服務範圍', '1. Scope of Services'), p: AG(
+        '财富资本有限公司（下称"本平台"）依据香港证监会第 9 类牌照（资产管理），为专业投资者提供私募股权投资机会的信息展示、意向提交、申购协助及投后信息服务。本平台不提供公开募集、公开推介或任何形式的投资保证。',
+        '財富資本有限公司（下稱"本平台"）依據香港證監會第 9 類牌照（資產管理），為專業投資者提供私募股權投資機會的信息展示、意向提交、申購協助及投後信息服務。本平台不提供公開募集、公開推介或任何形式的投資保證。',
+        'Zhifu Capital Limited (the "Platform"), licensed under SFC Type 9 (Asset Management), provides professional investors with information on private equity opportunities, subscription assistance and post-investment services. The Platform does not offer public offerings or any form of investment guarantee.'
+      ) },
+      { h: AG('二、账户与安全', '二、賬戶與安全', '2. Account and Security'), p: AG(
+        '您应妥善保管账户凭证，并对账户内的全部操作负责。平台有权对异常操作执行风控措施（含冻结、限制出入金），并依法履行反洗钱审查义务。',
+        '您應妥善保管賬戶憑證，並對賬戶內的全部操作負責。平台有權對異常操作執行風控措施（含凍結、限制出入金），並依法履行反洗錢審查義務。',
+        'You are responsible for safeguarding your credentials and all activities under your account. The Platform may apply risk controls (including freezing and restricting transfers) and is obliged to conduct AML reviews.'
+      ) },
+      { h: AG('三、专业投资者身份', '三、專業投資者身份', '3. Professional Investor Status'), p: AG(
+        '本平台服务仅面向香港《证券及期货条例》及其附表 1 定义的 professional investor / institutional investor。您确认本人符合专业投资者资格，并知悉专业投资者身份对应的监管保护差异。',
+        '本平台服務僅面向香港《證券及期貨條例》及其附表 1 定義的 professional investor / institutional investor。您確認本人符合專業投資者資格，並知悉專業投資者身份對應的監管保護差異。',
+        'The services are available only to professional investors as defined in the SFO and Schedule 1 thereof. You confirm that you qualify as a professional investor and understand the reduced regulatory protections that apply.'
+      ) },
+      { h: AG('四、免责与责任限制', '四、免責與責任限制', '4. Limitation of Liability'), p: AG(
+        '平台展示的项目信息由发行方/管理人提供，平台仅作合理核查，不对信息的完整性、准确性作出保证。投资决策由您独立作出，盈亏自负。',
+        '平台展示的項目信息由發行方/管理人提供，平台僅作合理核查，不對信息的完整性、準確性作出保證。投資決策由您獨立作出，盈虧自負。',
+        'Project information is provided by issuers/managers and reviewed by the Platform on a reasonable-efforts basis, without warranty of completeness or accuracy. Investment decisions are made solely by you.'
+      ) },
+      { h: AG('五、协议变更', '五、協議變更', '5. Amendments'), p: AG(
+        '本平台可不时修订本协议。修订后将在 APP 内通知您并要求重新确认；未确认前您将继续收到提醒。继续使用服务视为接受修订后的协议。',
+        '本平台可不時修訂本協議。修訂後將在 APP 內通知您並要求重新確認；未確認前您將繼續收到提醒。繼續使用服務視為接受修訂後的協議。',
+        'The Platform may amend these Terms from time to time and will notify you in-app for re-confirmation. Continued use of the services constitutes acceptance of the amended Terms.'
+      ) },
+    ],
+  },
+  {
+    id: 'privacy-policy',
+    version: 'v1.2',
+    effectiveAt: '2026-09-01',
+    title: AG('隐私政策（个人信息收集声明 PICS）', '隱私政策（個人信息收集聲明 PICS）', 'Privacy Policy (PICS)'),
+    sections: [
+      { h: AG('一、收集目的', '一、收集目的', '1. Purposes of Collection'), p: AG(
+        '本平台收集您的个人信息用于：① 账户开立与身份识别（KYC/AML 审查）；② 专业投资者资格核验；③ 申购、出入金及签署流程处理；④ 监管申报与合规留痕；⑤ 经您单独同意后的产品资讯推送。',
+        '本平台收集您的個人信息用於：① 賬戶開立與身份識別（KYC/AML 審查）；② 專業投資者資格核驗；③ 申購、出入金及簽署流程處理；④ 監管申報與合規留痕；⑤ 經您單獨同意後的產品資訊推送。',
+        'Your personal data is collected for: (i) account opening and identity verification (KYC/AML); (ii) professional investor verification; (iii) processing subscriptions, transfers and signings; (iv) regulatory reporting; (v) marketing communications upon your separate consent.'
+      ) },
+      { h: AG('二、收集项目', '二、收集項目', '2. Categories of Data'), p: AG(
+        '姓名、证件号码及证件影像、联系方式、住址、税务居民身份、财务状况信息、风险承受能力评估结果、电子签名图片及操作日志。',
+        '姓名、證件號碼及證件影像、聯繫方式、住址、稅務居民身份、財務狀況信息、風險承受能力評估結果、電子簽名圖片及操作日誌。',
+        'Name, identity document data and images, contact details, residential address, tax residency, financial information, risk assessment results, e-signature images and operation logs.'
+      ) },
+      { h: AG('三、保留期限', '三、保留期限', '3. Retention'), p: AG(
+        '依照《个人资料（私隐）条例》（Cap. 486）及 AMLO (Cap. 615) 要求，账户相关记录于账户关闭后至少保留 7 年；营销同意记录保留至您撤回同意。',
+        '依照《個人資料（私隱）條例》（Cap. 486）及 AMLO (Cap. 615) 要求，賬戶相關記錄於賬戶關閉後至少保留 7 年；營銷同意記錄保留至您撤回同意。',
+        'Per the PDPO (Cap. 486) and AMLO (Cap. 615), account records are retained for at least 7 years after account closure; marketing consent records until consent is withdrawn.'
+      ) },
+      { h: AG('四、您的权利', '四、您的權利', '4. Your Rights'), p: AG(
+        '您有权查阅、更正您的个人信息，有权随时撤回营销同意。拒绝提供监管所要求的资料可能导致本平台无法为您提供相关服务。',
+        '您有權查閱、更正您的個人信息，有權隨時撤回營銷同意。拒絕提供監管所要求的資料可能導致本平台無法為您提供相關服務。',
+        'You may access and correct your personal data and withdraw marketing consent at any time. Failure to provide data required by regulation may prevent the Platform from providing relevant services.'
+      ) },
+    ],
+  },
+  {
+    id: 'risk-disclosure',
+    version: 'v1.1',
+    effectiveAt: '2026-06-30',
+    title: AG('风险披露声明', '風險披露聲明', 'Risk Disclosure Statement'),
+    sections: [
+      { h: AG('一、本金损失风险', '一、本金損失風險', '1. Risk of Loss'), p: AG(
+        '私募股权投资可能因项目经营失败、市场环境变化、退出通道受限等原因导致部分或全部本金损失。过往业绩不代表未来表现。',
+        '私募股權投資可能因項目經營失敗、市場環境變化、退出通道受限等原因導致部分或全部本金損失。過往業績不代表未來表現。',
+        'Private equity investments may result in partial or total loss of capital due to business failure, market changes or constrained exit routes. Past performance is not indicative of future results.'
+      ) },
+      { h: AG('二、流动性与期限风险', '二、流動性與期限風險', '2. Liquidity and Tenor'), p: AG(
+        '私募基金份额无公开交易市场，投资期限通常为数年，您可能无法在需要时提前退出或转让份额。',
+        '私募基金份額無公開交易市場，投資期限通常為數年，您可能無法在需要時提前退出或轉讓份額。',
+        'Interests in private funds have no liquid market and are typically locked up for several years; early exit may not be possible.'
+      ) },
+      { h: AG('三、稀释与分配风险', '三、稀釋與分配風險', '3. Dilution and Distribution'), p: AG(
+        '后续轮次融资可能稀释您的权益；分红取决于项目实际盈利与 SPV 决策，不构成任何收益承诺。',
+        '後續輪次融資可能稀釋您的權益；分紅取決於項目實際盈利與 SPV 決策，不構成任何收益承諾。',
+        'Subsequent financings may dilute your interests; distributions depend on actual performance and SPV decisions and are not guaranteed.'
+      ) },
+    ],
+  },
+  {
+    id: 'pi-terms',
+    version: 'v1.0',
+    effectiveAt: '2026-09-01',
+    title: AG('专业投资者业务条款及风险披露声明书', '專業投資者業務條款及風險披露聲明書', 'Professional Investor Terms and Risk Disclosure'),
+    sections: [
+      { h: AG('一、身份认定', '一、身份認定', '1. Determination of Status'), p: AG(
+        '专业投资者指《证券及期货条例》附表 1 第 1 条所定义的专业投资者，含机构专业投资者及个人专业投资者（如持有不少于 HK$8,000,000 投资组合的个人）。',
+        '專業投資者指《證券及期貨條例》附表 1 第 1 條所定義的專業投資者，含機構專業投資者及個人專業投資者（如持有不少於 HK$8,000,000 投資組合的個人）。',
+        'Professional Investors are as defined in section 1 of Schedule 1 to the SFO, including institutional and individual PIs (e.g. individuals with a portfolio of not less than HK$8,000,000).'
+      ) },
+      { h: AG('二、监管保护差异', '二、監管保護差異', '2. Reduced Protections'), p: AG(
+        '被认定为专业投资者后，部分适用于零售投资者的监管保障将不再适用（含部分产品审慎性审查、披露要求及冷静期安排）。您确认理解并接受该等差异。',
+        '被認定為專業投資者後，部分適用於零售投資者的監管保障將不再適用（含部分產品審慎性審查、披露要求及冷靜期安排）。您確認理解並接受該等差異。',
+        'Once treated as a Professional Investor, certain regulatory protections applicable to retail investors will not apply (including certain suitability assessments, disclosure requirements and cooling-off arrangements). You confirm you understand and accept such differences.'
+      ) },
+      { h: AG('三、复核与告知义务', '三、覆核與告知義務', '3. Review and Notification'), p: AG(
+        '您的专业投资者资格将被定期复核。若您的资产状况不再符合资格标准，或身份信息发生变化，您应在 30 日内通知本平台。',
+        '您的專業投資者資格將被定期覆核。若您的資產狀況不再符合資格標準，或身份信息發生變化，您應在 30 日內通知本平台。',
+        'Your PI status will be periodically reviewed. You must notify the Platform within 30 days if you cease to meet the qualification criteria or if your information changes.'
+      ) },
+    ],
+  },
+  {
+    id: 'bank-card-service',
+    version: 'v1.0',
+    effectiveAt: '2026-09-01',
+    title: AG('银行卡及出入金服务协议', '銀行卡及出入金服務協議', 'Bank Card and Transfer Service Agreement'),
+    sections: [
+      { h: AG('一、白名单机制', '一、白名單機制', '1. Whitelist Mechanism'), p: AG(
+        '出入金仅限您名下已通过白名单验证的银行卡。新卡须由本人账户向平台收款账户完成指定金额验证转账，经财务核对到账后方可加入白名单。',
+        '出入金僅限您名下已通過白名單驗證的銀行卡。新卡須由本人賬戶向平台收款賬戶完成指定金額驗證轉賬，經財務核對到賬後方可加入白名單。',
+        'Transfers are allowed only via your own whitelisted bank cards. A new card must pass a verification transfer from your own account, confirmed by the Platform, before being whitelisted.'
+      ) },
+      { h: AG('二、账户同名要求', '二、賬戶同名要求', '2. Same-Name Requirement'), p: AG(
+        '出入金银行卡持卡人必须与您在本平台实名身份一致。第三方代付/代收将被拒绝入账并触发合规审查。',
+        '出入金銀行卡持卡人必須與您在本平台實名身份一致。第三方代付/代收將被拒絕入賬並觸發合規審查。',
+        'Cards must be held in your own verified name. Third-party payments will be rejected and may trigger compliance review.'
+      ) },
+      { h: AG('三、信息保管', '三、信息保管', '3. Data Handling'), p: AG(
+        '您提供的银行卡信息仅用于出入金处理与合规核验，平台将依法加密存储并按隐私政策限制使用。',
+        '您提供的銀行卡信息僅用於出入金處理與合規核驗，平台將依法加密存儲並按隱私政策限制使用。',
+        'Card information is used solely for transfer processing and compliance checks, stored encrypted and used in accordance with the Privacy Policy.'
+      ) },
+    ],
+  },
+];
+
+export function getAgreementById(id) {
+  return agreements.find(a => a.id === id) || null;
+}
+
+// ---- 法定声明文本（来源：公司协议签署实践案例 · YUiNQxqL/QDZq2ovV/TKCPH5Vk；主体名替换为本平台） ----
+// KYC「04 协议签署」步骤声明（零售版全文；PI 为独立审核流，其附加段见 PI_CONFIRM_EXTRA_TEXT）
+export const KYC_DECLARATION_TEXT = AG(
+  '本人特此无条件且不可撤销地声明，本人已阅读并同意遵守财富资本提供的隐私信息收集声明（PICS）、条款与条件、风险披露声明及其他所要求的相关文件。本人在此表格中提供的所有资料均真实、准确且完整。如财富资本提出要求，本人将提供财富资本可能需要验证上述资料的进一步补充信息或文件。如未能提供所需信息或文件，本人明白财富资本可能无法提供相关服务。本人同意并授权财富资本不时向本人索取进一步资料或文件，并承诺在资料发生变更时及时通知财富资本（或其继承人或受让人）。本人认可并同意，财富资本可进行反洗钱审查或为了解客户所需，将本人资料用于财富资本提供的产品和/或服务。',
+  '本人特此無條件且不可撤銷地聲明，本人已閱讀並同意遵守財富資本提供的隱私信息收集聲明（PICS）、條款與條件、風險披露聲明及其他所要求的相關文件。本人在此表格中提供的所有資料均真實、準確且完整。如財富資本提出要求，本人將提供財富資本可能需要驗證上述資料的進一步補充信息或文件。如未能提供所需信息或文件，本人明白財富資本可能無法提供相關服務。本人同意並授權財富資本不時向本人索取進一步資料或文件，並承諾在資料發生變更時及時通知財富資本（或其繼承人或受讓人）。本人認可並同意，財富資本可進行反洗錢審查或為了解客戶所需，將本人資料用於財富資本提供的產品和/或服務。',
+  'I hereby unconditionally and irrevocably declare that I have read and agree to abide by the Personal Information Collection Statement (PICS), Terms and Conditions, Risk Disclosure Statement and other required documents provided by Zhifu Capital. All information provided by me in this form is true, accurate, and complete. Upon request by Zhifu Capital, I will provide any additional information or documents that may be required to verify the aforementioned details. I understand that failure to provide the requested information or documents may result in Zhifu Capital being unable to offer the relevant services. I agree and authorize Zhifu Capital to request further information or documents from me from time to time and commit to promptly notifying Zhifu Capital (or its successors or assigns) of any changes to the provided information. I acknowledge and agree that Zhifu Capital may use my information for anti-money laundering checks or Know Your Customer (KYC) purposes as required for the provision of its products and/or services.'
+);
+
+// PI 认证附加确认段（在 KYC 声明基础上追加，对齐实践案例"个人专业投资者"版本）
+export const PI_CONFIRM_EXTRA_TEXT = AG(
+  '本人进一步确认：本人已知悉并理解成为专业投资者的身份及其适用的法律后果，并已同意接受专业投资者身份的权利、义务及风险。',
+  '本人進一步確認：本人已知悉並理解成為專業投資者的身份及其適用的法律後果，並已同意接受專業投資者身份的權利、義務及風險。',
+  'I further confirm that I am aware of and understand the identity of a professional investor and the legal consequences that apply, and I have agreed to accept the rights, obligations, and risks associated with the status of a professional investor.'
+);
+
+// 电子签名法律提示（对齐实践案例 §3.7）
+export const E_SIGNATURE_NOTICE_TEXT = AG(
+  '通过在上方提供本人的电子签名，本人确认并同意此电子签名构成本人手写签名的合法且有约束力的表示。该等电子签署的文件将具有有效性和法律效力，与用笔和纸签署的实体合同具有同等有效性。在电子签署前，本人已经仔细审阅了财富资本的有关条款和条件，并且完全理解并同意受其所载之权利和义务的约束。',
+  '通過在上方提供本人的電子簽名，本人確認並同意此電子簽名構成本人手寫簽名的合法且有約束力的表示。該等電子簽署的文件將具有有效性和法律效力，與用筆和紙簽署的實體合同具有同等有效性。在電子簽署前，本人已經仔細審閱了財富資本的有關條款和條件，並且完全理解並同意受其所載之權利和義務的約束。',
+  'By providing my electronic signature above, I confirm and agree that such electronic signature constitutes a legal and binding representation of my handwritten signature. Electronically signed documents shall be valid and enforceable to the same effect as a contract executed by pen and paper. Before electronically signing, I have carefully reviewed the relevant terms and conditions of Zhifu Capital and fully understand and agree to be bound by the rights and obligations contained therein.'
+);
+
+// SPV 协议全文模板（APP 内签署页展示用；按 SPV 档案与申购单插值，接后端由发行方协议文本替换）
+export function buildSpvAgreementSections(spv, sub, lang = 'zh-CN') {
+  const L = (zhCN, zhHK, en) => (lang === 'zh-HK' ? zhHK : lang === 'en' ? en : zhCN);
+  const name = sub?.investorName || L('本协议投资人', '本協議投資人', 'the Investor');
+  const amount = sub?.amount ? `HK$ ${formatCurrency(sub.amount)}` : L('实际认缴金额', '實際認繳金額', 'the subscribed amount');
+  return [
+    { h: L('一、参与方', '一、參與方', '1. Parties'), p: L(
+      `本协议由 ${spv?.spvName || 'SPV'}（法律实体：${spv?.legalEntity || '—'}，注册号：${spv?.registrationNo || '—'}，下称"SPV"）与投资者 ${name}（下称"投资人"）就参与 ${spv?.projectName || '目标项目'} 私募股权投资事宜订立。`,
+      `本協議由 ${spv?.spvName || 'SPV'}（法律實體：${spv?.legalEntity || '—'}，註冊號：${spv?.registrationNo || '—'}，下稱"SPV"）與投資者 ${name}（下稱"投資人"）就參與 ${spv?.projectName || '目標項目'} 私募股權投資事宜訂立。`,
+      `This agreement is entered into between ${spv?.spvName || 'the SPV'} (legal entity: ${spv?.legalEntity || '—'}, registration no.: ${spv?.registrationNo || '—'}, the "SPV") and ${name} (the "Investor") in respect of the private equity investment in ${spv?.projectName || 'the target project'}.`
+    ) },
+    { h: L('二、认缴与出资', '二、認繳與出資', '2. Subscription and Payment'), p: L(
+      `投资人认缴出资额为 ${amount}，于签署本协议后由冻结意向金额完成实际出资。SPV 按出资额签发等额份额并登记投资人名册。`,
+      `投資人認繳出資額為 ${amount}，於簽署本協議後由凍結意向金額完成實際出資。SPV 按出資額簽發等額份額並登記投資人名冊。`,
+      `The Investor subscribes ${amount}, which shall be settled from the frozen intent amount upon execution. The SPV shall issue equivalent interests and register the Investor in its register of holders.`
+    ) },
+    { h: L('三、费用', '三、費用', '3. Fees'), p: L(
+      `SPV 按年收取管理费 ${spv?.managementFee || '2%'}，业绩报酬（Carry）为 ${spv?.carryRate || '20%'}，托管行为${spv?.custodianBank || '—'}。`,
+      `SPV 按年收取管理費 ${spv?.managementFee || '2%'}，業績報酬（Carry）為 ${spv?.carryRate || '20%'}，托管行為${spv?.custodianBank || '—'}。`,
+      `The SPV charges an annual management fee of ${spv?.managementFee || '2%'} and carried interest of ${spv?.carryRate || '20%'}; custodian: ${spv?.custodianBank || '—'}.`
+    ) },
+    { h: L('四、退出与分配', '四、退出與分配', '4. Exit and Distribution'), p: L(
+      'SPV 退出事件（项目出售/上市/回购）完成后，扣除费用及 Carry 后按持有人份额比例分配。分配以实际到账为准，不构成收益承诺。',
+      'SPV 退出事件（項目出售/上市/回購）完成後，扣除費用及 Carry 後按持有人份額比例分配。分配以實際到賬為準，不構成收益承諾。',
+      'Upon an exit event (sale/IPO/buyback), proceeds shall be distributed pro rata after fees and carry. Distributions are subject to actual receipts and are not guaranteed.'
+    ) },
+    { h: L('五、电子签署效力', '五、電子簽署效力', '5. Electronic Execution'), p: L(
+      '投资人在平台内以电子签名方式签署本协议，该电子签名与手写签名具有同等法律效力；签署时协议版本与文档哈希将被固化存档，作为签署内容不可篡改的依据。',
+      '投資人在平台內以電子簽名方式簽署本協議，該電子簽名與手寫簽名具有同等法律效力；簽署時協議版本與文檔哈希將被固化存檔，作為簽署內容不可篡改的依據。',
+      'The Investor executes this agreement by electronic signature within the Platform, which shall have the same legal effect as a handwritten signature; the agreement version and document hash shall be fixed at signing as tamper-evident evidence.'
+    ) },
+  ];
+}
+
+// ---- 电子签名占位图（SVG 手写风，用于预置数据演示；接后端由真实签名图片替换） ----
+export function makeSignatureSvg(name = '张三') {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="360" height="120" viewBox="0 0 360 120">`
+    + `<rect width="360" height="120" fill="#ffffff"/>`
+    + `<text x="30" y="74" font-family="'Snell Roundhand','Brush Script MT','Segoe Script',cursive" font-size="42" font-style="italic" fill="#1a2b5e">${name}</text>`
+    + `<path d="M28 94 C 80 106, 150 84, 210 96 S 320 102, 336 90" fill="none" stroke="#1a2b5e" stroke-width="2.5" stroke-linecap="round"/>`
+    + `</svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+// ---- 协议签署留痕（2026-09-15 · 全局统一台账） ----
+// type: register(注册) / pi(PI 声明) / bank-card(银行卡协议) / terms-update(条款更新重同意) / spv(SPV 协议，走 signingEvidence 专项台账)
+// （2026-09-15 裁决：KYC 内声明/电子签署移除，KYC 不再产生签署留痕）
+export const agreementRecords = [
+  // 预置：approved 账号已完成注册留痕
+  { id: 'ar1', userId: 'u1', type: 'register', agreementIds: ['user-agreement', 'privacy-policy', 'risk-disclosure'], versions: ['v1.2', 'v1.2', 'v1.1'], signedAt: '2026-05-09 11:20:00', signatureImage: null },
+];
+
+export function recordAgreement({ type, agreementIds = [], signatureImage = null, userId = null }, operator = '系统') {
+  const versions = agreementIds.map(id => getAgreementById(id)?.version || '—');
+  const rec = {
+    id: `ar${Date.now()}`,
+    userId: userId || currentUser.id,
+    type,
+    agreementIds,
+    versions,
+    signedAt: formatNow(),
+    signatureImage,
+  };
+  agreementRecords.unshift(rec);
+  logAudit({
+    operator: operator || '用户',
+    category: type === 'pi' ? 'pi' : 'kyc',
+    action: 'sign',
+    target: `${(currentUser.name || '用户')}`,
+    targetId: rec.id,
+    note: `协议签署留痕（${type}）：${agreementIds.join(', ')} · 版本 ${versions.join('/')}${signatureImage ? ' · 含电子签名' : ''}`,
+  });
+  Storage.save();
+  return rec;
+}
+
+// ---- 条款版本与重新同意（对齐实践案例"条款更新 → 弹窗通知 → 重新勾选"） ----
+export const termsState = {
+  currentVersion: 'v1.3',      // 当前生效条款版本
+  agreedVersion: 'v1.3',       // 当前用户已同意的版本（< currentVersion 时登录后弹重同意弹窗；默认一致不弹，后台「发布新版」后触发——2026-09-15 拍板）
+  updatedAt: '2026-09-15 09:00:00',
+};
+
+export function bumpTermsVersion(operator = '系统管理员') {
+  const n = Number(termsState.currentVersion.replace('v', '')) + 0.1;
+  termsState.currentVersion = `v${n.toFixed(1)}`;
+  termsState.updatedAt = formatNow();
+  logAudit({ operator, category: 'config', action: 'update', target: '条款版本', targetId: '', note: `发布新版条款 ${termsState.currentVersion}（用户端将重新征求同意）` });
+  Storage.save();
+  return termsState.currentVersion;
+}
+
+export function agreeTermsUpdate(operator = '用户') {
+  termsState.agreedVersion = termsState.currentVersion;
+  recordAgreement({ type: 'terms-update', agreementIds: ['user-agreement', 'privacy-policy', 'risk-disclosure'] }, operator);
+}
 
 function formatNow() {
   return formatDeadlineFrom(Date.now());
@@ -4012,6 +4289,8 @@ export function submitPiCertification({ piType, piProof, piCertified }, operator
     phone: currentUser.phone,
     status: PI_STATUS.PENDING_REVIEW,
     piType, piProof, piCertified,
+    // PI 声明签署留痕（2026-09-15 · 对齐协议签署实践）：声明全文版本随申请固化
+    piAgreementVersion: getAgreementById('pi-terms')?.version || 'v1.0',
     submittedAt,
     rejectReason: null,
     history: [{ at: submittedAt, operator, action: 'submitted', note: '用户提交 PI 资格声明' }],
@@ -5393,8 +5672,7 @@ export const spvs = [
     custodianBank: '汇丰银行',
     managementFee: '2%',
     carryRate: '20%',
-    // 协议引用（2026-08-15 方案 B · 香港私募合规留痕）：协议内容权威源 = 第三方签署平台，Admin 只维护"该 SPV 用哪份协议"（链接 + 版本 + 哈希）
-    // 签署时从档案锁定版本/哈希 → 签的是哪版协议有据可查（版本固化，防"签 A 版展示 B 版"）
+    // 协议引用（2026-09-15 · APP 内电子签署）：Admin 维护该 SPV 用哪份协议文档（平台存档）+ 版本 + 哈希，签署时固化
     agreementDocUrl: 'https://example.com/spv/p4-agreement.html',
     agreementVersion: 'v1.0',
     agreementHash: 'sha256:3f4a91c2e8d5b74a6c0f3e9d2b8a51f7e6d4c3b2a19087f6e5d4c3b2a19087f0',
@@ -5523,36 +5801,41 @@ export function getSpvSnapshot(spv) {
   return { totalRaised, holderCount, holdingCount: hlds.length, totalShares, totalDividends };
 }
 
-// ========== SPV 签署证据台账（2026-08-15 · 方案 B · 香港私募合规留痕审计） ==========
-// 第一性原理：协议**内容**权威源 = 第三方电子签署平台（法律效力来自其审计追踪：身份验证/时间戳/文档哈希/签署顺序），Admin 维护副本无法自证且会漂移——只"引用"不"维护"
-// Admin 必须维护的是**签署结果证据链**（驱动资金状态机 + 全流程留痕审计，监管质询时可凭 envelopeId 向第三方调取完整审计报告）：
-//   协议维度（签署时从 SPV 档案锁定版本 + 哈希，版本固化）/ 签署维度（第三方回执编号 envelopeId / 实际签署时间 / 签署人）/ 确认维度（运营确认人 + 时间）
+// ========== SPV 签署证据台账（2026-09-15 · APP 内电子签署 · 香港私募合规留痕审计） ==========
+// 2026-09-15 用户裁决：推翻 08-15 方案 B（第三方签署平台），SPV 签署与公司实践案例一致——用户在 APP 内阅读协议 + Canvas 电子签名完成签署，
+// 签名图片、协议版本、文档哈希签署时固化存档（实践案例已在公司历史产品验证，直接复用）。
+// Admin 维护"签署结果证据链"（驱动资金状态机 + 全流程留痕审计）：
+//   协议维度（签署时从 SPV 档案锁定版本 + 哈希，版本固化）/ 签署维度（签署编号 signedRef / 实际签署时间 / 签署人 / 签名图片 / 来源 source）
+//   source: 'app'（用户 APP 内签署，含签名图）| 'offline'（线下纸质签署，运营代登记）
 export const signingEvidence = [
   {
     id: 'se1', spvId: 'spv1', subId: 's1',
     agreementVersion: 'v1.0',
     agreementHash: 'sha256:3f4a91c2e8d5b74a6c0f3e9d2b8a51f7e6d4c3b2a19087f6e5d4c3b2a19087f0',
     evidenceUrl: 'https://example.com/spv/p4-agreement.html',
-    envelopeId: 'ENV-20260730-0001', signedAt: '2026-07-30 14:00:00',
+    signedRef: 'SIGN-20260730-0001', signedAt: '2026-07-30 14:00:00',
     signerName: '张三', signerEmail: 'demo@example.com',
-    status: 'signed', confirmedBy: '系统管理员', confirmedAt: '2026-07-30 14:02:00',
+    signatureImage: makeSignatureSvg('张三'), source: 'app',
+    status: 'signed', confirmedBy: '系统', confirmedAt: '2026-07-30 14:00:05',
   },
   {
     id: 'se2', spvId: 'spv2', subId: 's10',
     agreementVersion: 'v1.0',
     agreementHash: 'sha256:9b1c47d2f0a63e8b5d4c1a09287f6e5d4c3b2a19087f6e5d4c3b2a19087f0e1',
     evidenceUrl: 'https://example.com/spv/p3-agreement.html',
-    envelopeId: 'ENV-20260802-0015', signedAt: '2026-08-02 11:30:00',
+    signedRef: 'SIGN-20260802-0015', signedAt: '2026-08-02 11:30:00',
     signerName: '吴世昌', signerEmail: 'wu@example.com',
-    status: 'signed', confirmedBy: '系统管理员', confirmedAt: '2026-08-02 11:35:00',
+    signatureImage: makeSignatureSvg('吴世昌'), source: 'app',
+    status: 'signed', confirmedBy: '系统', confirmedAt: '2026-08-02 11:30:08',
   },
   {
     id: 'se3', spvId: 'spv2', subId: 's16',
     agreementVersion: 'v1.0',
-    agreementHash: 'sha256:9b1c47d2f0a63e8b5d4c1a09287f6e5d4c3b2a19087f6e5d4c3b2a19087f0e1',
+    agreementHash: 'sha256:9b1c47d2f0a63e8b5d4c1a09287f6e5d4c3b2a19087f0e1',
     evidenceUrl: 'https://example.com/spv/p3-agreement.html',
-    envelopeId: 'ENV-20260807-0033', signedAt: '2026-08-07 16:20:00',
+    signedRef: 'OFFLINE-20260807-0033', signedAt: '2026-08-07 16:20:00',
     signerName: '罗天宇', signerEmail: 'luo@example.com',
+    signatureImage: null, source: 'offline',
     status: 'signed', confirmedBy: '系统管理员', confirmedAt: '2026-08-07 16:24:00',
   },
 ];
@@ -5569,11 +5852,11 @@ export function getSigningEvidenceBySub(subId) {
   return signingEvidence.find(e => e.subId === subId) || null;
 }
 
-// 录入签署证据（合规留痕）：协议维度从 SPV 档案锁定（签署时版本固化），签署维度由运营录入第三方回执
-// envelopeId（第三方回执编号 = 审计报告索引）与 signedAt（实际签署时间）必填；同 subId 幂等（不可重复确认）
-export function recordSigningEvidence({ spvId, subId, envelopeId, signedAt, signerName = '', operator = '' }, extra = {}) {
+// 录入签署证据（合规留痕）：协议维度从 SPV 档案锁定（签署时版本固化）
+// signedRef（签署编号：APP 内签署自动生成 SIGN-xxx / 线下登记 OFFLINE-xxx）与 signedAt（实际签署时间）必填；同 subId 幂等（不可重复确认）
+export function recordSigningEvidence({ spvId, subId, signedRef, signedAt, signerName = '', signatureImage = null, source = 'app', operator = '' }, extra = {}) {
   if (!spvId || !subId) return { ok: false, error: '缺少 SPV 或申购记录' };
-  if (!envelopeId || !envelopeId.trim()) return { ok: false, error: '请填写第三方签署回执编号（合规留痕必需）' };
+  if (!signedRef || !String(signedRef).trim()) return { ok: false, error: '请填写签署编号（合规留痕必需）' };
   if (!signedAt) return { ok: false, error: '请填写实际签署时间（合规留痕必需）' };
   if (signingEvidence.some(e => e.subId === subId)) return { ok: false, error: '该笔申购已有签署证据，不可重复确认' };
   const spv = spvs.find(s => s.id === spvId);
@@ -5588,19 +5871,21 @@ export function recordSigningEvidence({ spvId, subId, envelopeId, signedAt, sign
     agreementHash: spv?.agreementHash || extra.agreementHash || '',
     evidenceUrl: spv?.agreementDocUrl || extra.evidenceUrl || '',
     // 签署维度
-    envelopeId: envelopeId.trim(),
+    signedRef: String(signedRef).trim(),
     signedAt: normSignedAt,
     signerName: signerName || sub?.investorName || '',
     signerEmail: extra.signerEmail || sub?.investorEmail || '',
+    signatureImage: signatureImage || null,
+    source,
     // 确认维度
     status: 'signed',
-    confirmedBy: operator || '运营后台',
+    confirmedBy: operator || (source === 'app' ? '系统' : '运营后台'),
     confirmedAt: formatNow(),
   });
   logAudit({
-    operator: operator || '运营后台', category: 'subscription', action: 'sign',
+    operator: operator || (source === 'app' ? '系统' : '运营后台'), category: 'subscription', action: 'sign',
     target: sub?.projectName || spv?.spvName, targetId: subId,
-    note: `录入 SPV 签署证据（回执 ${envelopeId.trim()} · 签署 ${signedAt} · 协议 ${signingEvidence[signingEvidence.length - 1].agreementVersion}${signingEvidence[signingEvidence.length - 1].agreementHash ? ' · 哈希已固化' : ''}）`,
+    note: `SPV 签署留痕（${source === 'app' ? 'APP 内电子签署' : '线下签署登记'}：${String(signedRef).trim()} · 签署 ${signedAt} · 协议 ${signingEvidence[signingEvidence.length - 1].agreementVersion}${signingEvidence[signingEvidence.length - 1].agreementHash ? ' · 哈希已固化' : ''}${signatureImage ? ' · 签名图已存档' : ''}）`,
   });
   Storage.save();
   return { ok: true, id: signingEvidence[signingEvidence.length - 1].id };
@@ -5832,8 +6117,8 @@ function scheduleFreezeTimeout(sub, project) {
 }
 
 // waitlist 上位（手动顺延 + 自动超时共用）：从 subscriptions 派生"项目下最早 submitted 排队者"（FIFO）
-// 2026-08-17 修复：上位后停在 allocated（不再自动签署）——签署动作在第三方电子签署平台完成，
-// 运营在「申购记录」页录入第三方回执确认签署（与签署证据台账一致，合规留痕必填回执）。
+// 2026-08-17 修复：上位后停在 allocated（不再自动签署）——签署动作由客户在 APP 内电子签署完成（2026-09-15 对齐公司实践），
+// 线下纸质签署场景由运营在「申购记录」页登记（与签署证据台账一致，合规留痕必填签署编号）。
 // 同时补启动冻结定时器：上位用户同样享有宽限期，逾期未签继续顺延下一位（否则会卡死无出口）。
 // 注：mock 单钱包简化，上位用户资金操作走当前演示钱包；接后端由真实账户体系驱动
 export function promoteWaitlist(project, operator = '') {
@@ -6062,10 +6347,10 @@ export function markSubscriptionAllocated(subscriptionId, operator = '', allocat
   return true;
 }
 
-// allocated → signed：签署动作在第三方电子签署平台完成，平台/管理员收到签署完成回调后标记（扣款 + 持仓）
+// allocated → signed：签署动作在 APP 内完成（用户阅读协议 + Canvas 电子签名，2026-09-15 对齐公司实践）或线下纸质签署（运营登记）
 // 业务时序校验：必须先在 SPV 管理设立档案才能签 SPV（先建档后签）
-// 合规留痕（2026-08-15 方案 B）：确认签署必须录入第三方回执（envelopeId + 实际签署时间），写 signingEvidence 证据台账——
-//   协议维度从 SPV 档案锁定版本/哈希（版本固化），回执编号 = 第三方审计报告索引，监管质询可凭此调取完整证据链
+// 合规留痕（2026-09-15 · APP 内电子签署）：APP 内签署必须含签名图片（signatureImage），签署编号/时间/签名图/协议版本哈希写入 signingEvidence 证据台账——
+//   协议维度从 SPV 档案锁定版本/哈希（版本固化），签名图 + 哈希构成签署内容不可篡改的证据链
 export function markSubscriptionSigned(subscriptionId, note, operator = '', evidence = null) {
   const sub = subscriptions.find(s => s.id === subscriptionId);
   if (!sub || sub.status !== 'allocated') return { ok: false, error: '状态不符，仅已获配额的意向可签 SPV' };
@@ -6078,8 +6363,8 @@ export function markSubscriptionSigned(subscriptionId, note, operator = '', evid
   if (!spv) {
     return { ok: false, error: `该项目（${sub.projectName}）尚未设立 SPV，请先在 SPV 管理设立档案后再签 SPV` };
   }
-  if (!evidence?.envelopeId || !evidence?.signedAt) {
-    return { ok: false, error: '请填写第三方签署回执编号与签署时间（合规留痕必需）' };
+  if (!evidence?.signedRef || !evidence?.signedAt) {
+    return { ok: false, error: '请填写签署编号与签署时间（合规留痕必需）' };
   }
   // 2026-08-17 修复：扣款前预检余额——不足直接拒绝（须在录证据之前，否则下次确认会被幂等校验卡死）
   const frozenAmt = sub.frozenAmount || sub.amount || 0;
@@ -6091,21 +6376,24 @@ export function markSubscriptionSigned(subscriptionId, note, operator = '', evid
     delete freezeTimers[sub.id];
   }
   // 写签署证据台账（幂等：同 subId 已有证据 → 拒绝，防重复扣款）
-  const normSignedAt = String(evidence.signedAt || '').replace('T', ' '); // datetime-local → 内部格式（格式统一）
   const evRes = recordSigningEvidence({
     spvId: spv.id,
     subId: sub.id,
-    envelopeId: evidence.envelopeId,
-    signedAt: normSignedAt,
+    signedRef: evidence.signedRef,
+    signedAt: evidence.signedAt,
     signerName: evidence.signerName,
+    signatureImage: evidence.signatureImage || null,
+    source: evidence.source || 'offline',
     operator,
   });
   if (!evRes.ok) return evRes;
   sub.status = 'signed';
+  const normSignedAt = String(evidence.signedAt || '').replace('T', ' ');
+  const srcLabel = (evidence.source === 'app') ? 'APP 内电子签署' : '线下签署登记';
   addHistory(sub, {
     type: 'signed',
     actor: 'platform',
-    note: note || `SPV 文件已签署（第三方回执 ${evidence.envelopeId.trim()} · ${normSignedAt}）`,
+    note: note || `SPV 文件已签署（${srcLabel} ${String(evidence.signedRef).trim()} · ${normSignedAt}）`,
   });
   const settled = settleFunds(sub.id);
   if (!settled) {
@@ -6118,9 +6406,30 @@ export function markSubscriptionSigned(subscriptionId, note, operator = '', evid
     if (proj) scheduleFreezeTimeout(sub, proj);
     return { ok: false, error: '扣款失败，请检查账户余额后重试' };
   }
-  logAudit({ operator: operator || '系统', category: 'subscription', action: 'sign', target: sub.projectName, targetId: sub.id, note: '确认签署完成（第三方签署回执）· 扣款并生成持仓' });
+  logAudit({ operator: operator || '系统', category: 'subscription', action: 'sign', target: sub.projectName, targetId: sub.id, note: `确认签署完成（${srcLabel}）· 扣款并生成持仓` });
   Storage.save();
   return { ok: true };
+}
+
+// APP 内签署 SPV 协议（2026-09-15 · 对齐公司实践案例：用户阅读协议全文 + Canvas 电子签名 → 直接完成签署）
+// 与线下登记（markSubscriptionSigned source='offline'）共用资金状态机；签署编号自动生成 SIGN-YYYYMMDD-序号，签名图必存档
+export function signSpvInApp({ subId, signatureImage }) {
+  const sub = subscriptions.find(s => s.id === subId);
+  if (!sub) return { ok: false, error: '申购记录不存在' };
+  if (!signatureImage) return { ok: false, error: '请先在签名区完成签名' };
+  // 签署编号：SIGN-日期-当日序号（mock 简化为时间戳尾号，保证唯一）
+  const day = formatNow().slice(0, 10).replace(/-/g, '');
+  const seq = String(signingEvidence.length + 1).padStart(4, '0');
+  const signedRef = `SIGN-${day}-${seq}`;
+  const spv = spvs.find(s => s.projectId === sub.projectId);
+  return markSubscriptionSigned(subId, null, '系统', {
+    signedRef,
+    signedAt: formatNow(),
+    signerName: currentUser.name,
+    signatureImage,
+    source: 'app',
+    spvIdHint: spv?.id,
+  });
 }
 
 // submitted → unallocated（未获配额，手动标记）
@@ -6548,7 +6857,12 @@ export function submitSubscription({ project, amount, currency = 'HKD' }) {
 // 26：2026-08-24 在线客服双端闭环（新增 supportTickets 会话实体 + 角色权限管理——数据结构变更）——旧快照（25）无客服会话，重置展示双端对话
 // 27：2026-08-27 合规功能 T1-T11（amlFlags 统一 PRD 结构 {type,level,triggeredAt,resolvedAt,resolvedBy,resolutionNote}；transaction amlFlags string→object；
 //     新增大额交易审查/异常检测/STR/EDD mock 数据；新增 ekycResult 字段——数据结构变更）——旧快照（26）amlFlags 字段不齐且缺合规实体演示数据，重置展示完整合规工作台
-const STATE_VERSION = 27;
+// 28：2026-09-15 协议签署实践对齐（signingEvidence 字段改造 envelopeId→signedRef + signatureImage/source；
+//     新增 agreementRecords 协议签署留痕 / termsState 条款版本——数据结构变更）——旧快照（27）签署证据无签名图/来源，重置展示 APP 内签署闭环
+// 30：2026-09-15 KYC 回归纯 CDD（用户裁决：KYC 内「用户声明」「电子签名法律效力」模块移除——签署责任收敛到注册/PI/SPV 三节点；
+//     预置 kycSubmissions 快照与 submitKyc 写入的 signatureImage/kycAgreementVersion/kycAgreedAt 字段删除、agreementRecords 预置 ar2 删除——数据结构变更）
+//     ——旧快照（29）KYC 数据含幽灵签名字段，重置后 KYC 链路无签署残留
+const STATE_VERSION = 30;
 const STORAGE_KEY = 'zhifu-app-state';
 
 /**
@@ -6580,7 +6894,9 @@ export const Storage = {
         exitEvents: exitEvents,                   // 持仓退出·事件驱动分配（2026-08-21 重构，替代 exitRequests）
         dividendRequests: dividendRequests,   // 投后分红（2026-08-14）
         spvs: spvs,                           // SPV 管理档案（2026-08-14）
-        signingEvidence: signingEvidence,     // SPV 签署证据台账（2026-08-15 方案 B · 香港合规留痕）
+        signingEvidence: signingEvidence,     // SPV 签署证据台账（2026-09-15 · APP 内电子签署 · 合规留痕）
+        agreementRecords: agreementRecords,   // 协议签署留痕（2026-09-15 · 注册/KYC/PI/银行卡/条款重同意）
+        termsState: termsState,               // 条款版本与用户已同意版本（2026-09-15 · 条款更新重新同意）
         broadcastLogs: broadcastLogs,         // 广播台账（2026-08-14 通知触达广播台账化）
         supportTickets: supportTickets,       // 在线客服会话（2026-08-24 双端闭环）
         kycSubmissions: kycSubmissions,
@@ -6715,6 +7031,16 @@ export const Storage = {
       if (Array.isArray(data.signingEvidence)) {
         signingEvidence.length = 0;
         data.signingEvidence.forEach(e => signingEvidence.push(e));
+      }
+      // 协议签署留痕 + 条款版本（2026-09-15 · 协议签署实践对齐）
+      if (Array.isArray(data.agreementRecords)) {
+        agreementRecords.length = 0;
+        data.agreementRecords.forEach(r => agreementRecords.push(r));
+      }
+      if (data.termsState) {
+        termsState.currentVersion = data.termsState.currentVersion || termsState.currentVersion;
+        termsState.agreedVersion = data.termsState.agreedVersion ?? termsState.agreedVersion;
+        termsState.updatedAt = data.termsState.updatedAt || termsState.updatedAt;
       }
       if (Array.isArray(data.broadcastLogs)) {
         broadcastLogs.length = 0;
