@@ -83,7 +83,22 @@ export default function KYCAddressProof({ navigate, goBack, setIsLoggedIn }) {
       {/* 退出登录确认弹窗 */}
       {showExitConfirm && (
         <div className="sheet-mask" onClick={() => setShowExitConfirm(false)}>
-          <div className="sheet" onClick={e => e.stopPropagation()} style={{ padding: 'var(--space-6)', maxWidth: 320, margin: '0 auto' }}>
+          <div 
+            onClick={e => e.stopPropagation()} 
+            style={{ 
+              position: 'fixed', 
+              top: '50%', 
+              left: '50%', 
+              transform: 'translate(-50%, -50%)',
+              background: 'var(--bg-card)', 
+              borderRadius: 'var(--radius-lg)', 
+              padding: 'var(--space-6)', 
+              width: 'calc(100% - var(--space-8))',
+              maxWidth: 320,
+              zIndex: 102,
+              boxShadow: 'var(--shadow-lg)'
+            }}
+          >
             <h3 style={{ margin: '0 0 var(--space-3)', fontSize: 'var(--text-lg)', fontWeight: 600 }}>{t('确认退出')}</h3>
             <p style={{ margin: '0 0 var(--space-5)', color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', lineHeight: 1.5 }}>
               {t('退出后认证进度将被保留，下次登录可继续。确认退出登录？')}
