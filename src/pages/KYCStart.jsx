@@ -109,7 +109,7 @@ function DateWheelPicker({ value, onChange, t, lang }) {
   );
 }
 
-export default function KYCStart({ navigate, goBack }) {
+export default function KYCStart({ navigate, goBack, setIsLoggedIn }) {
   const { t, lang } = useLang();
   const profile = currentUser.kyc_profile || {};
 
@@ -172,22 +172,21 @@ const [errors, setErrors] = useState({});
       {/* 吸顶标题栏 */}
       <div className="kyc-header">
         <div className="kyc-header-inner">
-          <button className="kyc-back-btn" onClick={goBack}>
-            <ArrowLeft size={20} />
-            <span>{t('返回')}</span>
-          </button>
+          <div style={{ width: 60 }} />  {/* 占位，保持标题居中 */}
           <span className="kyc-header-title">{t('专业投资者认证')}</span>
-          <div style={{ width: 60 }} />
+          <button className="kyc-exit-btn" onClick={() => { setIsLoggedIn(false); navigate('login'); }}>
+            <span>{t('退出登录')}</span>
+          </button>
         </div>
       </div>
 
-      {/* 进度条 */}
+      {/* 进度条（2026-09-15 收敛为 3 步：基本信息 → 身份证件 → 地址证明；KYC 内签署模块已移除） */}
       <div className="kyc-progress">
         <div className="kyc-progress-bar">
-          <div className="kyc-progress-fill" style={{ width: '33.33%' }} />
-          <span className="kyc-progress-dot active" style={{ left: '16.67%' }} />
+          <div className="kyc-progress-fill" style={{ width: '33.3%' }} />
+          <span className="kyc-progress-dot active" style={{ left: '16.5%' }} />
           <span className="kyc-progress-dot" style={{ left: '50%' }} />
-          <span className="kyc-progress-dot" style={{ left: '83.33%' }} />
+          <span className="kyc-progress-dot" style={{ left: '83.5%' }} />
         </div>
         <div className="kyc-progress-steps">
           <span className="kyc-progress-step active">1. {t('基本信息')}</span>

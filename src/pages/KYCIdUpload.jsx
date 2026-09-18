@@ -13,7 +13,7 @@ const EKYC_STATE = {
 };
 const EKYC_MAX_ATTEMPTS = 3; // 重试次数限制（24h 内，mock 会话级）
 
-export default function KYCIdUpload({ navigate, goBack }) {
+export default function KYCIdUpload({ navigate, goBack, setIsLoggedIn }) {
  const { t } = useLang();
  const profile = currentUser.kyc_profile || {};
 
@@ -118,21 +118,20 @@ const [backFile, setBackFile] = useState(null);
  <div className="kyc-page">
  <div className="kyc-header">
  <div className="kyc-header-inner">
- <button className="kyc-back-btn" onClick={goBack}>
- <ArrowLeft size={20} />
- <span>{t('返回')}</span>
- </button>
+ <div style={{ width: 60 }} />  {/* 占位，保持标题居中 */}
  <span className="kyc-header-title">{t('身份证件')}</span>
- <div style={{ width: 60 }} />
+ <button className="kyc-exit-btn" onClick={() => { setIsLoggedIn(false); navigate('login'); }}>
+   <span>{t('退出登录')}</span>
+ </button>
  </div>
  </div>
 
 <div className="kyc-progress">
     <div className="kyc-progress-bar">
-      <div className="kyc-progress-fill" style={{ width: '66.67%' }} />
-      <span className="kyc-progress-dot done" style={{ left: '16.67%' }} />
+      <div className="kyc-progress-fill" style={{ width: '66.7%' }} />
+      <span className="kyc-progress-dot done" style={{ left: '16.5%' }} />
       <span className="kyc-progress-dot active" style={{ left: '50%' }} />
-      <span className="kyc-progress-dot" style={{ left: '83.33%' }} />
+      <span className="kyc-progress-dot" style={{ left: '83.5%' }} />
     </div>
     <div className="kyc-progress-steps">
       <span className="kyc-progress-step done">1. {t('基本信息')}</span>

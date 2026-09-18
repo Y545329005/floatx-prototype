@@ -326,7 +326,7 @@ export function RegisterPage({ navigate, setIsLoggedIn, setUser, setToast }) {
       setIsLoggedIn(true);
       setUser(userData);
       setToast(t("注册成功"));
-      navigate("events");
+      navigate("kyc-start");  // 合规要求：注册后直接进入 KYC 流程
       setIsLoading(false);
     }, 1000);
   };

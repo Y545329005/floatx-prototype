@@ -74,6 +74,10 @@
   --compliance-border: rgba(183, 28, 28, 0.2);
   /* --accent 系列 */
   --accent-border:  rgba(184, 134, 11, 0.45);
+  /* 中档浅底（0.12 档：图标底/hero 光晕，介于 light 0.06 与 border 0.2 之间） */
+  --primary-tint:  rgba(0, 94, 184, 0.12);
+  --success-tint:  rgba(27, 107, 50, 0.12);
+  --warning-tint:  rgba(230, 81, 0, 0.12);
 
   /* 深色背景专用亮色（hero/深色卡内） */
   --text-on-dark:              #FFFFFF;
@@ -127,9 +131,81 @@
 
   /* 遮罩层（抽屉/弹层共用，2026-08-24 token 化：值不变，仅收敛硬编码） */
   --overlay-mask: rgba(0, 0, 0, 0.4);
+
+  /* 半结构 token（2026-09-14 双主题化：legacy 皮肤 = 现状值，hkbtc 皮肤见下方覆盖块） */
+  --font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* ============================================
+   HKBTC 2.0 主题（data-theme="hkbtc"）
+   来源：公司 Figma UI kit「HKBTC 2.0」（VATP_Web，Untitled UI 品牌化版本）
+   提取依据：FOUNDATIONS/Colors、Typography、Effect styles、Spacing；Buttons/Inputs 页验证语义色
+   仅覆盖 token 值，不写组件级规则 → 组件结构零改动，切换无重渲染成本
+   ============================================ */
+:root[data-theme="hkbtc"] {
+  /* 品牌/语义色（kit: Primary #3660FF / Success Green-600 / Error Red-600 / Warning Orange-600） */
+  --primary:       #3660FF;  /* Primary 按钮/focus/链接（白字对比度 4.9:1，AA 过线） */
+  --primary-hover: #2441A8;  /* kit 品牌渐变深端 */
+  --accent:        #7F56D9;  /* 品牌紫（金退场决策 2026-09-14：已申购/已报名标记改紫） */
+  --accent-light:  #F4EBFF;  /* Untitled UI purple-50 浅紫底 */
+  --accent-hover:  #6941C6;  /* purple-700 */
+  --success:       #16A34A;  /* Green-600（涨/成功） */
+  --danger:        #DC2626;  /* Red-600 */
+  --warning:       #EA580C;  /* Orange-600 */
+  --warning-text:  #C2410C;  /* Orange-700：白底小字号 AA 达标档 */
+
+  /* 中性色（kit: Zinc 系 + Tailwind Blue-50） */
+  --bg:            #F4F4F5;  /* Zinc-100 */
+  --bg-card:       #ffffff;
+  --text:          #18181B;  /* Zinc-900 */
+  --text-secondary: #51525C; /* kit 辅助文字 */
+  --text-tertiary:  #A0A0AB; /* Zinc-400（placeholder 同源） */
+  --border:        #D1D1D6;  /* kit 输入框强边框 */
+  --border-light:  #E4E4E7;  /* Zinc-200 弱边框 */
+
+  /* 派生色（按新基色重算，保持「改主色全跟随」机制） */
+  --primary-light:  rgba(54, 96, 255, 0.08);
+  --primary-bg:     rgba(54, 96, 255, 0.05);
+  --primary-strong: rgba(36, 65, 168, 0.95);
+  --primary-border: rgba(54, 96, 255, 0.28);
+  --success-light:  rgba(22, 163, 74, 0.08);
+  --success-bg:     rgba(22, 163, 74, 0.05);
+  --success-strong: rgba(21, 128, 61, 0.92);
+  --success-border: rgba(22, 163, 74, 0.25);
+  --warning-light:  rgba(234, 88, 12, 0.08);
+  --warning-bg:     rgba(234, 88, 12, 0.05);
+  --warning-strong: rgba(194, 65, 12, 0.92);
+  --warning-border: rgba(234, 88, 12, 0.25);
+  --danger-light:   rgba(220, 38, 38, 0.07);
+  --danger-bg:      rgba(220, 38, 38, 0.05);
+  --danger-strong:  rgba(185, 28, 28, 0.92);
+  --danger-border:  rgba(220, 38, 38, 0.25);
+  --compliance:     #B91C1C;  /* Red-700（kit Inputs 错误深档） */
+  --compliance-light:  rgba(185, 28, 28, 0.07);
+  --compliance-bg:     rgba(185, 28, 28, 0.05);
+  --compliance-strong: rgba(153, 27, 27, 0.92);
+  --compliance-border: rgba(185, 28, 28, 0.25);
+  --accent-border:  rgba(127, 86, 217, 0.4);
+  --primary-tint:  rgba(54, 96, 255, 0.14);
+  --success-tint:  rgba(22, 163, 74, 0.14);
+  --warning-tint:  rgba(234, 88, 12, 0.14);
+
+  /* 深色底涨跌亮色（kit Green-400 / Red-400） */
+  --success-on-dark: #4ADE80;
+  --danger-on-dark:  #F87171;
+
+  /* 半结构覆盖 */
+  --font-ui: Inter, -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --radius-lg: 16px;                                 /* kit 容器档（卡片 12→16，42 处引用已列入目检） */
+  --radius-2xl: 32px;                                /* kit 大区块档（备用，不强推） */
+
+  /* 阴影（kit Effect styles：Untitled UI 黑基阶梯） */
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.10);
+  --shadow-md: 0 2px 4px rgba(16, 24, 40, 0.06), 0 4px 8px rgba(16, 24, 40, 0.10);
+  --shadow-lg: 0 8px 8px rgba(16, 24, 40, 0.03), 0 20px 24px rgba(16, 24, 40, 0.08);
 }
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-ui);
   background: var(--bg);
   color: var(--text);
   line-height: 1.5;
@@ -570,7 +646,7 @@ input, select, textarea {
 
 .search-input-wrap:focus-within {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(0, 94, 184, 0.12);
+  box-shadow: 0 0 0 3px var(--primary-tint);
 }
 
 .search-input-wrap input {
@@ -797,6 +873,23 @@ input, select, textarea {
   flex-shrink: 0;
 }
 
+/* KYC 状态 badge（2026-09-11 · Profile 页 KYC 认证状态直达展示；点击引导对应 KYC 页） */
+.kyc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--radius-xl);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.kyc-badge.kyc-approved { background: var(--success-light); color: var(--success); }
+.kyc-badge.kyc-pending { background: var(--warning-light); color: var(--warning); }
+.kyc-badge.kyc-error { background: var(--danger-light); color: var(--danger); }
+.kyc-badge.kyc-muted { background: var(--border-light); color: var(--text-tertiary); }
+.kyc-badge.clickable { cursor: pointer; }
+
 .asset-hero-card {
   background: var(--primary);
   border-radius: var(--radius-lg);
@@ -978,6 +1071,12 @@ input, select, textarea {
   display: block;
   width: 100%;
   height: 120px;
+}
+
+/* 走势图端点（2026-09-14 token 化：原硬编码金色 #C9A84C 随金色退场决策移除，改随主题主色） */
+.asset-chart-dot {
+  fill: var(--primary);
+  stroke: var(--bg-card);
 }
 
 .chart-labels {
@@ -2786,6 +2885,103 @@ input, select, textarea {
   overflow: hidden;
 }
 
+/* 设计主题切换（2026-09-14 双皮肤 · Profile 页入口） */
+.theme-switch {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-3);
+}
+
+.theme-switch-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text);
+  font-size: var(--text-md);
+  font-weight: 600;
+  padding: var(--space-1) var(--space-1) var(--space-3);
+}
+
+.theme-switch-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.theme-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--min-touch-target);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.theme-option.selected {
+  background: var(--primary-light);
+  border-color: var(--primary-border);
+}
+
+.theme-option-swatch {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background: var(--primary);
+}
+
+/* 注意：swatch 是「两套皮肤的色板预览」，必须脱离当前皮肤变量固定显示各自色值（硬编码为语义正确，勿 token 化） */
+.theme-option-swatch[data-theme-preview='hkbtc'] {
+  background: linear-gradient(135deg, #2441A8 0%, #3660FF 100%);
+}
+
+.theme-option-swatch[data-theme-preview=''] {
+  background: linear-gradient(135deg, #005EB8 0%, #003C80 100%);
+}
+
+.theme-option-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.theme-option-name {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.theme-option-desc {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.theme-option-check {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+}
+
+.theme-option.selected .theme-option-check {
+  border-color: var(--primary);
+  background: var(--primary);
+  box-shadow: inset 0 0 0 3px var(--bg-card);
+}
+
+.theme-option.selected .theme-option-name {
+  color: var(--primary);
+}
+
 .search-bar {
   display: flex;
   align-items: center;
@@ -2800,7 +2996,7 @@ input, select, textarea {
 
 .search-bar:focus-within {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(0, 94, 184, 0.12);
+  box-shadow: 0 0 0 3px var(--primary-tint);
 }
 
 .search-bar input {
@@ -3806,12 +4002,12 @@ input, select, textarea {
 }
 
 .notification-icon.wallet {
-  background: rgba(27, 107, 50, 0.12);
+  background: var(--success-tint);
   color: var(--success);
 }
 
 .notification-icon.service {
-  background: rgba(230, 81, 0, 0.12);
+  background: var(--warning-tint);
   color: var(--warning);
 }
 
@@ -4216,6 +4412,42 @@ input, select, textarea {
   font-size: var(--text-base);
   line-height: 1.5;
   color: var(--text-secondary);
+}
+
+/* 我的当前位次（2026-09-11 · 项目详情页内联展示，点击跳热度页） */
+.heat-me-rank {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border-radius: var(--radius-md);
+  background: var(--primary-light);
+  cursor: pointer;
+}
+.heat-me-rank-label {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.heat-me-rank-value {
+  font-weight: 700;
+  color: var(--primary);
+  font-size: var(--text-lg);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.heat-me-rank-meta {
+  margin-left: auto;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  text-align: right;
+}
+.heat-me-rank > svg {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
 }
 
 .project-heat-page .heat-card {
@@ -5604,12 +5836,12 @@ input, select, textarea {
 
 .cta-status-card.submitted {
   background: var(--warning-light);
-  border: 1px solid rgba(230, 81, 0, 0.2);
+  border: 1px solid var(--warning-border);
 }
 
 .cta-status-card.allocated {
   background: var(--primary-light);
-  border: 1px solid rgba(0, 94, 184, 0.2);
+  border: 1px solid var(--primary-border);
 }
 
 .cta-status-card.signed {
@@ -5809,6 +6041,25 @@ input, select, textarea {
 
 .kyc-back-btn:active {
   background: var(--primary-light);
+}
+
+/* 退出登录按钮（KYC 流程中唯一出口） */
+.kyc-exit-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  background: none;
+  border: none;
+  color: var(--error);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  min-height: var(--min-touch-target);
+}
+
+.kyc-exit-btn:active {
+  background: rgba(239, 68, 68, 0.1);
 }
 
 .kyc-header-title {
@@ -6623,7 +6874,7 @@ input, select, textarea {
   width: 40px;
   height: 40px;
   border-radius: var(--radius-md);
-  background: rgba(0, 94, 184, 0.1);
+  background: var(--primary-tint);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -7010,4 +7261,379 @@ input, select, textarea {
   margin-top: var(--space-6);
   font-size: var(--text-xs);
   color: var(--text-tertiary);
+}
+
+/* ===== 协议中心 · 协议详情弹窗（2026-09-15 · 对齐公司协议签署实践） ===== */
+.agreement-modal-sheet {
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+}
+.agreement-modal-head h3 {
+  font-size: var(--text-lg);
+  margin-bottom: 2px;
+}
+.agreement-meta {
+  display: block;
+  margin-top: 2px;
+}
+.agreement-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-3) var(--space-4);
+  -webkit-overflow-scrolling: touch;
+}
+.agreement-section { margin-bottom: var(--space-4); }
+.agreement-section:last-child { margin-bottom: 0; }
+.agreement-section h4 {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+}
+.agreement-section p {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+.agreement-modal-close { flex-shrink: 0; }
+
+/* ===== Canvas 电子签名 v2 · 全屏书写模式（2026-09-15 · 点击签名区进入全屏，对齐银行 APP 交互） ===== */
+.signature-slot { margin-top: var(--space-2); }
+.signature-slot-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  width: 100%;
+  min-height: 96px;
+  padding: var(--space-3);
+  background: var(--bg);
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-family: inherit;
+}
+.signature-slot-empty:active { background: var(--primary-light); }
+.signature-slot-main { font-size: var(--text-base); color: var(--text-secondary); }
+.signature-slot-sub { font-size: var(--text-xs); color: var(--text-tertiary); }
+.signature-slot-preview img {
+  display: block;
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+}
+.signature-slot-actions { display: flex; gap: var(--space-2); margin-top: var(--space-2); }
+.signature-slot-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px; /* 触控目标 ≥44px（audit） */
+  padding: 0 var(--space-3);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.signature-fs-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+}
+.signature-fs-hint {
+  margin: var(--space-3) var(--space-4) 0;
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+}
+.signature-fs-canvas-wrap {
+  position: relative;
+  flex: 1;
+  margin: var(--space-2) var(--space-4);
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.signature-fs-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: crosshair;
+}
+.signature-fs-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  color: var(--text-tertiary);
+  font-size: var(--text-base);
+  pointer-events: none;
+}
+.signature-fs-actions {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom));
+}
+.signature-fs-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 44px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  cursor: pointer;
+}
+.signature-fs-btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+.signature-fs-btn-primary {
+  background: var(--primary);
+  border: none;
+  color: var(--text-on-dark);
+}
+.signature-fs-btn-primary:disabled { opacity: 0.45; cursor: default; }
+.signature-fs-btn-primary:not(:disabled):active { background: var(--primary-hover); }
+
+/* ===== KYC 04 协议签署页（2026-09-15） ===== */
+.kyc-declaration-text {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.8;
+  background: var(--bg);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+}
+.kyc-esign-notice { margin-bottom: var(--space-3); }
+.kyc-agreement-links {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+.kyc-agreement-link {
+  text-align: left;
+  font-size: var(--text-sm);
+  color: var(--primary);
+  background: var(--primary-light);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  min-height: 44px; /* 触控目标 ≥44px（2026-09-15 audit） */
+  display: flex;
+  align-items: center;
+}
+
+/* ===== SPV APP 内签署页（2026-09-15） ===== */
+.spv-sign-info-card .spv-sign-hash { word-break: break-all; }
+.spv-sign-hint {
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  line-height: 1.6;
+}
+.spv-sign-agreement-card .agreement-section {
+  margin-bottom: var(--space-3);
+}
+.spv-sign-proj-note { margin-top: var(--space-2); }
+.spv-sign-agree {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.spv-sign-note {
+  text-align: center;
+  margin-top: var(--space-2);
+  line-height: 1.6;
+}
+
+/* ===== 我的申购 · 签署凭证卡（2026-09-15） ===== */
+.sign-evidence-signature {
+  margin-top: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #ffffff;
+}
+.sign-evidence-signature img {
+  display: block;
+  width: 100%;
+  max-height: 110px;
+  object-fit: contain;
+}
+
+/* ===== 条款更新重同意闸门（2026-09-15） ===== */
+.terms-gate-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: var(--overlay-mask);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+}
+.terms-gate-card {
+  width: 100%;
+  max-width: 360px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+.terms-gate-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--primary-light);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--space-3);
+}
+.terms-gate-card h3 {
+  text-align: center;
+  font-size: var(--text-lg);
+  margin-bottom: var(--space-2);
+}
+.terms-gate-desc {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  text-align: center;
+  margin-bottom: var(--space-3);
+}
+.terms-gate-docs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+.terms-gate-doc-link {
+  text-align: left;
+  font-size: var(--text-sm);
+  color: var(--primary);
+  background: var(--primary-light);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  min-height: 44px; /* 触控目标 ≥44px（2026-09-15 audit） */
+  display: flex;
+  align-items: center;
+}
+.terms-gate-agree {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* ===== 注册页 · 协议与营销勾选（2026-09-15） ===== */
+.auth-marketing-row { position: relative; }
+.auth-marketing-help {
+  position: absolute;
+  right: 0;
+  top: 2px;
+  color: var(--text-tertiary);
+}
+.auth-marketing-list {
+  list-style: disc;
+  padding-left: var(--space-5);
+  margin-bottom: var(--space-4);
+}
+.auth-marketing-list li {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-bottom: var(--space-2);
+}
+.auth-terms-hint {
+  text-align: center;
+  margin-top: var(--space-2);
+}
+
+/* ===== 银行卡 · 新增卡协议勾选（2026-09-15） ===== */
+.bank-card-agree-label {
+  flex: 1;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.bank-card-agree-label a { color: var(--primary); }
+
+/* ===== 后台 · KYC 签名大图（2026-09-15） ===== */
+.kyc-signature-img-wrap { cursor: zoom-in; }
+.kyc-signature-img-wrap img { width: 100%; max-height: 90px; object-fit: contain; background: #fff; }
+.kyc-signature-img-wrap.zoomed img { max-height: none; }
+.kyc-signature-img-wrap.zoomed { cursor: zoom-out; }
+
+/* ===== 后台 · 快捷拒绝原因 chips（2026-09-15） ===== */
+.admin-reason-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.admin-reason-chip {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+}
+.admin-reason-chip:active { border-color: var(--primary); color: var(--primary); }
+
+/* ===== 后台 · 签署证据展开行（2026-09-15） ===== */
+.admin-sub-evidence {
+  padding: var(--space-3);
+  margin: 0 var(--space-3) var(--space-3);
+  background: var(--bg);
+  border-radius: var(--radius-md);
+}
+.admin-sub-evidence-signature {
+  margin-top: var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+}
+.admin-sub-evidence-signature img {
+  display: block;
+  height: 52px;
+  max-width: 200px;
+  object-fit: contain;
+}
+
+/* ===== 2026-09-15 audit 修复：协议勾选键盘焦点环（AgreeCheckbox） ===== */
+.agree-focus:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }

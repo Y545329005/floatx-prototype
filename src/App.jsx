@@ -36,9 +36,12 @@ import ChangeEmail from './pages/ChangeEmail';
 import KYCStart from './pages/KYCStart';
 import KYCIdUpload from './pages/KYCIdUpload';
 import KYCAddressProof from './pages/KYCAddressProof';
+
 import KYCSubmitted from './pages/KYCSubmitted';
 import KYCPI from './pages/KYCPI';
 import PISubmitted from './pages/PISubmitted';
+import SpvSign from './pages/SpvSign';
+import TermsUpdateGate from './components/TermsUpdateGate';
 
 import AdminProjects from './admin/AdminProjects';
 import AdminEvents from './admin/AdminEvents';
@@ -67,7 +70,7 @@ import AdminSupport from './admin/AdminSupport';
 import AdminConfig from './admin/AdminConfig';
 import AdminHome from './admin/AdminHome';
 
-import { KYC_STATUS, testAccounts, approveKyc, setMockCurrentUser, initState, resetSubscriptionForDemo, getRoleMenuKeys } from './mock/data';
+import { KYC_STATUS, testAccounts, approveKyc, setMockCurrentUser, initState, resetSubscriptionForDemo, getRoleMenuKeys, termsState } from './mock/data';
 
 function parseHash(hash) {
   // hash 里可能带 query string（如 #project/p3?reset=1），先剥离 ? 及后面的内容
@@ -117,6 +120,8 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(testAccounts.approved);
   // ?reset= 触发后需要强制刷新页面树，ProjectDetail 等组件直接读 data.js 数组，mutate 后不会自动 re-render
   const [dataRefresh, setDataRefresh] = useState(0);
+  // 条款重同意闸门确认后触发整树刷新（termsState.agreedVersion 已更新，闸门随之消失）
+  const [, setTermsTick] = useState(0);
 
   // ?reset= 参数：演示专用，自动重置签署状态（2026-08-11）
   // 访问 #project/p3?reset=1 后自动将 s2 恢复为 allocated，URL 参数自动清理
@@ -361,6 +366,14 @@ export default function App() {
     'funds', 'reports', 'notifications', 'support', 'settings', 'help', 'profile',
     'bind-phone', 'change-email',
     'kyc-start', 'kyc-id-upload', 'kyc-address-proof', 'kyc-pi', 'pi-submitted',
+    'spv-sign',
+  ]);
+
+  // 合规门控：KYC 未通过的用户只能访问的页面（PI 强制要求）
+  const KYC_ONLY_PATHS = new Set([
+    'kyc-start', 'kyc-id-upload', 'kyc-address-proof', 'kyc-submitted',
+    'login', 'register', 'forgot-password', 'reset-password',
+    'profile',  // 允许访问 Profile（用于退出登录）
   ]);
 
   const isKycApproved = currentUser.kyc_status === KYC_STATUS.APPROVED;
@@ -369,6 +382,11 @@ export default function App() {
     // 未登录 + 访问需要登录的页面 → LoginPage
     if (!isLoggedIn && PRIVATE_PATHS.has(hash.path)) {
       return <LoginPage navigate={navigate} setIsLoggedIn={setIsLoggedIn} setUser={setUser} setToast={setToast} />;
+    }
+    // 合规门控：已登录 + KYC 未通过 + 访问非 KYC 页面 → 重定向到 kyc-start
+    if (isLoggedIn && !isKycApproved && !KYC_ONLY_PATHS.has(hash.path)) {
+      navigate('kyc-start');
+      return null;
     }
     // KYC 已通过但访问 KYC 流程 → 重定向到 assets
     // 例外：#kyc-submitted（认证状态页）允许已通过用户重访查看"认证已通过"结果
@@ -435,17 +453,19 @@ export default function App() {
         return <Profile navigate={navigate} setIsLoggedIn={setIsLoggedIn} />;
       // KYC 流程页面（3 步：基本信息 → 证件上传 → 地址证明 + 提交后等待审核）
       case 'kyc-start':
-        return <KYCStart navigate={navigate} goBack={goBack} />;
+        return <KYCStart navigate={navigate} goBack={goBack} setIsLoggedIn={setIsLoggedIn} />;
       case 'kyc-id-upload':
-        return <KYCIdUpload navigate={navigate} goBack={goBack} />;
+        return <KYCIdUpload navigate={navigate} goBack={goBack} setIsLoggedIn={setIsLoggedIn} />;
       case 'kyc-address-proof':
-        return <KYCAddressProof navigate={navigate} goBack={goBack} />;
+        return <KYCAddressProof navigate={navigate} goBack={goBack} setIsLoggedIn={setIsLoggedIn} />;
       case 'kyc-submitted':
         return <KYCSubmitted navigate={navigate} goBack={goBack} />;
       case 'kyc-pi':
         return <KYCPI navigate={navigate} goBack={goBack} />;
       case 'pi-submitted':
         return <PISubmitted navigate={navigate} goBack={goBack} />;
+      case 'spv-sign':
+        return <SpvSign id={hash.param} navigate={navigate} goBack={goBack} />;
       default:
         return <Events navigate={navigate} setToast={setToast} isLoggedIn={isLoggedIn} />;
     }
@@ -464,6 +484,10 @@ export default function App() {
         </div>
         {showBottomNav && <BottomNav current={hash.path} onNavigate={navigate} />}
         {toast && <div className="toast toast-success">{toast}</div>}
+        {/* 条款更新重同意闸门（2026-09-15 · 对齐公司实践：版本升级后登录弹窗，重新勾选后方可继续） */}
+        {isLoggedIn && termsState.agreedVersion !== termsState.currentVersion && (
+          <TermsUpdateGate onAgreed={() => setTermsTick(t => t + 1)} />
+        )}
       </div>
     </LanguageProvider>
   );

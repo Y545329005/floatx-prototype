@@ -3,7 +3,7 @@ import { ArrowLeft, Upload, Check, AlertCircle, Globe } from "lucide-react";
 import { useLang } from "../i18n";
 import { currentUser, updateKycProfile, submitKyc } from "../mock/data";
 
-export default function KYCAddressProof({ navigate, goBack }) {
+export default function KYCAddressProof({ navigate, goBack, setIsLoggedIn }) {
   const { t } = useLang();
   const profile = currentUser.kyc_profile || {};
 
@@ -53,16 +53,17 @@ export default function KYCAddressProof({ navigate, goBack }) {
 
   const handleSubmit = () => {
     if (!validateForm()) return;
+    // 纯 CDD 提交（2026-09-15 裁决：KYC 内声明/电子签署模块移除——签署责任由注册（协议成立）/PI（认定程序）/SPV（交易签署）三节点承担）
     updateKycProfile({
       addressProofType: addressDocType,
       addressProof: addressFile,
-      // CRS 数据（2026-08-26 新增）
       taxResidencies: taxResidencies,
       usPerson: usPerson,
       tin: tin,
       crsDeclared: crsDeclared,
     });
-    submitKyc();  // 状态从 IN_PROGRESS → PENDING_REVIEW
+    // 提交认证（IN_PROGRESS/REJECTED → PENDING_REVIEW）
+    submitKyc();
     navigate("kyc-submitted");
   };
 
@@ -70,21 +71,20 @@ export default function KYCAddressProof({ navigate, goBack }) {
     <div className="kyc-page">
       <div className="kyc-header">
         <div className="kyc-header-inner">
-          <button className="kyc-back-btn" onClick={goBack}>
-            <ArrowLeft size={20} />
-            <span>{t('返回')}</span>
-          </button>
+          <div style={{ width: 60 }} />  {/* 占位，保持标题居中 */}
           <span className="kyc-header-title">{t('地址证明')}</span>
-          <div style={{ width: 60 }} />
+          <button className="kyc-exit-btn" onClick={() => { setIsLoggedIn(false); navigate('login'); }}>
+            <span>{t('退出登录')}</span>
+          </button>
         </div>
       </div>
 
       <div className="kyc-progress">
         <div className="kyc-progress-bar">
           <div className="kyc-progress-fill" style={{ width: '100%' }} />
-          <span className="kyc-progress-dot done" style={{ left: '16.67%' }} />
+          <span className="kyc-progress-dot done" style={{ left: '16.5%' }} />
           <span className="kyc-progress-dot done" style={{ left: '50%' }} />
-          <span className="kyc-progress-dot active" style={{ left: '83.33%' }} />
+          <span className="kyc-progress-dot active" style={{ left: '83.5%' }} />
         </div>
         <div className="kyc-progress-steps">
           <span className="kyc-progress-step done">1. {t('基本信息')}</span>
@@ -281,7 +281,10 @@ export default function KYCAddressProof({ navigate, goBack }) {
       </div>
 
       <div className="kyc-actions">
-        <button className="kyc-btn kyc-btn-primary" onClick={handleSubmit}>
+        <button
+          className="kyc-btn kyc-btn-primary"
+          onClick={handleSubmit}
+        >
           {t('提交认证')}
         </button>
       </div>
