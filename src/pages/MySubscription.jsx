@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, User, Building2, Zap, PenLine } from 'lucide-react';
-import { getProjectById, getInvestorRoster, currentUser, getInvestorNo, formatCurrency, formatISODateTime, historyTypeLabels, actorLabels, subscriptionStatusLabels, subscriptions, spvs, getSigningEvidenceBySub, formatListDateTime } from '../mock/data';
+import { ArrowLeft, User, Building2, Zap, PenLine, RefreshCcw } from 'lucide-react';
+import { getProjectById, getInvestorRoster, currentUser, getInvestorNo, formatCurrency, formatISODateTime, historyTypeLabels, actorLabels, subscriptionStatusLabels, subscriptions, spvs, getSigningEvidenceBySub, formatListDateTime, resetSubscriptionForDemo } from '../mock/data';
 import SubscriptionMilestone from '../components/SubscriptionMilestone';
 import FreezeCountdown from '../components/FreezeCountdown';
 import { useLang } from '../i18n';
@@ -81,15 +81,6 @@ export default function MySubscription({ id, navigate, goBack }) {
         {subRecord.status === 'allocated' && (
           <p className="freeze-note">{t('冻结 = 锁定意向金额（不扣款），签署 SPV 时实际出资；逾期未签署将自动顺延')}</p>
         )}
-        {/* 快速签署入口（替代原倒计时重置按钮，倒计时重置保留为控制台命令 __resetFreezeGrace） */}
-        {subRecord.status === 'allocated' && (
-          <button
-            className="btn btn-primary"
-            onClick={() => navigate(`#spv-sign/${subRecord.id}`)}
-          >
-            <PenLine size={13} /> {t('立即签署')}
-          </button>
-        )}
         {subRecord.shares && (
           <div className="subscription-info-row">
             <span>{t('获得份额')}</span>
@@ -151,6 +142,20 @@ export default function MySubscription({ id, navigate, goBack }) {
           </div>
         );
       })()}
+
+      {/* 重新演示签署流程（仅 signed 状态显示，重置为 allocated 后可重新体验） */}
+      {subRecord.status === 'signed' && (
+        <button
+          className="btn btn-secondary"
+          style={{ width: '100%' }}
+          onClick={() => {
+            resetSubscriptionForDemo(subRecord.id);
+            setRefresh(v => v + 1);
+          }}
+        >
+          <RefreshCcw size={13} /> {t('重新演示签署流程')}
+        </button>
+      )}
 
       {/* 我的位次 */}
       {project && (

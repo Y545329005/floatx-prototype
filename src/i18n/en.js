@@ -567,6 +567,7 @@ export const en = {
   // Status (CTA)
   '已获配额 · 等待签署 SPV': 'Allocated · Awaiting SPV signing',
   '已签 SPV · 查看持仓': 'SPV signed · View holdings',
+  '重新演示签署流程': 'Redo signing demo',
 
   // Operation history
   '操作历史 · {} 条': 'History · {} entries',
