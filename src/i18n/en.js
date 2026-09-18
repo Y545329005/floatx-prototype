@@ -265,6 +265,7 @@ export const en = {
   '最近更新': 'Latest update',
   '申请退出': 'Request Exit',
   '确认退出': 'Exit',
+  '退出后认证进度将被保留，下次登录可继续。确认退出登录？': 'Your verification progress will be saved. You can continue next time. Exit now?',
   '的全部份额？': ' all shares?',
   '将回到可用余额。': 'will return to your available balance.',
   '确认申请退出': 'Confirm Exit Request',

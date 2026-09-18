@@ -112,6 +112,7 @@ function DateWheelPicker({ value, onChange, t, lang }) {
 export default function KYCStart({ navigate, goBack, setIsLoggedIn }) {
   const { t, lang } = useLang();
   const profile = currentUser.kyc_profile || {};
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const [formData, setFormData] = useState({
     name_en: profile.name_en || "",
@@ -174,11 +175,31 @@ const [errors, setErrors] = useState({});
         <div className="kyc-header-inner">
           <div style={{ width: 60 }} />  {/* 占位，保持标题居中 */}
           <span className="kyc-header-title">{t('专业投资者认证')}</span>
-          <button className="kyc-exit-btn" onClick={() => { setIsLoggedIn(false); navigate('login'); }}>
+          <button className="kyc-exit-btn" onClick={() => setShowExitConfirm(true)}>
             <span>{t('退出登录')}</span>
           </button>
         </div>
       </div>
+
+      {/* 退出登录确认弹窗 */}
+      {showExitConfirm && (
+        <div className="sheet-mask" onClick={() => setShowExitConfirm(false)}>
+          <div className="sheet" onClick={e => e.stopPropagation()} style={{ padding: 'var(--space-6)', maxWidth: 320, margin: '0 auto' }}>
+            <h3 style={{ margin: '0 0 var(--space-3)', fontSize: 'var(--text-lg)', fontWeight: 600 }}>{t('确认退出')}</h3>
+            <p style={{ margin: '0 0 var(--space-5)', color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', lineHeight: 1.5 }}>
+              {t('退出后认证进度将被保留，下次登录可继续。确认退出登录？')}
+            </p>
+            <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowExitConfirm(false)}>
+                {t('取消')}
+              </button>
+              <button className="btn btn-primary" style={{ flex: 1, background: 'var(--error)', border: 'none' }} onClick={() => { setIsLoggedIn(false); navigate('login'); }}>
+                {t('确认退出')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 进度条（2026-09-15 收敛为 3 步：基本信息 → 身份证件 → 地址证明；KYC 内签署模块已移除） */}
       <div className="kyc-progress">
