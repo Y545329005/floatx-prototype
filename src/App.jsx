@@ -70,7 +70,7 @@ import AdminSupport from './admin/AdminSupport';
 import AdminConfig from './admin/AdminConfig';
 import AdminHome from './admin/AdminHome';
 
-import { KYC_STATUS, testAccounts, approveKyc, setMockCurrentUser, initState, resetSubscriptionForDemo, getRoleMenuKeys, termsState } from './mock/data';
+import { KYC_STATUS, testAccounts, approveKyc, setMockCurrentUser, initState, resetSubscriptionForDemo, restartFreezeGrace, getRoleMenuKeys, termsState } from './mock/data';
 
 function parseHash(hash) {
   // hash 里可能带 query string（如 #project/p3?reset=1），先剥离 ? 及后面的内容
@@ -240,12 +240,18 @@ export default function App() {
     window.__resetSubscription = (id) => {
       resetSubscriptionForDemo(id || 's2');
     };
+    // 重置冻结宽限期倒计时（演示用，控制台输入 window.__resetFreezeGrace() 即可）
+    window.__resetFreezeGrace = (id) => {
+      restartFreezeGrace(id || 's2');
+      setCurrentUser({ ...currentUser });
+    };
     return () => {
       delete window.__setMockLoggedIn;
       delete window.__resetMockLogin;
       delete window.__loginWithTestAccount;
       delete window.__approveKyc;
       delete window.__resetSubscription;
+      delete window.__resetFreezeGrace;
     };
   }, []);
 

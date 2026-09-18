@@ -560,7 +560,6 @@ export const en = {
   // Frozen / countdown
   '已冻结': 'Frozen',
   '宽限期已过': 'Grace period expired',
-  '演示：重置冻结宽限期倒计时': 'Demo: Reset freeze grace countdown',
   '小时': 'h',
   '分': 'm',
   '秒': 's',

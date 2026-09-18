@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, User, Building2, Zap, Clock } from 'lucide-react';
-import { getProjectById, getInvestorRoster, currentUser, getInvestorNo, formatCurrency, formatISODateTime, historyTypeLabels, actorLabels, subscriptionStatusLabels, subscriptions, restartFreezeGrace, spvs } from '../mock/data';
+import { ArrowLeft, User, Building2, Zap, PenLine } from 'lucide-react';
+import { getProjectById, getInvestorRoster, currentUser, getInvestorNo, formatCurrency, formatISODateTime, historyTypeLabels, actorLabels, subscriptionStatusLabels, subscriptions, spvs, getSigningEvidenceBySub, formatListDateTime } from '../mock/data';
 import SubscriptionMilestone from '../components/SubscriptionMilestone';
 import FreezeCountdown from '../components/FreezeCountdown';
 import { useLang } from '../i18n';
@@ -81,17 +81,13 @@ export default function MySubscription({ id, navigate, goBack }) {
         {subRecord.status === 'allocated' && (
           <p className="freeze-note">{t('冻结 = 锁定意向金额（不扣款），签署 SPV 时实际出资；逾期未签署将自动顺延')}</p>
         )}
-        {/* 演示：重置冻结宽限期倒计时（mock 30s，预置数据 deadline 已过时手动重启观看完整流程） */}
+        {/* 快速签署入口（替代原倒计时重置按钮，倒计时重置保留为控制台命令 __resetFreezeGrace） */}
         {subRecord.status === 'allocated' && (
           <button
-            className="demo-reset-btn"
-            onClick={() => {
-              restartFreezeGrace(subRecord.id);
-              setRefresh(v => v + 1);
-            }}
+            className="btn btn-primary"
+            onClick={() => navigate(`#spv-sign/${subRecord.id}`)}
           >
-            <Clock size={13} />
-            {t('演示：重置冻结宽限期倒计时')}
+            <PenLine size={13} /> {t('立即签署')}
           </button>
         )}
         {subRecord.shares && (
@@ -107,14 +103,14 @@ export default function MySubscription({ id, navigate, goBack }) {
         <SubscriptionMilestone status={subRecord.status} />
       </div>
 
-      {/* 签署指引（仅 allocated 获配额冻结期显示）：签署在第三方平台完成，消除"获配→签署"旅程黑箱（2026-08-17 新增） */}
+      {/* 签署指引（仅 allocated 获配额冻结期显示）：APP 内阅读协议 + 电子签名完成签署（2026-09-15 · 对齐公司实践） */}
       {subRecord.status === 'allocated' && (() => {
         // 签署对象从 SPV 档案按项目关联派生（spvs.projectId ↔ subscription.projectId，数据层零改动）
         const spv = spvs.find(s => s.projectId === subRecord.projectId);
         return (
           <div className="card card-secondary sign-guide-card">
             <div className="card-title">{t('签署 SPV 协议')}</div>
-            <p className="sign-guide-desc">{t('签署将在第三方电子签署平台（DocuSign / Adobe Sign 类）完成，您将收到签署邀请。')}</p>
+            <p className="sign-guide-desc">{t('签署将在 APP 内完成：阅读协议全文并使用电子签名确认，签名与协议版本将固化存档，与手写签名具有同等法律效力。')}</p>
             {spv && (
               <div className="sign-guide-row">
                 <span>{t('签署对象')}</span>
@@ -122,19 +118,35 @@ export default function MySubscription({ id, navigate, goBack }) {
               </div>
             )}
             <div className="sign-guide-steps">
-              <div className="sign-guide-step"><strong>1</strong><span>{t('收到邀请')}</span></div>
-              <div className="sign-guide-step"><strong>2</strong><span>{t('平台签署')}</span></div>
+              <div className="sign-guide-step"><strong>1</strong><span>{t('阅读协议')}</span></div>
+              <div className="sign-guide-step"><strong>2</strong><span>{t('APP 内签名')}</span></div>
               <div className="sign-guide-step"><strong>3</strong><span>{t('扣款持仓')}</span></div>
             </div>
-            {spv && spv.agreementDocUrl && (
-              <a
-                className="btn btn-primary btn-full sign-guide-cta"
-                href={spv.agreementDocUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {t('前往签署平台')} ↗
-              </a>
+            <button
+              className="btn btn-primary btn-full sign-guide-cta"
+              onClick={() => navigate(`#spv-sign/${subRecord.id}`)}
+            >
+              <PenLine size={15} /> {t('立即签署')}
+            </button>
+          </div>
+        );
+      })()}
+
+      {/* 签署凭证（signed 后展示：APP 内电子签署 / 线下登记的证据摘要，2026-09-15） */}
+      {subRecord.status === 'signed' && (() => {
+        const ev = getSigningEvidenceBySub(subRecord.id);
+        if (!ev) return null;
+        return (
+          <div className="card card-secondary sign-evidence-card">
+            <div className="card-title"><PenLine size={14} className="inline-icon" /> {t('签署凭证')}</div>
+            <div className="subscription-info-row"><span>{t('签署编号')}</span><strong className="date-iso">{ev.signedRef}</strong></div>
+            <div className="subscription-info-row"><span>{t('协议版本')}</span><strong className="date-iso">{ev.agreementVersion}{ev.agreementHash ? ` · ${t('哈希已固化')}` : ''}</strong></div>
+            <div className="subscription-info-row"><span>{t('签署方式')}</span><strong>{ev.source === 'app' ? t('APP 内电子签署') : t('线下签署登记')}</strong></div>
+            <div className="subscription-info-row"><span>{t('签署时间')}</span><strong className="date-iso">{formatListDateTime(ev.signedAt)}</strong></div>
+            {ev.signatureImage && (
+              <div className="sign-evidence-signature">
+                <img src={ev.signatureImage} alt={t('电子签名')} />
+              </div>
             )}
           </div>
         );
