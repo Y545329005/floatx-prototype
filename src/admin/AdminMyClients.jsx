@@ -100,15 +100,13 @@ export default function AdminMyClients({ navigate, detailId, admin }) {
     return (t.leadStatus || 'new') === statusFilter;
   });
   // 待办优先排序（2026-08-15 方案 A：顾问第一眼看到最紧急的）
-  //   一级：任务紧迫度（冻结已到期[客户快掉出本轮] > 今日到期 > 待签 SPV > 待联系 > 跟进中 > 无任务）
+  //   一级：任务紧迫度（待签 SPV > 待联系 > 跟进中 > 无任务）
   //   二级：最近报名时间降序（兴趣信号）
   const urgencyOf = (u) => {
     const t = tasksOf(u);
-    if (t.frozenExpired > 0) return 0;                    // 冻结宽限期已过（24h 未签自动顺延）
-    if (t.frozenDue > 0) return 1;                        // 今日将到期（6h 内）
-    if (t.pendingSign > 0) return 2;                      // 待签 SPV（无到期提示）
-    if (t.pendingLead > 0) return t.leadStatus === 'new' ? 3 : 4; // 待联系 / 跟进中
-    return 5;                                             // 无任务
+    if (t.pendingSign > 0) return 0;                      // 待签 SPV
+    if (t.pendingLead > 0) return t.leadStatus === 'new' ? 1 : 2; // 待联系 / 跟进中
+    return 3;                                             // 无任务
   };
   const sorted = [...filtered].sort((a, b) => {
     const ua = urgencyOf(a), ub = urgencyOf(b);
@@ -304,7 +302,7 @@ export default function AdminMyClients({ navigate, detailId, admin }) {
               </span>
               <span className="col-tasks">
                 {t.pendingLead > 0 && <TaskBadge kind="lead" text={t.leadStatus === 'new' ? '待联系' : '跟进中'} />}
-                {t.pendingSign > 0 && <TaskBadge kind="sign" text={`待签 SPV ${t.pendingSign}${t.frozenAlert > 0 ? ` · ${t.frozenExpired > 0 ? '已到期' : '今日到期'}` : ''}`} />}
+                {t.pendingSign > 0 && <TaskBadge kind="sign" text={`待签 SPV ${t.pendingSign}`} />}
               </span>
               <span className="col-contact">
                 <span className="admin-lead-phone">{u.phone}</span>
@@ -479,7 +477,7 @@ export default function AdminMyClients({ navigate, detailId, admin }) {
                     <h4 className="card-title">顾问待办</h4>
                     <div className="admin-client-task-list">
                       {selTasks.pendingLead > 0 && <div className="kyc-review-row"><span>客户跟进</span><strong><TaskBadge kind="lead" text={selTasks.leadStatus === 'new' ? '待联系' : '跟进中'} /></strong></div>}
-                      {selTasks.pendingSign > 0 && <div className="kyc-review-row"><span>SPV 签署</span><strong><TaskBadge kind="sign" text={`${selTasks.pendingSign} 笔待签${selTasks.frozenAlert > 0 ? ` · ${selTasks.frozenExpired > 0 ? '已到期' : '今日到期'}` : ''}（获配额后 24h 宽限期）`} /></strong></div>}
+                      {selTasks.pendingSign > 0 && <div className="kyc-review-row"><span>SPV 签署</span><strong><TaskBadge kind="sign" text={`${selTasks.pendingSign} 笔待签`} /></strong></div>}
                     </div>
                     <p className="admin-form-hint">资金/SPV 审批由资金运营处理，顾问负责联系客户跟进签署。</p>
                   </div>

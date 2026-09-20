@@ -174,7 +174,7 @@ const [errors, setErrors] = useState({});
       <div className="kyc-header">
         <div className="kyc-header-inner">
           <div style={{ width: 60 }} />  {/* 占位，保持标题居中 */}
-          <span className="kyc-header-title">{t('专业投资者认证')}</span>
+          <span className="kyc-header-title">{t('实名认证')}</span>
           <button className="kyc-exit-btn" onClick={() => setShowExitConfirm(true)}>
             <span>{t('退出登录')}</span>
           </button>
@@ -208,7 +208,7 @@ const [errors, setErrors] = useState({});
               <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowExitConfirm(false)}>
                 {t('取消')}
               </button>
-              <button className="btn btn-primary" style={{ flex: 1, background: 'var(--error)', border: 'none' }} onClick={() => { setIsLoggedIn(false); navigate('login'); }}>
+              <button className="btn btn-primary" style={{ flex: 1, background: 'var(--danger)', border: 'none', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => { setIsLoggedIn(false); navigate('login'); }}>
                 {t('确认退出')}
               </button>
             </div>

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { subscriptions, currentUser, getInvestorNo, formatCurrency, formatISODateTime, historyTypeLabels, actorLabels } from '../mock/data';
 import SubscriptionMilestone from '../components/SubscriptionMilestone';
-import FreezeCountdown from '../components/FreezeCountdown';
 import { useLang } from '../i18n';
 
 export default function Subscriptions({ navigate, goBack }) {
@@ -53,7 +52,6 @@ export default function Subscriptions({ navigate, goBack }) {
                   <span>{t('已冻结')}</span>
                   <div className="freeze-info-right">
                     <strong className="date-iso">HK$ {formatCurrency(s.frozenAmount)}</strong>
-                    <FreezeCountdown deadline={s.freezeDeadline} />
                   </div>
                 </div>
               )}

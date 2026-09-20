@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="classic">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>财富私募APP - 设计风格演示</title>
+  
+  <!-- 基础样式 -->
+  <link rel="stylesheet" href="styles/base.css">
+  
+  <!-- 主题样式 -->
+  <link rel="stylesheet" href="styles/theme-classic.css">
+  <link rel="stylesheet" href="styles/theme-minimal.css">
+  <link rel="stylesheet" href="styles/theme-luxury.css">
+  <link rel="stylesheet" href="styles/theme-warm.css">
+  
+  <style>
+    /* 页面特殊样式 */
+    .page-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: var(--bg-card);
+      padding: 12px 16px;
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
+      box-shadow: var(--shadow-md);
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+    
+    .page-nav button {
+      flex: 1;
+      max-width: 120px;
+      padding: 10px 16px;
+      border-radius: var(--radius-lg);
+      font-size: var(--text-sm);
+      font-weight: 600;
+      transition: all 0.2s;
+      background: var(--bg);
+      color: var(--text-secondary);
+    }
+    
+    .page-nav button.active {
+      background: var(--primary);
+      color: #fff;
+    }
+    
+    .page-nav button:not(.active):hover {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+    
+    /* 内容区域偏移 */
+    .app-content {
+      padding-bottom: 140px;
+    }
+    
+    /* 页面切换动画 */
+    .page-view {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    .page-view.active {
+      display: block;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* 主题信息卡片 */
+    .theme-info {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
+      transition: all var(--transition-normal);
+    }
+    
+    .theme-info h3 {
+      font-size: var(--text-2xl);
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--primary);
+      letter-spacing: var(--letter-spacing-tight);
+    }
+    
+    .theme-info p {
+      font-size: var(--text-base);
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+    
+    .theme-info .theme-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    
+    .theme-info .theme-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      font-size: var(--text-xs);
+      font-weight: 600;
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+    
+    /* 文档链接样式 */
+    .doc-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) 0;
+      min-height: var(--min-touch-target);
+      border-bottom: 1px solid var(--border-light);
+      font-size: var(--text-lg);
+      color: var(--primary);
+      cursor: pointer;
+      text-decoration: none;
+    }
+    
+    .doc-item:last-child {
+      border-bottom: none;
+    }
+    
+    .doc-item svg {
+      flex-shrink: 0;
+    }
+    
+    /* 差异对比表 */
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: var(--text-sm);
+    }
+    
+    .comparison-table th,
+    .comparison-table td {
+      padding: 12px 8px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-light);
+    }
+    
+    .comparison-table th {
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-size: var(--text-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .comparison-table td {
+      color: var(--text);
+    }
+    
+    .comparison-table tr:last-child td {
+      border-bottom: none;
+    }
+    
+    /* 颜色预览 */
+    .color-preview {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- 主题切换器 -->
+    <div class="theme-switcher">
+      <button data-theme="classic" class="active" onclick="switchTheme('classic')">方案A：经典金融</button>
+      <button data-theme="minimal" onclick="switchTheme('minimal')">方案B：现代极简</button>
+      <button data-theme="luxury" onclick="switchTheme('luxury')">方案C：高端奢华</button>
+      <button data-theme="warm" onclick="switchTheme('warm')">方案D：温暖人文</button>
+    </div>
+    
+    <!-- 页面内容 -->
+    <div class="app-content">
+      <!-- 页面导航 -->
+      <div class="page-nav">
+        <button class="active" onclick="switchPage('overview')">资产总览</button>
+        <button onclick="switchPage('projects')">项目列表</button>
+        <button onclick="switchPage('detail')">项目详情</button>
+      </div>
+      
+      <!-- 资产总览页 -->
+      <div id="page-overview" class="page-view active">
+        <div class="page" style="padding-top: 16px;">
+          <div class="theme-info" id="theme-info-overview">
+            <h3>当前主题：经典金融（Professional Blue）</h3>
+            <p>正蓝+深金配色，传统金融机构风格，强调信任和专业感。系统字体，标准间距，中等圆角。</p>
+            <div class="theme-tags">
+              <span class="theme-tag">SF Pro Display</span>
+              <span class="theme-tag">标准间距</span>
+              <span class="theme-tag">8-12px圆角</span>
+              <span class="theme-tag">蓝色调阴影</span>
+            </div>
+          </div>
+          <div id="asset-overview-content"></div>
+        </div>
+      </div>
+      
+      <!-- 项目列表页 -->
+      <div id="page-projects" class="page-view">
+        <div class="page project-market-page" style="padding-top: 0;">
+          <div id="project-list-content"></div>
+        </div>
+      </div>
+      
+      <!-- 项目详情页 -->
+      <div id="page-detail" class="page-view">
+        <div class="page project-detail-page" style="padding-top: 0;">
+          <div id="project-detail-content"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 脚本：按顺序加载（mock → 组件 → 初始化） -->
+  <script src="data/mock.js"></script>
+  <script src="components/AssetOverview.js"></script>
+  <script src="components/ProjectList.js"></script>
+  <script src="components/ProjectDetail.js"></script>
+  <script>
+    // 主题配置信息
+    const themeConfig = {
+      classic: {
+        name: '经典金融（Professional Blue）',
+        desc: '正蓝+深金配色，传统金融机构风格，强调信任和专业感。系统字体，标准间距，中等圆角。',
+        tags: ['SF Pro Display', '标准间距', '8-12px圆角', '蓝色调阴影']
+      },
+      minimal: {
+        name: '现代极简（Minimal Stripe）',
+        desc: '科技紫蓝配色，Stripe/Linear风格，强调数据和效率。Inter字体，紧凑间距，小圆角。',
+        tags: ['Inter字体', '紧凑间距(-20%)', '4-6px圆角', '极简阴影']
+      },
+      luxury: {
+        name: '高端奢华（Dark Luxury）',
+        desc: '深色+金色配色，Apple Pro风格，强调专属感和精致感。Plus Jakarta Sans字体，宽松间距，大圆角。',
+        tags: ['Plus Jakarta Sans', '宽松间距(+30%)', '16-24px圆角', '金色光晕']
+      },
+      warm: {
+        name: '温暖人文（Warm Trust）',
+        desc: '温暖橙+深棕配色，Revolut风格，强调亲和力和信任感。Nunito字体，舒适间距，柔和圆角。',
+        tags: ['Nunito字体', '舒适间距(+15%)', '12-16px圆角', '柔和阴影']
+      }
+    };
+    
+    // 初始化页面
+    function init() {
+      // 渲染资产总览
+      document.getElementById('asset-overview-content').innerHTML = renderAssetOverview();
+      
+      // 渲染项目列表
+      document.getElementById('project-list-content').innerHTML = renderProjectList();
+      bindProjectListEvents();
+      
+      // 渲染项目详情（默认显示第一个项目）
+      document.getElementById('project-detail-content').innerHTML = renderProjectDetail('p1');
+      
+      // 初始化主题
+      initTheme();
+    }
+    
+    // 主题切换
+    window.switchTheme = function(themeId) {
+      document.documentElement.setAttribute('data-theme', themeId);
+      localStorage.setItem('style-demo-theme', themeId);
+      
+      // 更新切换器UI
+      document.querySelectorAll('.theme-switcher button').forEach(btn => {
+        if (btn.dataset.theme === themeId) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+      
+      // 更新主题信息
+      updateThemeInfo(themeId);
+    };
+    
+    // 更新主题信息
+    function updateThemeInfo(themeId) {
+      const themeInfo = document.getElementById('theme-info-overview');
+      const config = themeConfig[themeId];
+      
+      themeInfo.innerHTML = `
+        <h3>当前主题：${config.name}</h3>
+        <p>${config.desc}</p>
+        <div class="theme-tags">
+          ${config.tags.map(tag => `<span class="theme-tag">${tag}</span>`).join('')}
+        </div>
+      `;
+    }
+    
+    // 页面切换
+    window.switchPage = function(page) {
+      // 隐藏所有页面
+      document.querySelectorAll('.page-view').forEach(el => {
+        el.classList.remove('active');
+      });
+      
+      // 显示目标页面
+      document.getElementById(`page-${page}`).classList.add('active');
+      
+      // 更新导航按钮
+      document.querySelectorAll('.page-nav button').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      event.target.classList.add('active');
+    };
+    
+    // 显示项目列表（从详情页返回）
+    window.showProjectList = function() {
+      window.switchPage('projects');
+      // 更新导航按钮状态
+      document.querySelectorAll('.page-nav button').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      document.querySelectorAll('.page-nav button')[1].classList.add('active');
+    };
+    
+    // 初始化主题
+    function initTheme() {
+      const savedTheme = localStorage.getItem('style-demo-theme') || 'classic';
+      window.switchTheme(savedTheme);
+    }
+    
+    // 启动
+    init();
+  </script>
+</body>
+</html>

@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Coins, Timer, Tags, ArrowLeftRight, Mail, Landmark, Building2, Edit3, Plus, Trash2, Save, RotateCcw, X } from 'lucide-react';
+import { Coins, Tags, ArrowLeftRight, Mail, Landmark, Building2, Edit3, Plus, Trash2, Save, RotateCcw, X, FileText } from 'lucide-react';
 import {
-  systemConfig, updateFreezeGraceSeconds, sectors, exchangeRates, businessContact,
+  sectors, exchangeRates, businessContact,
   projects, amountPresets, addAmountPreset, removeAmountPreset,
   platformAccounts, updatePlatformAccounts, resetExchangeRates,
   platformBrand, updatePlatformBrand, logAudit, Storage,
+  termsState, bumpTermsVersion,
 } from '../mock/data';
 
 // 配置项目录（清单行）：key / 名称 / 图标 / 说明 / 当前值摘要（实时派生）
 const CONFIG_ITEMS = [
   { key: 'presets', name: '申购金额档位', icon: Coins, desc: '用户侧申购弹框的快捷金额档位', summary: () => `${amountPresets.length} 档 · ${amountPresets[0].label} ~ ${amountPresets[amountPresets.length - 1].label}` },
-  { key: 'freeze', name: '冻结宽限期', icon: Timer, desc: '获配额后冻结意向金额的签署宽限期', summary: () => `${systemConfig.freezeGraceSeconds} 秒${systemConfig.freezeGraceSeconds === 30 ? '（演示）' : ''}` },
   { key: 'sectors', name: '行业分类', icon: Tags, desc: '项目 / 路演的行业分类选项', summary: () => `${sectors.length} 个` },
   { key: 'rates', name: '汇率配置', icon: ArrowLeftRight, desc: '法币换汇参考汇率', summary: () => `${Object.keys(exchangeRates).length} 对 · ${exchangeRates['hkd-usd'].from}↔${exchangeRates['hkd-usd'].to} ${exchangeRates['hkd-usd'].rate}` },
   { key: 'contact', name: '商务联系方式', icon: Mail, desc: '对外 BD 联系（登录页 / 路演列表）', summary: () => businessContact.email },
@@ -33,8 +33,6 @@ export default function AdminConfig({ admin }) {
   // 各配置抽屉的编辑 state（打开时从共享数据重置）
   const [presetWan, setPresetWan] = useState('');
   const [presetErr, setPresetErr] = useState('');
-  const [freezeSec, setFreezeSec] = useState(systemConfig.freezeGraceSeconds);
-  const [freezeErr, setFreezeErr] = useState('');
   const [sectorList, setSectorList] = useState([...sectors]);
   const [newSector, setNewSector] = useState('');
   const [sectorErr, setSectorErr] = useState('');
@@ -50,13 +48,12 @@ export default function AdminConfig({ admin }) {
   const openEdit = (key) => {
     setEditKey(key);
     // 打开时重置编辑 state（组件常驻，需从共享数据回读最新值）
-    if (key === 'freeze') setFreezeSec(systemConfig.freezeGraceSeconds);
     if (key === 'sectors') setSectorList([...sectors]);
     if (key === 'rates') setRates(Object.keys(exchangeRates).map(k => ({ key: k, ...exchangeRates[k] })));
     if (key === 'contact') setContact({ ...businessContact });
     if (key === 'accounts') setAccounts({ deposit: { ...platformAccounts.deposit }, withdraw: { ...platformAccounts.withdraw } });
     if (key === 'brand') setBrand({ ...platformBrand });
-    setPresetErr(''); setFreezeErr(''); setSectorErr(''); setRatesErr(''); setContactErr(''); setAccountErr(''); setBrandErr('');
+    setPresetErr(''); setSectorErr(''); setRatesErr(''); setContactErr(''); setAccountErr(''); setBrandErr('');
     setNewSector(''); setPresetWan('');
   };
 
@@ -86,13 +83,6 @@ export default function AdminConfig({ admin }) {
     const res = removeAmountPreset(p.value, operator);
     if (!res.ok) { setPresetErr(res.error); return; }
     setPresetErr(''); flash('presets');
-  };
-
-  // ---- 宽限期抽屉 ----
-  const handleFreezeSave = () => {
-    const s = Number(freezeSec);
-    if (!Number.isFinite(s) || s < 10 || s > 86400) { setFreezeErr('请输入 10~86400 之间的秒数'); return; }
-    updateFreezeGraceSeconds(s); setFreezeErr(''); flash('freeze'); closeEdit();
   };
 
   // ---- 行业抽屉（即时写回 + 删除确认 + 被项目引用禁删） ----
@@ -166,6 +156,16 @@ export default function AdminConfig({ admin }) {
     setBrandErr(''); flash('brand'); closeEdit();
   };
 
+  // ---- 条款版本（2026-09-15 · 对齐公司实践"条款更新→重新同意"）：发布新版 → 用户端登录后弹窗重新勾选 ----
+  const [termsFlash, setTermsFlash] = useState(false);
+  const [, setTermsTick] = useState(0);
+  const handleBumpTerms = () => {
+    if (!window.confirm(`发布新版条款（当前 ${termsState.currentVersion}）？发布后所有用户需重新确认协议。`)) return;
+    bumpTermsVersion(operator);
+    setTermsFlash(true);
+    setTimeout(() => { setTermsFlash(false); setTermsTick(t => t + 1); }, 1500);
+  };
+
   // ---- 抽屉 body 按当前 editKey 渲染 ----
   const renderDrawerBody = () => {
     switch (editKey) {
@@ -190,17 +190,6 @@ export default function AdminConfig({ admin }) {
             </div>
             {presetErr && <p className="form-error">{presetErr}</p>}
             <div className="admin-form-hint">档位保存后立即生效——用户侧申购弹框实时读取，无需改代码；至少保留 1 个档位。</div>
-          </>
-        );
-      case 'freeze':
-        return (
-          <>
-            <div className="form-group">
-              <label className="form-label">宽限期（秒）</label>
-              <input type="number" className="form-input" min={10} max={86400} value={freezeSec} onChange={e => setFreezeSec(e.target.value)} />
-            </div>
-            <div className="admin-form-hint">演示默认 30 秒；真实生产 24 小时（86400 秒）。</div>
-            {freezeErr && <p className="form-error">{freezeErr}</p>}
           </>
         );
       case 'sectors':
@@ -338,7 +327,7 @@ export default function AdminConfig({ admin }) {
   const isPresetsLike = editKey === 'presets' || editKey === 'sectors'; // 即时写回型（"完成"关闭）
   const isAccounts = editKey === 'accounts'; // 内部两个保存按钮，抽屉"完成"关闭
   const isRates = editKey === 'rates';       // 保存 + 恢复默认
-  const hasSaveAction = editKey === 'freeze' || editKey === 'contact' || editKey === 'brand';
+  const hasSaveAction = editKey === 'contact' || editKey === 'brand';
 
   return (
     <div className="admin-page">
@@ -347,6 +336,18 @@ export default function AdminConfig({ admin }) {
         <div className="admin-page-header-actions">
           <span className="text-muted">共 {CONFIG_ITEMS.length} 项配置 · 点击行或 [编辑] 修改</span>
         </div>
+      </div>
+
+      {/* 条款版本（2026-09-15 · 直操作卡）：发布新版 → 用户端登录后弹"条款已更新"重新同意 */}
+      <div className="card kyc-review-block admin-fund-card" style={{ marginBottom: 'var(--space-4)' }}>
+        <div className="card-title"><FileText size={14} /> 条款版本</div>
+        <div className="kyc-review-row"><span>当前生效版本</span><strong className="date-iso">{termsState.currentVersion}</strong></div>
+        <div className="kyc-review-row"><span>发布时间</span><strong className="date-iso">{termsState.updatedAt || '—'}</strong></div>
+        <div className="admin-form-actions" style={{ marginTop: 'var(--space-3)', display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
+          <button className="btn btn-md btn-primary" onClick={handleBumpTerms}><FileText size={15} /> 发布新版（演示）</button>
+          {termsFlash && <span className="admin-saved-tag">已发布</span>}
+        </div>
+        <p className="admin-form-hint">发布后用户端下次进入将弹出「条款已更新」，重新勾选同意后方可继续使用；同意记录写入协议签署留痕（含版本与时间）。</p>
       </div>
 
       {/* 配置项清单（一眼看到所有配置 + 当前值摘要） */}
@@ -389,7 +390,7 @@ export default function AdminConfig({ admin }) {
             {hasSaveAction && (
               <>
                 <button className="btn btn-md btn-secondary" onClick={closeEdit}>取消</button>
-                <button className="btn btn-md btn-primary" onClick={editKey === 'freeze' ? handleFreezeSave : editKey === 'contact' ? handleContactSave : handleBrandSave}>
+                <button className="btn btn-md btn-primary" onClick={editKey === 'contact' ? handleContactSave : handleBrandSave}>
                   <Save size={15} /> 保存
                 </button>
               </>

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, User, Building2, Zap, PenLine, RefreshCcw } from 'lucide-react';
 import { getProjectById, getInvestorRoster, currentUser, getInvestorNo, formatCurrency, formatISODateTime, historyTypeLabels, actorLabels, subscriptionStatusLabels, subscriptions, spvs, getSigningEvidenceBySub, formatListDateTime, resetSubscriptionForDemo } from '../mock/data';
 import SubscriptionMilestone from '../components/SubscriptionMilestone';
-import FreezeCountdown from '../components/FreezeCountdown';
 import { useLang } from '../i18n';
 
 // 操作执行方图标（审计凭证：谁执行了该动作）
@@ -73,13 +72,13 @@ export default function MySubscription({ id, navigate, goBack }) {
             <span>{t('已冻结')}</span>
             <div className="freeze-info-right">
               <strong className="date-iso">HK$ {formatCurrency(subRecord.frozenAmount)}</strong>
-              <FreezeCountdown deadline={subRecord.freezeDeadline} />
+              <span className="text-muted text-sm">{t('请在 24 小时内签署')}</span>
             </div>
           </div>
         )}
-        {/* 冻结语义说明：冻结=锁定非扣款，宽限期=签署期 */}
+        {/* 冻结语义说明：冻结=锁定非扣款，签署期限=签署期 */}
         {subRecord.status === 'allocated' && (
-          <p className="freeze-note">{t('冻结 = 锁定意向金额（不扣款），签署 SPV 时实际出资；逾期未签署将自动顺延')}</p>
+          <p className="freeze-note">{t('冻结 = 锁定意向金额（不扣款），签署 SPV 时实际出资；请在 24 小时内完成签署')}</p>
         )}
         {subRecord.shares && (
           <div className="subscription-info-row">

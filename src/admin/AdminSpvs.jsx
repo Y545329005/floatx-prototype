@@ -91,7 +91,7 @@ export default function AdminSpvs({ navigate, detailId, admin }) {
       custodianBank: spv.custodianBank || '',
       managementFee: spv.managementFee || '2%',
       carryRate: spv.carryRate || '20%',
-      // 协议引用（2026-08-15 方案 B · 香港合规留痕：协议内容权威源 = 第三方平台，Admin 维护该 SPV 用哪份协议）
+      // 协议引用（2026-09-15 · APP 内电子签署：Admin 维护该 SPV 用哪份协议文档（平台存档）+ 版本 + 哈希，签署时固化）
       agreementDocUrl: spv.agreementDocUrl || '',
       agreementVersion: spv.agreementVersion || '',
       agreementHash: spv.agreementHash || '',
@@ -127,7 +127,7 @@ export default function AdminSpvs({ navigate, detailId, admin }) {
     .filter(s => s.projectId === sel.projectId && s.status === 'allocated')
     .reduce((sum, s) => sum + (s.frozenAmount || 0), 0) : 0;
   const raisePct = sel?.planAmount ? (snap.totalRaised / sel.planAmount) * 100 : null;
-  const evList = sel ? getSigningEvidenceBySpv(sel.id) : []; // 签署证据台账（2026-08-15 方案 B · 合规留痕）
+  const evList = sel ? getSigningEvidenceBySpv(sel.id) : []; // 签署证据台账（2026-09-15 · APP 内电子签署 · 合规留痕）
   const editNext = editTarget ? NEXT_STATUS[editTarget.status] : null;
 
   // 编辑抽屉 body（默认表单 / 状态流转确认视图） — 抽取函数避免嵌套三元
@@ -194,10 +194,10 @@ export default function AdminSpvs({ navigate, detailId, admin }) {
               <input className="form-input" value={editForm.carryRate} onChange={e => setEditForm(f => ({ ...f, carryRate: e.target.value }))} />
             </div>
           </div>
-          {/* 协议引用（2026-08-15 方案 B · 香港合规留痕）：内容权威源 = 第三方签署平台，此处维护"该 SPV 用哪份协议"（链接 + 版本 + 哈希） */}
+          {/* 协议引用（2026-09-15 · APP 内电子签署）：维护"该 SPV 用哪份协议"（平台存档文档 + 版本 + 哈希），用户 APP 内签署时版本/哈希固化 */}
           <div className="form-group">
             <label className="form-label">SPV 协议文档链接</label>
-            <input className="form-input" placeholder="https://…/spv-agreement.html（第三方签署平台协议）" value={editForm.agreementDocUrl} onChange={e => setEditForm(f => ({ ...f, agreementDocUrl: e.target.value }))} />
+            <input className="form-input" placeholder="https://…/spv-agreement.html（平台存档协议文档）" value={editForm.agreementDocUrl} onChange={e => setEditForm(f => ({ ...f, agreementDocUrl: e.target.value }))} />
           </div>
           <div className="form-row">
             <div className="form-group">
@@ -457,19 +457,19 @@ export default function AdminSpvs({ navigate, detailId, admin }) {
                 </div>
               ))}
             </div>
-            {/* 签署证据（2026-08-15 方案 B · 香港私募合规留痕审计）：协议内容权威源 = 第三方平台，此处是"签署结果证据链" */}
+            {/* 签署证据（2026-09-15 · APP 内电子签署 · 香港私募合规留痕审计）：签名图 + 协议版本哈希固化构成证据链 */}
             <div className="card kyc-review-block admin-fund-card">
               <div className="card-title">签署证据（{evList.length}）</div>
               {evList.length === 0 && (
-                <div className="kyc-review-row"><span>暂无</span><strong>确认签署时自动生成（回执编号必填）</strong></div>
+                <div className="kyc-review-row"><span>暂无</span><strong>客户 APP 内签署或运营线下登记后自动生成</strong></div>
               )}
               {evList.map(e => (
                 <div key={e.id} className="admin-ev-item">
                   <div className="admin-ev-head">
                     <strong>{maskName(e.signerName)}</strong>
-                    <span className="admin-ev-env date-iso">{e.envelopeId}</span>
+                    <span className="admin-ev-env date-iso">{e.signedRef}</span>
                     {e.evidenceUrl && (
-                      <a className="admin-sub-doc" href={e.evidenceUrl} target="_blank" rel="noopener noreferrer" title="签署凭证">
+                      <a className="admin-sub-doc" href={e.evidenceUrl} target="_blank" rel="noopener noreferrer" title="协议文档">
                         <ExternalLink size={13} />
                       </a>
                     )}
@@ -478,11 +478,17 @@ export default function AdminSpvs({ navigate, detailId, admin }) {
                     签署 {formatListDateTime(e.signedAt)} · 协议 {e.agreementVersion}{e.agreementHash ? ' · 哈希已固化' : ''}
                   </div>
                   <div className="admin-ev-meta">
-                    运营确认 {e.confirmedBy} · {formatListDateTime(e.confirmedAt)}
+                    {e.source === 'app' ? 'APP 内电子签署' : '线下签署登记'}{e.confirmedBy ? ` · 确认 ${e.confirmedBy}` : ''}
                   </div>
+                  {e.signatureImage && (
+                    <div className="admin-sub-evidence-signature">
+                      <img src={e.signatureImage} alt="电子签名" />
+                      <span className="text-muted text-sm">电子签名存档</span>
+                    </div>
+                  )}
                 </div>
               ))}
-              <p className="admin-form-hint">回执编号 = 第三方签署平台审计报告索引，监管质询可凭此调取完整证据链；协议版本/哈希签署时从档案锁定。</p>
+              <p className="admin-form-hint">客户在 APP 内阅读协议并以电子签名完成签署（签名图 + 协议版本/哈希签署时固化存档）；线下纸质签署由运营登记编号与时间。签署编号 + 哈希构成签署内容不可篡改的证据链。</p>
             </div>
             <div className="card kyc-review-block admin-fund-card">
               <div className="card-title">生命周期</div>

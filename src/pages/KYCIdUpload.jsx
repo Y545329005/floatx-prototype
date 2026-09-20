@@ -154,9 +154,9 @@ const [backFile, setBackFile] = useState(null);
          <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowExitConfirm(false)}>
            {t('取消')}
          </button>
-         <button className="btn btn-primary" style={{ flex: 1, background: 'var(--error)', border: 'none' }} onClick={() => { setIsLoggedIn(false); navigate('login'); }}>
-           {t('确认退出')}
-         </button>
+<button className="btn btn-primary" style={{ flex: 1, background: 'var(--danger)', border: 'none', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => { setIsLoggedIn(false); navigate('login'); }}>
+            {t('确认退出')}
+          </button>
        </div>
      </div>
    </div>

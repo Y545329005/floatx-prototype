@@ -72,7 +72,7 @@ export default function AssetTrend({ navigate, goBack }) {
             </defs>
             <polygon points={areaPts} fill="url(#assetChartFill)" />
             <polyline points={ptsStr} fill="none" stroke="#0A1F44" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-            <circle cx={pts[pts.length - 1].x} cy={pts[pts.length - 1].y} r="3.5" fill="#C9A84C" stroke="#fff" strokeWidth="1.5" />
+            <circle className="asset-chart-dot" cx={pts[pts.length - 1].x} cy={pts[pts.length - 1].y} r="3.5" strokeWidth="1.5" />
           </svg>
           <div className="chart-labels">
             {data.map((a, i) => (

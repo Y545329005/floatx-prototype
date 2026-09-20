@@ -176,8 +176,8 @@ export default function AdminUsers({ navigate, detailId, admin }) {
 
   // P-3 持仓明细（mock：holdings 无 userId，仅当前投资人 u1 有值；接后端按 userId 过滤）
   const selHeld = sel && sel.holdingCount > 0 ? holdings : [];
-  // P-4 通知触达历史（mock：notifications 无 userId，属当前投资人；接后端按 userId 过滤）
-  const selNotif = sel && sel.userId === currentUser.id ? notifications : [];
+  // P-4 通知触达历史（mock：全员 + 发给当前用户的定向通知；接后端按 userId 过滤收件箱）
+  const selNotif = sel && sel.userId === currentUser.id ? notifications.filter(n => !n.toUserId || n.toUserId === currentUser.id) : [];
   // 2026-08-15 银行卡（mock：bankCards 加 userId，按 sel.userId 过滤；u1 有 2 张卡）
   const selBankCards = sel ? bankCards.filter(c => c.userId === sel.userId) : [];
   // P-5 联系方式可点击（tel 去空格横线）

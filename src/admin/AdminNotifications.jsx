@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Send, Search, X } from 'lucide-react';
-import { broadcastLogs, NOTICE_TYPE_META, sendBroadcastNotification } from '../mock/data';
+import { broadcastLogs, NOTICE_TYPE_META, sendBroadcastNotification, getInvestorUsers } from '../mock/data';
 import { useDrawerFocus } from './useDrawerFocus';
 
 // 通知触达（2026-08-14 广播台账化 · 方案 A；同轮抽屉化 · 用户拍板 A；同轮定时发送）：
@@ -19,8 +19,12 @@ const FILTERS = [
 
 export default function AdminNotifications({ admin }) {
   const [open, setOpen] = useState(false); // 发送抽屉（state 驱动，无 URL——发送是低频主动动作，对齐 AdminDividends 发起抽屉）
-  const [form, setForm] = useState({ type: 'service', target: '全部投资人', title: '', body: '', mode: 'now', scheduledAt: '' });
+  // 2026-09-11 定向发送：targetMode 'all'=全员广播 / 'selected'=定向客户（selectedUserIds 勾选）
+  const [form, setForm] = useState({ type: 'service', target: '全部投资人', targetMode: 'all', selectedUserIds: [], title: '', body: '', mode: 'now', scheduledAt: '' });
   const [formError, setFormError] = useState('');
+  // 定向选人：账户池（getInvestorUsers 聚合注册/KYC/报名/申购四来源）+ 搜索过滤 + 勾选
+  const investorUsers = getInvestorUsers();
+  const [userKeyword, setUserKeyword] = useState('');
   // refresh hack：发送后 / 定时到期后同步台账列表（broadcastLogs 模块级数组）
   const [, setRefresh] = useState(0);
   // 确认视图（2026-08-24：全员广播不可撤回，摩擦 ∝ 爆炸半径——先预览再派发）
@@ -58,7 +62,8 @@ export default function AdminNotifications({ admin }) {
   }, []);
 
   const openDrawer = () => {
-    setForm(f => ({ ...f, title: '', body: '', mode: 'now', scheduledAt: '' }));
+    setForm(f => ({ ...f, title: '', body: '', mode: 'now', scheduledAt: '', targetMode: 'all', selectedUserIds: [], target: '全部投资人' }));
+    setUserKeyword('');
     setFormError('');
     setConfirmPending(false);
     setOpen(true);
@@ -67,6 +72,9 @@ export default function AdminNotifications({ admin }) {
   // 第一步：校验并进入确认视图（不派发）
   const requestSend = () => {
     if (!form.title.trim()) { setFormError('请填写通知标题'); return; }
+    if (form.targetMode === 'selected' && (!form.selectedUserIds || form.selectedUserIds.length === 0)) {
+      setFormError('请至少勾选一位目标客户'); return;
+    }
     if (form.mode === 'schedule') {
       if (!form.scheduledAt) { setFormError('请选择定时发送时间'); return; }
       const scheduledAt = form.scheduledAt.replace('T', ' ');
@@ -82,18 +90,21 @@ export default function AdminNotifications({ admin }) {
   const executeSend = () => {
     const isSchedule = form.mode === 'schedule';
     const scheduledAt = isSchedule ? form.scheduledAt.replace('T', ' ') : undefined;
+    const userIds = form.targetMode === 'selected' ? [...form.selectedUserIds] : [];
+    const targetLabel = userIds.length ? `定向 ${userIds.length} 人` : '全部投资人';
     sendBroadcastNotification(
-      { type: form.type, title: form.title.trim(), body: form.body.trim(), target: form.target, scheduledAt },
+      { type: form.type, title: form.title.trim(), body: form.body.trim(), target: targetLabel, targetUserIds: userIds, scheduledAt },
       admin?.name,
     );
     setOpen(false);
     setConfirmPending(false);
-    setForm(f => ({ ...f, title: '', body: '', mode: 'now', scheduledAt: '' }));
+    setForm(f => ({ ...f, title: '', body: '', mode: 'now', scheduledAt: '', targetMode: 'all', selectedUserIds: [], target: '全部投资人' }));
+    setUserKeyword('');
     setFormError('');
     setRefresh(r => r + 1);
     setPage(1);
     // 发送回执：结尾闭环（此前发送后无任何显式反馈，运营需自行去台账确认）
-    setSentMsg(isSchedule ? `定时广播已排期：${scheduledAt}` : '广播已发送');
+    setSentMsg(isSchedule ? `定时广播已排期：${scheduledAt}` : (userIds.length ? `通知已发送（定向 ${userIds.length} 人）` : '广播已发送'));
   };
 
   // 搜索有词 → 跨类型全局检索（单号/标题/内容）；无词 → 按类型筛选
@@ -112,6 +123,26 @@ export default function AdminNotifications({ admin }) {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const rows = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  // 定向选人：按姓名 / 手机 / 投资人编号过滤
+  const kwUser = userKeyword.trim().toLowerCase();
+  const filteredUsers = investorUsers.filter(u => {
+    if (!kwUser) return true;
+    return (u.name || '').toLowerCase().includes(kwUser)
+      || (u.phone || '').toLowerCase().includes(kwUser)
+      || (u.investorNo || '').toLowerCase().includes(kwUser);
+  });
+  const toggleUser = (uid) => {
+    setForm(f => {
+      const has = f.selectedUserIds.includes(uid);
+      return { ...f, selectedUserIds: has ? f.selectedUserIds.filter(id => id !== uid) : [...f.selectedUserIds, uid] };
+    });
+  };
+  // 确认视图目标摘要：全部投资人或「定向 N 位客户（名单前 5）」
+  const selectedUsers = investorUsers.filter(u => form.selectedUserIds.includes(u.userId));
+  const targetSummary = form.targetMode === 'selected' && selectedUsers.length
+    ? `定向 ${selectedUsers.length} 位客户（${selectedUsers.slice(0, 5).map(u => u.name).join('、')}${selectedUsers.length > 5 ? ' 等' : ''}）`
+    : '全部投资人';
 
   return (
     <div className="admin-page">
@@ -206,8 +237,9 @@ export default function AdminNotifications({ admin }) {
               <div className="admin-drawer-body">
                 <div className="admin-confirm-view">
                   <div className="admin-confirm-title">确认发送通知</div>
-                  <p className="admin-confirm-desc">面向「{form.target}」全员触达，发出后不可撤回，请核对以下内容。</p>
+                  <p className="admin-confirm-desc">面向「{targetSummary}」触达，发出后不可撤回，请核对以下内容。</p>
                   <div className="admin-confirm-row"><span>类型</span><strong>{NOTICE_TYPE_META[form.type]?.label || form.type}</strong></div>
+                  <div className="admin-confirm-row"><span>目标受众</span><strong>{targetSummary}</strong></div>
                   <div className="admin-confirm-row"><span>发送时间</span><strong>{form.mode === 'schedule' ? `定时 · ${(form.scheduledAt || '').replace('T', ' ')}` : '立即发送'}</strong></div>
                   <div className="admin-confirm-row"><span>标题</span><strong>{form.title}</strong></div>
                   {form.body.trim() && <div className="admin-confirm-row"><span>正文</span><strong>{form.body}</strong></div>}
@@ -231,12 +263,57 @@ export default function AdminNotifications({ admin }) {
               </div>
               <div className="form-group">
                 <label className="form-label">目标受众 <span className="required-mark">*</span></label>
-                <select className="form-input" value={form.target} onChange={e => setForm(f => ({ ...f, target: e.target.value }))}>
-                  <option value="全部投资人">全部投资人</option>
+                <select
+                  className="form-input"
+                  value={form.targetMode}
+                  onChange={e => setForm(f => ({ ...f, targetMode: e.target.value, target: e.target.value === 'all' ? '全部投资人' : `定向 ${f.selectedUserIds.length} 人` }))}
+                >
+                  <option value="all">全部投资人</option>
+                  <option value="selected">定向客户</option>
                 </select>
-                <p className="form-hint">mock 阶段仅全员广播；按角色 / 按项目 / 定向客户接后端开放</p>
+                <p className="admin-form-hint">全员广播 = 公告/活动触达；定向发送 = 按客户逐个推送（按角色 / 按项目筛选接后端开放）</p>
               </div>
             </div>
+            {form.targetMode === 'selected' && (
+              <div className="form-group">
+                <div className="admin-search-wrap">
+                  <Search size={14} className="admin-search-icon" />
+                  <input
+                    className="admin-search-input"
+                    aria-label="按姓名 / 手机 / 投资人编号搜索客户"
+                    placeholder="按姓名 / 手机 / 投资人编号搜索客户"
+                    value={userKeyword}
+                    onChange={e => setUserKeyword(e.target.value)}
+                  />
+                  {userKeyword && <button className="btn-icon" title="清除搜索" onClick={() => setUserKeyword('')}><X size={14} /></button>}
+                </div>
+                <div className="broadcast-user-pick">
+                  <div className="broadcast-user-pick-head">
+                    <span className="text-muted">已选 {form.selectedUserIds.length} 人</span>
+                    {form.selectedUserIds.length > 0 && (
+                      <button className="btn btn-outline btn-sm" onClick={() => setForm(f => ({ ...f, selectedUserIds: [] }))}>清空</button>
+                    )}
+                  </div>
+                  {filteredUsers.length === 0 ? (
+                    <div className="broadcast-user-empty">未找到匹配客户</div>
+                  ) : filteredUsers.map(u => {
+                    const checked = form.selectedUserIds.includes(u.userId);
+                    return (
+                      <label key={u.userId} className={`broadcast-user-row${checked ? ' selected' : ''}`}>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleUser(u.userId)}
+                        />
+                        <span className="broadcast-user-name">{u.name}</span>
+                        <span className="text-muted text-sm">{u.investorNo || ''}</span>
+                        <span className="text-muted text-sm">{u.phone || ''}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <div className="form-group">
               <label className="form-label">发送时间 <span className="required-mark">*</span></label>
               <div className="broadcast-schedule-row">

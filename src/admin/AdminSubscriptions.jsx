@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, FileText, ClipboardCheck, Building2 } from 'lucide-react';
+import { X, FileText, ClipboardCheck, Building2, PenLine } from 'lucide-react';
 import {
   projects,
   subscriptions,
@@ -16,6 +16,7 @@ import {
   maskName,
   getManagerForUser,
   spvStatusLabels,
+  getSigningEvidenceBySub,
 } from '../mock/data';
 import { useDrawerFocus } from './useDrawerFocus';
 
@@ -27,8 +28,10 @@ export default function AdminSubscriptions({ navigate, detailId, admin }) {
   const [confirm, setConfirm] = useState(null); // { projectId, subId?, action }
   const [filter, setFilter] = useState('all'); // all | pending | done
   const [errorMsg, setErrorMsg] = useState(''); // 操作错误提示（签 SPV 校验失败等）
-  // 确认签署证据表单（2026-08-15 方案 B · 香港合规留痕）：回执编号 + 实际签署时间必填，签署人预填投资人
-  const [evForm, setEvForm] = useState({ envelopeId: '', signedAt: '', signerName: '' });
+  // 线下签署登记表单（2026-09-15 · APP 内签署上线后：线下纸质签署场景由运营登记编号+时间；APP 内签署自动留痕无需登记）
+  const [evForm, setEvForm] = useState({ signedRef: '', signedAt: '', signerName: '' });
+  // 查看签署证据（signed 行：APP 内签名大图 / 线下登记信息）
+  const [evidenceView, setEvidenceView] = useState(null); // subId
   // 获配实际配额（2026-08-21）：默认预填意向全额，超募时可削减；冻结/宽限期/签署扣款均按此金额执行
   const [allocQuota, setAllocQuota] = useState('');
   const operator = admin?.name || '运营后台';
@@ -91,7 +94,7 @@ export default function AdminSubscriptions({ navigate, detailId, admin }) {
     let res = null;
     if (action === 'allocate') res = markSubscriptionAllocated(subId, operator, allocQuota);
     else if (action === 'unallocate') res = markSubscriptionUnallocated(subId, '本轮份额稀缺，未获配额', operator);
-    else if (action === 'sign') res = markSubscriptionSigned(subId, null, operator, { envelopeId: evForm.envelopeId, signedAt: evForm.signedAt, signerName: evForm.signerName });
+    else if (action === 'sign') res = markSubscriptionSigned(subId, null, operator, { signedRef: evForm.signedRef, signedAt: evForm.signedAt, signerName: evForm.signerName, source: 'offline' });
     else if (action === 'forfeit') res = markSubscriptionForfeit(subId, undefined, operator);
     // 签 SPV 返回 { ok, error }，校验失败停留在确认视图 + 显示错误
     if (res && res.ok === false) {
@@ -100,7 +103,7 @@ export default function AdminSubscriptions({ navigate, detailId, admin }) {
     }
     setErrorMsg('');
     setConfirm(null);
-    setEvForm({ envelopeId: '', signedAt: '', signerName: '' });
+    setEvForm({ signedRef: '', signedAt: '', signerName: '' });
     setAllocQuota('');
     refresh();
   };
@@ -113,7 +116,7 @@ export default function AdminSubscriptions({ navigate, detailId, admin }) {
       case 'unallocate':
         return { title: '标记未获配额', desc: `将标记 ${maskName(confirmSub?.investorName)} 本轮未获配额（客户可关注后续轮次重新提交）。确认执行？` };
       case 'sign':
-        return { title: '确认签署完成', desc: `${maskName(confirmSub?.investorName)} 已在第三方电子签署平台完成 SPV 签署。平台确认签署回执后，将从冻结金额完成扣款、生成持仓。确认执行？` };
+        return { title: '线下签署登记', desc: `${maskName(confirmSub?.investorName)} 已通过线下纸质方式完成 SPV 签署。请录入签署编号与实际签署时间完成登记，确认后将从冻结金额完成扣款、生成持仓。（APP 内电子签署的客户无需登记，签署时已自动留痕）确认执行？` };
       case 'forfeit':
         return { title: '标记未签 · 手动顺延', desc: `将解冻 ${maskName(confirmSub?.investorName)} 的冻结金额并标记未获配额，waitlist 下一位自动上位。确认执行？` };
       default: return { title: '确认操作', desc: '' };
@@ -265,12 +268,12 @@ export default function AdminSubscriptions({ navigate, detailId, admin }) {
                 {confirmSub && confirm.action === 'sign' && (
                   <div className="admin-ev-form">
                     <div className="form-group">
-                      <label className="form-label">第三方回执编号 <span className="required-mark">*</span></label>
+                      <label className="form-label">签署编号 <span className="required-mark">*</span></label>
                       <input
                         className="form-input"
-                        placeholder="如 ENV-20260813-0001（第三方签署平台审计报告索引）"
-                        value={evForm.envelopeId}
-                        onChange={e => setEvForm(f => ({ ...f, envelopeId: e.target.value }))}
+                        placeholder="如 OFFLINE-20260915-0001（线下纸质签署登记编号）"
+                        value={evForm.signedRef}
+                        onChange={e => setEvForm(f => ({ ...f, signedRef: e.target.value }))}
                       />
                     </div>
                     <div className="form-row">
@@ -292,7 +295,7 @@ export default function AdminSubscriptions({ navigate, detailId, admin }) {
                         />
                       </div>
                     </div>
-                    <p className="admin-form-hint">协议版本/哈希由 SPV 档案锁定（签署时固化）；回执编号 = 第三方审计报告索引，监管质询可凭此调取完整证据链。</p>
+                    <p className="admin-form-hint">协议版本/哈希由 SPV 档案锁定（签署时固化）；签署编号与时间构成线下签署证据链，监管质询可凭此调取。APP 内电子签署的客户已自动留痕（含签名图），无需线下登记。</p>
                   </div>
                 )}
                 {errorMsg && <p className="form-error">{errorMsg}</p>}
@@ -368,7 +371,6 @@ export default function AdminSubscriptions({ navigate, detailId, admin }) {
                   {projSubs.map(s => {
                     const cur = getCurrencySymbol(selectedProject.currency);
                     const queuePos = waiting.findIndex(w => w.id === s.id);
-                    const subSpv = spvs.find(x => x.projectId === s.projectId); // SPV 档案（协议引用收敛：一份协议对应整个 SPV）
                     return (
                       <div className="admin-sub-row" key={s.id}>
                         <div className="admin-sub-investor">
@@ -409,14 +411,14 @@ export default function AdminSubscriptions({ navigate, detailId, admin }) {
                             <>
                               <button
                                 className="btn btn-sm btn-primary"
-                                title="用户已在第三方平台完成签署，录入回执并确认扣款生成持仓"
+                                title="线下纸质签署登记（APP 内电子签署的客户会自动留痕，无需登记）"
                                 onClick={() => {
                                   setConfirm({ projectId: selectedProject.id, subId: s.id, action: 'sign' });
-                                  setEvForm({ envelopeId: '', signedAt: '', signerName: s.investorName || '' });
+                                  setEvForm({ signedRef: '', signedAt: '', signerName: s.investorName || '' });
                                   setErrorMsg('');
                                 }}
                               >
-                                确认签署
+                                线下登记签署
                               </button>
                               <button
                                 className="btn btn-sm btn-danger"
@@ -430,16 +432,14 @@ export default function AdminSubscriptions({ navigate, detailId, admin }) {
                           {s.status === 'signed' && (
                             <span className="admin-sub-shares">
                               {s.shares ? `${s.shares} 份` : '已签'}
-                              {(subSpv?.agreementDocUrl || s.spvDocumentUrl) && (
-                                <a
+                              {getSigningEvidenceBySub(s.id) && (
+                                <button
                                   className="admin-sub-doc"
-                                  href={subSpv?.agreementDocUrl || s.spvDocumentUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  title="SPV 签署凭证"
+                                  title="查看签署证据（签名图 / 登记信息）"
+                                  onClick={() => setEvidenceView(evidenceView === s.id ? null : s.id)}
                                 >
-                                  <FileText size={13} />
-                                </a>
+                                  <PenLine size={13} />
+                                </button>
                               )}
                             </span>
                           )}
@@ -450,6 +450,31 @@ export default function AdminSubscriptions({ navigate, detailId, admin }) {
                       </div>
                     );
                   })}
+                  {/* 签署证据展开行（2026-09-15 · APP 内签署签名图 / 线下登记信息） */}
+                  {evidenceView && (() => {
+                    const evSub = projSubs.find(x => x.id === evidenceView);
+                    const ev = getSigningEvidenceBySub(evidenceView);
+                    if (!ev || !evSub) return null;
+                    return (
+                      <div className="admin-sub-evidence">
+                        <div className="admin-ev-head">
+                          <strong>{maskName(ev.signerName)}</strong>
+                          <span className="admin-ev-env date-iso">{ev.signedRef}</span>
+                        </div>
+                        <div className="admin-ev-meta">
+                          签署 {formatListDateTime(ev.signedAt)} · 协议 {ev.agreementVersion}{ev.agreementHash ? ' · 哈希已固化' : ''}
+                        </div>
+                        <div className="admin-ev-meta">
+                          {ev.source === 'app' ? 'APP 内电子签署（签名图已存档）' : '线下签署登记'}{ev.confirmedBy ? ` · 确认 ${ev.confirmedBy}` : ''}
+                        </div>
+                        {ev.signatureImage && (
+                          <div className="admin-sub-evidence-signature">
+                            <img src={ev.signatureImage} alt="电子签名" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               </>
             )}

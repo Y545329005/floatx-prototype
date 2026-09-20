@@ -1,0 +1,322 @@
+/* ============================================
+   方案C：高端奢华（Dark Luxury）
+   定位：超高净值客户，强调专属感
+   关键词：尊贵、精致、材质感
+   参考：Apple Pro、私人银行App
+   ============================================ */
+
+:root[data-theme="luxury"] {
+  /* ===== 颜色系统 ===== */
+  /* 主色系 - 金色 */
+  --primary: #D4AF37;
+  --primary-hover: #C5A028;
+  --primary-light: rgba(212, 175, 55, 0.15);
+  --primary-bg: rgba(212, 175, 55, 0.08);
+  --primary-strong: rgba(212, 175, 55, 0.9);
+  --primary-border: rgba(212, 175, 55, 0.3);
+  
+  /* 强调色 - 金色 */
+  --accent: #D4AF37;
+  --accent-light: rgba(212, 175, 55, 0.15);
+  --accent-hover: #C5A028;
+  --accent-border: rgba(212, 175, 55, 0.4);
+  
+  /* 语义色（深色模式适配） */
+  --success: #4CD07D;
+  --success-light: rgba(76, 208, 125, 0.15);
+  --success-bg: rgba(76, 208, 125, 0.08);
+  --success-strong: rgba(76, 208, 125, 0.9);
+  --success-border: rgba(76, 208, 125, 0.3);
+  
+  --danger: #FF7A7A;
+  --danger-light: rgba(255, 122, 122, 0.15);
+  --danger-bg: rgba(255, 122, 122, 0.08);
+  --danger-strong: rgba(255, 122, 122, 0.9);
+  --danger-border: rgba(255, 122, 122, 0.3);
+  
+  --warning: #FFB347;
+  --warning-text: #FFB347;
+  --warning-light: rgba(255, 179, 71, 0.15);
+  --warning-bg: rgba(255, 179, 71, 0.08);
+  --warning-strong: rgba(255, 179, 71, 0.9);
+  --warning-border: rgba(255, 179, 71, 0.3);
+  
+  --compliance: #FF7A7A;
+  --compliance-light: rgba(255, 122, 122, 0.15);
+  --compliance-bg: rgba(255, 122, 122, 0.08);
+  --compliance-strong: rgba(255, 122, 122, 0.9);
+  --compliance-border: rgba(255, 122, 122, 0.3);
+  
+  /* 背景色 - 深黑 */
+  --bg: #0A0A0A;
+  --bg-card: #141414;
+  
+  /* 文字色 */
+  --text: #FFFFFF;
+  --text-secondary: #A0A0A0;
+  --text-tertiary: #666666;
+  
+  /* 边框色 */
+  --border: #2A2A2A;
+  --border-light: #1E1E1E;
+  
+  /* ===== 字体系统（高端无衬线） ===== */
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --letter-spacing-tight: -0.02em;
+  --letter-spacing-normal: 0.01em;
+  --letter-spacing-wide: 0.04em;
+  
+  /* ===== 间距系统（宽松 +30%） ===== */
+  --space-1: 5px;
+  --space-2: 10px;
+  --space-3: 18px;
+  --space-4: 23px;
+  --space-5: 26px;
+  --space-6: 31px;
+  --space-7: 36px;
+  --space-8: 42px;
+  --space-10: 52px;
+  
+  /* ===== 圆角系统（大圆角） ===== */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+  
+  /* ===== 阴影系统（金色光晕） ===== */
+  --shadow-sm: 0 1px 4px rgba(212,175,55,0.1);
+  --shadow-md: 0 2px 12px rgba(212,175,55,0.15);
+  --shadow-lg: 0 4px 24px rgba(212,175,55,0.2);
+  
+  /* ===== 过渡动画（优雅流畅） ===== */
+  --transition-fast: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-normal: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-slow: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-elegant: 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  
+  /* ===== 图标风格（填充+金色） ===== */
+  --icon-stroke-width: 0;
+  --icon-style: fill;
+  
+  /* ===== 系统色 ===== */
+  --ios-green: #4CD07D;
+  
+  /* ===== 深色模式专用 ===== */
+  --text-on-dark: #FFFFFF;
+  --text-on-dark-secondary: rgba(255, 255, 255, 0.7);
+  --text-on-dark-tertiary: rgba(255, 255, 255, 0.55);
+  --success-on-dark: #4CD07D;
+  --danger-on-dark: #FF7A7A;
+}
+
+/* ===== 高端奢华特殊样式 ===== */
+
+/* 全局背景 */
+[data-theme="luxury"] body {
+  background: #0A0A0A;
+}
+
+/* 卡片样式 - 深色+光晕 */
+[data-theme="luxury"] .card {
+  background: #141414;
+  border: 1px solid rgba(212, 175, 55, 0.15);
+  box-shadow: 0 2px 12px rgba(212, 175, 55, 0.08);
+}
+
+[data-theme="luxury"] .card:hover {
+  border-color: rgba(212, 175, 55, 0.3);
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.12);
+}
+
+/* 资产Hero卡片 */
+[data-theme="luxury"] .asset-hero-card {
+  background: linear-gradient(135deg, #1A1A1A 0%, #0D0D0D 100%);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  box-shadow: 0 4px 24px rgba(212, 175, 55, 0.1);
+}
+
+/* 项目卡片Hero */
+[data-theme="luxury"] .project-card-hero {
+  background: linear-gradient(135deg, #1A1A1A 0%, #0D0D0D 100%) !important;
+}
+
+/* 按钮样式 - 大圆角pill */
+[data-theme="luxury"] .btn {
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+[data-theme="luxury"] .btn-primary {
+  background: linear-gradient(135deg, #D4AF37 0%, #C5A028 100%);
+  color: #0A0A0A;
+  border-radius: 999px;
+  box-shadow: 0 2px 12px rgba(212, 175, 55, 0.3);
+}
+
+[data-theme="luxury"] .btn-primary:hover {
+  background: linear-gradient(135deg, #C5A028 0%, #B8960F 100%);
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.4);
+  transform: translateY(-1px);
+}
+
+/* 分段控制 */
+[data-theme="luxury"] .segmented-control {
+  border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+[data-theme="luxury"] .segmented-control button.active {
+  color: #D4AF37;
+}
+
+[data-theme="luxury"] .segmented-control button.active::after {
+  background: #D4AF37;
+}
+
+/* 搜索按钮 */
+[data-theme="luxury"] .search-icon-btn {
+  background: rgba(212, 175, 55, 0.15);
+  color: #D4AF37;
+  border-radius: 50%;
+}
+
+/* 资产功能入口 */
+[data-theme="luxury"] .asset-action-icon {
+  background: rgba(212, 175, 55, 0.15);
+  color: #D4AF37;
+  border-radius: 16px;
+}
+
+/* 持仓圆点 */
+[data-theme="luxury"] .holding-preview-dot {
+  background: #D4AF37;
+  color: #0A0A0A;
+  border-radius: 12px;
+}
+
+/* 团队头像 */
+[data-theme="luxury"] .team-member-avatar {
+  background: #D4AF37;
+  color: #0A0A0A;
+  border-radius: 16px;
+}
+
+/* 吸顶容器 */
+[data-theme="luxury"] .market-sticky,
+[data-theme="luxury"] .detail-sticky,
+[data-theme="luxury"] .subpage-sticky {
+  background: #141414;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+/* 标签 */
+[data-theme="luxury"] .tag {
+  border-radius: 8px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* 申购热度 */
+[data-theme="luxury"] .heat-view-all {
+  background: rgba(212, 175, 55, 0.15);
+  color: #D4AF37;
+  border-radius: 12px;
+}
+
+[data-theme="luxury"] .heat-view-all:hover {
+  background: #D4AF37;
+  color: #0A0A0A;
+}
+
+/* 高亮图标 */
+[data-theme="luxury"] .highlight-icon {
+  color: #D4AF37;
+}
+
+/* 主题切换器 */
+[data-theme="luxury"] .theme-switcher {
+  background: #141414;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+[data-theme="luxury"] .theme-switcher button.active {
+  background: #D4AF37;
+  border-color: #D4AF37;
+  color: #0A0A0A;
+}
+
+[data-theme="luxury"] .theme-switcher button:not(.active) {
+  background: #1A1A1A;
+  border-color: #2A2A2A;
+  color: #A0A0A0;
+}
+
+/* 页面导航 */
+[data-theme="luxury"] .page-nav {
+  background: #141414;
+  border-top: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+[data-theme="luxury"] .page-nav button.active {
+  background: #D4AF37;
+  color: #0A0A0A;
+}
+
+[data-theme="luxury"] .page-nav button:not(.active) {
+  background: #1A1A1A;
+  color: #A0A0A0;
+}
+
+/* 项目卡片 */
+[data-theme="luxury"] .project-card {
+  border: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+[data-theme="luxury"] .project-card:hover {
+  border-color: rgba(212, 175, 55, 0.3);
+}
+
+/* 吸底CTA */
+[data-theme="luxury"] .detail-actions {
+  background: #141414;
+  border-top: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+/* 详情页 */
+[data-theme="luxury"] .project-detail-page {
+  background: #0A0A0A;
+}
+
+/* 轮次说明 */
+[data-theme="luxury"] .round-note {
+  background: #1A1A1A;
+  border: 1px solid rgba(212, 175, 55, 0.1);
+}
+
+/* 状态标签 */
+[data-theme="luxury"] .card-status-badge {
+  border-radius: 8px;
+}
+
+/* 返回按钮 */
+[data-theme="luxury"] .back-btn {
+  color: #D4AF37;
+}
+
+[data-theme="luxury"] .back-btn:hover {
+  background: rgba(212, 175, 55, 0.15);
+}
+
+/* 主题信息卡片 */
+[data-theme="luxury"] .theme-info {
+  background: #141414;
+  border: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+[data-theme="luxury"] .theme-info h3 {
+  color: #D4AF37;
+}

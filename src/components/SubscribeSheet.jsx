@@ -107,7 +107,7 @@ export default function SubscribeSheet({ project, onClose, onSubmitted }) {
         <div className="subscription-notice">
           <ul>
             <li>{t('意向金额非合同承诺，最终以 SPV 文件为准')}</li>
-            <li>{t('获配额后意向金额将被冻结（不扣款），请在 24 小时内签署 SPV 确认出资，逾期未签署将自动顺延')}</li>
+            <li>{t('获配额后意向金额将被冻结（不扣款），请在 24 小时内签署 SPV 确认出资')}</li>
             <li>{t('您确认本人为香港《证券及期货条例》定义的专业投资者')}</li>
           </ul>
         </div>

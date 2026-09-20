@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft, ClipboardList, Calendar, Wallet, Headphones, CheckCheck, Trash2, X } from 'lucide-react';
-import { notifications, markNotificationRead, removeNotification, clearNotifications } from '../mock/data';
+import { notifications, currentUser, markNotificationRead, removeNotification, clearNotifications } from '../mock/data';
 import { useLang } from '../i18n';
 
 const typeMeta = {
@@ -24,7 +24,10 @@ export default function Notifications({ navigate, goBack }) {
   // refresh hack：依赖 mock 数据修改后强制组件重渲染（unread 状态变化、markNotificationRead 后 UI 同步）
   const [, setRefresh] = useState(0);
 
-  const list = notifications
+  // 2026-09-11 定向通知后：收件箱 = 全员通知（无 toUserId）+ 发给当前用户的通知
+  const myNotifications = notifications.filter(n => !n.toUserId || n.toUserId === currentUser.id);
+
+  const list = myNotifications
     .filter(n => tab === 'all' || n.type === tab)
     .map(n => ({ ...n }));
 
@@ -41,24 +44,24 @@ export default function Notifications({ navigate, goBack }) {
   };
 
   const markAllRead = () => {
-    notifications.forEach(n => markNotificationRead(n.id));
+    myNotifications.forEach(n => markNotificationRead(n.id));
     setRefresh(r => r + 1);
   };
 
   const handleClearAll = () => {
-    if (notifications.length === 0) return;
+    if (myNotifications.length === 0) return;
     if (window.confirm(t('清空全部通知？此操作不可恢复。'))) {
-      clearNotifications();
+      clearNotifications(currentUser.id);
       setRefresh(r => r + 1);
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = myNotifications.filter(n => !n.read).length;
   // 各分类未读数（#25 收口）：tabs 徽章，全部 = 总未读，分类 = 该分类未读
   const unreadByType = (key) =>
     key === 'all'
-      ? notifications.filter(n => !n.read).length
-      : notifications.filter(n => n.type === key && !n.read).length;
+      ? myNotifications.filter(n => !n.read).length
+      : myNotifications.filter(n => n.type === key && !n.read).length;
 
   return (
     <div className="page notifications-page">
@@ -66,7 +69,7 @@ export default function Notifications({ navigate, goBack }) {
         <div className="page-header">
           <button className="back-btn" onClick={() => goBack('#profile')}><ArrowLeft size={20} /></button>
           <h1>{t('消息通知')}</h1>
-          {notifications.length > 0 && (
+          {myNotifications.length > 0 && (
             <div className="notifications-actions">
               {unreadCount > 0 && (
                 <button className="notifications-all-read" onClick={markAllRead}>

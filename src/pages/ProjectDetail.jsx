@@ -135,6 +135,16 @@ export default function ProjectDetail({ id, navigate, goBack }) {
             </span>
           </div>
           <div className="heat-list">
+            {mySub && mySub.status !== 'unallocated' && (
+              <div className="heat-me-rank" onClick={() => navigate(`#project-heat/${project.id}`)}>
+                <span className="heat-me-rank-label">{t('我的当前位次')}</span>
+                <span className="heat-me-rank-value">{t('第 {} 位').replace('{}', myRank)}</span>
+                <span className="heat-me-rank-meta">
+                  {t('共 {} 位投资人 · 您之前 {} 位').replace('{}', investorRoster.length).replace('{}', Math.max(0, myRank - 1))}
+                </span>
+                <ChevronRight size={15} />
+              </div>
+            )}
             <div className="heat-row heat-head-row">
               <span className="heat-head-label">{t('投资人')}</span>
               <span className="heat-head-label">{t('提交时间')}</span>

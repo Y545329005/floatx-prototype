@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { ArrowLeft, Plus, CreditCard, Trash2, X, ShieldCheck, ShieldQuestion, Zap } from 'lucide-react';
-import { bankCards, platformAccounts, eddaAuth, authorizeEdda, submitCardVerification } from '../mock/data';
+import { ArrowLeft, Plus, CreditCard, Trash2, X, ShieldCheck, ShieldQuestion, Zap, Check } from 'lucide-react';
+import { bankCards, platformAccounts, eddaAuth, authorizeEdda, submitCardVerification, recordAgreement } from '../mock/data';
 import { useLang } from '../i18n';
+import AgreementModal from '../components/AgreementModal';
 
 const whitelistMeta = {
   verified: { label: '白名单 · 已验证', cls: 'tag-success' },
@@ -23,6 +24,9 @@ export default function BankCards({ navigate, goBack }) {
   const [verifyForm, setVerifyForm] = useState({ currency: 'HKD', amount: '', remark: '' });
   const [verifyError, setVerifyError] = useState('');
   const [eddaReady, setEddaReady] = useState(eddaAuth.status === 'authorized'); // eddaAuth 非 React state，本地镜像驱动渲染
+  // 新增卡协议勾选（2026-09-15 · 对齐公司实践场景③"白名单地址协议"：添加白名单卡必须勾选协议）
+  const [addAgreed, setAddAgreed] = useState(false);
+  const [viewingDoc, setViewingDoc] = useState(null);
 
   const removeCard = (id) => {
     const idx = bankCards.findIndex(c => c.id === id);
@@ -239,25 +243,52 @@ export default function BankCards({ navigate, goBack }) {
                 <label className="form-label">{t('银行卡号')}</label>
                 <input className="form-input" placeholder={t('请输入银行卡号')} inputMode="numeric" />
               </div>
-              <button className="btn btn-primary btn-full" onClick={() => {
-                // 演示阶段：新增卡加入真实数据源（unverified），以便演示白名单验证流程
-                bankCards.push({
-                  id: `bc${Date.now()}`,
-                  userId: bankCards[0]?.userId || 'u1',
-                  bank: '星展银行',
-                  branch: '香港',
-                  holder: 'ZHANG SAN',
-                  maskedNo: '**** 8888',
-                  cardNo: '6222 3456 7890 8888',
-                  type: '香港账户',
-                  currency: 'HKD',
-                  whitelistStatus: 'unverified',
-                  verifiedAt: null,
-                  verifiedAmount: null,
-                });
-                setCards(bankCards.map(c => ({ ...c })));
-                setShowAdd(false);
-              }}>{t('提交（待白名单验证）')}</button>
+              {/* 协议：必须勾选（2026-09-15 · 对齐公司实践场景③：未勾选时下一步禁用） */}
+              <div
+                className="form-checkbox-group"
+                onClick={() => setAddAgreed(!addAgreed)}
+                style={{ cursor: 'pointer' }}
+              >
+                <div className={`kyc-checkbox ${addAgreed ? 'checked' : ''}`}>
+                  {addAgreed && <Check size={12} />}
+                </div>
+                <span className="bank-card-agree-label">
+                  {t('我已阅读并同意')}
+                  <a
+                    href="#bank-card-service"
+                    onClick={e => { e.preventDefault(); e.stopPropagation(); setViewingDoc('bank-card-service'); }}
+                  >
+                    {t('《银行卡及出入金服务协议》')}
+                  </a>
+                </span>
+              </div>
+              <button
+                className="btn btn-primary btn-full"
+                disabled={!addAgreed}
+                style={{ opacity: addAgreed ? 1 : 0.45 }}
+                onClick={() => {
+                  if (!addAgreed) return;
+                  // 协议签署留痕（版本固化 + 审计日志）
+                  recordAgreement({ type: 'bank-card', agreementIds: ['bank-card-service'] });
+                  // 演示阶段：新增卡加入真实数据源（unverified），以便演示白名单验证流程
+                  bankCards.push({
+                    id: `bc${Date.now()}`,
+                    userId: bankCards[0]?.userId || 'u1',
+                    bank: '星展银行',
+                    branch: '香港',
+                    holder: 'ZHANG SAN',
+                    maskedNo: '**** 8888',
+                    cardNo: '6222 3456 7890 8888',
+                    type: '香港账户',
+                    currency: 'HKD',
+                    whitelistStatus: 'unverified',
+                    verifiedAt: null,
+                    verifiedAmount: null,
+                  });
+                  setCards(bankCards.map(c => ({ ...c })));
+                  setShowAdd(false);
+                  setAddAgreed(false); // 下次打开默认重置（每次添加需重新明示同意）
+                }}>{t('提交（待白名单验证）')}</button>
             </div>
           </div>
         </>
@@ -283,6 +314,9 @@ export default function BankCards({ navigate, goBack }) {
       )}
 
       {renderVerificationSheet()}
+
+      {/* 银行卡服务协议弹窗 */}
+      {viewingDoc && <AgreementModal agreementId={viewingDoc} onClose={() => setViewingDoc(null)} />}
     </div>
   );
 }

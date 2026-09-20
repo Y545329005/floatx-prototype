@@ -89,7 +89,7 @@ export default function AdminKYC({ navigate, detailId, admin }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawerOpen]);
 
-  const closeDrawer = () => { setAction(null); setReason(''); setReasonError(false); goList(); };
+  const closeDrawer = () => { setAction(null); setReason(''); setReasonError(false); setSigZoomed(false); goList(); };
 
   const handleApprove = (kid) => {
     approveKycSubmission(kid, admin?.name || '系统');
@@ -426,6 +426,13 @@ export default function AdminKYC({ navigate, detailId, admin }) {
                         value={reason}
                         onChange={e => { setReason(e.target.value); if (reasonError) setReasonError(false); }}
                       />
+                      <div className="admin-reason-chips">
+                        {['证件照片不清晰', '住址证明不在有效期内', '资料与实名信息不一致'].map(rc => (
+                          <button key={rc} type="button" className="admin-reason-chip" onClick={() => { setReason(rc); setReasonError(false); }}>
+                            {rc}
+                          </button>
+                        ))}
+                      </div>
                       {reasonError && <span className="form-error">请填写原因</span>}
                     </div>
                   </div>

@@ -1,0 +1,173 @@
+/* ============================================
+   方案A：经典金融（Professional Blue）
+   定位：传统金融机构，强调信任和专业
+   关键词：稳重、专业、传统
+   参考：招商银行、汇丰银行
+   ============================================ */
+
+:root[data-theme="classic"] {
+  /* ===== 颜色系统 ===== */
+  /* 主色系 - 正蓝（持牌金融机构标准色） */
+  --primary: #005EB8;
+  --primary-hover: #004E9E;
+  --primary-light: rgba(0, 94, 184, 0.06);
+  --primary-bg: rgba(0, 94, 184, 0.04);
+  --primary-strong: rgba(0, 94, 184, 0.85);
+  --primary-border: rgba(0, 94, 184, 0.2);
+  
+  /* 强调色 - 深金（沉稳不艳） */
+  --accent: #B8860B;
+  --accent-light: #FDF6E3;
+  --accent-hover: #9A7209;
+  --accent-border: rgba(184, 134, 11, 0.45);
+  
+  /* 语义色 */
+  --success: #1B6B32;
+  --success-light: rgba(27, 107, 50, 0.06);
+  --success-bg: rgba(27, 107, 50, 0.04);
+  --success-strong: rgba(27, 107, 50, 0.85);
+  --success-border: rgba(27, 107, 50, 0.2);
+  
+  --danger: #C62828;
+  --danger-light: rgba(198, 40, 40, 0.06);
+  --danger-bg: rgba(198, 40, 40, 0.04);
+  --danger-strong: rgba(198, 40, 40, 0.85);
+  --danger-border: rgba(198, 40, 40, 0.2);
+  
+  --warning: #E65100;
+  --warning-text: #B24000;
+  --warning-light: rgba(230, 81, 0, 0.06);
+  --warning-bg: rgba(230, 81, 0, 0.04);
+  --warning-strong: rgba(230, 81, 0, 0.85);
+  --warning-border: rgba(230, 81, 0, 0.2);
+  
+  --compliance: #B71C1C;
+  --compliance-light: rgba(183, 28, 28, 0.06);
+  --compliance-bg: rgba(183, 28, 28, 0.04);
+  --compliance-strong: rgba(183, 28, 28, 0.85);
+  --compliance-border: rgba(183, 28, 28, 0.2);
+  
+  /* 背景色 */
+  --bg: #F5F5F7;
+  --bg-card: #ffffff;
+  
+  /* 文字色 */
+  --text: #1A1A1A;
+  --text-secondary: #5C5C5C;
+  --text-tertiary: #AEAEB2;
+  
+  /* 边框色 */
+  --border: #E0E0E0;
+  --border-light: #F0F0F0;
+  
+  /* ===== 字体系统 ===== */
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --letter-spacing-tight: -0.02em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.02em;
+  
+  /* ===== 间距系统（标准） ===== */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 14px;
+  --space-4: 18px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+  
+  /* ===== 圆角系统（中等） ===== */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  
+  /* ===== 阴影系统（蓝色调） ===== */
+  --shadow-sm: 0 1px 8px rgba(0,94,184,0.06);
+  --shadow-md: 0 2px 12px rgba(0,94,184,0.08), 0 1px 3px rgba(0,94,184,0.04);
+  --shadow-lg: 0 4px 24px rgba(0,94,184,0.16);
+  
+  /* ===== 过渡动画（标准） ===== */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+  
+  /* ===== 图标风格 ===== */
+  --icon-stroke-width: 2;
+  --icon-style: stroke;
+  
+  /* ===== 系统色 ===== */
+  --ios-green: #34C759;
+}
+
+/* ===== 经典金融特殊样式 ===== */
+
+/* 资产Hero卡片 */
+[data-theme="classic"] .asset-hero-card {
+  background: linear-gradient(135deg, #005EB8 0%, #003C80 100%);
+  border: none;
+}
+
+/* 项目卡片Hero */
+[data-theme="classic"] .project-card-hero {
+  background: linear-gradient(135deg, #005EB8 0%, #003C80 100%) !important;
+}
+
+/* 按钮样式 */
+[data-theme="classic"] .btn-primary {
+  background: #005EB8;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+[data-theme="classic"] .btn-primary:hover {
+  background: #004E9E;
+}
+
+/* 分段控制 */
+[data-theme="classic"] .segmented-control button.active::after {
+  background: #B8860B;
+}
+
+/* 搜索按钮 */
+[data-theme="classic"] .search-icon-btn {
+  background: rgba(0, 94, 184, 0.06);
+  color: #005EB8;
+}
+
+/* 资产功能入口 */
+[data-theme="classic"] .asset-action-icon {
+  background: rgba(0, 94, 184, 0.06);
+  color: #005EB8;
+}
+
+/* 持仓圆点 */
+[data-theme="classic"] .holding-preview-dot {
+  background: #005EB8;
+}
+
+/* 团队头像 */
+[data-theme="classic"] .team-member-avatar {
+  background: #005EB8;
+}
+
+/* 申购热度 */
+[data-theme="classic"] .heat-view-all {
+  background: rgba(0, 94, 184, 0.06);
+  color: #005EB8;
+}
+
+[data-theme="classic"] .heat-view-all:hover {
+  background: #005EB8;
+  color: #fff;
+}
+
+/* 高亮图标 */
+[data-theme="classic"] .highlight-icon {
+  color: #005EB8;
+}

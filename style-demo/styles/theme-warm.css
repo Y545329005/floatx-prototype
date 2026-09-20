@@ -1,0 +1,277 @@
+/* ============================================
+   方案D：温暖人文（Warm Trust）
+   定位：强调客户关系和服务
+   关键词：亲和、柔和、温度感
+   参考：Revolut、Monzo、N26
+   ============================================ */
+
+:root[data-theme="warm"] {
+  /* ===== 颜色系统 ===== */
+  /* 主色系 - 温暖橙 */
+  --primary: #E67E22;
+  --primary-hover: #D35400;
+  --primary-light: rgba(230, 126, 34, 0.1);
+  --primary-bg: rgba(230, 126, 34, 0.05);
+  --primary-strong: rgba(230, 126, 34, 0.9);
+  --primary-border: rgba(230, 126, 34, 0.25);
+  
+  /* 强调色 - 深棕 */
+  --accent: #5D4E37;
+  --accent-light: rgba(93, 78, 55, 0.1);
+  --accent-hover: #4A3D2B;
+  --accent-border: rgba(93, 78, 55, 0.3);
+  
+  /* 语义色 */
+  --success: #27AE60;
+  --success-light: rgba(39, 174, 96, 0.1);
+  --success-bg: rgba(39, 174, 96, 0.05);
+  --success-strong: rgba(39, 174, 96, 0.9);
+  --success-border: rgba(39, 174, 96, 0.25);
+  
+  --danger: #E74C3C;
+  --danger-light: rgba(231, 76, 60, 0.1);
+  --danger-bg: rgba(231, 76, 60, 0.05);
+  --danger-strong: rgba(231, 76, 60, 0.9);
+  --danger-border: rgba(231, 76, 60, 0.25);
+  
+  --warning: #F39C12;
+  --warning-text: #B7791F;
+  --warning-light: rgba(243, 156, 18, 0.1);
+  --warning-bg: rgba(243, 156, 18, 0.05);
+  --warning-strong: rgba(243, 156, 18, 0.9);
+  --warning-border: rgba(243, 156, 18, 0.25);
+  
+  --compliance: #C0392B;
+  --compliance-light: rgba(192, 57, 43, 0.1);
+  --compliance-bg: rgba(192, 57, 43, 0.05);
+  --compliance-strong: rgba(192, 57, 43, 0.9);
+  --compliance-border: rgba(192, 57, 43, 0.25);
+  
+  /* 背景色 - 暖灰 */
+  --bg: #F7F6F3;
+  --bg-card: #FFFFFF;
+  
+  /* 文字色 */
+  --text: #2C3E50;
+  --text-secondary: #7F8C8D;
+  --text-tertiary: #BDC3C7;
+  
+  /* 边框色 */
+  --border: #E8E4DF;
+  --border-light: #F0EDE8;
+  
+  /* ===== 字体系统（圆润人文） ===== */
+  font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --letter-spacing-tight: -0.01em;
+  --letter-spacing-normal: 0.01em;
+  --letter-spacing-wide: 0.03em;
+  
+  /* ===== 间距系统（舒适 +15%） ===== */
+  --space-1: 5px;
+  --space-2: 9px;
+  --space-3: 16px;
+  --space-4: 21px;
+  --space-5: 23px;
+  --space-6: 28px;
+  --space-7: 32px;
+  --space-8: 37px;
+  --space-10: 46px;
+  
+  /* ===== 圆角系统（柔和圆角） ===== */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  
+  /* ===== 阴影系统（柔和扩散） ===== */
+  --shadow-sm: 0 1px 8px rgba(0,0,0,0.04);
+  --shadow-md: 0 2px 16px rgba(0,0,0,0.06);
+  --shadow-lg: 0 4px 24px rgba(0,0,0,0.08);
+  
+  /* ===== 过渡动画（柔和舒适） ===== */
+  --transition-fast: 0.2s ease-in-out;
+  --transition-normal: 0.25s ease-in-out;
+  --transition-slow: 0.3s ease-in-out;
+  
+  /* ===== 图标风格（填充圆润） ===== */
+  --icon-stroke-width: 0;
+  --icon-style: fill;
+  
+  /* ===== 系统色 ===== */
+  --ios-green: #27AE60;
+}
+
+/* ===== 温暖人文特殊样式 ===== */
+
+/* 卡片样式 - 白卡+柔和阴影 */
+[data-theme="warm"] .card {
+  background: #FFFFFF;
+  border-radius: 16px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+}
+
+[data-theme="warm"] .card:hover {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+/* 资产Hero卡片 */
+[data-theme="warm"] .asset-hero-card {
+  background: linear-gradient(135deg, #E67E22 0%, #D35400 100%);
+  border: none;
+  border-radius: 16px;
+}
+
+/* 项目卡片Hero */
+[data-theme="warm"] .project-card-hero {
+  background: linear-gradient(135deg, #E67E22 0%, #D35400 100%) !important;
+}
+
+/* 按钮样式 - 大圆角圆润 */
+[data-theme="warm"] .btn {
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+[data-theme="warm"] .btn-primary {
+  background: #E67E22;
+  border-radius: 12px;
+}
+
+[data-theme="warm"] .btn-primary:hover {
+  background: #D35400;
+}
+
+/* 分段控制 */
+[data-theme="warm"] .segmented-control {
+  border-bottom: 1px solid rgba(230, 126, 34, 0.15);
+}
+
+[data-theme="warm"] .segmented-control button.active {
+  color: #E67E22;
+}
+
+[data-theme="warm"] .segmented-control button.active::after {
+  background: #E67E22;
+  border-radius: 6px;
+}
+
+/* 搜索按钮 */
+[data-theme="warm"] .search-icon-btn {
+  background: rgba(230, 126, 34, 0.1);
+  color: #E67E22;
+  border-radius: 12px;
+}
+
+/* 资产功能入口 */
+[data-theme="warm"] .asset-action-icon {
+  background: rgba(230, 126, 34, 0.1);
+  color: #E67E22;
+  border-radius: 12px;
+}
+
+/* 持仓圆点 */
+[data-theme="warm"] .holding-preview-dot {
+  background: #E67E22;
+  border-radius: 12px;
+}
+
+/* 团队头像 */
+[data-theme="warm"] .team-member-avatar {
+  background: #E67E22;
+  border-radius: 16px;
+}
+
+/* 吸顶容器 */
+[data-theme="warm"] .market-sticky,
+[data-theme="warm"] .detail-sticky,
+[data-theme="warm"] .subpage-sticky {
+  border-bottom: 1px solid rgba(230, 126, 34, 0.15);
+}
+
+/* 标签 */
+[data-theme="warm"] .tag {
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+/* 申购热度 */
+[data-theme="warm"] .heat-view-all {
+  background: rgba(230, 126, 34, 0.1);
+  color: #E67E22;
+  border-radius: 12px;
+}
+
+[data-theme="warm"] .heat-view-all:hover {
+  background: #E67E22;
+  color: #fff;
+}
+
+/* 高亮图标 */
+[data-theme="warm"] .highlight-icon {
+  color: #E67E22;
+}
+
+/* 主题切换器 */
+[data-theme="warm"] .theme-switcher button.active {
+  background: #E67E22;
+  border-color: #E67E22;
+}
+
+/* 页面导航 */
+[data-theme="warm"] .page-nav button.active {
+  background: #E67E22;
+}
+
+/* 项目卡片 */
+[data-theme="warm"] .project-card {
+  border-radius: 16px;
+}
+
+/* 返回按钮 */
+[data-theme="warm"] .back-btn {
+  color: #E67E22;
+  border-radius: 12px;
+}
+
+[data-theme="warm"] .back-btn:hover {
+  background: rgba(230, 126, 34, 0.1);
+}
+
+/* 轮次说明 */
+[data-theme="warm"] .round-note {
+  border-radius: 12px;
+}
+
+/* 详情页 */
+[data-theme="warm"] .project-detail-page {
+  background: #F7F6F3;
+}
+
+/* 状态标签 */
+[data-theme="warm"] .card-status-badge {
+  border-radius: 8px;
+}
+
+/* 吸底CTA */
+[data-theme="warm"] .detail-actions {
+  border-radius: 16px 16px 0 0;
+}
+
+/* 主题信息卡片 */
+[data-theme="warm"] .theme-info {
+  border-radius: 16px;
+}
+
+/* 文档链接 */
+[data-theme="warm"] .doc-item {
+  border-radius: 8px;
+  padding: var(--space-3);
+}
+
+[data-theme="warm"] .doc-item:hover {
+  background: rgba(230, 126, 34, 0.05);
+}

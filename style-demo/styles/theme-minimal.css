@@ -1,0 +1,234 @@
+/* ============================================
+   方案B：现代极简（Minimal Stripe）
+   定位：科技感金融，强调数据和效率
+   关键词：高效、数据优先、科技感
+   参考：Stripe、Linear、Vercel
+   ============================================ */
+
+:root[data-theme="minimal"] {
+  /* ===== 颜色系统 ===== */
+  /* 主色系 - 科技紫蓝 */
+  --primary: #635BFF;
+  --primary-hover: #5046E5;
+  --primary-light: rgba(99, 91, 255, 0.08);
+  --primary-bg: rgba(99, 91, 255, 0.04);
+  --primary-strong: rgba(99, 91, 255, 0.85);
+  --primary-border: rgba(99, 91, 255, 0.2);
+  
+  /* 强调色 - 同主色（极简风格单强调色） */
+  --accent: #635BFF;
+  --accent-light: rgba(99, 91, 255, 0.08);
+  --accent-hover: #5046E5;
+  --accent-border: rgba(99, 91, 255, 0.3);
+  
+  /* 语义色 */
+  --success: #0A7B3E;
+  --success-light: rgba(10, 123, 62, 0.08);
+  --success-bg: rgba(10, 123, 62, 0.04);
+  --success-strong: rgba(10, 123, 62, 0.85);
+  --success-border: rgba(10, 123, 62, 0.2);
+  
+  --danger: #DC3545;
+  --danger-light: rgba(220, 53, 69, 0.08);
+  --danger-bg: rgba(220, 53, 69, 0.04);
+  --danger-strong: rgba(220, 53, 69, 0.85);
+  --danger-border: rgba(220, 53, 69, 0.2);
+  
+  --warning: #E67E22;
+  --warning-text: #B85C00;
+  --warning-light: rgba(230, 126, 34, 0.08);
+  --warning-bg: rgba(230, 126, 34, 0.04);
+  --warning-strong: rgba(230, 126, 34, 0.85);
+  --warning-border: rgba(230, 126, 34, 0.2);
+  
+  --compliance: #B71C1C;
+  --compliance-light: rgba(183, 28, 28, 0.06);
+  --compliance-bg: rgba(183, 28, 28, 0.04);
+  --compliance-strong: rgba(183, 28, 28, 0.85);
+  --compliance-border: rgba(183, 28, 28, 0.2);
+  
+  /* 背景色 - 冷灰 */
+  --bg: #F6F9FC;
+  --bg-card: #ffffff;
+  
+  /* 文字色 */
+  --text: #1A1F36;
+  --text-secondary: #697386;
+  --text-tertiary: #A3ACB9;
+  
+  /* 边框色 */
+  --border: #E3E8EE;
+  --border-light: #F0F3F7;
+  
+  /* ===== 字体系统（紧凑几何感） ===== */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --letter-spacing-tight: -0.03em;
+  --letter-spacing-normal: -0.01em;
+  --letter-spacing-wide: 0.02em;
+  
+  /* ===== 间距系统（紧凑 -20%） ===== */
+  --space-1: 3px;
+  --space-2: 6px;
+  --space-3: 11px;
+  --space-4: 14px;
+  --space-5: 16px;
+  --space-6: 19px;
+  --space-7: 22px;
+  --space-8: 26px;
+  --space-10: 32px;
+  
+  /* ===== 圆角系统（小圆角） ===== */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
+  
+  /* ===== 阴影系统（极简） ===== */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.1);
+  
+  /* ===== 过渡动画（快速） ===== */
+  --transition-fast: 0.1s ease;
+  --transition-normal: 0.15s ease;
+  --transition-slow: 0.2s ease;
+  
+  /* ===== 图标风格（细线） ===== */
+  --icon-stroke-width: 1.5;
+  --icon-style: stroke;
+  
+  /* ===== 系统色 ===== */
+  --ios-green: #0A7B3E;
+}
+
+/* ===== 现代极简特殊样式 ===== */
+
+/* 卡片样式 - 无阴影+边框 */
+[data-theme="minimal"] .card {
+  background: #ffffff;
+  border: 1px solid #E3E8EE;
+  box-shadow: none;
+}
+
+[data-theme="minimal"] .card:hover {
+  border-color: #635BFF;
+}
+
+/* 资产Hero卡片 */
+[data-theme="minimal"] .asset-hero-card {
+  background: linear-gradient(135deg, #635BFF 0%, #5046E5 100%);
+  border: none;
+}
+
+/* 项目卡片Hero */
+[data-theme="minimal"] .project-card-hero {
+  background: linear-gradient(135deg, #635BFF 0%, #5046E5 100%) !important;
+}
+
+/* 按钮样式 - 小圆角扁平 */
+[data-theme="minimal"] .btn {
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+[data-theme="minimal"] .btn-primary {
+  background: #635BFF;
+  border-radius: 4px;
+}
+
+[data-theme="minimal"] .btn-primary:hover {
+  background: #5046E5;
+}
+
+/* 分段控制 */
+[data-theme="minimal"] .segmented-control {
+  border-bottom: 1px solid rgba(99, 91, 255, 0.1);
+}
+
+[data-theme="minimal"] .segmented-control button.active {
+  color: #635BFF;
+}
+
+[data-theme="minimal"] .segmented-control button.active::after {
+  background: #635BFF;
+}
+
+/* 搜索按钮 */
+[data-theme="minimal"] .search-icon-btn {
+  background: rgba(99, 91, 255, 0.08);
+  color: #635BFF;
+  border-radius: 4px;
+}
+
+/* 资产功能入口 */
+[data-theme="minimal"] .asset-action-icon {
+  background: rgba(99, 91, 255, 0.08);
+  color: #635BFF;
+  border-radius: 6px;
+}
+
+/* 持仓圆点 */
+[data-theme="minimal"] .holding-preview-dot {
+  background: #635BFF;
+  border-radius: 4px;
+}
+
+/* 团队头像 */
+[data-theme="minimal"] .team-member-avatar {
+  background: #635BFF;
+  border-radius: 4px;
+}
+
+/* 吸顶容器 */
+[data-theme="minimal"] .market-sticky,
+[data-theme="minimal"] .detail-sticky,
+[data-theme="minimal"] .subpage-sticky {
+  border-bottom: 1px solid #E3E8EE;
+}
+
+/* 标签 */
+[data-theme="minimal"] .tag {
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+/* 申购热度 */
+[data-theme="minimal"] .heat-view-all {
+  background: rgba(99, 91, 255, 0.08);
+  color: #635BFF;
+  border-radius: 4px;
+}
+
+[data-theme="minimal"] .heat-view-all:hover {
+  background: #635BFF;
+  color: #fff;
+}
+
+/* 高亮图标 */
+[data-theme="minimal"] .highlight-icon {
+  color: #635BFF;
+}
+
+/* 主题切换器 */
+[data-theme="minimal"] .theme-switcher button.active {
+  background: #635BFF;
+  border-color: #635BFF;
+}
+
+/* 页面导航 */
+[data-theme="minimal"] .page-nav button.active {
+  background: #635BFF;
+}
+
+/* 项目卡片 */
+[data-theme="minimal"] .project-card {
+  border: 1px solid #E3E8EE;
+}
+
+[data-theme="minimal"] .project-card:hover {
+  border-color: #635BFF;
+}
