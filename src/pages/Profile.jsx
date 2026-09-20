@@ -1,11 +1,22 @@
-import { Shield, ChevronRight, LogOut, FileText, Bell, Settings, HelpCircle, BadgeCheck, Info, Award } from 'lucide-react';
+import { useState } from 'react';
+import { Shield, ChevronRight, LogOut, FileText, Bell, Settings, HelpCircle, BadgeCheck, Info, Award, Palette } from 'lucide-react';
 import { currentUser, notifications, KYC_STATUS } from '../mock/data';
 import AccountManager from '../components/AccountManager';
 import { useLang } from '../i18n';
+import { getTheme, setTheme } from '../theme';
+
+// 主题选项（2026-09-14 双皮肤）：切换即时生效，localStorage 记忆，刷新保持
+const THEME_OPTIONS = [
+  { value: '', label: '经典', desc: '默认金融蓝主题' },
+  { value: 'hkbtc', label: 'HKBTC 2.0', desc: '公司设计 UIkit 换肤' },
+];
 
 export default function Profile({ navigate, setIsLoggedIn }) {
   const { t } = useLang();
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const [theme, setThemeState] = useState(getTheme);
+  const handleTheme = (v) => { setTheme(v); setThemeState(v); };
+  // 2026-09-11 定向通知后：未读计数只统计当前用户可见通知（全员 + 发给当前用户）
+  const unreadCount = notifications.filter(n => !n.toUserId || n.toUserId === currentUser.id).filter(n => !n.read).length;
   const menuItems = [
     { icon: FileText, label: t('合规报告'), sub: t('资产报告 · 合规披露'), hash: '#reports' },
     { icon: Bell, label: t('消息通知'), sub: t('申购 · 路演 · 资金动态'), hash: '#notifications', badge: unreadCount },
@@ -14,25 +25,39 @@ export default function Profile({ navigate, setIsLoggedIn }) {
     { icon: Info, label: t('关于'), sub: t('公司信息 · 政策文件'), hash: '#about' },
   ];
 
-  // 2026-08-14：PI 独立审核流——PI 入口由 currentUser.pi.status 驱动（不再与 piCertified 捆绑）
-  // verified=已认证（badge 已显示，无入口）；pending=待审核（看状态页）；rejected/expired=重新认证；其余=申报
+  // 2026-08-14：PI 独立审核流——PI 状态由 currentUser.pi.status 驱动（不再与 piCertified 捆绑）
+  // 2026-09-20：PI 状态入口统一由下方 piMeta badge 承担（全状态可点击直达，原 piEntry 引导卡
+  // 在所有态与 badge 跳转目标重复，整块删除节省页面空间、保持信息单一承载）
   const piStatus = currentUser.pi?.status || 'none';
-  let piEntry = null;
-  if (currentUser.kyc_status === KYC_STATUS.APPROVED) {
-    if (piStatus === 'pending') {
-      piEntry = { target: '#pi-submitted', title: t('PI 认证审核中'), sub: t('已提交申请，1-3 个工作日内完成审核') };
-    } else if (piStatus === 'rejected') {
-      piEntry = { target: '#kyc-pi', title: t('重新提交 PI 认证'), sub: t('上次申请未通过，点击重新提交') };
-    } else if (piStatus === 'verified') {
-      // 已认证——检查是否过期（派生 EXPIRED）
-      const expiresAt = currentUser.pi?.expiresAt;
-      if (expiresAt && new Date(expiresAt.replace(' ', 'T')).getTime() < Date.now()) {
-        piEntry = { target: '#kyc-pi', title: t('PI 认证已过期'), sub: t('重新认证以恢复参与资格') };
-      }
-    } else {
-      piEntry = { target: '#kyc-pi', title: t('成为专业投资者'), sub: t('解锁优先认购权，享稀缺份额优先配置') };
-    }
-  }
+  const piExpiresAt = currentUser.pi?.expiresAt;
+  const piExpired = !!(piExpiresAt && new Date(piExpiresAt.replace(' ', 'T')).getTime() < Date.now());
+
+  // 2026-09-11（会议纪要「我的模块：KYC 认证状态」）：KYC 状态 badge 直达展示 + 非已认证点击引导。
+  // EXPIRED 不在 submitKyc 允许集合（IN_PROGRESS/REJECTED/REQUIRES_ACTION 才能重提），引导至客服而非 kyc-start
+  // 2026-09-18：已提交过的状态（待审核/被拒/补件）统一跳 kyc-submitted——用户第一需求是查看审核结果/被拒原因，
+  // 而非重填表单；结果页内已提供"重新提交"按钮指向 kyc-start。未提交过的状态（未开始/进行中）才直接进流程。
+  const kycMeta = {
+    [KYC_STATUS.APPROVED]: { label: 'KYC 已认证', cls: 'kyc-approved', target: null },
+    [KYC_STATUS.PENDING_REVIEW]: { label: 'KYC 审核中', cls: 'kyc-pending', target: '#kyc-submitted' },
+    [KYC_STATUS.REQUIRES_ACTION]: { label: 'KYC 待补件', cls: 'kyc-error', target: '#kyc-submitted' },
+    [KYC_STATUS.REJECTED]: { label: 'KYC 未通过', cls: 'kyc-error', target: '#kyc-submitted' },
+    [KYC_STATUS.EXPIRED]: { label: 'KYC 已过期', cls: 'kyc-error', target: '#support' },
+    [KYC_STATUS.NOT_STARTED]: { label: 'KYC 未认证', cls: 'kyc-muted', target: '#kyc-start' },
+    [KYC_STATUS.IN_PROGRESS]: { label: 'KYC 未认证', cls: 'kyc-muted', target: '#kyc-start' },
+  };
+  const kycBadge = kycMeta[currentUser.kyc_status] || kycMeta[KYC_STATUS.NOT_STARTED];
+
+  // 2026-09-20：PI badge 全状态映射（对称 kycMeta）——此前 pending 无 badge，提交后「我的」页无任何 PI 状态提示；
+  // rejected/expired 同步补齐（KYC badge 即全状态直达）。expired 为派生态（verified 但超 expiresAt）。
+  const piMeta = {
+    pending:  { label: 'PI 审核中',     cls: 'pi-pending',  target: '#pi-submitted' },
+    rejected: { label: 'PI 未通过',     cls: 'pi-error',    target: '#kyc-pi' },
+    expired:  { label: 'PI 已过期',     cls: 'pi-error',    target: '#kyc-pi' },
+    verified: { label: 'PI 认证投资者', cls: 'pi-verified', target: null },
+    none:     { label: 'PI 未认证',     cls: 'pi-muted',    target: '#kyc-pi' },
+  };
+  const piState = piStatus === 'verified' && piExpired ? 'expired' : piStatus;
+  const piBadge = piMeta[piState] || piMeta.none;
 
   const handleLogout = () => {
     setIsLoggedIn(false);
@@ -49,34 +74,32 @@ export default function Profile({ navigate, setIsLoggedIn }) {
           <h2>{currentUser.name}</h2>
           <p className="text-muted">{currentUser.email}</p>
           <div className="profile-badges">
-            <span className="pi-badge">
-              <BadgeCheck size={12} />
-              {t('PI 认证投资者')}
+            <span
+              className={`pi-badge ${piBadge.cls}${piBadge.target ? ' clickable' : ''}`}
+              role={piBadge.target ? 'button' : undefined}
+              onClick={() => piBadge.target && navigate(piBadge.target)}
+            >
+              {piState === 'verified' ? <BadgeCheck size={12} /> : piState === 'none' ? <Award size={12} /> : <Shield size={12} />}
+              {t(piBadge.label)}
             </span>
-            {currentUser.pi && (
+            {piState === 'verified' && currentUser.pi?.investorNo && (
               <span className="investor-no">{currentUser.pi.investorNo}</span>
+            )}
+            {kycBadge && (
+              <span
+                className={`kyc-badge ${kycBadge.cls}${kycBadge.target ? ' clickable' : ''}`}
+                role={kycBadge.target ? 'button' : undefined}
+                onClick={() => kycBadge.target && navigate(kycBadge.target)}
+              >
+                <Shield size={12} />
+                {t(kycBadge.label)}
+              </span>
             )}
           </div>
         </div>
       </div>
 
       <AccountManager onEscalate={() => navigate('#support')} compact />
-
-      {/* PI 入口（KYC 已通过，按 PI 独立状态显示：申报/审核中/重提/过期） */}
-      {piEntry && (
-        <div className="kyc-pi-entry">
-          <div className="menu-item" onClick={() => navigate(piEntry.target)}>
-            <div className="kyc-pi-entry-icon">
-              <Award size={20} />
-            </div>
-            <span className="menu-item-label" style={{ flex: 1 }}>
-              <span className="menu-item-title">{piEntry.title}</span>
-              <span className="menu-item-sub">{piEntry.sub}</span>
-            </span>
-            <ChevronRight size={16} className="text-muted" />
-          </div>
-        </div>
-      )}
 
       <div className="menu-list">
         {menuItems.map((item, i) => {
@@ -97,6 +120,31 @@ export default function Profile({ navigate, setIsLoggedIn }) {
             </div>
           );
         })}
+      </div>
+
+      {/* 设计主题（2026-09-14 双皮肤切换：经典 / HKBTC 2.0 kit） */}
+      <div className="theme-switch">
+        <div className="theme-switch-head">
+          <Palette size={18} />
+          <span className="menu-item-title">{t('设计主题')}</span>
+        </div>
+        <div className="theme-switch-options">
+          {THEME_OPTIONS.map(opt => (
+            <button
+              key={opt.value}
+              type="button"
+              className={`theme-option${theme === opt.value ? ' selected' : ''}`}
+              onClick={() => handleTheme(opt.value)}
+            >
+              <span className="theme-option-swatch" data-theme-preview={opt.value} />
+              <span className="theme-option-label">
+                <span className="theme-option-name">{t(opt.label)}</span>
+                <span className="theme-option-desc">{t(opt.desc)}</span>
+              </span>
+              <span className="theme-option-check" />
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="profile-footer">

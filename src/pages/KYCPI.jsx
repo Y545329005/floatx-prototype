@@ -1,18 +1,24 @@
 import { useState } from "react";
 import { ArrowLeft, ShieldCheck, Upload, Check, AlertCircle, Briefcase } from "lucide-react";
 import { useLang } from "../i18n";
-import { currentUser, submitPiCertification } from "../mock/data";
+import { currentUser, submitPiCertification, recordAgreement } from "../mock/data";
+import AgreementModal from "../components/AgreementModal";
 
 export default function KYCPI({ navigate, goBack }) {
   const { t } = useLang();
   const profile = currentUser.kyc_profile || {};
 
   const [formData, setFormData] = useState({
-    pi_type: profile.piType || "",
+    // 默认「资产达标」（2026-09-20 拍板）：首屏激活/未激活对比强化二选一感知，消除空态错误路径；
+    // 选错路径在下一步即时暴露（上传区 vs 持牌表单），1 次点击切换；重新提交时回读已有类型
+    pi_type: profile.piType || "asset",
+    pi_license_no: profile.piLicenseNo || "",
+    pi_license_org: profile.piLicenseOrg || "",
     pi_certified: profile.piCertified || false,
   });
   const [piFile, setPiFile] = useState(profile.piProof ? { name: profile.piProof } : null);
   const [errors, setErrors] = useState({});
+  const [viewingDoc, setViewingDoc] = useState(null); // PI 条款文档弹窗（2026-09-15）
 
   const update = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -36,6 +42,11 @@ export default function KYCPI({ navigate, goBack }) {
     const newErrors = {};
     if (!formData.pi_type) newErrors.pi_type = t("请选择专业投资者资格类型");
     if (formData.pi_type === 'asset' && !piFile) newErrors.pi_file = t("请上传资产证明文件");
+    // 2026-09-20：持牌类型凭 CE No. 走 SFC 公开记录核验，编号与机构名称必填
+    if (formData.pi_type === 'professional') {
+      if (!formData.pi_license_no.trim()) newErrors.pi_license_no = t("请填写持牌编号（CE No.）");
+      if (!formData.pi_license_org.trim()) newErrors.pi_license_org = t("请填写持牌机构名称");
+    }
     if (!formData.pi_certified) newErrors.pi_certified = t("请阅读并同意签署专业投资者声明");
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -48,8 +59,12 @@ export default function KYCPI({ navigate, goBack }) {
       piType: formData.pi_type,
       piProof: piFile,
       piCertified: formData.pi_certified,
+      piLicenseNo: formData.pi_type === 'professional' ? formData.pi_license_no.trim() : null,
+      piLicenseOrg: formData.pi_type === 'professional' ? formData.pi_license_org.trim() : null,
     });
+    // PI 声明签署留痕（2026-09-15 · 对齐公司实践场景④：声明版本 + 时间固化）
     if (res.ok) {
+      recordAgreement({ type: 'pi', agreementIds: ['pi-terms', 'privacy-policy', 'pi-declaration'] });
       navigate('pi-submitted');
     }
   };
@@ -87,7 +102,8 @@ export default function KYCPI({ navigate, goBack }) {
           {/* PI 类型选择 */}
           <div className="kyc-form-group">
             <label className="kyc-form-label">{t('资格类型')}</label>
-            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+            {/* 单选选项卡（2026-09-20 · token 合规化抽类：原内联 style 违反反模式 #10 / height 52 / gap 2 / opacity 0.8） */}
+            <div className="kyc-pi-type-group">
               {[
                 { value: 'asset', label: t('资产达标'), desc: t('持有 HK$800 万以上投资组合') },
                 { value: 'professional', label: t('专业投资者'), desc: t('持牌人士或注册机构') },
@@ -95,21 +111,11 @@ export default function KYCPI({ navigate, goBack }) {
                 <button
                   key={opt.value}
                   type="button"
-                  className={`kyc-btn kyc-btn-secondary ${formData.pi_type === opt.value ? 'active' : ''}`}
-                  style={{
-                    flex: 1,
-                    height: 52,
-                    background: formData.pi_type === opt.value ? 'var(--primary)' : 'transparent',
-                    color: formData.pi_type === opt.value ? 'var(--text-on-dark)' : 'var(--primary)',
-                    border: `1px solid ${formData.pi_type === opt.value ? 'var(--primary)' : 'var(--primary-border)'}`,
-                    fontSize: 'var(--text-sm)',
-                    flexDirection: 'column',
-                    gap: 2,
-                  }}
+                  className={`kyc-pi-type ${formData.pi_type === opt.value ? 'active' : ''}`}
                   onClick={() => update('pi_type', opt.value)}
                 >
-                  <span style={{ fontWeight: 600 }}>{opt.label}</span>
-                  <span style={{ fontSize: 'var(--text-xs)', opacity: 0.8 }}>{opt.desc}</span>
+                  <span className="kyc-pi-type-label">{opt.label}</span>
+                  <span className="kyc-pi-type-desc">{opt.desc}</span>
                 </button>
               ))}
             </div>
@@ -149,7 +155,53 @@ export default function KYCPI({ navigate, goBack }) {
             </div>
           )}
 
-          {/* 声明签署 */}
+          {/* 持牌信息（2026-09-20：professional 类型凭 CE No. 走 SFC 公开记录核验，无需上传文件） */}
+          {formData.pi_type === 'professional' && (
+            <div className="kyc-form-group">
+              <label className="kyc-form-label">{t('持牌信息')}</label>
+              <input
+                type="text"
+                className={`kyc-form-input ${errors.pi_license_no ? 'error' : ''}`}
+                placeholder={t('请输入 SFC 中央编号（如：ABC123）')}
+                value={formData.pi_license_no}
+                onChange={(e) => update('pi_license_no', e.target.value)}
+              />
+              {errors.pi_license_no && <span className="kyc-form-error">{errors.pi_license_no}</span>}
+              <input
+                type="text"
+                className={`kyc-form-input ${errors.pi_license_org ? 'error' : ''}`}
+                style={{ marginTop: 'var(--space-2)' }}
+                placeholder={t('持牌机构名称')}
+                value={formData.pi_license_org}
+                onChange={(e) => update('pi_license_org', e.target.value)}
+              />
+              {errors.pi_license_org && <span className="kyc-form-error">{errors.pi_license_org}</span>}
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: 'var(--space-2)', lineHeight: 1.5 }}>
+                {t('后台将凭中央编号在香港证监会公开记录核验您的持牌资格，无需上传文件')}
+              </div>
+            </div>
+          )}
+
+          {/* 声明签署（2026-09-15 · 对齐公司实践场景④：完整法律声明全文 + 条款文档链接 + 勾选确认） */}
+          <div className="kyc-card" style={{ marginTop: 'var(--space-3)' }}>
+            <div className="kyc-card-title">{t('专业投资者声明')}</div>
+            <p className="kyc-card-desc" style={{ marginBottom: 'var(--space-2)' }}>
+              {t('请认真阅读以下协议文件，并确认下方声明：')}
+            </p>
+            {/* 2026-09-20：声明全文收进抽屉（pi-declaration），三份文件同一交互；页面不留内容预览 */}
+            <div className="kyc-agreement-links">
+              <button type="button" className="kyc-agreement-link" onClick={() => setViewingDoc('pi-terms')}>
+                {t('《专业投资者业务条款及风险披露声明书》')} ›
+              </button>
+              <button type="button" className="kyc-agreement-link" onClick={() => setViewingDoc('privacy-policy')}>
+                {t('《私隐政策》')} ›
+              </button>
+              <button type="button" className="kyc-agreement-link" onClick={() => setViewingDoc('pi-declaration')}>
+                {t('《专业投资者声明》')} ›
+              </button>
+            </div>
+          </div>
+
           <div
             className={`kyc-checkbox-row ${errors.pi_certified ? 'error' : ''}`}
             onClick={() => update('pi_certified', !formData.pi_certified)}
@@ -159,15 +211,20 @@ export default function KYCPI({ navigate, goBack }) {
               {formData.pi_certified && <Check size={12} />}
             </div>
             <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', flex: 1 }}>
-              {t('我确认上述信息真实有效，并同意签署专业投资者声明')}
+              {t('本人已阅读并同意上述声明，确认签署专业投资者声明')}
             </span>
           </div>
           {errors.pi_certified && <span className="kyc-form-error" style={{ marginTop: 4 }}>{errors.pi_certified}</span>}
 
+          {/* 法规提示按所选类型聚焦（2026-09-20：持牌类型收 CE No. 后，避免误导其去准备资产证明） */}
           <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-start', marginTop: 'var(--space-3)', padding: 'var(--space-3)', background: 'var(--warning-light)', borderRadius: 'var(--radius-md)' }}>
             <AlertCircle size={14} style={{ color: 'var(--warning)', flexShrink: 0, marginTop: 2 }} />
             <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              {t('《证券及期货条例》附表1定义的专业投资者，您需持有至少 HK$8,000,000 的投资组合或为持牌人士')}
+              {formData.pi_type === 'asset'
+                ? t('《证券及期货条例》附表1定义的专业投资者，您需持有至少 HK$8,000,000 的投资组合')
+                : formData.pi_type === 'professional'
+                  ? t('《证券及期货条例》附表1定义的专业投资者，持牌资格将凭 SFC 中央编号在证监会公开记录核验')
+                  : t('《证券及期货条例》附表1定义的专业投资者，您需持有至少 HK$8,000,000 的投资组合或为持牌人士')}
             </span>
           </div>
         </div>
@@ -178,6 +235,9 @@ export default function KYCPI({ navigate, goBack }) {
           {t('确认提交')}
         </button>
       </div>
+
+      {/* PI 条款文档弹窗 */}
+      {viewingDoc && <AgreementModal agreementId={viewingDoc} onClose={() => setViewingDoc(null)} />}
     </div>
   );
 }

@@ -547,8 +547,8 @@ export const en = {
 
   // Compliance (funding loop)
   '意向金额非合同承诺，最终以 SPV 文件为准': 'Intent amount is non-binding; final terms per SPV',
-  '获配额后意向金额将被冻结（不扣款），请在 24 小时内签署 SPV 确认出资，逾期未签署将自动顺延': 'Upon allocation, your intended amount will be frozen (not deducted). Please sign the SPV within 24 hours to confirm your investment; failure to sign will trigger auto-deferral.',
-  '冻结 = 锁定意向金额（不扣款），签署 SPV 时实际出资；逾期未签署将自动顺延': 'Frozen = intended amount locked (not deducted); actual payment happens upon SPV signing. Unsign by deadline will auto-defer.',
+  '获配额后意向金额将被冻结（不扣款），请在 24 小时内签署 SPV 确认出资': 'Upon allocation, your intended amount will be frozen (not deducted). Please sign the SPV within 24 hours to confirm your investment.',
+  '冻结 = 锁定意向金额（不扣款），签署 SPV 时实际出资；请在 24 小时内完成签署': 'Frozen = intended amount locked (not deducted); actual payment happens upon SPV signing. Please complete signing within 24 hours.',
   '签署 SPV 协议': 'Sign SPV Agreement',
   '签署将在第三方电子签署平台（DocuSign / Adobe Sign 类）完成，您将收到签署邀请。': 'Signing will be completed on a third-party e-signature platform (e.g. DocuSign / Adobe Sign); you will receive a signing invitation.',
   '签署对象': 'Signing subject',
@@ -559,7 +559,7 @@ export const en = {
 
   // Frozen / countdown
   '已冻结': 'Frozen',
-  '宽限期已过': 'Grace period expired',
+  '请在 24 小时内签署': 'Please sign within 24 hours',
   '小时': 'h',
   '分': 'm',
   '秒': 's',
@@ -634,6 +634,16 @@ export const en = {
   '银行月结单或投资组合账单（不超过 10MB）': 'Bank statement or portfolio statement (max 10MB)',
   '我确认上述信息真实有效，并同意签署专业投资者声明': 'I confirm the above information is true and agree to sign the Professional Investor Declaration',
   '《证券及期货条例》附表1定义的专业投资者，您需持有至少 HK$8,000,000 的投资组合或为持牌人士': 'As defined in Part 1 of Schedule 1 to the SFO, you must hold a portfolio of at least HK$8,000,000 or be a licensed person',
+  // ===== 2026-09-20 PI 页优化：堆叠选项卡 + 持牌信息 + 声明抽屉 =====
+  '持牌信息': 'License Information',
+  '请输入 SFC 中央编号（如：ABC123）': 'Enter SFC Central Number (e.g. ABC123)',
+  '持牌机构名称': 'Licensed firm name',
+  '请填写持牌编号（CE No.）': 'Please enter your CE No.',
+  '请填写持牌机构名称': 'Please enter your licensed firm name',
+  '后台将凭中央编号在香港证监会公开记录核验您的持牌资格，无需上传文件': 'Your license status will be verified via the SFC public register using the CE No. No document upload required.',
+  '《专业投资者声明》': 'Professional Investor Declaration',
+  '《证券及期货条例》附表1定义的专业投资者，您需持有至少 HK$8,000,000 的投资组合': 'As defined in Part 1 of Schedule 1 to the SFO, you must hold a portfolio of at least HK$8,000,000',
+  '《证券及期货条例》附表1定义的专业投资者，持牌资格将凭 SFC 中央编号在证监会公开记录核验': 'As defined in Part 1 of Schedule 1 to the SFO, your license status will be verified via the SFC public register using the CE No.',
   '基本信息': 'Basic Information',
   '请确保姓名与证件上的信息一致': 'Please ensure your name matches your ID document',
   '英文姓名（与证件一致）': 'English Name (as on ID)',
@@ -742,7 +752,7 @@ export const en = {
   // Submission Success
   '认证完成': 'Verification Complete',
   '认证资料已提交': 'Documents Submitted',
-  '您的专业投资者认证资料已成功提交，我们将在 1-3 个工作日内完成审核。': 'Your PI verification documents have been submitted. We will complete review within 1-3 business days.',
+  '您的实名认证资料已成功提交，我们将在 1-3 个工作日内完成审核。': 'Your identity verification documents have been submitted. We will complete review within 1-3 business days.',
   '审核结果将通过短信及站内通知发送，请保持手机畅通。': 'You will receive the result via SMS and in-app notification. Please keep your phone accessible.',
   '审核周期': 'Review Timeline',
   '一般情况下审核将在 1-3 个工作日内完成。如需补充材料，我们的客服团队将提前与您联系。': 'Review typically completes within 1-3 business days. Our team will contact you if additional documents are needed.',
@@ -788,6 +798,26 @@ export const en = {
   '平台将核验您的资产证明或持牌资质，确认符合香港证监会专业投资者标准。': 'We will verify your asset proof or licensed status against the SFC professional investor standard.',
   '审核内容': 'Review Scope',
   'PI 认证审核': 'PI Certification Review',
+  // ===== 2026-09-20 KYC status page PI entry + guidance note =====
+  '去 PI 认证': 'Start PI Certification',
+  '查看 PI 审核进度': 'View PI Review Status',
+  'KYC 审核通过后可开始认证': 'Available after KYC approval',
+  // ===== 2026-09-20 PI submission decoupled from KYC review =====
+  '实名认证审核中，无需重复提交。': 'Identity verification is under review — no need to resubmit.',
+  '审核期间即可同步提交 PI 认证资料，两项审核并行推进。': 'You may submit your PI certification documents now — both reviews proceed in parallel.',
+  '与实名认证审核并行，无需等待': 'Runs in parallel with identity verification — no need to wait',
+  // ===== 2026-09-18 PI guidance & status display =====
+  '下一步：PI 专业投资者认证': 'Next: PI Professional Investor Certification',
+  '专业投资者资格是申购私募基金的必要条件': 'Professional investor status is required to subscribe to private funds',
+  '未完成 PI 认证': 'PI Certification Incomplete',
+  '完成专业投资者认证后可申购私募基金': 'Complete PI certification to subscribe to private funds',
+  '去认证': 'Certify Now',
+  '查看认证状态': 'View Status',
+  '实名认证': 'Identity Verification',
+  '实名认证已通过，可进行专业投资者认证。': 'Identity verification passed. You may now apply for PI certification.',
+  '认证状态': 'Verification Status',
+  '实名认证审核中，无需重复提交；审核通过后即可访问账户设置等功能。': 'Identity verification is under review — no need to resubmit. Account settings and other features will be available once approved.',
+  '平台将核验您的身份证件与地址证明的真实性，确认身份信息真实有效。资料加密保存，仅用于本次认证审核。': 'We will verify the authenticity of your identity documents and proof of address. Your information is encrypted and used only for this verification review.',
 
   // Date picker (iOS compact mode wheel picker)
   '选择出生日期': 'Select Date of Birth',
@@ -857,7 +887,7 @@ export const en = {
   '您已获得专业投资者资格，可参与平台的稀缺份额申购。': 'You are now a Professional Investor and can subscribe to scarce shares on the platform.',
   '去申购项目': 'Browse Projects',
   '认证未通过': 'Verification Rejected',
-  '很抱歉，您的专业投资者认证资料未通过审核。请根据以下原因修正后重新提交。': 'Sorry, your Professional Investor verification was not approved. Please correct the following and resubmit.',
+  '很抱歉，您的实名认证资料未通过审核。请根据以下原因修正后重新提交。': 'Sorry, your identity verification was not approved. Please correct the following and resubmit.',
   '未通过原因': 'Reason',
   '重新提交认证': 'Resubmit Verification',
   '清空': 'Clear',

@@ -70,7 +70,7 @@ import AdminSupport from './admin/AdminSupport';
 import AdminConfig from './admin/AdminConfig';
 import AdminHome from './admin/AdminHome';
 
-import { KYC_STATUS, testAccounts, approveKyc, setMockCurrentUser, initState, resetSubscriptionForDemo, restartFreezeGrace, getRoleMenuKeys, termsState } from './mock/data';
+import { KYC_STATUS, testAccounts, approveKyc, setMockCurrentUser, restoreKycStatus, currentUser as currentUserData, initState, resetSubscriptionForDemo, getRoleMenuKeys, termsState } from './mock/data';
 
 function parseHash(hash) {
   // hash 里可能带 query string（如 #project/p3?reset=1），先剥离 ? 及后面的内容
@@ -218,15 +218,26 @@ export default function App() {
       try { localStorage.removeItem('mock-logged-in'); } catch (e) {}
       setIsLoggedIn(true);
       setCurrentUser(testAccounts.approved);
+      setMockCurrentUser(testAccounts.approved);  // 桥梁同步（此前缺失：data.js currentUser 残留上一账号）
     };
     // 测试账号登录函数
     window.__loginWithTestAccount = (type) => {
       const account = type === 'approved' ? testAccounts.approved : testAccounts.pending;
       setCurrentUser(account);
       setMockCurrentUser(account);
+      // 2026-09-20：从提交记录回读 KYC 状态（testAccounts 预设刷新即重置，与 kycSubmissions 快照脱节）
+      if (type !== 'approved') restoreKycStatus(account.id);
       setIsLoggedIn(true);
+      // 落地页按恢复后的状态分桶（与门控 L394 逻辑一致）：已提交三态 → 状态页，未提交 → 流程入口
+      const submittedStatuses = [
+        KYC_STATUS.PENDING_REVIEW,
+        KYC_STATUS.REJECTED,
+        KYC_STATUS.REQUIRES_ACTION,
+      ];
       if (account.kyc_status === KYC_STATUS.APPROVED) {
         navigate('assets');
+      } else if (submittedStatuses.includes(account.kyc_status)) {
+        navigate('kyc-submitted');
       } else {
         navigate('kyc-start');
       }
@@ -240,18 +251,12 @@ export default function App() {
     window.__resetSubscription = (id) => {
       resetSubscriptionForDemo(id || 's2');
     };
-    // 重置冻结宽限期倒计时（演示用，控制台输入 window.__resetFreezeGrace() 即可）
-    window.__resetFreezeGrace = (id) => {
-      restartFreezeGrace(id || 's2');
-      setCurrentUser({ ...currentUser });
-    };
     return () => {
       delete window.__setMockLoggedIn;
       delete window.__resetMockLogin;
       delete window.__loginWithTestAccount;
       delete window.__approveKyc;
       delete window.__resetSubscription;
-      delete window.__resetFreezeGrace;
     };
   }, []);
 
@@ -376,22 +381,41 @@ export default function App() {
   ]);
 
   // 合规门控：KYC 未通过的用户只能访问的页面（PI 强制要求）
+  // 2026-09-20（拍板）：PI 材料提交与 KYC 审核解耦——kyc-pi / pi-submitted 放行，
+  // 用户提交完 KYC 即可连贯提交 PI 资料，两项审核并行；PI 生效后的申购仍被本门控挡住（申购页不在白名单）
   const KYC_ONLY_PATHS = new Set([
     'kyc-start', 'kyc-id-upload', 'kyc-address-proof', 'kyc-submitted',
+    'kyc-pi', 'pi-submitted',
     'login', 'register', 'forgot-password', 'reset-password',
     'profile',  // 允许访问 Profile（用于退出登录）
   ]);
 
-  const isKycApproved = currentUser.kyc_status === KYC_STATUS.APPROVED;
+  // 2026-09-18：合规门控始终读 data.js 模块级 currentUser（submitKyc 直接 mutate 它，永远是最新值）。
+  // 若读 App local state：submitKyc 不调 setCurrentUser → local state stale（仍 APPROVED）→
+  // 门控条件 !isKycApproved 恒为 false → 拦截失效，点受保护页面会穿透成空白。
+  const isKycApproved = currentUserData.kyc_status === KYC_STATUS.APPROVED;
 
   const renderPage = () => {
     // 未登录 + 访问需要登录的页面 → LoginPage
     if (!isLoggedIn && PRIVATE_PATHS.has(hash.path)) {
       return <LoginPage navigate={navigate} setIsLoggedIn={setIsLoggedIn} setUser={setUser} setToast={setToast} />;
     }
-    // 合规门控：已登录 + KYC 未通过 + 访问非 KYC 页面 → 重定向到 kyc-start
+    // 合规门控：已登录 + KYC 未通过 + 访问非 KYC 白名单页面 → 重定向到认证流程
+    // 2026-09-18：区分目标——"已提交过"的状态（待审核/被拒/补件）引导到状态页，
+    // 用户第一需求是查看审核结果/被拒原因（状态页内已有"重新提交"按钮指向 kyc-start）；
+    // "未提交过"的状态（未开始/进行中/过期）才直接进 kyc-start 填写。
+    // 此前统一跳 kyc-start 会让刚提交完或被拒的用户看到空白表单，误以为点进了 PI 认证。
     if (isLoggedIn && !isKycApproved && !KYC_ONLY_PATHS.has(hash.path)) {
-      navigate('kyc-start');
+      const submittedStatuses = [
+        KYC_STATUS.PENDING_REVIEW,
+        KYC_STATUS.REJECTED,
+        KYC_STATUS.REQUIRES_ACTION,
+      ];
+      if (submittedStatuses.includes(currentUserData.kyc_status)) {
+        navigate('kyc-submitted');
+      } else {
+        navigate('kyc-start');
+      }
       return null;
     }
     // KYC 已通过但访问 KYC 流程 → 重定向到 assets

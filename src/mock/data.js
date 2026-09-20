@@ -964,7 +964,7 @@ export const subscriptions = [
     orderNo: 'SUB20260725164002',
     updatedAt: '2026-07-28 10:12:47',
     allocatedAt: '2026-07-28 10:12:47',
-    freezeDeadline: '2026-07-29 10:12:47',
+    freezeDeadline: null,
     notes: '已获配额，待签署 SPV 认购文件',
     shares: null,
     frozenAmount: 1000000,
@@ -2893,6 +2893,22 @@ export const companyPolicies = [
 
 const AG = (zhCN, zhHK, en) => ({ 'zh-CN': zhCN, 'zh-HK': zhHK, en });
 
+// ---- 法定声明文本（来源：公司协议签署实践案例 · YUiNQxqL/QDZq2ovV/TKCPH5Vk；主体名替换为本平台） ----
+// 2026-09-20 上移至 agreements 之前：pi-declaration 协议条目直接引用，避免 const TDZ
+// KYC「04 协议签署」步骤声明（零售版全文；PI 为独立审核流，其附加段见 PI_CONFIRM_EXTRA_TEXT）
+export const KYC_DECLARATION_TEXT = AG(
+  '本人特此无条件且不可撤销地声明，本人已阅读并同意遵守财富资本提供的隐私信息收集声明（PICS）、条款与条件、风险披露声明及其他所要求的相关文件。本人在此表格中提供的所有资料均真实、准确且完整。如财富资本提出要求，本人将提供财富资本可能需要验证上述资料的进一步补充信息或文件。如未能提供所需信息或文件，本人明白财富资本可能无法提供相关服务。本人同意并授权财富资本不时向本人索取进一步资料或文件，并承诺在资料发生变更时及时通知财富资本（或其继承人或受让人）。本人认可并同意，财富资本可进行反洗钱审查或为了解客户所需，将本人资料用于财富资本提供的产品和/或服务。',
+  '本人特此無條件且不可撤銷地聲明，本人已閱讀並同意遵守財富資本提供的隱私信息收集聲明（PICS）、條款與條件、風險披露聲明及其他所要求的相關文件。本人在此表格中提供的所有資料均真實、準確且完整。如財富資本提出要求，本人將提供財富資本可能需要驗證上述資料的進一步補充信息或文件。如未能提供所需信息或文件，本人明白財富資本可能無法提供相關服務。本人同意並授權財富資本不時向本人索取進一步資料或文件，並承諾在資料發生變更時及時通知財富資本（或其繼承人或受讓人）。本人認可並同意，財富資本可進行反洗錢審查或為了解客戶所需，將本人資料用於財富資本提供的產品和/或服務。',
+  'I hereby unconditionally and irrevocably declare that I have read and agree to abide by the Personal Information Collection Statement (PICS), Terms and Conditions, Risk Disclosure Statement and other required documents provided by Zhifu Capital. All information provided by me in this form is true, accurate, and complete. Upon request by Zhifu Capital, I will provide any additional information or documents that may be required to verify the aforementioned details. I understand that failure to provide the requested information or documents may result in Zhifu Capital being unable to offer the relevant services. I agree and authorize Zhifu Capital to request further information or documents from me from time to time and commit to promptly notifying Zhifu Capital (or its successors or assigns) of any changes to the provided information. I acknowledge and agree that Zhifu Capital may use my information for anti-money laundering checks or Know Your Customer (KYC) purposes as required for the provision of its products and/or services.'
+);
+
+// PI 认证附加确认段（在 KYC 声明基础上追加，对齐实践案例"个人专业投资者"版本）
+export const PI_CONFIRM_EXTRA_TEXT = AG(
+  '本人进一步确认：本人已知悉并理解成为专业投资者的身份及其适用的法律后果，并已同意接受专业投资者身份的权利、义务及风险。',
+  '本人進一步確認：本人已知悉並理解成為專業投資者的身份及其適用的法律後果，並已同意接受專業投資者身份的權利、義務及風險。',
+  'I further confirm that I am aware of and understand the identity of a professional investor and the legal consequences that apply, and I have agreed to accept the rights, obligations, and risks associated with the status of a professional investor.'
+);
+
 export const agreements = [
   {
     id: 'user-agreement',
@@ -3024,26 +3040,25 @@ export const agreements = [
       ) },
     ],
   },
+  {
+    // 2026-09-20：PI 声明全文抽屉化——与 pi-terms / privacy-policy 同走 AgreementModal，三链接交互一致
+    id: 'pi-declaration',
+    version: 'v1.0',
+    effectiveAt: '2026-09-01',
+    title: AG('专业投资者声明', '專業投資者聲明', 'Professional Investor Declaration'),
+    sections: [
+      { h: AG('一、声明全文', '一、聲明全文', '1. Declaration'), p: KYC_DECLARATION_TEXT },
+      { h: AG('二、专业投资者附加确认', '二、專業投資者附加確認', '2. PI Additional Confirmation'), p: PI_CONFIRM_EXTRA_TEXT },
+    ],
+  },
 ];
 
 export function getAgreementById(id) {
   return agreements.find(a => a.id === id) || null;
 }
 
-// ---- 法定声明文本（来源：公司协议签署实践案例 · YUiNQxqL/QDZq2ovV/TKCPH5Vk；主体名替换为本平台） ----
-// KYC「04 协议签署」步骤声明（零售版全文；PI 为独立审核流，其附加段见 PI_CONFIRM_EXTRA_TEXT）
-export const KYC_DECLARATION_TEXT = AG(
-  '本人特此无条件且不可撤销地声明，本人已阅读并同意遵守财富资本提供的隐私信息收集声明（PICS）、条款与条件、风险披露声明及其他所要求的相关文件。本人在此表格中提供的所有资料均真实、准确且完整。如财富资本提出要求，本人将提供财富资本可能需要验证上述资料的进一步补充信息或文件。如未能提供所需信息或文件，本人明白财富资本可能无法提供相关服务。本人同意并授权财富资本不时向本人索取进一步资料或文件，并承诺在资料发生变更时及时通知财富资本（或其继承人或受让人）。本人认可并同意，财富资本可进行反洗钱审查或为了解客户所需，将本人资料用于财富资本提供的产品和/或服务。',
-  '本人特此無條件且不可撤銷地聲明，本人已閱讀並同意遵守財富資本提供的隱私信息收集聲明（PICS）、條款與條件、風險披露聲明及其他所要求的相關文件。本人在此表格中提供的所有資料均真實、準確且完整。如財富資本提出要求，本人將提供財富資本可能需要驗證上述資料的進一步補充信息或文件。如未能提供所需信息或文件，本人明白財富資本可能無法提供相關服務。本人同意並授權財富資本不時向本人索取進一步資料或文件，並承諾在資料發生變更時及時通知財富資本（或其繼承人或受讓人）。本人認可並同意，財富資本可進行反洗錢審查或為了解客戶所需，將本人資料用於財富資本提供的產品和/或服務。',
-  'I hereby unconditionally and irrevocably declare that I have read and agree to abide by the Personal Information Collection Statement (PICS), Terms and Conditions, Risk Disclosure Statement and other required documents provided by Zhifu Capital. All information provided by me in this form is true, accurate, and complete. Upon request by Zhifu Capital, I will provide any additional information or documents that may be required to verify the aforementioned details. I understand that failure to provide the requested information or documents may result in Zhifu Capital being unable to offer the relevant services. I agree and authorize Zhifu Capital to request further information or documents from me from time to time and commit to promptly notifying Zhifu Capital (or its successors or assigns) of any changes to the provided information. I acknowledge and agree that Zhifu Capital may use my information for anti-money laundering checks or Know Your Customer (KYC) purposes as required for the provision of its products and/or services.'
-);
-
-// PI 认证附加确认段（在 KYC 声明基础上追加，对齐实践案例"个人专业投资者"版本）
-export const PI_CONFIRM_EXTRA_TEXT = AG(
-  '本人进一步确认：本人已知悉并理解成为专业投资者的身份及其适用的法律后果，并已同意接受专业投资者身份的权利、义务及风险。',
-  '本人進一步確認：本人已知悉並理解成為專業投資者的身份及其適用的法律後果，並已同意接受專業投資者身份的權利、義務及風險。',
-  'I further confirm that I am aware of and understand the identity of a professional investor and the legal consequences that apply, and I have agreed to accept the rights, obligations, and risks associated with the status of a professional investor.'
-);
+// （2026-09-20：KYC_DECLARATION_TEXT / PI_CONFIRM_EXTRA_TEXT 上移至 agreements 数组之前——
+//   pi-declaration 协议条目需引用两常量，原定义在数组之后会触发 const TDZ ReferenceError）
 
 // 电子签名法律提示（对齐实践案例 §3.7）
 export const E_SIGNATURE_NOTICE_TEXT = AG(
@@ -3161,7 +3176,7 @@ export function genOrderNo(prefix, datetime) {
   return `${prefix}${d}`;
 }
 
-// 毫秒时间戳 → 本地 'YYYY-MM-DD HH:mm:ss'（FreezeCountdown 到期时间格式）
+// 毫秒时间戳 → 本地 'YYYY-MM-DD HH:mm:ss'（时间格式工具）
 function formatDeadlineFrom(ms) {
   const d = new Date(ms);
   const p = n => String(n).padStart(2, '0');
@@ -3594,7 +3609,6 @@ export function closeSupportTicket(ticketId, operator = '') {
 // 调用时机：AdminSidebar 每次渲染时计算（路由切换/刷新/登录后更新；抽屉内操作后滞后到下次导航——mock 阶段可接受，接后端由轮询/WebSocket 承载）。
 export function getMenuBadges(role, admin) {
   const now = Date.now();
-  const parseTime = (s) => { if (!s) return null; const t = new Date(s.replace(' ', 'T')).getTime(); return Number.isNaN(t) ? null : t; };
 
   const pendingKyc = kycSubmissions.filter(k => k.status === 'PENDING_REVIEW').length;
   const pendingDeposits = depositRequests.filter(r => r.status === 'pending').length;
@@ -3611,14 +3625,9 @@ export function getMenuBadges(role, admin) {
     ? allLeads.filter(c => getManagerForUser(c.userId)?.id === admin?.managerId && isPendingLead(c)).length
     : allLeads.filter(isPendingLead).length;
 
-  // 待协调（submitted）+ 待签（allocated）+ 冻结到期预警（已到期 + 6h 内即将到期，防客户掉出本轮）
+  // 待协调（submitted）+ 待签（allocated）
   const pendingAlloc = subscriptions.filter(s => s.status === 'submitted').length;
   const pendingSignSubs = subscriptions.filter(s => s.status === 'allocated').length;
-  const frozenAlertCount = subscriptions.filter(s => {
-    if (s.status !== 'allocated' || !s.freezeDeadline) return false;
-    const t = parseTime(s.freezeDeadline);
-    return t !== null && t <= now + 6 * 3600 * 1000;
-  }).length;
 
   // PI 认证到期预警（compliance 专属，30 天内到期并入 PI badge——2026-08-14 独立审核流后归 PI 菜单）
   const piExpiresAt = currentUser?.pi?.expiresAt || null;
@@ -3644,7 +3653,7 @@ export function getMenuBadges(role, admin) {
     kyc: pendingKyc,
     pi: pendingPi + piExpiring,
     funds: pendingDeposits + pendingWithdraws,
-    subscriptions: pendingAlloc + pendingSignSubs + frozenAlertCount,
+    subscriptions: pendingAlloc + pendingSignSubs,
     dividends: pendingDividends,
     exits: pendingExits,
     messages: pendingTickets,
@@ -4276,7 +4285,7 @@ export function getPiStatusForUser(userId) {
 
 // 用户侧 KYCPI 提交 PI 申请：写入 piSubmissions（userId 关联）+ 当前用户 pi 状态 pending + 通知 + 审计
 // 幂等：已有 PENDING/APPROVED 申请时不允许重复提交（REJECTED/EXPIRED 可重新提交）
-export function submitPiCertification({ piType, piProof, piCertified }, operator = '系统') {
+export function submitPiCertification({ piType, piProof, piCertified, piLicenseNo = null, piLicenseOrg = null }, operator = '系统') {
   const existing = piSubmissions.filter(s => s.userId === currentUser.id);
   const active = existing.find(s => [PI_STATUS.PENDING_REVIEW, PI_STATUS.APPROVED].includes(s.status));
   if (active) return { ok: false, error: '已有待审核或已认证的 PI 申请' };
@@ -4289,6 +4298,8 @@ export function submitPiCertification({ piType, piProof, piCertified }, operator
     phone: currentUser.phone,
     status: PI_STATUS.PENDING_REVIEW,
     piType, piProof, piCertified,
+    // 持牌信息（2026-09-20：professional 类型凭 CE No. 在 SFC 公开记录核验；asset 类型为 null）
+    piLicenseNo, piLicenseOrg,
     // PI 声明签署留痕（2026-09-15 · 对齐协议签署实践）：声明全文版本随申请固化
     piAgreementVersion: getAgreementById('pi-terms')?.version || 'v1.0',
     submittedAt,
@@ -4497,14 +4508,8 @@ export function getInvestorUsers() {
 // 顾问的工作单元 = 客户（人），不是模块——名下客户跨模块任务聚合（服务断点：客户从线索进入
 // 申购/资金/投后阶段后，顾问看不到自己客户在干什么/有什么要催。本视图 = 顾问的客户工作台）
 export function getClientTasks(userId) {
-  const now = Date.now();
-  const parseTime = (s) => { if (!s) return null; const t = new Date(s.replace(' ', 'T')).getTime(); return Number.isNaN(t) ? null : t; };
   const subs = subscriptions.filter(s => s.userId === userId);
   const pendingSign = subs.filter(s => s.status === 'allocated').length; // 待签 SPV（获配额后需催签）
-  // 冻结到期预警（宽限期将过/已过）——并入待签 SPV 的到期提示（同一动作：客户要完成签署）
-  const frozenSubs = subs.filter(s => s.status === 'allocated' && s.freezeDeadline && (() => { const t = parseTime(s.freezeDeadline); return t !== null && t <= now + 6 * 3600 * 1000; })());
-  const frozenExpired = frozenSubs.filter(s => parseTime(s.freezeDeadline) <= now).length; // 已到期（宽限期已过）
-  const frozenDue = frozenSubs.length - frozenExpired; // 今日将到期（6h 内）
   // 退出分配（事件驱动）：事件为 SPV 级无 userId，按持仓项目关联（mock holdings 即当前客户视角，2026-08-21 重构）
   const myProjectIds = new Set(holdings.map(h => h.projectId));
   const pendingFunds = [
@@ -4516,8 +4521,8 @@ export function getClientTasks(userId) {
   const leadStatus = lead ? (lead.leadStatus || 'new') : null;
   const pendingLead = lead && leadStatus && !['converted', 'paused'].includes(leadStatus) ? 1 : 0; // 待跟进线索
   return {
-    pendingSign, frozenAlert: frozenSubs.length, frozenExpired, frozenDue, pendingFunds, leadStatus, pendingLead,
-    // 顾问待办口径（2026-08-15 方案 A：冻结到期并入待签 SPV 去重；资金审批由运营/合规处理，非顾问任务）
+    pendingSign, pendingFunds, leadStatus, pendingLead,
+    // 顾问待办口径（资金审批由运营/合规处理，非顾问任务）
     hasTask: pendingSign > 0 || pendingLead > 0,
   };
 }
@@ -6058,9 +6063,8 @@ export function formatDateCN(dateStr) {
 
 // ========== 资金闭环：状态机 + 冻结/解冻/扣款（2026-08-07） ==========
 
-// 24h 宽限期 = mock 30s（演示用）；后台系统配置可改
+// 24h 宽限期 = mock 30s（演示用）；仅作为 freezeDeadline 字段写入基准，无到期自动顺延逻辑（2026-09-20 机制下线）
 export let FREEZE_GRACE_MS = 30000;
-const freezeTimers = {};
 
 export const amountPresets = [
   { value: 1000000, label: '100万' },
@@ -6104,18 +6108,6 @@ function syncFrozenAccount() {
   currentUser.account.frozen = wallet.hkd.frozen || 0;
 }
 
-// 24h 超时：未签署 → 自动 unallocated + 释放冻结 + waitlist 上位（mock 简化 B：上位用户立即 signed）
-function scheduleFreezeTimeout(sub, project) {
-  if (freezeTimers[sub.id]) clearTimeout(freezeTimers[sub.id]);
-  const ms = FREEZE_GRACE_MS;
-  freezeTimers[sub.id] = setTimeout(() => {
-    const cur = subscriptions.find(s => s.id === sub.id);
-    if (!cur || cur.status !== 'allocated') return;
-    unfreezeFunds(sub.id, '24h 未签署 SPV · 自动顺延');
-    promoteWaitlist(project);
-  }, ms);
-}
-
 // waitlist 上位（手动顺延 + 自动超时共用）：从 subscriptions 派生"项目下最早 submitted 排队者"（FIFO）
 // 2026-08-17 修复：上位后停在 allocated（不再自动签署）——签署动作由客户在 APP 内电子签署完成（2026-09-15 对齐公司实践），
 // 线下纸质签署场景由运营在「申购记录」页登记（与签署证据台账一致，合规留痕必填签署编号）。
@@ -6138,7 +6130,6 @@ export function promoteWaitlist(project, operator = '') {
     note: '已获配额 · 由 waitlist 上位（运营协调）',
   });
   freezeFunds(next.id);
-  scheduleFreezeTimeout(next, project);
   logAudit({ operator: operator || '系统', category: 'subscription', action: 'promote', target: project.title, targetId: project.id, note: `waitlist 上位：${next.investorName}（${next.investorNo}）获配额冻结，待运营确认签署` });
   return true;
 }
@@ -6258,19 +6249,6 @@ export function settleFunds(subscriptionId) {
 
 // ========== 业务层包装：状态变更 ==========
 
-// submitted → allocated：业务层包装（仅 mock 演示）
-// 演示用：手动重置冻结宽限期倒计时（mock 30s），观看 allocated → 倒计时 → 到期顺延 全流程
-// 预置 mock 数据（s2）的 freezeDeadline 是过去时间，页面默认显示"宽限期已过"；点此按钮重新开始倒计时
-export function restartFreezeGrace(subscriptionId) {
-  const sub = subscriptions.find(s => s.id === subscriptionId);
-  if (!sub) return false;
-  const project = projects.find(p => p.id === sub.projectId);
-  sub.freezeDeadline = formatDeadlineFrom(Date.now() + FREEZE_GRACE_MS);
-  if (project) scheduleFreezeTimeout(sub, project);
-  Storage.save();
-  return true;
-}
-
 // 演示用：重置订阅状态到 allocated（刷新页面后可重新体验完整签署流程）
 export function resetSubscriptionForDemo(subscriptionId) {
   const sub = subscriptions.find(s => s.id === subscriptionId);
@@ -6283,8 +6261,6 @@ export function resetSubscriptionForDemo(subscriptionId) {
   sub.spvDocumentUrl = project?.spvDocumentUrl || 'https://example.com/spv/p3-agreement.html';
   // 清除 signed 相关历史，保留 allocated 历史
   sub.history = sub.history.filter(h => h.type !== 'signed');
-  // 重新调度冻结超时
-  if (project) scheduleFreezeTimeout(sub, project);
   Storage.save();
   return true;
 }
@@ -6340,8 +6316,6 @@ export function markSubscriptionAllocated(subscriptionId, operator = '', allocat
     note: `已获配额${quotaNote} · 冻结 24 小时`,
   });
   freezeFunds(sub.id);
-  // 启动 24h 超时模拟（mock 30s）
-  scheduleFreezeTimeout(sub, project);
   logAudit({ operator: operator || '系统', category: 'subscription', action: 'allocate', target: sub.projectName, targetId: sub.id, note: `标记已获配额${quotaNote}（冻结 HK$ ${formatCurrency(quota)}）` });
   Storage.save();
   return true;
@@ -6397,13 +6371,11 @@ export function markSubscriptionSigned(subscriptionId, note, operator = '', evid
   });
   const settled = settleFunds(sub.id);
   if (!settled) {
-    // 防御性回滚（settleFunds 内部仍可能失败）：恢复到 allocated + 删除刚录的证据 + 重启宽限期定时器
+    // 防御性回滚（settleFunds 内部仍可能失败）：恢复到 allocated + 删除刚录的证据
     sub.status = 'allocated';
     sub.history = sub.history.filter(h => h.type !== 'signed');
     const evIdx = signingEvidence.findIndex(e => e.subId === sub.id);
     if (evIdx >= 0) signingEvidence.splice(evIdx, 1);
-    const proj = projects.find(p => p.id === sub.projectId);
-    if (proj) scheduleFreezeTimeout(sub, proj);
     return { ok: false, error: '扣款失败，请检查账户余额后重试' };
   }
   logAudit({ operator: operator || '系统', category: 'subscription', action: 'sign', target: sub.projectName, targetId: sub.id, note: `确认签署完成（${srcLabel}）· 扣款并生成持仓` });
@@ -6488,9 +6460,12 @@ export function updateKycProfile(updates) {
 }
 
 export function submitKyc() {
-  // 允许 IN_PROGRESS（正常提交）、REJECTED（被拒后重提）与 REQUIRES_ACTION（补件后重提）进入审核队列
-  const allowed = [KYC_STATUS.IN_PROGRESS, KYC_STATUS.REJECTED, KYC_STATUS.REQUIRES_ACTION];
-  if (!allowed.includes(currentUser.kyc_status)) return false;
+  // 2026-09-20 修复：NOT_STARTED 账号走完流程后提交被静默丢弃——
+  // 原 allowed 不含 NOT_STARTED（advanceKycStep 从未被流程页调用，死代码），submitKyc return false
+  // 但 KYCAddressProof 无脑 navigate('kyc-submitted')，造成"审核中"假象；后台队列无记录、快照不落、刷新即丢。
+  // 新语义：除"已通过"（无需重提）与"审核中"（防重复提交）外均可提交。
+  const blocked = [KYC_STATUS.APPROVED, KYC_STATUS.PENDING_REVIEW];
+  if (blocked.includes(currentUser.kyc_status)) return false;
   currentUser.kyc_status = KYC_STATUS.PENDING_REVIEW;
   currentUser.kyc_profile.submittedAt = formatNow();
   // 写入后台审核队列（userId 关联，闭环：用户侧提交 → 后台可见）
@@ -6542,6 +6517,18 @@ export function approveKyc() {
 // 设置全局 currentUser（同步 React state ↔ mock data 层的桥梁）
 export function setMockCurrentUser(user) {
   currentUser = user;
+}
+
+// 登录时从提交记录回读 KYC 状态（2026-09-20）：
+// testAccounts 预设状态是内存态，刷新即重置为 NOT_STARTED；而 kycSubmissions 走 localStorage 快照持久化——
+// 不回读会导致「后台待审核列表有此人、APP 侧却让他重填空白表」的脱节（门控分桶也会错弹 kyc-start）。
+// kycSubmissions 用 unshift 插入（最新在前），find 即最新一条；rejectReason 一并回读（KYCSubmitted 状态页消费）。
+export function restoreKycStatus(userId) {
+  const last = kycSubmissions.find(k => k.userId === userId);
+  if (!last) return null;
+  currentUser.kyc_status = last.status;
+  if (last.rejectReason) currentUser.kyc_profile.rejectReason = last.rejectReason;
+  return last.status;
 }
 
 export function rejectKyc(reason) {
@@ -6904,7 +6891,6 @@ export const Storage = {
         projects: projects,   // 后台 CRUD 内容持久化（2026-08-12）
         events: events,       // 后台 CRUD 内容持久化（2026-08-12）
         // 系统配置持久化（2026-08-12 规范审查 P1-④：配置中心"已保存"需刷新保留）
-        freezeGraceSeconds: systemConfig.freezeGraceSeconds,
         sectors: sectors,
         exchangeRates: exchangeRates,
         businessContact: businessContact,
@@ -7068,10 +7054,6 @@ export const Storage = {
         data.events.forEach(e => events.push(e));
       }
       // 系统配置恢复（2026-08-12 P1-④）：字段缺省时保持 mock 默认值（向后兼容旧快照）
-      if (data.freezeGraceSeconds != null) {
-        systemConfig.freezeGraceSeconds = Number(data.freezeGraceSeconds);
-        FREEZE_GRACE_MS = systemConfig.freezeGraceSeconds * 1000;
-      }
       if (Array.isArray(data.sectors)) {
         sectors.length = 0;
         data.sectors.forEach(s => sectors.push(s));
@@ -7198,20 +7180,10 @@ export function logAudit({ operator = '系统', category = '', action = '', targ
 
 export const systemConfig = {
   amountPresets: amountPresets,        // 引用共享数组（档位）
-  freezeGraceSeconds: Math.round(FREEZE_GRACE_MS / 1000), // 与 FREEZE_GRACE_MS 同步
   sectors: sectors,                    // 引用共享数组（行业分类）
   exchangeRates: exchangeRates,        // 引用共享对象（汇率）
   businessContact: businessContact,    // 引用共享对象（商务联系）
 };
-
-export function updateFreezeGraceSeconds(seconds) {
-  const s = Math.max(10, Math.min(86400, Number(seconds) || 30));
-  systemConfig.freezeGraceSeconds = s;
-  FREEZE_GRACE_MS = s * 1000;
-  logAudit({ operator: '系统管理员', category: 'config', action: 'update', target: '系统配置', targetId: '', note: `冻结宽限期 ${FREEZE_GRACE_MS / 1000}s → ${s}s` });
-  Storage.save();
-  return true;
-}
 
 // ========== 合规数据模型（2026-08-26 · PRD §4.5 合规数据模型） ==========
 // 基于PRD 08-数据字典 §4.5 合规数据模型设计，新增7个合规实体

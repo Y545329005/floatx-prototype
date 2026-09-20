@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { CheckCircle, XCircle, ImageIcon, X, Search, History, Eye, ClipboardCheck, Award, FileText } from 'lucide-react';
 import {
   piSubmissions, approvePiSubmission, rejectPiSubmission, PI_STATUS,
+  kycSubmissions, KYC_STATUS,
   maskName, maskPhone,
 } from '../mock/data';
 
@@ -14,6 +15,20 @@ const statusMeta = {
   [PI_STATUS.APPROVED]: { label: '已认证', cls: 'admin-status-approved' },
   [PI_STATUS.REJECTED]: { label: '已拒绝', cls: 'admin-status-rejected' },
   [PI_STATUS.EXPIRED]: { label: '已过期', cls: 'admin-status-requires' },
+};
+
+// KYC 状态标注（2026-09-20：PI 提交与 KYC 审核解耦——审核员需看到申请人实名认证进度作为判断上下文）
+const kycStatusMeta = {
+  [KYC_STATUS.PENDING_REVIEW]: { label: '审核中', cls: 'admin-status-pending' },
+  [KYC_STATUS.APPROVED]: { label: '已通过', cls: 'admin-status-approved' },
+  [KYC_STATUS.REJECTED]: { label: '已拒绝', cls: 'admin-status-rejected' },
+  [KYC_STATUS.REQUIRES_ACTION]: { label: '需补件', cls: 'admin-status-requires' },
+};
+
+// 申请人最新 KYC 状态（kycSubmissions unshift 最新在前，find 即最新一条；无记录=未提交）
+const latestKycOf = (userId) => {
+  const k = kycSubmissions.find(x => x.userId === userId);
+  return k ? (kycStatusMeta[k.status] || { label: k.status, cls: 'admin-status-pending' }) : { label: '未提交', cls: 'admin-status-unallocated' };
 };
 
 const actionMeta = {
@@ -250,9 +265,21 @@ export default function AdminPI({ navigate, detailId, admin }) {
             <div className="kyc-review-grid">
               <div className="card kyc-review-block">
                 <h4 className="card-title"><Award size={14} /> PI 资格声明</h4>
+                {/* 2026-09-20：KYC 状态标注（解耦拍板：PI 审核不强制 KYC 先过，但审核员需见实名进度） */}
+                <div className="kyc-review-row"><span>KYC 状态</span><strong className={latestKycOf(sel.userId).cls}>{latestKycOf(sel.userId).label}</strong></div>
                 <div className="kyc-review-row"><span>资格类型</span><strong>{sel.piType === 'asset' ? '资产达标（≥HK$800 万）' : '专业投资人（持牌人士）'}</strong></div>
                 <div className="kyc-review-row"><span>声明签署</span><strong>{sel.piCertified ? '已签署' : '未签署'}</strong></div>
+                {/* PI 声明版本留痕（2026-09-15 · 对齐协议签署实践：签署的声明版本随申请固化） */}
+                <div className="kyc-review-row"><span>声明版本</span><strong className="date-iso">{sel.piAgreementVersion || '—'}</strong></div>
+                <div className="kyc-review-row"><span>签署文件</span><strong>《专业投资者业务条款及风险披露声明书》 · 《私隐政策》 · 《专业投资者声明》</strong></div>
                 <div className="kyc-review-row"><span>提交时间</span><strong>{sel.submittedAt}</strong></div>
+                {/* 持牌信息（2026-09-20：professional 类型凭 CE No. 核验，审核员需见编号与机构；旧数据无此字段兜底 —） */}
+                {sel.piType === 'professional' && (
+                  <>
+                    <div className="kyc-review-row"><span>持牌编号（CE No.）</span><strong>{sel.piLicenseNo || '—'}</strong></div>
+                    <div className="kyc-review-row"><span>持牌机构</span><strong>{sel.piLicenseOrg || '—'}</strong></div>
+                  </>
+                )}
                 {sel.piType === 'asset' && (
                   <div className="kyc-review-doc">
                     <div className="kyc-review-img">

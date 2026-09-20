@@ -872,6 +872,12 @@ input, select, textarea {
   font-weight: 600;
   flex-shrink: 0;
 }
+/* PI 未认证 badge（2026-09-18）：与 KYC 未认证同款 muted 样式，可点击进 PI 流程 */
+.pi-badge.pi-muted { background: var(--border-light); color: var(--text-tertiary); }
+.pi-badge.clickable { cursor: pointer; }
+/* PI 审核中 / 未通过·已过期（2026-09-20 · 对称 kycMeta 全状态 badge）：配色对齐 KYC 同语义档 */
+.pi-badge.pi-pending { background: var(--warning-light); color: var(--warning); }
+.pi-badge.pi-error { background: var(--danger-light); color: var(--danger); }
 
 /* KYC 状态 badge（2026-09-11 · Profile 页 KYC 认证状态直达展示；点击引导对应 KYC 页） */
 .kyc-badge {
@@ -3819,6 +3825,36 @@ input, select, textarea {
   color: var(--success);
 }
 
+/* 2026-09-18 PI 卡片分态：背景/图标色随状态变化（pending=审核、rejected=未通过、expired=过期、none=未申报） */
+.settings-status-row.pending,
+.settings-status-row.expired {
+  background: var(--warning-light);
+}
+
+.settings-status-row.rejected {
+  background: var(--compliance-light);
+}
+
+.settings-status-row.none {
+  background: var(--bg);
+}
+
+.settings-status-icon.pending,
+.settings-status-icon.expired {
+  background: var(--warning-light);
+  color: var(--warning);
+}
+
+.settings-status-icon.rejected {
+  background: var(--compliance-light);
+  color: var(--compliance);
+}
+
+.settings-status-icon.none {
+  background: var(--border-light);
+  color: var(--text-secondary);
+}
+
 .settings-status-body {
   display: flex;
   flex-direction: column;
@@ -3829,6 +3865,12 @@ input, select, textarea {
 
 .settings-status-body strong {
   font-size: var(--text-lg);
+}
+
+/* PI 卡片底部操作按钮：整行 + 与状态行留距 */
+.settings-pi-action {
+  margin-top: var(--space-4);
+  width: 100%;
 }
 
 .settings-security {
@@ -5620,26 +5662,6 @@ input, select, textarea {
   line-height: 1.5;
 }
 
-/* 演示按钮：重置冻结宽限期倒计时（mock 30s，仅 allocated 显示） */
-.demo-reset-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin: var(--space-2) 0 0;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  background: var(--primary-light);
-  color: var(--primary);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
-
-.demo-reset-btn:active {
-  opacity: 0.7;
-}
-
 .freeze-info-right {
   display: flex;
   align-items: center;
@@ -5650,24 +5672,6 @@ input, select, textarea {
   color: var(--warning);
   font-size: var(--text-md);
   font-weight: 700;
-}
-
-.freeze-countdown {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 8px;
-  background: var(--warning);
-  color: var(--text-on-dark);
-  font-size: var(--text-xs);
-  font-weight: 600;
-  border-radius: var(--radius-sm);
-  font-variant-numeric: tabular-nums;
-}
-
-.freeze-countdown.expired {
-  background: var(--text-secondary);
-  color: var(--bg-card);
 }
 
 /* 操作历史时间轴（独立卡，2026-08-07 第三轮重设计） */
@@ -6051,7 +6055,7 @@ input, select, textarea {
   padding: var(--space-2) var(--space-3);
   background: none;
   border: none;
-  color: var(--error);
+  color: var(--danger);
   font-size: var(--text-sm);
   cursor: pointer;
   border-radius: var(--radius-md);
@@ -6155,10 +6159,10 @@ input, select, textarea {
   box-sizing: border-box;
 }
 
-/* 成功页内容偏上对齐（2026-08-18）：卡片重心上移，顶部空隙随屏高比例缩放、三态恒定 */
+/* 成功页内容紧凑布局（2026-09-18 修复）：进度条下方直接展示内容，去除 16vh 大留白 */
 .kyc-submitted-page .kyc-content,
 .pi-submitted-page .kyc-content {
-  padding-top: 16vh;
+  padding-top: var(--space-4);
 }
 
 .kyc-submitted-page .kyc-content .kyc-submit-hint {
@@ -6467,6 +6471,32 @@ input, select, textarea {
   color: var(--primary);
   border: 1px solid var(--primary);
 }
+
+/* 资格类型单选选项卡（2026-09-20 · token 合规化 + 默认选中资产达标） */
+.kyc-pi-type-group { display: flex; flex-direction: column; gap: var(--space-2); }
+.kyc-pi-type {
+  min-height: var(--min-touch-target);      /* 48px 触控 token，替代内联 height:52 */
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary-border);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.kyc-pi-type:active { transform: scale(0.98); }
+.kyc-pi-type.active { background: var(--primary); border-color: var(--primary); color: var(--text-on-dark); }
+.kyc-pi-type-label { font-weight: 600; }
+.kyc-pi-type-desc { font-size: var(--text-xs); color: var(--text-secondary); }
+.kyc-pi-type.active .kyc-pi-type-desc { color: var(--text-on-dark-secondary); }
 
 /* eKYC 核验加载 spinner（T3 · PRD §3.10 技术证据层） */
 .kyc-ekyc-spinner {
@@ -6855,31 +6885,6 @@ input, select, textarea {
 
 .kyc-start-page .kyc-content {
   flex: 1;
-}
-
-/* Profile PI 入口卡 */
-.kyc-pi-entry {
-  padding: 0 var(--space-4);
-  margin-bottom: var(--space-4);
-}
-
-.kyc-pi-entry .menu-item {
-  background: var(--primary-light);
-  border-radius: var(--radius-lg);
-  padding: var(--space-3) var(--space-3);
-  gap: var(--space-3);
-}
-
-.kyc-pi-entry-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  background: var(--primary-tint);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--primary);
-  flex-shrink: 0;
 }
 
 .tag-live {
