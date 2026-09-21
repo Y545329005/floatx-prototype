@@ -87,7 +87,7 @@ export const testAccounts = {
       name: '王慧敏',
       role: '专属客户经理',
       phone: '+852 9300 1122',
-      email: 'huimin.wang@zhifu-capital.com',
+      email: 'huimin.wang@wealth-capital.com',
       imType: 'WhatsApp',
       im: '+852 9300 1122',
     },
@@ -174,7 +174,7 @@ export const testAccounts = {
       name: '王慧敏',
       role: '专属客户经理',
       phone: '+852 9300 1122',
-      email: 'huimin.wang@zhifu-capital.com',
+      email: 'huimin.wang@wealth-capital.com',
       imType: 'WhatsApp',
       im: '+852 9300 1122',
     },
@@ -244,7 +244,7 @@ export const testAccounts = {
       name: '王慧敏',
       role: '专属客户经理',
       phone: '+852 9300 1122',
-      email: 'huimin.wang@zhifu-capital.com',
+      email: 'huimin.wang@wealth-capital.com',
       imType: 'WhatsApp',
       im: '+852 9300 1122',
     },
@@ -2848,7 +2848,7 @@ export const companyPolicies = [
     id: 'cp1',
     title: '公司简介',
     subtitle: '财富资本有限公司',
-    file: 'zhifu-capital-profile.pdf',
+    file: 'wealth-capital-profile.pdf',
     date: '2026-06-30',
     size: '1.2 MB',
   },
@@ -2899,7 +2899,7 @@ const AG = (zhCN, zhHK, en) => ({ 'zh-CN': zhCN, 'zh-HK': zhHK, en });
 export const KYC_DECLARATION_TEXT = AG(
   '本人特此无条件且不可撤销地声明，本人已阅读并同意遵守财富资本提供的隐私信息收集声明（PICS）、条款与条件、风险披露声明及其他所要求的相关文件。本人在此表格中提供的所有资料均真实、准确且完整。如财富资本提出要求，本人将提供财富资本可能需要验证上述资料的进一步补充信息或文件。如未能提供所需信息或文件，本人明白财富资本可能无法提供相关服务。本人同意并授权财富资本不时向本人索取进一步资料或文件，并承诺在资料发生变更时及时通知财富资本（或其继承人或受让人）。本人认可并同意，财富资本可进行反洗钱审查或为了解客户所需，将本人资料用于财富资本提供的产品和/或服务。',
   '本人特此無條件且不可撤銷地聲明，本人已閱讀並同意遵守財富資本提供的隱私信息收集聲明（PICS）、條款與條件、風險披露聲明及其他所要求的相關文件。本人在此表格中提供的所有資料均真實、準確且完整。如財富資本提出要求，本人將提供財富資本可能需要驗證上述資料的進一步補充信息或文件。如未能提供所需信息或文件，本人明白財富資本可能無法提供相關服務。本人同意並授權財富資本不時向本人索取進一步資料或文件，並承諾在資料發生變更時及時通知財富資本（或其繼承人或受讓人）。本人認可並同意，財富資本可進行反洗錢審查或為了解客戶所需，將本人資料用於財富資本提供的產品和/或服務。',
-  'I hereby unconditionally and irrevocably declare that I have read and agree to abide by the Personal Information Collection Statement (PICS), Terms and Conditions, Risk Disclosure Statement and other required documents provided by Zhifu Capital. All information provided by me in this form is true, accurate, and complete. Upon request by Zhifu Capital, I will provide any additional information or documents that may be required to verify the aforementioned details. I understand that failure to provide the requested information or documents may result in Zhifu Capital being unable to offer the relevant services. I agree and authorize Zhifu Capital to request further information or documents from me from time to time and commit to promptly notifying Zhifu Capital (or its successors or assigns) of any changes to the provided information. I acknowledge and agree that Zhifu Capital may use my information for anti-money laundering checks or Know Your Customer (KYC) purposes as required for the provision of its products and/or services.'
+  'I hereby unconditionally and irrevocably declare that I have read and agree to abide by the Personal Information Collection Statement (PICS), Terms and Conditions, Risk Disclosure Statement and other required documents provided by Wealth Capital. All information provided by me in this form is true, accurate, and complete. Upon request by Wealth Capital, I will provide any additional information or documents that may be required to verify the aforementioned details. I understand that failure to provide the requested information or documents may result in Wealth Capital being unable to offer the relevant services. I agree and authorize Wealth Capital to request further information or documents from me from time to time and commit to promptly notifying Wealth Capital (or its successors or assigns) of any changes to the provided information. I acknowledge and agree that Wealth Capital may use my information for anti-money laundering checks or Know Your Customer (KYC) purposes as required for the provision of its products and/or services.'
 );
 
 // PI 认证附加确认段（在 KYC 声明基础上追加，对齐实践案例"个人专业投资者"版本）
@@ -2919,7 +2919,7 @@ export const agreements = [
       { h: AG('一、服务范围', '一、服務範圍', '1. Scope of Services'), p: AG(
         '财富资本有限公司（下称"本平台"）依据香港证监会第 9 类牌照（资产管理），为专业投资者提供私募股权投资机会的信息展示、意向提交、申购协助及投后信息服务。本平台不提供公开募集、公开推介或任何形式的投资保证。',
         '財富資本有限公司（下稱"本平台"）依據香港證監會第 9 類牌照（資產管理），為專業投資者提供私募股權投資機會的信息展示、意向提交、申購協助及投後信息服務。本平台不提供公開募集、公開推介或任何形式的投資保證。',
-        'Zhifu Capital Limited (the "Platform"), licensed under SFC Type 9 (Asset Management), provides professional investors with information on private equity opportunities, subscription assistance and post-investment services. The Platform does not offer public offerings or any form of investment guarantee.'
+        'Wealth Capital Limited (the "Platform"), licensed under SFC Type 9 (Asset Management), provides professional investors with information on private equity opportunities, subscription assistance and post-investment services. The Platform does not offer public offerings or any form of investment guarantee.'
       ) },
       { h: AG('二、账户与安全', '二、賬戶與安全', '2. Account and Security'), p: AG(
         '您应妥善保管账户凭证，并对账户内的全部操作负责。平台有权对异常操作执行风控措施（含冻结、限制出入金），并依法履行反洗钱审查义务。',
@@ -3064,7 +3064,7 @@ export function getAgreementById(id) {
 export const E_SIGNATURE_NOTICE_TEXT = AG(
   '通过在上方提供本人的电子签名，本人确认并同意此电子签名构成本人手写签名的合法且有约束力的表示。该等电子签署的文件将具有有效性和法律效力，与用笔和纸签署的实体合同具有同等有效性。在电子签署前，本人已经仔细审阅了财富资本的有关条款和条件，并且完全理解并同意受其所载之权利和义务的约束。',
   '通過在上方提供本人的電子簽名，本人確認並同意此電子簽名構成本人手寫簽名的合法且有約束力的表示。該等電子簽署的文件將具有有效性和法律效力，與用筆和紙簽署的實體合同具有同等有效性。在電子簽署前，本人已經仔細審閱了財富資本的有關條款和條件，並且完全理解並同意受其所載之權利和義務的約束。',
-  'By providing my electronic signature above, I confirm and agree that such electronic signature constitutes a legal and binding representation of my handwritten signature. Electronically signed documents shall be valid and enforceable to the same effect as a contract executed by pen and paper. Before electronically signing, I have carefully reviewed the relevant terms and conditions of Zhifu Capital and fully understand and agree to be bound by the rights and obligations contained therein.'
+  'By providing my electronic signature above, I confirm and agree that such electronic signature constitutes a legal and binding representation of my handwritten signature. Electronically signed documents shall be valid and enforceable to the same effect as a contract executed by pen and paper. Before electronically signing, I have carefully reviewed the relevant terms and conditions of Wealth Capital and fully understand and agree to be bound by the rights and obligations contained therein.'
 );
 
 // SPV 协议全文模板（APP 内签署页展示用；按 SPV 档案与申购单插值，接后端由发行方协议文本替换）
@@ -3253,7 +3253,7 @@ export function withdrawFunds({ currency, amount, method }) {
 export const platformBrand = {
   nameZh: '财富资本',              // 简称（登录页品牌区）
   nameFullZh: '财富资本有限公司',   // 全称（About 品牌卡 / 版权）
-  nameEn: 'Zhifu Capital Limited',
+  nameEn: 'Wealth Capital Limited',
   licenseNo: 'BLA1234',            // 牌照编号（SFC CE No.）
 };
 
@@ -3274,7 +3274,7 @@ export function updatePlatformBrand(fields, operator) {
 // ========== 商务合作联系方式（对外公开，游客可见） ==========
 export const businessContact = {
   intro: '如有意向将项目提交至本平台路演、寻求机构合作或其他业务合作，请通过以下方式联系我们。',
-  email: 'partners@zhifu-capital.hk',
+  email: 'partners@wealth-capital.hk',
   phone: '+852 3568 8888',
   whatsapp: '+852 3568 8888',
 };
@@ -3282,8 +3282,8 @@ export const businessContact = {
 // ========== 平台资金账户（后台系统配置页可维护；充值入金/提现出金的账户载体，接后端为必要配置） ==========
 // 2026-08-19 老板确认：未来业务银行统一使用星展银行（DBS）
 export const platformAccounts = {
-  deposit: { bank: '星展银行（香港）', accountName: 'Zhifu Capital Limited', accountNo: '016-456-000-1234', currency: 'HKD' },
-  withdraw: { bank: '星展银行（香港）', accountName: 'Zhifu Capital Limited', accountNo: '016-456-000-1234', currency: 'HKD' },
+  deposit: { bank: '星展银行（香港）', accountName: 'Wealth Capital Limited', accountNo: '016-456-000-1234', currency: 'HKD' },
+  withdraw: { bank: '星展银行（香港）', accountName: 'Wealth Capital Limited', accountNo: '016-456-000-1234', currency: 'HKD' },
 };
 
 // EDDA 授权状态（2026-08-19 老板确认：香港本土 eDDA 快捷入金通道）
@@ -3336,16 +3336,16 @@ export const sectors = ['量子计算', '生物医药', '机器人', '新能源'
 // 后台登录账号与角色（简版；页面/菜单命名"后台账号"——本集合含全部角色，非仅"管理员"super）
 // role: super 超级管理员 / ops 运营 / compliance 合规 / service 客服 / finance 财务 / advisor 专属顾问
 export let adminUsers = [
-  { id: 'ad1', username: 'admin', password: 'admin123', name: '系统管理员', role: 'super', roleLabel: '超级管理员', email: 'admin@zhifu-capital.hk', phone: '+852 3000 0001' },
-  { id: 'ad2', username: 'ops', password: 'ops123', name: '王运营', role: 'ops', roleLabel: '运营专员', email: 'ops@zhifu-capital.hk', phone: '+852 3000 0002' },
-  { id: 'ad3', username: 'compliance', password: 'compliance123', name: '李合规', role: 'compliance', roleLabel: '合规专员', email: 'compliance@zhifu-capital.hk', phone: '+852 3000 0003' },
-  { id: 'ad4', username: 'service', password: 'service123', name: '张客服', role: 'service', roleLabel: '客服专员', email: 'service@zhifu-capital.hk', phone: '+852 3000 0004' },
+  { id: 'ad1', username: 'admin', password: 'admin123', name: '系统管理员', role: 'super', roleLabel: '超级管理员', email: 'admin@wealth-capital.hk', phone: '+852 3000 0001' },
+  { id: 'ad2', username: 'ops', password: 'ops123', name: '王运营', role: 'ops', roleLabel: '运营专员', email: 'ops@wealth-capital.hk', phone: '+852 3000 0002' },
+  { id: 'ad3', username: 'compliance', password: 'compliance123', name: '李合规', role: 'compliance', roleLabel: '合规专员', email: 'compliance@wealth-capital.hk', phone: '+852 3000 0003' },
+  { id: 'ad4', username: 'service', password: 'service123', name: '张客服', role: 'service', roleLabel: '客服专员', email: 'service@wealth-capital.hk', phone: '+852 3000 0004' },
   // 财务专员（2026-08-24 上线沟通简报待拍板项落地·方案 A）：只关注资金进出（充值/提现/换汇审核 + 流水对账）
-  { id: 'ad8', username: 'fin1', password: 'fin123456', name: '王财务', role: 'finance', roleLabel: '财务专员', email: 'finance@zhifu-capital.hk', phone: '+852 3000 0008' },
+  { id: 'ad8', username: 'fin1', password: 'fin123456', name: '王财务', role: 'finance', roleLabel: '财务专员', email: 'finance@wealth-capital.hk', phone: '+852 3000 0008' },
   // 专属顾问账号（线索池核心使用者：客户分散给各顾问跟进，各自只看自己的客户；managerId 关联 accountManagers）
-  { id: 'ad5', username: 'advisor1', password: 'advisor123', name: '王慧敏', role: 'advisor', roleLabel: '专属顾问', managerId: 'am1', email: 'wanghuimin@zhifu-capital.hk', phone: '+852 3000 0005' },
-  { id: 'ad6', username: 'advisor2', password: 'advisor123', name: '陈志豪', role: 'advisor', roleLabel: '专属顾问', managerId: 'am2', email: 'chenzhihao@zhifu-capital.hk', phone: '+852 3000 0006' },
-  { id: 'ad7', username: 'advisor3', password: 'advisor123', name: '李雅婷', role: 'advisor', roleLabel: '专属顾问', managerId: 'am3', email: 'liyating@zhifu-capital.hk', phone: '+852 3000 0007' },
+  { id: 'ad5', username: 'advisor1', password: 'advisor123', name: '王慧敏', role: 'advisor', roleLabel: '专属顾问', managerId: 'am1', email: 'wanghuimin@wealth-capital.hk', phone: '+852 3000 0005' },
+  { id: 'ad6', username: 'advisor2', password: 'advisor123', name: '陈志豪', role: 'advisor', roleLabel: '专属顾问', managerId: 'am2', email: 'chenzhihao@wealth-capital.hk', phone: '+852 3000 0006' },
+  { id: 'ad7', username: 'advisor3', password: 'advisor123', name: '李雅婷', role: 'advisor', roleLabel: '专属顾问', managerId: 'am3', email: 'liyating@wealth-capital.hk', phone: '+852 3000 0007' },
 ];
 
 // ===== 角色权限管理（2026-08-24 · 预置角色可配置）=====
@@ -4647,7 +4647,7 @@ export function makeReceiptSvg({ bank = '汇丰银行', orderNo = '', refNo = ''
   <text x="34" y="336" font-family="Arial, 'Helvetica Neue', sans-serif" font-size="13" fill="#8a919c">付款人</text>
   <text x="150" y="336" font-family="Arial, 'Helvetica Neue', sans-serif" font-size="13" fill="#14171f">申请人（投资人）</text>
   <text x="420" y="336" font-family="Arial, 'Helvetica Neue', sans-serif" font-size="13" fill="#8a919c">收款人</text>
-  <text x="530" y="336" font-family="Arial, 'Helvetica Neue', sans-serif" font-size="13" fill="#14171f">致富财富（持牌平台）</text>
+  <text x="530" y="336" font-family="Arial, 'Helvetica Neue', sans-serif" font-size="13" fill="#14171f">${platformBrand.nameZh}（持牌平台）</text>
   <text x="34" y="368" font-family="Arial, 'Helvetica Neue', sans-serif" font-size="13" fill="#8a919c">币种</text>
   <text x="150" y="368" font-family="Arial, 'Helvetica Neue', sans-serif" font-size="13" fill="#14171f">${currency}</text>
   <text x="420" y="368" font-family="Arial, 'Helvetica Neue', sans-serif" font-size="13" fill="#8a919c">关联单号</text>

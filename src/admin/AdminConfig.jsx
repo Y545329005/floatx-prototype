@@ -257,7 +257,7 @@ export default function AdminConfig({ admin }) {
             <div className="admin-config-account-title">收款账户（投资人充值入金）</div>
             <div className="form-row">
               {accountField('deposit', '银行', 'bank', '如：星展银行（香港）')}
-              {accountField('deposit', '户名', 'accountName', '如：Zhifu Capital Limited')}
+              {accountField('deposit', '户名', 'accountName', '如：Wealth Capital Limited')}
             </div>
             <div className="form-row">
               {accountField('deposit', '账号', 'accountNo', '如：004-123456-789')}
@@ -274,7 +274,7 @@ export default function AdminConfig({ admin }) {
             <div className="admin-config-account-title">打款账户（投资人提现出金）</div>
             <div className="form-row">
               {accountField('withdraw', '银行', 'bank', '如：星展银行（香港）')}
-              {accountField('withdraw', '户名', 'accountName', '如：Zhifu Capital Limited')}
+              {accountField('withdraw', '户名', 'accountName', '如：Wealth Capital Limited')}
             </div>
             <div className="form-row">
               {accountField('withdraw', '账号', 'accountNo', '如：004-123456-789')}
@@ -307,7 +307,7 @@ export default function AdminConfig({ admin }) {
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">英文名</label>
-                <input className="form-input" value={brand.nameEn} placeholder="如：Zhifu Capital Limited" onChange={e => setBrand({ ...brand, nameEn: e.target.value })} />
+                <input className="form-input" value={brand.nameEn} placeholder="如：Wealth Capital Limited" onChange={e => setBrand({ ...brand, nameEn: e.target.value })} />
               </div>
               <div className="form-group">
                 <label className="form-label">牌照编号（CE No.）</label>

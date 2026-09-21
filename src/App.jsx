@@ -3,7 +3,6 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoginPage, RegisterPage, ForgotPasswordPage, ResetPasswordPage } from './components/AuthPages';
 import BottomNav from './components/BottomNav';
 import AdminSidebar from './components/AdminSidebar';
-import { LanguageProvider } from './i18n';
 
 import ProjectMarket from './pages/ProjectMarket';
 import ProjectDetail from './pages/ProjectDetail';
@@ -285,12 +284,10 @@ export default function App() {
       }
     })();
     return (
-      <LanguageProvider>
-        <div className="app-container">
-          {authPage}
-          {toast && <div className="toast toast-success">{toast}</div>}
-        </div>
-      </LanguageProvider>
+      <div className="app-container">
+        {authPage}
+        {toast && <div className="toast toast-success">{toast}</div>}
+      </div>
     );
   }
 
@@ -316,9 +313,7 @@ export default function App() {
         // 直接渲染登录页（避免副作用循环）
       }
       return (
-        <LanguageProvider>
-          <AdminLogin onLogin={handleAdminLogin} onBack={() => navigate('#projects')} />
-        </LanguageProvider>
+        <AdminLogin onLogin={handleAdminLogin} onBack={() => navigate('#projects')} />
       );
     }
     // 路由守卫（2026-08-24 · 角色权限管理配套）：此前权限只挡侧边栏菜单不挡 URL，直敲 hash 可越权进无权模块。
@@ -328,40 +323,38 @@ export default function App() {
     const subAllowed = subPath === 'home' || allowedMenus.includes(subPath);
     const effectiveSub = subAllowed ? subPath : ADMIN_HOME;
     return (
-      <LanguageProvider>
-        <div className="admin-layout">
-          <AdminSidebar current={effectiveSub} onNavigate={navigate} admin={adminUser} onLogout={handleAdminLogout} />
-          <main className="admin-content">
-            <ErrorBoundary>
-              {effectiveSub === 'home' && <AdminHome admin={adminUser} />}
-              {effectiveSub === 'projects' && <AdminProjects navigate={navigate} admin={adminUser} />}
-              {effectiveSub === 'events' && <AdminEvents navigate={navigate} admin={adminUser} />}
-              {effectiveSub === 'registrations' && <AdminRegistrations admin={adminUser} />}
-              {effectiveSub === 'my-clients' && <AdminMyClients navigate={navigate} detailId={hash.param2} admin={adminUser} />}
-              {effectiveSub === 'subscriptions' && <AdminSubscriptions navigate={navigate} detailId={hash.param2} admin={adminUser} />}
-              {effectiveSub === 'kyc' && <AdminKYC navigate={navigate} detailId={hash.param2} admin={adminUser} />}
-              {effectiveSub === 'pi' && <AdminPI navigate={navigate} detailId={hash.param2} admin={adminUser} />}
-              {effectiveSub === 'funds' && <AdminFunds navigate={navigate} tab={hash.param2} detailId={hash.param3} admin={adminUser} />}
-              {effectiveSub === 'transactions' && <AdminTransactions />}
-              {effectiveSub === 'transaction-monitor' && <AdminTransactionMonitor admin={adminUser} />}
-              {effectiveSub === 'large-tx' && <AdminLargeTx navigate={navigate} detailId={hash.param2} admin={adminUser} />}
-              {effectiveSub === 'anomaly' && <AdminAnomaly navigate={navigate} detailId={hash.param2} admin={adminUser} />}
-              {effectiveSub === 'str' && <AdminSTR navigate={navigate} detailId={hash.param2} admin={adminUser} />}
-              {effectiveSub === 'edd' && <AdminEDD navigate={navigate} detailId={hash.param2} admin={adminUser} />}
-              {effectiveSub === 'dividends' && <AdminDividends navigate={navigate} detailId={hash.param2} admin={adminUser} />}
-              {effectiveSub === 'spvs' && <AdminSpvs navigate={navigate} detailId={hash.param2} admin={adminUser} />}
-              {effectiveSub === 'exits' && <AdminExits navigate={navigate} detailId={hash.param2} />}
-              {effectiveSub === 'users' && <AdminUsers navigate={navigate} detailId={hash.param2} admin={adminUser} />}
-              {effectiveSub === 'audit' && <AdminAuditLogs />}
-              {effectiveSub === 'roles' && <AdminRoles admin={adminUser} />}
-              {effectiveSub === 'admins' && <AdminAdmins admin={adminUser} />}
-              {effectiveSub === 'broadcast' && <AdminNotifications admin={adminUser} />}
-              {effectiveSub === 'messages' && <AdminSupport admin={adminUser} detailId={hash.param2} navigate={navigate} />}
-              {effectiveSub === 'config' && <AdminConfig admin={adminUser} />}
-            </ErrorBoundary>
-          </main>
-        </div>
-      </LanguageProvider>
+      <div className="admin-layout">
+        <AdminSidebar current={effectiveSub} onNavigate={navigate} admin={adminUser} onLogout={handleAdminLogout} />
+        <main className="admin-content">
+          <ErrorBoundary>
+            {effectiveSub === 'home' && <AdminHome admin={adminUser} />}
+            {effectiveSub === 'projects' && <AdminProjects navigate={navigate} admin={adminUser} />}
+            {effectiveSub === 'events' && <AdminEvents navigate={navigate} admin={adminUser} />}
+            {effectiveSub === 'registrations' && <AdminRegistrations admin={adminUser} />}
+            {effectiveSub === 'my-clients' && <AdminMyClients navigate={navigate} detailId={hash.param2} admin={adminUser} />}
+            {effectiveSub === 'subscriptions' && <AdminSubscriptions navigate={navigate} detailId={hash.param2} admin={adminUser} />}
+            {effectiveSub === 'kyc' && <AdminKYC navigate={navigate} detailId={hash.param2} admin={adminUser} />}
+            {effectiveSub === 'pi' && <AdminPI navigate={navigate} detailId={hash.param2} admin={adminUser} />}
+            {effectiveSub === 'funds' && <AdminFunds navigate={navigate} tab={hash.param2} detailId={hash.param3} admin={adminUser} />}
+            {effectiveSub === 'transactions' && <AdminTransactions />}
+            {effectiveSub === 'transaction-monitor' && <AdminTransactionMonitor admin={adminUser} />}
+            {effectiveSub === 'large-tx' && <AdminLargeTx navigate={navigate} detailId={hash.param2} admin={adminUser} />}
+            {effectiveSub === 'anomaly' && <AdminAnomaly navigate={navigate} detailId={hash.param2} admin={adminUser} />}
+            {effectiveSub === 'str' && <AdminSTR navigate={navigate} detailId={hash.param2} admin={adminUser} />}
+            {effectiveSub === 'edd' && <AdminEDD navigate={navigate} detailId={hash.param2} admin={adminUser} />}
+            {effectiveSub === 'dividends' && <AdminDividends navigate={navigate} detailId={hash.param2} admin={adminUser} />}
+            {effectiveSub === 'spvs' && <AdminSpvs navigate={navigate} detailId={hash.param2} admin={adminUser} />}
+            {effectiveSub === 'exits' && <AdminExits navigate={navigate} detailId={hash.param2} />}
+            {effectiveSub === 'users' && <AdminUsers navigate={navigate} detailId={hash.param2} admin={adminUser} />}
+            {effectiveSub === 'audit' && <AdminAuditLogs />}
+            {effectiveSub === 'roles' && <AdminRoles admin={adminUser} />}
+            {effectiveSub === 'admins' && <AdminAdmins admin={adminUser} />}
+            {effectiveSub === 'broadcast' && <AdminNotifications admin={adminUser} />}
+            {effectiveSub === 'messages' && <AdminSupport admin={adminUser} detailId={hash.param2} navigate={navigate} />}
+            {effectiveSub === 'config' && <AdminConfig admin={adminUser} />}
+          </ErrorBoundary>
+        </main>
+      </div>
     );
   }
 
@@ -507,18 +500,16 @@ export default function App() {
   const showBottomNav = isTopLevel && isLoggedIn;
 
   return (
-    <LanguageProvider>
-      <div className="app-container">
-        <div className={`app-content${showBottomNav ? '' : ' no-bottom-pad'}`}>
-          <ErrorBoundary>{renderPage()}</ErrorBoundary>
-        </div>
-        {showBottomNav && <BottomNav current={hash.path} onNavigate={navigate} />}
-        {toast && <div className="toast toast-success">{toast}</div>}
-        {/* 条款更新重同意闸门（2026-09-15 · 对齐公司实践：版本升级后登录弹窗，重新勾选后方可继续） */}
-        {isLoggedIn && termsState.agreedVersion !== termsState.currentVersion && (
-          <TermsUpdateGate onAgreed={() => setTermsTick(t => t + 1)} />
-        )}
+    <div className="app-container">
+      <div className={`app-content${showBottomNav ? '' : ' no-bottom-pad'}`}>
+        <ErrorBoundary>{renderPage()}</ErrorBoundary>
       </div>
-    </LanguageProvider>
+      {showBottomNav && <BottomNav current={hash.path} onNavigate={navigate} />}
+      {toast && <div className="toast toast-success">{toast}</div>}
+      {/* 条款更新重同意闸门（2026-09-15 · 对齐公司实践：版本升级后登录弹窗，重新勾选后方可继续） */}
+      {isLoggedIn && termsState.agreedVersion !== termsState.currentVersion && (
+        <TermsUpdateGate onAgreed={() => setTermsTick(t => t + 1)} />
+      )}
+    </div>
   );
 }

@@ -1046,4 +1046,13 @@ export const en = {
   '我已阅读': 'I have read it',
   '生效日期': 'Effective',
   '关闭': 'Close',
+
+  // ===== 2026-09-21 Brand localization (致富→财富) =====
+  '财富平台': 'Wealth Platform',
+  '内部演示环境': 'Internal Demo Environment',
+  '私募股权信息平台原型 · 凭口令访问': 'Private equity platform prototype · Access by invite code',
+  '请输入访问口令': 'Enter access code',
+  '口令不正确，请重试': 'Incorrect code, please try again',
+  '进入': 'Enter',
+  '本原型仅供内部演示，请勿对外转发链接': 'Internal demo only. Do not share this link externally.',
 };

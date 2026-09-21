@@ -203,7 +203,7 @@ export default function AdminAdmins({ admin }) {
                   )}
                   <div className="form-group">
                     <label className="form-label">绑定邮箱 <span className="required-mark">*</span></label>
-                    <input type="email" className="form-input" placeholder="用于找回密码 / 安全通知（如 ops@zhifu-capital.hk）" value={form.email}
+                    <input type="email" className="form-input" placeholder="用于找回密码 / 安全通知（如 ops@wealth-capital.hk）" value={form.email}
                       onChange={e => { setForm(f => ({ ...f, email: e.target.value })); setFormError(''); }} />
                   </div>
                   <div className="form-group">

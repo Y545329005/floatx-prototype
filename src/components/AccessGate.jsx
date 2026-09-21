@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useLang } from '../i18n';
 
 // 云端演示环境访问口令（2026-08-27）
 // 定位：GitHub Pages 公开托管时为「防君子不防小人」的一层入口保护，防止匿名访问直接看到私募/合规业务界面。
@@ -15,6 +16,7 @@ function loadGranted() {
 }
 
 export default function AccessGate({ children }) {
+  const { t } = useLang();
   const [granted, setGranted] = useState(loadGranted);
   const [value, setValue] = useState('');
   const [error, setError] = useState('');
@@ -23,6 +25,13 @@ export default function AccessGate({ children }) {
   useEffect(() => {
     if (!granted) inputRef.current?.focus();
   }, [granted]);
+
+  // 浏览器标题随语言切换（2026-09-21 品牌多语言适配）。
+  // AccessGate 常驻挂载（授权后 return children 仍保留本组件），故标题同步集中在此：
+  // 口令层阶段 App 尚未挂载也能正确显示，授权后语言切换同样生效。
+  useEffect(() => {
+    document.title = t('财富平台');
+  }, [t]);
 
   if (granted) return children;
 
@@ -44,9 +53,9 @@ export default function AccessGate({ children }) {
   return (
     <div className="access-gate">
       <form className="access-gate-card" onSubmit={handleSubmit}>
-        <div className="access-gate-brand">致富财富平台</div>
-        <div className="access-gate-title">内部演示环境</div>
-        <p className="access-gate-desc">私募股权信息平台原型 · 凭口令访问</p>
+        <div className="access-gate-brand">{t('财富平台')}</div>
+        <div className="access-gate-title">{t('内部演示环境')}</div>
+        <p className="access-gate-desc">{t('私募股权信息平台原型 · 凭口令访问')}</p>
         <input
           ref={inputRef}
           className="access-gate-input"
@@ -56,12 +65,12 @@ export default function AccessGate({ children }) {
             setValue(e.target.value);
             if (error) setError('');
           }}
-          placeholder="请输入访问口令"
+          placeholder={t('请输入访问口令')}
           autoComplete="off"
         />
-        {error && <div className="access-gate-error">{error}</div>}
-        <button className="access-gate-btn" type="submit">进入</button>
-        <div className="access-gate-hint">本原型仅供内部演示，请勿对外转发链接</div>
+        {error && <div className="access-gate-error">{t(error)}</div>}
+        <button className="access-gate-btn" type="submit">{t('进入')}</button>
+        <div className="access-gate-hint">{t('本原型仅供内部演示，请勿对外转发链接')}</div>
       </form>
     </div>
   );
