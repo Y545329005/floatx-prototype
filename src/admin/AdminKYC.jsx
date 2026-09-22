@@ -89,7 +89,7 @@ export default function AdminKYC({ navigate, detailId, admin }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawerOpen]);
 
-  const closeDrawer = () => { setAction(null); setReason(''); setReasonError(false); setSigZoomed(false); goList(); };
+  const closeDrawer = () => { setAction(null); setReason(''); setReasonError(false); goList(); };
 
   const handleApprove = (kid) => {
     approveKycSubmission(kid, admin?.name || '系统');
