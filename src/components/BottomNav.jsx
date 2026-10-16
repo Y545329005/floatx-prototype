@@ -1,11 +1,11 @@
-import { Briefcase, Calendar, Wallet, User } from 'lucide-react';
+import { Briefcase, Calendar, User } from 'lucide-react';
 import { useLang } from '../i18n';
 
 // 顺序：前期主打路演，路演在前（2026-08-06 调整）
+// 2026-10-16 首期裁剪：「我的资产」Tab 摘除（基金无线上账户+暂无项目，资产树整树下线，二期恢复）
 const tabs = [
   { key: 'events', label: '路演活动', icon: Calendar },
   { key: 'projects', label: '项目市场', icon: Briefcase },
-  { key: 'assets', label: '我的资产', icon: Wallet },
   { key: 'profile', label: '我的', icon: User },
 ];
 

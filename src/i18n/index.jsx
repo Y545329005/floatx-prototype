@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
 const LanguageContext = createContext({ lang: 'zh-CN', setLang: () => {}, t: k => k });
 
@@ -8,9 +8,9 @@ export const LANGUAGES = [
   { code: 'en', label: 'English' },
 ];
 
-import { zhHK } from './zhHK';
-import { en } from './en';
-
+// 字典动态加载（2026-09-24 主包瘦身 Phase 1）：
+// zh-CN 的 key 即简体中文原文，零字典；zhHK / en 各 ~78KB 源码，
+// 改为按需 import，未加载完成前 t() 回退返回 key（简体原文），字典到达后自动重渲染。
 export function LanguageProvider({ children }) {
   const [lang, setLang] = useState(() => {
     try {
@@ -19,6 +19,19 @@ export function LanguageProvider({ children }) {
       return 'zh-CN';
     }
   });
+  const [dicts, setDicts] = useState({});
+
+  useEffect(() => {
+    if (lang === 'zh-CN' || dicts[lang]) return;
+    let alive = true;
+    const loader = lang === 'zh-HK' ? import('./zhHK') : import('./en');
+    loader.then((m) => {
+      if (!alive) return;
+      const d = lang === 'zh-HK' ? m.zhHK : m.en;
+      setDicts((prev) => (prev[lang] ? prev : { ...prev, [lang]: d }));
+    });
+    return () => { alive = false; };
+  }, [lang, dicts]);
 
   const changeLang = useCallback((code) => {
     setLang(code);
@@ -27,7 +40,7 @@ export function LanguageProvider({ children }) {
     } catch (e) { /* ignore */ }
   }, []);
 
-  const dict = lang === 'zh-CN' ? {} : lang === 'zh-HK' ? zhHK : en;
+  const dict = lang === 'zh-CN' ? {} : dicts[lang] || {};
 
   const t = useCallback((key) => {
     if (typeof key !== 'string' || !key) return key;

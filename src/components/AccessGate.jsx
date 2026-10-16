@@ -30,7 +30,7 @@ export default function AccessGate({ children }) {
   // AccessGate 常驻挂载（授权后 return children 仍保留本组件），故标题同步集中在此：
   // 口令层阶段 App 尚未挂载也能正确显示，授权后语言切换同样生效。
   useEffect(() => {
-    document.title = t('财富平台');
+    document.title = t('HKBTC');
   }, [t]);
 
   if (granted) return children;
@@ -53,7 +53,7 @@ export default function AccessGate({ children }) {
   return (
     <div className="access-gate">
       <form className="access-gate-card" onSubmit={handleSubmit}>
-        <div className="access-gate-brand">{t('财富平台')}</div>
+        <div className="access-gate-brand">{t('HKBTC')}</div>
         <div className="access-gate-title">{t('内部演示环境')}</div>
         <p className="access-gate-desc">{t('私募股权信息平台原型 · 凭口令访问')}</p>
         <input

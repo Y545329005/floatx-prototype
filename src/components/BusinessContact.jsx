@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { clickable } from '../lib';
 import { Briefcase, Mail, Phone, MessageCircle, ChevronRight, X } from 'lucide-react';
 import { businessContact } from '../mock/data';
 import { useLang } from '../i18n';
@@ -26,7 +27,7 @@ export default function BusinessContact({ setToast, variant = 'banner', isLogged
   return (
     <>
       {variant === 'banner' && (
-        <div className="business-contact-banner" onClick={() => setShowSheet(true)}>
+        <div className="business-contact-banner" {...clickable(() => setShowSheet(true))}>
           <div className="business-contact-banner-icon">
             <Briefcase size={18} />
           </div>

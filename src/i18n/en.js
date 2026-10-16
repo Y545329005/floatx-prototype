@@ -3,7 +3,6 @@ export const en = {
   // Bottom nav
   '项目市场': 'Projects',
   '路演活动': 'Events',
-  '我的资产': 'Assets',
   '我的': 'Me',
 
   // Common actions
@@ -23,7 +22,6 @@ export const en = {
   '申购记录': 'Subscriptions',
   '基金产品': 'Funds',
   '我的持仓': 'Holdings',
-  '合规报告': 'Compliance Reports',
   '消息通知': 'Notifications',
   '账户设置': 'Account Settings',
   '帮助中心': 'Help Center',
@@ -214,8 +212,6 @@ export const en = {
   '入金失败，请重试': 'Deposit failed, please retry',
 
   // Profile extras
-  '资产报告 · 合规披露': 'Asset reports · Compliance',
-  '申购 · 路演 · 资金动态': 'Subscriptions · Events · Funding',
   '个人信息 · 认证 · 安全': 'Personal · Certification · Security',
   '常见问题 · 客服支持': 'FAQ · Support',
   '公司信息 · 政策文件': 'Company · Policies',
@@ -294,9 +290,6 @@ export const en = {
   // Content domain additions (Projects)
   '搜索': 'Search',
   '进行中': 'Ongoing',
-  '已结束': 'Ended',
-  '暂无进行中的项目': 'No ongoing projects',
-  '暂无已结束的项目': 'No ended projects',
   '到底了': 'End of list',
   '已申购': 'Subscribed',
 
@@ -488,7 +481,7 @@ export const en = {
 
   // Register page
   '注册': 'Sign Up',
-  '创建您的财富账号': 'Create your wealth account',
+  '创建您的 HKBTC 账号': 'Create your HKBTC account',
   '请再次输入密码': 'Please re-enter the password',
   '我已阅读并同意': 'I have read and agree to the',
   '服务条款': 'Terms of Service',
@@ -522,7 +515,7 @@ export const en = {
   '和': 'and',
 
   // ===== 2026-08-07 Auth pages brand-immersive redesign: brand hero + welcome + footer =====
-  '登录您的财富账户': 'Sign in to your Wealth Account',
+  '登录您的 HKBTC 账户': 'Sign in to your HKBTC account',
   '选择语言': 'Select language',
   '一级私募股权 · 稀缺份额分配制': 'Private Equity · Scarce Allocation',
   '香港证监会持牌机构': 'SFC licensed institution',
@@ -547,19 +540,15 @@ export const en = {
 
   // Compliance (funding loop)
   '意向金额非合同承诺，最终以 SPV 文件为准': 'Intent amount is non-binding; final terms per SPV',
-  '获配额后意向金额将被冻结（不扣款），请在 24 小时内签署 SPV 确认出资': 'Upon allocation, your intended amount will be frozen (not deducted). Please sign the SPV within 24 hours to confirm your investment.',
-  '冻结 = 锁定意向金额（不扣款），签署 SPV 时实际出资；请在 24 小时内完成签署': 'Frozen = intended amount locked (not deducted); actual payment happens upon SPV signing. Please complete signing within 24 hours.',
   '签署 SPV 协议': 'Sign SPV Agreement',
   '签署将在第三方电子签署平台（DocuSign / Adobe Sign 类）完成，您将收到签署邀请。': 'Signing will be completed on a third-party e-signature platform (e.g. DocuSign / Adobe Sign); you will receive a signing invitation.',
   '签署对象': 'Signing subject',
   '收到邀请': 'Invite',
   '平台签署': 'Sign',
-  '扣款持仓': 'Deduct & Hold',
   '前往签署平台': 'Go to Signing Platform',
 
   // Frozen / countdown
   '已冻结': 'Frozen',
-  '请在 24 小时内签署': 'Please sign within 24 hours',
   '小时': 'h',
   '分': 'm',
   '秒': 's',
@@ -723,6 +712,8 @@ export const en = {
   '请输入您的新香港手机号码，我们将发送验证码短信。': 'Please enter your new Hong Kong phone number. We will send a verification code via SMS.',
 
   // Change Email
+  '登录邮箱': 'Login Email',
+  '用于登录、找回密码与安全警报通知': 'Used for login, password recovery and security alerts',
   '更换邮箱': 'Change Email',
   '邮箱换绑成功': 'Email rebind successful',
   '当前已绑定邮箱，点击下方按钮更换为新邮箱。': 'Your email is currently bound. Click the button below to change to a new email.',
@@ -740,7 +731,7 @@ export const en = {
   '验证码': 'Verification Code',
   '请输入6位验证码': 'Enter 6-digit code',
   '验证码将在 5 分钟内有效': 'Code valid for 5 minutes',
-  '演示模式：验证码为 123456（控制台输出）': 'Demo mode: code is 123456 (output to console)',
+  '演示模式：验证码为 123456': 'Demo mode: code is 123456',
   '验证手机号': 'Verify Phone Number',
   '请输入有效的香港手机号码': 'Please enter a valid HK mobile number',
   '验证码错误，请重试': 'Incorrect code, please try again',
@@ -1025,9 +1016,6 @@ export const en = {
   '请先阅读并勾选同意上述协议': 'Please read and tick to accept the agreements above',
   '注册中...': 'Registering...',
   '签署将在 APP 内完成：阅读协议全文并使用电子签名确认，签名与协议版本将固化存档，与手写签名具有同等法律效力。': 'Signing is completed in-app: read the full agreement and confirm with an e-signature. Your signature and the agreement version will be archived and carry the same legal effect as a handwritten signature.',
-  '阅读协议': 'Read Agreement',
-  'APP 内签名': 'Sign In-App',
-  '立即签署': 'Sign Now',
   '签署凭证': 'Signing Record',
   '签署编号': 'Signing Ref.',
   '哈希已固化': 'hash fixed',
@@ -1047,12 +1035,345 @@ export const en = {
   '生效日期': 'Effective',
   '关闭': 'Close',
 
-  // ===== 2026-09-21 Brand localization (致富→财富) =====
-  '财富平台': 'Wealth Platform',
+  // 品牌名 HKBTC 三语同文，t() 回退返回 key，无需字典条目
   '内部演示环境': 'Internal Demo Environment',
   '私募股权信息平台原型 · 凭口令访问': 'Private equity platform prototype · Access by invite code',
   '请输入访问口令': 'Enter access code',
   '口令不正确，请重试': 'Incorrect code, please try again',
   '进入': 'Enter',
   '本原型仅供内部演示，请勿对外转发链接': 'Internal demo only. Do not share this link externally.',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '6位验证码': '6-digit code',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  'GA 已重置': 'GA has been reset',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  'GA 已重置，24 小时内无法提现': 'GA reset. Withdrawals unavailable for 24 hours',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  'GA 绑定成功': 'GA bound successfully',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  'GA 绑定成功，24 小时内无法提现': 'GA bound. Withdrawals unavailable for 24 hours',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '两次密码输入不一致': 'Passwords do not match',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '为保护您的账户安全，重置 GA 后 24 小时内无法使用提现功能。旧验证器在新验证码验证通过前仍有效。': 'To protect your account, withdrawals are unavailable for 24 hours after resetting GA. Your current authenticator stays valid until the new code is verified.',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '为保护账户安全，请先完成安全项绑定': 'For account security, please set up a security method first',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '为保护账户安全，请先绑定手机号后再进行安全项变更': 'For account security, please bind a phone number before changing security settings',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '使用面容 ID / 指纹验证': 'Verify with Face ID / Touch ID',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '修改后将注销其他设备全部会话，并冻结提现 24 小时': 'All other sessions will be signed out and withdrawals frozen for 24 hours',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '修改密码': 'Change Password',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '再次输入新密码': 'Confirm new password',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '删除后不可恢复，您需要重新添加。': 'This cannot be undone. You will need to add it again.',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '删除后不可恢复，您需要重新添加。为了保护您的账户安全，删除后 24 小时内无法使用提现功能。': 'This cannot be undone. To protect your account, withdrawals are unavailable for 24 hours after deletion.',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '删除通行密钥': 'Delete Passkey',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '双重验证不可关闭（合规要求），仅允许更改验证方式': 'Two-factor authentication cannot be disabled (regulatory requirement). You may only change verification methods.',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '可用余额不足或收款卡未通过验证': 'Insufficient balance or the receiving card is not verified',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '复制密钥': 'Copy Key',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '多次验证失败，可切换其他验证方式': 'Multiple failures. Try another verification method',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '如需协助请联系客服': 'Contact support if you need help',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '安全中心': 'Security Center',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '安全冻结生效中：出金账户变更将暂停至 {time}（{reason}）': 'Security freeze active: withdrawal account changes suspended until {time} ({reason})',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '安全冻结生效中：安全项变更后 24 小时内无法变更出金账户': 'Security freeze active: withdrawal account changes unavailable for 24 hours',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '安全冻结生效中：安全项变更后 24 小时内无法提现': 'Security freeze active: withdrawals unavailable for 24 hours',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '安全冻结生效中：提现功能将暂停至 {time}（{reason}）': 'Security freeze active: withdrawals suspended until {time} ({reason})',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '安全复核': 'Security Re-verification',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '安全设置历史': 'Security Settings History',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '安全项已重绑完成，请使用新安全项重新登录': 'Re-binding complete. Please sign in with your new security method',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '安全验证': 'Security Verification',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '安全验证失败次数过多，请 2小时后再试。': 'Too many failed attempts. Please try again in 2 hours.',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '完成以下验证后继续重绑': 'Complete the verification to continue re-binding',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '完成绑定': 'Finish Binding',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '两次密码输入不一致 ': 'Passwords do not match',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '新密码': 'New password',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '无法获取验证码？': 'Can\'t get a code?',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '暂无安全项变动记录': 'No security changes recorded',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '未绑定': 'Not bound',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '已绑定': 'Bound',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '已复制': 'Copied',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '检测到未完成的安全项重绑，请先完成身份复核': 'An unfinished security re-binding was detected. Please re-verify your identity first',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '正在创建通行密钥…': 'Creating passkey…',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '正在进行活体检测，请正对屏幕…': 'Performing liveness detection, please face the screen…',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '正在验证生物识别…': 'Verifying biometrics…',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '此操作不可撤销，确定继续吗？': 'This cannot be undone. Continue?',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '测试账号': 'Test Accounts',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '添加于': 'Added',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '添加通行密钥': 'Add Passkey',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '演示模式验证码': 'Demo verification code',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '演示模式：模拟系统生物识别面板': 'Demo mode: simulated system biometric prompt',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '请复制下方密钥，在 GA App 中选择「输入设置密钥」添加': 'Copy the key below and choose "Enter a setup key" in your Authenticator app',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '用于登录兜底与安全项重置（KYC 用户叠加人脸）': 'Fallback login and security resets (face verification added for KYC users)',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '登录密码': 'Login Password',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '短信验证': 'SMS Verification',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '短信验证码不正确，请重新输入': 'Incorrect SMS code, please try again',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '确认修改': 'Confirm',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '确认删除': 'Confirm Deletion',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '确认重置': 'Confirm Reset',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '紧急登录确认': 'Emergency Login Confirmation',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '紧急登录：完成以下验证以重置安全项': 'Emergency login: complete the verification to reset security methods',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '绑定 GA': 'Bind GA',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '绑定后作为高强度第二因子，防验证码转发与 SIM 劫持': 'A strong second factor that resists code forwarding and SIM swaps',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '绑定成功，请重新登录': 'Bound successfully. Please sign in again',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '绑定手机号': 'Bind Phone Number',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '绑定手机号后启用': 'Available after binding a phone number',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '绑定新 Passkey': 'Bind New Passkey',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '绑定新安全项': 'Bind New Security Method',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '绑定时间': 'Bound at',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '至少 6 位': 'At least 6 characters',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '该卡已通过验证或提交失败': 'Card already verified or submission failed',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '谷歌验证器（GA）': 'Google Authenticator (GA)',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '账号 A：已通过 KYC': 'Account A: KYC approved',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '账号 B：待完成 KYC': 'Account B: KYC pending',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '输入 GA App 中的 6 位验证码': 'Enter the 6-digit code from your Authenticator app',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '输入您的邮箱或手机号，我们将发送验证码': 'Enter your email or phone number and we will send a code',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '输入验证码': 'Enter Code',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '这是您最后一个通行密钥，删除后将使用短信验证码登录': 'This is your last passkey. SMS codes will be used for sign-in after deletion',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '通行密钥已删除': 'Passkey deleted',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '通行密钥已删除，24 小时内无法提现': 'Passkey deleted. Withdrawals unavailable for 24 hours',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '通行密钥绑定成功': 'Passkey bound successfully',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '通行密钥（Passkey）': 'Passkeys',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '重新发送': 'Resend',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '重新发送验证码': 'Resend code',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '重置 GA': 'Reset GA',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '重置 GA 后旧验证器将失效。新验证器在新验证码验证通过前仍有效。': 'The old authenticator will be invalidated after reset. It stays valid until the new code is verified.',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '需要完成以下 N 项验证': 'Complete the following N verifications',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '验证': 'Verify',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '验证中...': 'Verifying...',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '验证会话已超时，请重新开始': 'Verification session expired. Please start over',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '验证凭证已失效，请重新验证': 'Verification token expired. Please verify again',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '验证码 30 秒刷新一次，请以当前显示为准': 'The code refreshes every 30 seconds. Use the one currently shown',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '验证码错误，请检查 GA App 与设备时间后重试': 'Incorrect code. Check your Authenticator app and device clock',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '验证码错误，请检查设备时间同步后重试': 'Incorrect code. Check your device time sync and try again',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '验证通过后可更换手机号': 'Verify to change your phone number',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '验证通过后可更换邮箱': 'Verify to change your email',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '验证通过后可进行安全项变更': 'Verify to change security settings',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '验证通过后方可继续操作；会话有效期 10 分钟': 'Verification is required to continue. Session valid for 10 minutes',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '验证通过后，将强制解绑您当前的谷歌验证器（GA）和 Passkey，且提现功能将冻结 24-48 小时（根据设备安全评估）。': 'After verification, your current Authenticator (GA) and Passkeys will be force-unbound, and withdrawals frozen for 24-48 hours based on device risk assessment.',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '您的 GA 与通行密钥已在紧急登录中解绑，必须绑定新安全项后才能重新登录': 'Your GA and passkeys were unbound during emergency login. Bind a new security method to sign in again',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '我已了解，继续': 'I understand, continue',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '或': 'or',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '待验证': 'Pending',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '开始人脸识别': 'Start Face Verification',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '设置新密码': 'Set New Password',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '请输入新密码（至少6位）': 'Enter new password (at least 6 characters)',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '密码至少需要6位': 'Password must be at least 6 characters',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '密码重置成功': 'Password reset successfully',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '您的密码已成功重置': 'Your password has been reset',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '请输入验证码': 'Enter the code',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '验证码为6位数字': 'The code must be 6 digits',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '验证码已发送': 'Code sent',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '验证码已发送至 {}': 'Code sent to {}',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '验证码已重新发送': 'Code resent',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '验证成功': 'Verified',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '请先完成全部验证': 'Complete all verifications first',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '请在 App Store / Google Play 下载「Google Authenticator」': 'Download "Google Authenticator" from the App Store / Google Play',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '请验证您本人名下的香港手机号码，我们将发送验证码短信。': 'Verify your Hong Kong mobile number and we will send an SMS code',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '线下转账 + 登记核销：请先向平台收款账户完成转账，再登记转账金额并上传凭证，财务核对到账后上账': 'Offline transfer + registration: transfer to the platform account first, then register the amount and upload the receipt for reconciliation',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '请使用白名单银行卡向此账户完成转账，然后在下方登记转账金额并上传凭证。': 'Transfer from a whitelisted bank card to this account, then register the amount and upload the receipt below.',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '完成转账，提交登记': 'Transfer completed, submit registration',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '转账金额（转账完成后登记）': 'Transfer amount (registered after transfer)',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '请按银行回执填写实际转账金额': 'Enter the actual amount per the bank receipt',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '转账后银行回执上的参考号': 'Reference number on the bank receipt',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '截图或转账回执，财务据此核对到账（演示阶段仅模拟文件名）': 'Screenshot or transfer receipt for reconciliation (file name only in demo)',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '如：卡片白名单验证（卡号后四位）': 'e.g. Card whitelist verification (last 4 digits)',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '请向平台收款账户转账验证款（≥1万 HKD 或等值 USD），财务核对到账后该卡生效，可用于出入金。验证款将计入可用余额。': 'Transfer the verification amount (≥HKD 10,000 or equivalent) to the platform account. The card becomes usable for deposits/withdrawals once reconciled. The amount counts toward your balance.',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '请输入有效的验证转账金额': 'Enter a valid verification amount',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '扣款账户（eDDA）': 'Debit account (eDDA)',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  'eDDA 未授权，需先从中国银行（香港）授权快捷扣款': 'eDDA not authorized. Authorize quick debit from Bank of China (Hong Kong) first',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '已授权': 'Authorized',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '未授权': 'Not authorized',
+  // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
+  '{}秒后可重发': 'Resend in {}s',
+  '已授权 eDDA：': 'eDDA authorized: ',
+  '可直接发起入金': 'Ready for quick deposits',
+  '账号 C：PEP（仅短信验证）': 'Account C: PEP (SMS only)',
+  '短信验证码': 'SMS Code',
+  '验证码将发送至您的手机': 'The code will be sent to your phone',
+  '谷歌验证器': 'Google Authenticator',
+  '通行密钥': 'Passkey',
+  '人脸识别': 'Face Verification',
+  '使用本机生物识别验证': 'Verify with on-device biometrics',
+  '活体检测，确认本人操作': 'Liveness detection to confirm it is you',
+  // —— 财富页对标改版（2026-10-14：顶栏 icon / 日历卡 / 资产单行入口）——
+  '财富': 'Wealth',
+  '路演': 'Roadshows',
+  '全部路演': 'All roadshows',
+  '全部项目': 'All projects',
+  '限时路演': 'Upcoming Roadshows',
+  '精选项目': 'Featured Projects',
+  '暂无在募项目': 'No open offerings',
+  '客服': 'Support',
+  '通知': 'Notifications',
+  '总资产': 'Total assets',
+  '笔申购进行中': 'subscriptions in progress',
+  '周日': 'Sun',
+  '周一': 'Mon',
+  '周二': 'Tue',
+  '周三': 'Wed',
+  '周四': 'Thu',
+  '周五': 'Fri',
+  '周六': 'Sat',
+
+  // UC 对齐（2026-10-15）：注册/登录/全端失效（§9.2/§9.4/§9.8）
+  '该邮箱/手机号已注册': 'This email/phone is already registered',
+  '今日验证码发送次数已达上限，请24小时后重试': 'Daily verification code limit reached. Please try again in 24 hours',
+  '注册成功，账号已激活': 'Registration successful, account activated',
+  '验证码校验通过，账号已创建并激活': 'Verification passed. Your account has been created and activated',
+  '开始身份认证': 'Start Identity Verification',
+  '去登录': 'Sign In',
+  '账户未绑定可验证通道，请先绑定手机号': 'No verification channel found. Please bind a phone number first',
+  '密码修改成功。为保障账户安全，所有设备已退出登录，请使用新密码重新登录。': 'Password changed. For your security, all devices have been signed out. Please sign in with your new password.',
+  '安全项已变更。为保障账户安全，所有设备已退出登录，请重新登录。': 'Security settings changed. For your security, all devices have been signed out. Please sign in again.',
+  '安全提示': 'Security Notice',
+  '重新登录': 'Sign In Again',
+  '完成身份认证后可绑定通行密钥': 'Complete identity verification to add a passkey',
+  '邮箱验证码': 'Email Code',
+  '验证码将发送至您的注册邮箱': 'A code will be sent to your registered email',
+  '邮箱验证码不正确，请重新输入': 'Incorrect email code, please try again',
+  '无法接收邮件？': "Can't receive the email?",
+  '邮箱验证码接收异常？请联系客服协助处理': 'Having trouble receiving the email code? Please contact customer service',
+  '修改后所有设备将退出登录（含本设备），并冻结提现 24 小时': 'All devices (including this one) will be signed out, and withdrawals will be frozen for 24 hours',
+  // Onboarding agreement gate (2026-10-15 · UC alignment): fund agreements moved to post-KYC signing
+  '服务协议与风险披露': 'Service Agreement & Risk Disclosure',
+  '欢迎使用本平台基金服务。完成身份认证后，请查阅并同意下列协议，以建立服务关系：': 'Welcome to the fund services on this platform. Once identity verification is complete, please review and accept the following agreements to establish the service relationship:',
+  '我已阅读并同意上述协议': 'I have read and accept the agreements above',
+  // Onboarding gate · decline path
+  '暂不同意': 'Not Now',
+  '未签署开户协议，将无法使用基金服务。您可以稍后重新登录再签署，或联系客服咨询。': 'Without signing the onboarding agreements, fund services will be unavailable. You may sign in again later to complete signing, or contact customer service for assistance.',
+  '返回签署': 'Back to Signing',
+  '确认并退出': 'Confirm & Sign Out',
+  '往期业绩': 'Track Record',
+  '暂无往期项目': 'No past projects yet',
+
+  '暂无进行中的项目': 'No active projects',
+  '申购 · 路演动态': 'Subscriptions · Events',
+  '已获配额 · 待线下打款与签署': 'Allocated · Pending offline payment & signing',
+  '已获配额：请按客户经理指引完成线下打款；SPV 协议将在线下签署，专人协助安排': 'Allocated: please complete offline payment per your relationship manager\u2019s instructions; the SPV agreement will be signed offline with dedicated assistance',
+  '线下打款与签署': 'Offline Payment & Signing',
+  '本基金为线下认购：获配后请按客户经理指引完成线下资金交割，SPV 协议将在线下完成签署，专属客户经理将全程协助安排。': 'This fund is subscribed offline: after allocation, complete the fund settlement offline per your relationship manager\u2019s instructions. The SPV agreement will be signed offline with dedicated assistance.',
+
+  '获配后请按客户经理指引完成线下打款与 SPV 签署': 'After allocation, complete offline payment and SPV signing per your relationship manager\u2019s instructions',
+
 };

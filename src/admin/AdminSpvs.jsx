@@ -424,7 +424,7 @@ export default function AdminSpvs({ navigate, detailId, admin }) {
                     </strong>
                   </div>
                   <div className="admin-spv-progress-bar">
-                    <div className={`admin-spv-progress-fill${raisePct > 100 ? ' over' : ''}`} style={{ width: `${Math.min(raisePct, 100)}%` }} />
+                    <div className={`admin-spv-progress-fill${raisePct > 100 ? ' over' : ''}`} style={{ '--fill': Math.min(raisePct, 100) / 100 }} />
                   </div>
                   <div className="admin-spv-progress-meta text-muted text-sm">
                     已认缴 HKD {formatCurrency(snap.totalRaised)} / 计划 HKD {formatCurrency(sel.planAmount)}
@@ -482,7 +482,7 @@ export default function AdminSpvs({ navigate, detailId, admin }) {
                   </div>
                   {e.signatureImage && (
                     <div className="admin-sub-evidence-signature">
-                      <img src={e.signatureImage} alt="电子签名" />
+                      <img src={e.signatureImage} alt="电子签名" loading="lazy" decoding="async" />
                       <span className="text-muted text-sm">电子签名存档</span>
                     </div>
                   )}

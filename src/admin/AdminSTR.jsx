@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { clickable } from '../lib';
 import { Search, X, Clock, CheckCircle, ShieldAlert, FileText, Send, AlertTriangle, ScrollText } from 'lucide-react';
 import {
   strReports,
@@ -221,7 +222,7 @@ export default function AdminSTR({ navigate, detailId, admin }) {
           const prog = getDeadlineProgress(r.createdAt);
           const stage = getStage(r);
           return (
-            <div key={r.id} className="admin-table-row" onClick={() => navigate(`#admin/str/${r.id}`)}>
+            <div key={r.id} className="admin-table-row" {...clickable(() => navigate(`#admin/str/${r.id}`))}>
               <span className="col-id">
                 {r.id}
                 {prog.urgent && stage !== 'submitted' && stage !== 'closed' && (

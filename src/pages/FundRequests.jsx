@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { clickable } from '../lib';
 import { ArrowLeft, Clock, ChevronRight, ChevronDown, Check } from 'lucide-react';
 import { depositRequests, withdrawRequests, exchangeRequests, currentUser, wallet, formatCurrency } from '../mock/data';
 import { useLang } from '../i18n';
@@ -125,7 +126,7 @@ export default function FundRequests({ navigate, goBack }) {
           </div>
         )}
         {filtered.map(r => (
-          <div key={r.id} className="fund-request-row clickable" onClick={() => navigate(`#fund-request/${r.id}`)}>
+          <div key={r.id} className="fund-request-row clickable" {...clickable(() => navigate(`#fund-request/${r.id}`))}>
             <div className="fund-request-info">
               <div className="fund-request-line">
                 <span className={`transaction-type ${r.kind}`}>

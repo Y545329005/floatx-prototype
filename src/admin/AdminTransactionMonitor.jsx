@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import { keyed } from '../lib';
 import { Search, X, AlertTriangle, TrendingUp, DollarSign, Activity, CheckCircle, XCircle, Clock, FileText, Eye } from 'lucide-react';
 import { transactions, formatExactAmount } from '../mock/data';
 
@@ -259,13 +260,14 @@ export default function AdminTransactionMonitor({ admin }) {
         <meta charset="UTF-8">
         <title>交易监控报告</title>
         <style>
+          /* 导出报告为独立 HTML，无法引用应用 CSS var——色值内联自 :root token（2026-10-12 对齐 HKBTC 2.0） */
           body { font-family: Arial, sans-serif; padding: 20px; }
-          h1 { color: #1a1a1a; border-bottom: 2px solid #0066cc; padding-bottom: 10px; }
-          .meta { color: #666; margin-bottom: 20px; }
+          h1 { color: #18181B; border-bottom: 2px solid #3660FF; padding-bottom: 10px; }  /* --text / --primary */
+          .meta { color: #51525C; margin-bottom: 20px; }  /* --text-secondary */
           table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
-          th { background: #f5f5f5; font-weight: bold; }
-          tr:nth-child(even) { background: #fafafa; }
+          th, td { border: 1px solid #D1D1D6; padding: 8px; text-align: left; font-size: 12px; }  /* --border */
+          th { background: #F4F4F5; font-weight: bold; }  /* --bg Zinc-100 */
+          tr:nth-child(even) { background: #FAFAFA; }  /* Zinc-50 */
         </style>
       </head>
       <body>
@@ -381,7 +383,7 @@ export default function AdminTransactionMonitor({ admin }) {
                   <div className="admin-chart-bar-wrapper">
                     <div
                       className="admin-chart-bar"
-                      style={{ height: `${(stat.amount / maxMonthlyAmount) * 100}%` }}
+                      style={{ '--fill': stat.amount / maxMonthlyAmount }}
                       title={`HKD ${formatExactAmount(stat.amount)}`}
                     />
                   </div>
@@ -402,7 +404,7 @@ export default function AdminTransactionMonitor({ admin }) {
                   <div key={f.key} className="admin-chart-dist-item">
                     <div className="admin-chart-dist-label">{f.label}</div>
                     <div className="admin-chart-dist-bar-bg">
-                      <div className="admin-chart-dist-bar" style={{ width: `${pct}%` }} />
+                      <div className="admin-chart-dist-bar" style={{ '--fill': pct / 100 }} />
                     </div>
                     <div className="admin-chart-dist-value">{count}笔 ({pct.toFixed(1)}%)</div>
                   </div>
@@ -426,7 +428,7 @@ export default function AdminTransactionMonitor({ admin }) {
               <span className="col-actions">操作</span>
             </div>
             {txRows.map(t => (
-              <div key={t.id} className="admin-table-row" onClick={() => openDrawer(t)}>
+              <div key={t.id} className="admin-table-row" {...keyed(() => openDrawer(t))}>
                 <span className="col-id">
                   {t.orderNo}
                   {dispositions[t.id] && getDispositionStatus(t.id)}

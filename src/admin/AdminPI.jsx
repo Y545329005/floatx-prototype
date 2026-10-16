@@ -283,7 +283,7 @@ export default function AdminPI({ navigate, detailId, admin }) {
                 {sel.piType === 'asset' && (
                   <div className="kyc-review-doc">
                     <div className="kyc-review-img">
-                      {imgSrc(sel.piProof) ? <img src={imgSrc(sel.piProof)} alt="资产证明" /> : <><ImageIcon size={18} /><span>无文件</span></>}
+                      {imgSrc(sel.piProof) ? <img src={imgSrc(sel.piProof)} alt="资产证明" loading="lazy" decoding="async" /> : <><ImageIcon size={18} /><span>无文件</span></>}
                       <span className="kyc-review-img-label">资产证明</span>
                     </div>
                   </div>

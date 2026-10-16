@@ -66,12 +66,12 @@ export default function AssetTrend({ navigate, goBack }) {
           <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} preserveAspectRatio="none">
             <defs>
               <linearGradient id="assetChartFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#0A1F44" stopOpacity="0.22" />
-                <stop offset="100%" stopColor="#0A1F44" stopOpacity="0.02" />
+                <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.22" />
+                <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.02" />
               </linearGradient>
             </defs>
             <polygon points={areaPts} fill="url(#assetChartFill)" />
-            <polyline points={ptsStr} fill="none" stroke="#0A1F44" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+            <polyline points={ptsStr} fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
             <circle className="asset-chart-dot" cx={pts[pts.length - 1].x} cy={pts[pts.length - 1].y} r="3.5" strokeWidth="1.5" />
           </svg>
           <div className="chart-labels">

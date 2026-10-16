@@ -1,4 +1,5 @@
-import { ArrowLeft, Shield, Smartphone, Lock, BadgeCheck, ChevronRight, Languages, Mail, Clock, XCircle, AlertCircle, Award } from 'lucide-react';
+import { ArrowLeft, Shield, Lock, BadgeCheck, ChevronRight, Languages, Clock, XCircle, AlertCircle, Award } from 'lucide-react';
+import { clickable } from '../lib';
 import { currentUser, KYC_STATUS } from '../mock/data';
 import { useLang, LANGUAGES } from '../i18n';
 
@@ -143,31 +144,15 @@ export default function Settings({ navigate, goBack }) {
       <div className="card card-secondary">
         <h3 className="card-title">{t('登录安全')}</h3>
         <div className="menu-list settings-security">
-          <div className="menu-item" onClick={() => navigate('bind-phone')}>
-            <Smartphone size={18} />
-            <span className="menu-item-label">
-              <span className="menu-item-title">{t('绑定手机')}</span>
-              <span className="menu-item-sub">{currentUser.kyc_profile && currentUser.kyc_profile.phoneVerified ? t('已验证') : t('未验证')}</span>
-            </span>
-            <ChevronRight size={16} className="text-muted" />
-          </div>
-          <div className="menu-item" onClick={() => navigate('change-email')}>
-            <Mail size={18} />
-            <span className="menu-item-label">
-              <span className="menu-item-title">{t('更换邮箱')}</span>
-              <span className="menu-item-sub">{currentUser.email}</span>
-            </span>
-            <ChevronRight size={16} className="text-muted" />
-          </div>
-          <div className="menu-item">
+          <div className="menu-item" {...clickable(() => navigate('security-center'))}>
             <Shield size={18} />
             <span className="menu-item-label">
               <span className="menu-item-title">{t('双重验证 (2FA)')}</span>
-              <span className="menu-item-sub">{sec && sec.twoFactorEnabled ? t('已开启') : t('未开启')}</span>
+              <span className="menu-item-sub">{t('管理 GA / 通行密钥 / 短信验证')}</span>
             </span>
-            <span className="settings-value">{sec && sec.twoFactorEnabled ? t('已开启') : ''}</span>
+            <ChevronRight size={16} className="text-muted" />
           </div>
-          <div className="menu-item">
+          <div className="menu-item" {...clickable(() => navigate('security-center'))}>
             <Lock size={18} />
             <span className="menu-item-label">
               <span className="menu-item-title">{t('修改登录密码')}</span>
@@ -185,7 +170,7 @@ export default function Settings({ navigate, goBack }) {
         <h3 className="card-title">{t('语言设置')}</h3>
         <div className="menu-list settings-security">
           {LANGUAGES.map(l => (
-            <div key={l.code} className={`menu-item ${lang === l.code ? 'lang-active' : ''}`} onClick={() => setLang(l.code)}>
+            <div key={l.code} className={`menu-item ${lang === l.code ? 'lang-active' : ''}`} {...clickable(() => setLang(l.code))}>
               <Languages size={18} />
               <span className="menu-item-label">
                 <span className="menu-item-title">{l.label}</span>

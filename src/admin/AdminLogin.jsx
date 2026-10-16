@@ -22,7 +22,7 @@ export default function AdminLogin({ onLogin, onBack }) {
       <div className="admin-login-card card">
         <div className="admin-login-head">
           <span className="admin-login-logo"><ShieldCheck size={22} /></span>
-          <h1>财富后台管理系统</h1>
+          <h1>HKBTC 后台管理系统</h1>
           <p className="text-muted">内部运营 · 请使用后台账号登录</p>
         </div>
 

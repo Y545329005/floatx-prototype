@@ -112,11 +112,11 @@ export default function AdminSubscriptions({ navigate, detailId, admin }) {
   const confirmText = confirm ? (() => {
     switch (confirm.action) {
       case 'allocate':
-        return { title: '标记已获配额', desc: `将标记 ${maskName(confirmSub?.investorName)} 已获配额，并冻结实际配额金额（进入签署宽限期）。默认按意向全额获配；超募时可在下方削减实际配额。确认执行？` };
+        return { title: '标记已获配额', desc: `将标记 ${maskName(confirmSub?.investorName)} 已获配额，线下打款与 SPV 签署由客户经理跟进。默认按意向全额获配；超募时可在下方削减实际配额。确认执行？` };
       case 'unallocate':
         return { title: '标记未获配额', desc: `将标记 ${maskName(confirmSub?.investorName)} 本轮未获配额（客户可关注后续轮次重新提交）。确认执行？` };
       case 'sign':
-        return { title: '线下签署登记', desc: `${maskName(confirmSub?.investorName)} 已通过线下纸质方式完成 SPV 签署。请录入签署编号与实际签署时间完成登记，确认后将从冻结金额完成扣款、生成持仓。（APP 内电子签署的客户无需登记，签署时已自动留痕）确认执行？` };
+        return { title: '线下签署登记', desc: `${maskName(confirmSub?.investorName)} 已通过线下纸质方式完成 SPV 签署。请录入签署编号与实际签署时间完成登记，确认后登记份额（资金交割以线下凭证为准）。确认执行？` };
       case 'forfeit':
         return { title: '标记未签 · 手动顺延', desc: `将解冻 ${maskName(confirmSub?.investorName)} 的冻结金额并标记未获配额，waitlist 下一位自动上位。确认执行？` };
       default: return { title: '确认操作', desc: '' };
@@ -128,7 +128,7 @@ export default function AdminSubscriptions({ navigate, detailId, admin }) {
       <div className="admin-page-header">
         <h1>申购记录</h1>
         <span className="text-muted admin-header-summary">
-          共 {projectRows.length} 个项目 · 待协调 {pendingAllocCount} 笔 · 待签 {pendingSignCount} 笔 · 冻结 HK$ {formatCurrency(frozenTotal)}
+          共 {projectRows.length} 个项目 · 待协调 {pendingAllocCount} 笔 · 待签 {pendingSignCount} 笔 · 待交割 HK$ {formatCurrency(frozenTotal)}
         </span>
       </div>
 
@@ -194,14 +194,15 @@ export default function AdminSubscriptions({ navigate, detailId, admin }) {
                 {/* 操作列统一 btn-icon + tooltip（规范 §四 4.3） */}
                 <button
                   className="btn-icon"
-                  title={r.spv ? `查看 SPV 档案 · ${r.spv.spvName}` : '进入该项目处理申购'}
+                  title={r.spv ? `关联 SPV · ${r.spv.spvName}` : '进入该项目处理申购'}
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (r.spv && navigate) navigate(`#admin/spvs/${r.spv.id}`);
-                    else if (navigate) navigate(`#admin/subscriptions/${r.project.id}`);
+                    // 2026-10-16 口径修订：SPV 管理保持摘除（签署全线下）——原「查看 SPV 档案」
+                    // 跳转 #admin/spvs 摘除，统一进入申购处理详情
+                    if (navigate) navigate(`#admin/subscriptions/${r.project.id}`);
                   }}
                 >
-                  {r.spv ? <Building2 size={16} /> : <ClipboardCheck size={16} />}
+                  <ClipboardCheck size={16} />
                 </button>
               </span>
             </div>
@@ -245,7 +246,7 @@ export default function AdminSubscriptions({ navigate, detailId, admin }) {
                         onChange={e => { setAllocQuota(e.target.value); setErrorMsg(''); }}
                       />
                       <p className="admin-form-hint">
-                        默认按意向全额获配；超募时可削减（不可高于意向金额）。冻结、签署宽限期、扣款与份额换算均按此金额执行。
+                        默认按意向全额获配；超募时可削减（不可高于意向金额）。线下交割金额与份额换算均按此金额执行。
                       </p>
                     </div>
                     {Number(allocQuota) > 0 && Number(allocQuota) < (confirmSub.amount || 0) && (
@@ -322,36 +323,29 @@ export default function AdminSubscriptions({ navigate, detailId, admin }) {
                       </strong>
                     </span>
                   </div>
-                  {/* SPV 状态（业务时序：先建档后签 SPV，签 SPV 必先有 SPV 档案） */}
+                  {/* SPV 状态（2026-10-16 口径修订：SPV 管理保持摘除，签署全线下——原「查看 SPV 档案/
+                      前往设立」跳转改为纯展示，作为后台登记进度的参考信息） */}
                   <div className="admin-sub-summary-spv">
                     {(() => {
                       const projectSpv = spvs.find(s => s.projectId === selectedProject.id);
                       if (projectSpv) {
                         return (
-                          <button
-                            className="admin-sub-spv-link"
-                            onClick={() => navigate(`#admin/spvs/${projectSpv.id}`)}
-                            title="查看 SPV 档案"
-                          >
+                          <div className="admin-sub-spv-link" title="关联 SPV（线下设立与签署，此处仅展示）">
                             <Building2 size={14} />
                             <span>SPV：{projectSpv.spvName}</span>
                             <span className={`admin-status-spv ${projectSpv.status === 'operating' ? 'ok' : projectSpv.status === 'establishing' ? 'pending' : 'closed'}`}>
                               {spvStatusLabels[projectSpv.status]}
                             </span>
-                          </button>
+                          </div>
                         );
                       }
                       if (allocatedCount > 0) {
                         return (
-                          <button
-                            className="admin-sub-spv-link pending"
-                            onClick={() => navigate(`#admin/spvs`)}
-                            title="前往 SPV 管理设立档案"
-                          >
+                          <div className="admin-sub-spv-link pending" title="SPV 在线下设立，完成后由运营在此登记">
                             <Building2 size={14} />
-                            <span>该项目尚未设立 SPV</span>
+                            <span>该项目尚未设立 SPV（线下设立）</span>
                             <span className="admin-status-spv pending">待设立</span>
-                          </button>
+                          </div>
                         );
                       }
                       return null;
@@ -469,7 +463,7 @@ export default function AdminSubscriptions({ navigate, detailId, admin }) {
                         </div>
                         {ev.signatureImage && (
                           <div className="admin-sub-evidence-signature">
-                            <img src={ev.signatureImage} alt="电子签名" />
+                            <img src={ev.signatureImage} alt="电子签名" loading="lazy" decoding="async" />
                           </div>
                         )}
                       </div>

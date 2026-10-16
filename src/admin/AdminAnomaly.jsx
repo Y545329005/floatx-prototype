@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { clickable } from '../lib';
 import { Search, X, AlertTriangle, ShieldAlert } from 'lucide-react';
 import {
   anomalyDetectionLogs,
@@ -186,7 +187,7 @@ export default function AdminAnomaly({ navigate, detailId, admin }) {
           const rm = RISK_META[r.riskLevel] || {};
           const sm = STATUS_META[r.status] || {};
           return (
-            <div key={r.id} className="admin-table-row" onClick={() => navigate(`#admin/anomaly/${r.id}`)}>
+            <div key={r.id} className="admin-table-row" {...clickable(() => navigate(`#admin/anomaly/${r.id}`))}>
               <span className="col-id">{r.id}</span>
               <span className="col-project">
                 <strong>{r.ruleName}</strong>

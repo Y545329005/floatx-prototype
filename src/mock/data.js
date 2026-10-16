@@ -87,7 +87,7 @@ export const testAccounts = {
       name: '王慧敏',
       role: '专属客户经理',
       phone: '+852 9300 1122',
-      email: 'huimin.wang@wealth-capital.com',
+      email: 'huimin.wang@hkbtc.com',
       imType: 'WhatsApp',
       im: '+852 9300 1122',
     },
@@ -174,7 +174,7 @@ export const testAccounts = {
       name: '王慧敏',
       role: '专属客户经理',
       phone: '+852 9300 1122',
-      email: 'huimin.wang@wealth-capital.com',
+      email: 'huimin.wang@hkbtc.com',
       imType: 'WhatsApp',
       im: '+852 9300 1122',
     },
@@ -244,7 +244,7 @@ export const testAccounts = {
       name: '王慧敏',
       role: '专属客户经理',
       phone: '+852 9300 1122',
-      email: 'huimin.wang@wealth-capital.com',
+      email: 'huimin.wang@hkbtc.com',
       imType: 'WhatsApp',
       im: '+852 9300 1122',
     },
@@ -663,7 +663,7 @@ export const projects = [
 export const funds = [
   {
     id: 'f1',
-    name: '财富稳健增长基金',
+    name: 'HKBTC 稳健增长基金',
     type: '债券型',
     riskLevel: '低风险',
     annualReturn: '4.5-5.5%',
@@ -674,7 +674,7 @@ export const funds = [
   },
   {
     id: 'f2',
-    name: '财富多元资产配置基金',
+    name: 'HKBTC 多元资产配置基金',
     type: '混合型',
     riskLevel: '中风险',
     annualReturn: '7-10%',
@@ -685,7 +685,7 @@ export const funds = [
   },
   {
     id: 'f3',
-    name: '财富大中华科技基金',
+    name: 'HKBTC 大中华科技基金',
     type: '股票型',
     riskLevel: '中高风险',
     annualReturn: '12-18%',
@@ -885,7 +885,7 @@ export const events = [
   {
     id: 'e7',
     projectId: null,
-    projectName: '财富',
+    projectName: "HKBTC",
     sector: '财富管理',
     coverImage: 'images/e7-market-outlook.jpg',
     type: 'online',
@@ -893,7 +893,7 @@ export const events = [
     date: '2026-09-25',
     time: '19:00-20:30',
     timezone: 'HKT',
-    description: '财富研究院年度分享：解析下半年私募市场趋势、新经济赛道估值逻辑与高净值配置建议，并预告四季度上新项目。',
+    description: 'HKBTC 研究院年度分享：解析下半年私募市场趋势、新经济赛道估值逻辑与高净值配置建议，并预告四季度上新项目。',
     agenda: [
       { time: '19:00', topic: '下半年私募市场趋势总览' },
       { time: '19:30', topic: '新经济赛道估值逻辑拆解' },
@@ -909,7 +909,7 @@ export const events = [
     joinNote: '线上会议 · 报名成功后，会议链接将在活动前 24 小时通过短信发送至您预留的手机。',
     joinUrl: 'https://us06web.zoom.us/j/84560219317',
     status: 'upcoming',
-    speaker: '财富研究院 · 首席策略师',
+    speaker: 'HKBTC 研究院 · 首席策略师',
     capacity: null,
     registered: 126,
   },
@@ -948,8 +948,7 @@ export const subscriptions = [
     history: [
       { type: 'settled', timestamp: '2026-07-18 14:22:40', actor: 'system', note: '扣款完成 · 已生成持仓 · 375 份', amount: -3000000 },
       { type: 'signed', timestamp: '2026-07-18 14:18:22', actor: 'platform', note: 'SPV 文件已签署' },
-      { type: 'frozen', timestamp: '2026-07-12 11:00:00', actor: 'system', note: '已冻结意向金额', amount: 0 },
-      { type: 'allocated', timestamp: '2026-07-12 11:00:00', actor: 'platform', note: '已获配额 · 冻结 24 小时' },
+      { type: 'allocated', timestamp: '2026-07-12 11:00:00', actor: 'platform', note: '已获配额 · 待线下打款与签署' },
       { type: 'submitted', timestamp: '2026-07-10 09:30:15', actor: 'user', note: '提交意向 · 金额 HK$ 300 万' },
     ],
   },
@@ -978,8 +977,7 @@ export const subscriptions = [
     },
     documentViewLogs: [],          // 暂无文件查看记录
     history: [
-      { type: 'frozen', timestamp: '2026-07-28 10:12:47', actor: 'system', note: '已冻结意向金额', amount: 0 },
-      { type: 'allocated', timestamp: '2026-07-28 10:12:47', actor: 'platform', note: '已获配额 · 冻结 24 小时' },
+      { type: 'allocated', timestamp: '2026-07-28 10:12:47', actor: 'platform', note: '已获配额 · 待线下打款与签署' },
       { type: 'submitted', timestamp: '2026-07-25 16:40:02', actor: 'user', note: '提交意向 · 金额 HK$ 100 万' },
     ],
   },
@@ -1209,8 +1207,7 @@ export const subscriptions = [
     },
     documentViewLogs: [],          // 暂无文件查看记录
     history: [
-      { type: 'frozen', timestamp: '2026-08-10 10:00:00', actor: 'system', note: '已冻结意向金额', amount: 0 },
-      { type: 'allocated', timestamp: '2026-08-10 10:00:00', actor: 'platform', note: '已获配额 · 冻结 24 小时' },
+      { type: 'allocated', timestamp: '2026-08-10 10:00:00', actor: 'platform', note: '已获配额 · 待线下打款与签署' },
       { type: 'submitted', timestamp: '2026-08-08 11:00:00', actor: 'user', note: '提交意向 · 金额 HK$ 200 万' },
     ],
   },
@@ -1243,8 +1240,7 @@ export const subscriptions = [
     history: [
       { type: 'settled', timestamp: '2026-07-26 09:40:00', actor: 'system', note: '扣款完成 · 已生成持仓 · 187 份', amount: -1500000 },
       { type: 'signed', timestamp: '2026-07-26 09:35:00', actor: 'platform', note: 'SPV 文件已签署' },
-      { type: 'frozen', timestamp: '2026-07-22 11:00:00', actor: 'system', note: '已冻结意向金额', amount: 0 },
-      { type: 'allocated', timestamp: '2026-07-22 11:00:00', actor: 'platform', note: '已获配额 · 冻结 24 小时' },
+      { type: 'allocated', timestamp: '2026-07-22 11:00:00', actor: 'platform', note: '已获配额 · 待线下打款与签署' },
       { type: 'submitted', timestamp: '2026-07-20 15:10:00', actor: 'user', note: '提交意向 · 金额 HK$ 150 万' },
     ],
   },
@@ -1384,8 +1380,7 @@ export const subscriptions = [
     riskAcknowledgement: { confirmed: true, confirmedAt: '2026-08-06 15:20:00', ipAddress: '10.0.0.60' },
     documentViewLogs: [],
     history: [
-      { type: 'frozen', timestamp: '2026-08-10 14:00:00', actor: 'system', note: '已冻结意向金额', amount: 0 },
-      { type: 'allocated', timestamp: '2026-08-10 14:00:00', actor: 'platform', note: '已获配额 · 冻结 24 小时' },
+      { type: 'allocated', timestamp: '2026-08-10 14:00:00', actor: 'platform', note: '已获配额 · 待线下打款与签署' },
       { type: 'submitted', timestamp: '2026-08-06 15:20:00', actor: 'user', note: '提交意向 · 金额 HK$ 300 万' },
     ],
   },
@@ -1408,8 +1403,7 @@ export const subscriptions = [
     history: [
       { type: 'settled', timestamp: '2026-07-20 10:00:00', actor: 'system', note: '扣款完成 · 已生成持仓 · 375 份', amount: -3000000 },
       { type: 'signed', timestamp: '2026-07-20 09:55:00', actor: 'platform', note: 'SPV 文件已签署' },
-      { type: 'frozen', timestamp: '2026-07-17 09:00:00', actor: 'system', note: '已冻结意向金额', amount: 0 },
-      { type: 'allocated', timestamp: '2026-07-17 09:00:00', actor: 'platform', note: '已获配额 · 冻结 24 小时' },
+      { type: 'allocated', timestamp: '2026-07-17 09:00:00', actor: 'platform', note: '已获配额 · 待线下打款与签署' },
       { type: 'submitted', timestamp: '2026-07-15 11:00:00', actor: 'user', note: '提交意向 · 金额 HK$ 300 万' },
     ],
   },
@@ -1460,8 +1454,7 @@ export const subscriptions = [
     history: [
       { type: 'settled', timestamp: '2026-07-15 10:30:00', actor: 'system', note: '扣款完成 · 已生成持仓 · 250 份', amount: -2000000 },
       { type: 'signed', timestamp: '2026-07-15 10:25:00', actor: 'platform', note: 'SPV 文件已签署' },
-      { type: 'frozen', timestamp: '2026-07-10 10:00:00', actor: 'system', note: '已冻结意向金额', amount: 0 },
-      { type: 'allocated', timestamp: '2026-07-10 10:00:00', actor: 'platform', note: '已获配额 · 冻结 24 小时' },
+      { type: 'allocated', timestamp: '2026-07-10 10:00:00', actor: 'platform', note: '已获配额 · 待线下打款与签署' },
       { type: 'submitted', timestamp: '2026-07-08 14:00:00', actor: 'user', note: '提交意向 · 金额 HK$ 200 万' },
     ],
   },
@@ -1880,7 +1873,7 @@ export const historyTypeLabels = {
   frozen: '资金冻结',
   unfrozen: '资金释放',
   signed: '签署 SPV',
-  settled: '扣款结算',
+  settled: '份额确认',
   unallocated: '未获配额',
 };
 
@@ -2215,7 +2208,7 @@ export const eventRegistrationsList = [
     registeredAt: '2026-08-10 15:20:09',
     status: 'registered',
   },
-  // ---- e7 线上市场展望（财富，2026-09-25）----
+  // ---- e7 线上市场展望（HKBTC，2026-09-25）----
   {
     id: 'reg22',
     eventId: 'e7',
@@ -2615,14 +2608,6 @@ export const notifications = [
   },
   {
     id: 'n3',
-    type: 'wallet',
-    title: '入金到账',
-    body: '您的港币入金 HK$ 5,000,000 已到账，可用资金已更新。',
-    createdAt: '2026-07-05 09:32',
-    read: true,
-  },
-  {
-    id: 'n4',
     type: 'event',
     title: '路演报名成功',
     body: '您已成功报名 SkyNet 产品演示会，请于活动前查收会议链接。',
@@ -2847,8 +2832,8 @@ export const companyPolicies = [
   {
     id: 'cp1',
     title: '公司简介',
-    subtitle: '财富资本有限公司',
-    file: 'wealth-capital-profile.pdf',
+    subtitle: 'HKBTC Limited',
+    file: 'hkbtc-profile.pdf',
     date: '2026-06-30',
     size: '1.2 MB',
   },
@@ -2897,9 +2882,9 @@ const AG = (zhCN, zhHK, en) => ({ 'zh-CN': zhCN, 'zh-HK': zhHK, en });
 // 2026-09-20 上移至 agreements 之前：pi-declaration 协议条目直接引用，避免 const TDZ
 // KYC「04 协议签署」步骤声明（零售版全文；PI 为独立审核流，其附加段见 PI_CONFIRM_EXTRA_TEXT）
 export const KYC_DECLARATION_TEXT = AG(
-  '本人特此无条件且不可撤销地声明，本人已阅读并同意遵守财富资本提供的隐私信息收集声明（PICS）、条款与条件、风险披露声明及其他所要求的相关文件。本人在此表格中提供的所有资料均真实、准确且完整。如财富资本提出要求，本人将提供财富资本可能需要验证上述资料的进一步补充信息或文件。如未能提供所需信息或文件，本人明白财富资本可能无法提供相关服务。本人同意并授权财富资本不时向本人索取进一步资料或文件，并承诺在资料发生变更时及时通知财富资本（或其继承人或受让人）。本人认可并同意，财富资本可进行反洗钱审查或为了解客户所需，将本人资料用于财富资本提供的产品和/或服务。',
-  '本人特此無條件且不可撤銷地聲明，本人已閱讀並同意遵守財富資本提供的隱私信息收集聲明（PICS）、條款與條件、風險披露聲明及其他所要求的相關文件。本人在此表格中提供的所有資料均真實、準確且完整。如財富資本提出要求，本人將提供財富資本可能需要驗證上述資料的進一步補充信息或文件。如未能提供所需信息或文件，本人明白財富資本可能無法提供相關服務。本人同意並授權財富資本不時向本人索取進一步資料或文件，並承諾在資料發生變更時及時通知財富資本（或其繼承人或受讓人）。本人認可並同意，財富資本可進行反洗錢審查或為了解客戶所需，將本人資料用於財富資本提供的產品和/或服務。',
-  'I hereby unconditionally and irrevocably declare that I have read and agree to abide by the Personal Information Collection Statement (PICS), Terms and Conditions, Risk Disclosure Statement and other required documents provided by Wealth Capital. All information provided by me in this form is true, accurate, and complete. Upon request by Wealth Capital, I will provide any additional information or documents that may be required to verify the aforementioned details. I understand that failure to provide the requested information or documents may result in Wealth Capital being unable to offer the relevant services. I agree and authorize Wealth Capital to request further information or documents from me from time to time and commit to promptly notifying Wealth Capital (or its successors or assigns) of any changes to the provided information. I acknowledge and agree that Wealth Capital may use my information for anti-money laundering checks or Know Your Customer (KYC) purposes as required for the provision of its products and/or services.'
+  '本人特此无条件且不可撤销地声明，本人已阅读并同意遵守HKBTC提供的隐私信息收集声明（PICS）、条款与条件、风险披露声明及其他所要求的相关文件。本人在此表格中提供的所有资料均真实、准确且完整。如HKBTC提出要求，本人将提供HKBTC可能需要验证上述资料的进一步补充信息或文件。如未能提供所需信息或文件，本人明白HKBTC可能无法提供相关服务。本人同意并授权HKBTC不时向本人索取进一步资料或文件，并承诺在资料发生变更时及时通知HKBTC（或其继承人或受让人）。本人认可并同意，HKBTC可进行反洗钱审查或为了解客户所需，将本人资料用于HKBTC提供的产品和/或服务。',
+  '本人特此無條件且不可撤銷地聲明，本人已閱讀並同意遵守HKBTC提供的隱私信息收集聲明（PICS）、條款與條件、風險披露聲明及其他所要求的相關文件。本人在此表格中提供的所有資料均真實、準確且完整。如HKBTC提出要求，本人將提供HKBTC可能需要驗證上述資料的進一步補充信息或文件。如未能提供所需信息或文件，本人明白HKBTC可能無法提供相關服務。本人同意並授權HKBTC不時向本人索取進一步資料或文件，並承諾在資料發生變更時及時通知HKBTC（或其繼承人或受讓人）。本人認可並同意，HKBTC可進行反洗錢審查或為了解客戶所需，將本人資料用於HKBTC提供的產品和/或服務。',
+  'I hereby unconditionally and irrevocably declare that I have read and agree to abide by the Personal Information Collection Statement (PICS), Terms and Conditions, Risk Disclosure Statement and other required documents provided by HKBTC. All information provided by me in this form is true, accurate, and complete. Upon request by HKBTC, I will provide any additional information or documents that may be required to verify the aforementioned details. I understand that failure to provide the requested information or documents may result in HKBTC being unable to offer the relevant services. I agree and authorize HKBTC to request further information or documents from me from time to time and commit to promptly notifying HKBTC (or its successors or assigns) of any changes to the provided information. I acknowledge and agree that HKBTC may use my information for anti-money laundering checks or Know Your Customer (KYC) purposes as required for the provision of its products and/or services.'
 );
 
 // PI 认证附加确认段（在 KYC 声明基础上追加，对齐实践案例"个人专业投资者"版本）
@@ -2917,9 +2902,9 @@ export const agreements = [
     title: AG('用户协议', '用戶協議', 'Terms of Use'),
     sections: [
       { h: AG('一、服务范围', '一、服務範圍', '1. Scope of Services'), p: AG(
-        '财富资本有限公司（下称"本平台"）依据香港证监会第 9 类牌照（资产管理），为专业投资者提供私募股权投资机会的信息展示、意向提交、申购协助及投后信息服务。本平台不提供公开募集、公开推介或任何形式的投资保证。',
-        '財富資本有限公司（下稱"本平台"）依據香港證監會第 9 類牌照（資產管理），為專業投資者提供私募股權投資機會的信息展示、意向提交、申購協助及投後信息服務。本平台不提供公開募集、公開推介或任何形式的投資保證。',
-        'Wealth Capital Limited (the "Platform"), licensed under SFC Type 9 (Asset Management), provides professional investors with information on private equity opportunities, subscription assistance and post-investment services. The Platform does not offer public offerings or any form of investment guarantee.'
+        'HKBTC Limited（下称"本平台"）依据香港证监会第 9 类牌照（资产管理），为专业投资者提供私募股权投资机会的信息展示、意向提交、申购协助及投后信息服务。本平台不提供公开募集、公开推介或任何形式的投资保证。',
+        'HKBTC Limited（下稱"本平台"）依據香港證監會第 9 類牌照（資產管理），為專業投資者提供私募股權投資機會的信息展示、意向提交、申購協助及投後信息服務。本平台不提供公開募集、公開推介或任何形式的投資保證。',
+        'HKBTC Limited (the "Platform"), licensed under SFC Type 9 (Asset Management), provides professional investors with information on private equity opportunities, subscription assistance and post-investment services. The Platform does not offer public offerings or any form of investment guarantee.'
       ) },
       { h: AG('二、账户与安全', '二、賬戶與安全', '2. Account and Security'), p: AG(
         '您应妥善保管账户凭证，并对账户内的全部操作负责。平台有权对异常操作执行风控措施（含冻结、限制出入金），并依法履行反洗钱审查义务。',
@@ -3062,9 +3047,9 @@ export function getAgreementById(id) {
 
 // 电子签名法律提示（对齐实践案例 §3.7）
 export const E_SIGNATURE_NOTICE_TEXT = AG(
-  '通过在上方提供本人的电子签名，本人确认并同意此电子签名构成本人手写签名的合法且有约束力的表示。该等电子签署的文件将具有有效性和法律效力，与用笔和纸签署的实体合同具有同等有效性。在电子签署前，本人已经仔细审阅了财富资本的有关条款和条件，并且完全理解并同意受其所载之权利和义务的约束。',
-  '通過在上方提供本人的電子簽名，本人確認並同意此電子簽名構成本人手寫簽名的合法且有約束力的表示。該等電子簽署的文件將具有有效性和法律效力，與用筆和紙簽署的實體合同具有同等有效性。在電子簽署前，本人已經仔細審閱了財富資本的有關條款和條件，並且完全理解並同意受其所載之權利和義務的約束。',
-  'By providing my electronic signature above, I confirm and agree that such electronic signature constitutes a legal and binding representation of my handwritten signature. Electronically signed documents shall be valid and enforceable to the same effect as a contract executed by pen and paper. Before electronically signing, I have carefully reviewed the relevant terms and conditions of Wealth Capital and fully understand and agree to be bound by the rights and obligations contained therein.'
+  '通过在上方提供本人的电子签名，本人确认并同意此电子签名构成本人手写签名的合法且有约束力的表示。该等电子签署的文件将具有有效性和法律效力，与用笔和纸签署的实体合同具有同等有效性。在电子签署前，本人已经仔细审阅了HKBTC的有关条款和条件，并且完全理解并同意受其所载之权利和义务的约束。',
+  '通過在上方提供本人的電子簽名，本人確認並同意此電子簽名構成本人手寫簽名的合法且有約束力的表示。該等電子簽署的文件將具有有效性和法律效力，與用筆和紙簽署的實體合同具有同等有效性。在電子簽署前，本人已經仔細審閱了HKBTC的有關條款和條件，並且完全理解並同意受其所載之權利和義務的約束。',
+  'By providing my electronic signature above, I confirm and agree that such electronic signature constitutes a legal and binding representation of my handwritten signature. Electronically signed documents shall be valid and enforceable to the same effect as a contract executed by pen and paper. Before electronically signing, I have carefully reviewed the relevant terms and conditions of HKBTC and fully understand and agree to be bound by the rights and obligations contained therein.'
 );
 
 // SPV 协议全文模板（APP 内签署页展示用；按 SPV 档案与申购单插值，接后端由发行方协议文本替换）
@@ -3079,7 +3064,7 @@ export function buildSpvAgreementSections(spv, sub, lang = 'zh-CN') {
       `This agreement is entered into between ${spv?.spvName || 'the SPV'} (legal entity: ${spv?.legalEntity || '—'}, registration no.: ${spv?.registrationNo || '—'}, the "SPV") and ${name} (the "Investor") in respect of the private equity investment in ${spv?.projectName || 'the target project'}.`
     ) },
     { h: L('二、认缴与出资', '二、認繳與出資', '2. Subscription and Payment'), p: L(
-      `投资人认缴出资额为 ${amount}，于签署本协议后由冻结意向金额完成实际出资。SPV 按出资额签发等额份额并登记投资人名册。`,
+      `投资人认缴出资额为 ${amount}，于签署本协议后完成实际出资（资金交割以线下凭证为准）。SPV 按出资额签发等额份额并登记投资人名册。`,
       `投資人認繳出資額為 ${amount}，於簽署本協議後由凍結意向金額完成實際出資。SPV 按出資額簽發等額份額並登記投資人名冊。`,
       `The Investor subscribes ${amount}, which shall be settled from the frozen intent amount upon execution. The SPV shall issue equivalent interests and register the Investor in its register of holders.`
     ) },
@@ -3143,7 +3128,15 @@ export function recordAgreement({ type, agreementIds = [], signatureImage = null
   return rec;
 }
 
-// ---- 条款版本与重新同意（对齐实践案例"条款更新 → 弹窗通知 → 重新勾选"） ----
+// 开户协议签署判定（2026-10-15 · UC 对齐）：基金业务协议（三件套）后置到 KYC 通过后首次进 APP
+// 的开户闸门签署——注册=集团 UC 身份层开户，不再承载业务协议。判定按 userId 查 agreementRecords，
+// 快照持久化（Storage.save），签一次终身有效；条款更新重同意走 termsState/TermsUpdateGate 既有机制。
+export function hasAgreedOnboarding(userId = null) {
+  const uid = userId || currentUser.id;
+  return agreementRecords.some(r => r.userId === uid && r.type === 'onboarding');
+}
+
+// 条款版本与重新同意（对齐实践案例"条款更新 → 弹窗通知 → 重新勾选"） ----
 export const termsState = {
   currentVersion: 'v1.3',      // 当前生效条款版本
   agreedVersion: 'v1.3',       // 当前用户已同意的版本（< currentVersion 时登录后弹重同意弹窗；默认一致不弹，后台「发布新版」后触发——2026-09-15 拍板）
@@ -3222,6 +3215,7 @@ export function depositFunds({ currency, amount, method }) {
 }
 
 export function withdrawFunds({ currency, amount, method }) {
+  if (getFreezeState().frozen) return false; // INV-5 凡动必冻：安全冻结期内阻断出金（数据层兜底）
   const key = currency.toLowerCase();
   const w = wallet[key];
   if (!w || !amount || amount <= 0) return false;
@@ -3251,9 +3245,9 @@ export function withdrawFunds({ currency, amount, method }) {
 
 // ========== 平台品牌信息（后台系统配置页可维护；About 页/登录页消费，2026-08-14 配置页清单化时纳入） ==========
 export const platformBrand = {
-  nameZh: '财富资本',              // 简称（登录页品牌区）
-  nameFullZh: '财富资本有限公司',   // 全称（About 品牌卡 / 版权）
-  nameEn: 'Wealth Capital Limited',
+  nameZh: 'HKBTC',              // 简称（登录页品牌区）
+  nameFullZh: 'HKBTC Limited',   // 全称（About 品牌卡 / 版权）
+  nameEn: 'HKBTC Limited',
   licenseNo: 'BLA1234',            // 牌照编号（SFC CE No.）
 };
 
@@ -3274,7 +3268,7 @@ export function updatePlatformBrand(fields, operator) {
 // ========== 商务合作联系方式（对外公开，游客可见） ==========
 export const businessContact = {
   intro: '如有意向将项目提交至本平台路演、寻求机构合作或其他业务合作，请通过以下方式联系我们。',
-  email: 'partners@wealth-capital.hk',
+  email: 'partners@hkbtc.hk',
   phone: '+852 3568 8888',
   whatsapp: '+852 3568 8888',
 };
@@ -3282,8 +3276,8 @@ export const businessContact = {
 // ========== 平台资金账户（后台系统配置页可维护；充值入金/提现出金的账户载体，接后端为必要配置） ==========
 // 2026-08-19 老板确认：未来业务银行统一使用星展银行（DBS）
 export const platformAccounts = {
-  deposit: { bank: '星展银行（香港）', accountName: 'Wealth Capital Limited', accountNo: '016-456-000-1234', currency: 'HKD' },
-  withdraw: { bank: '星展银行（香港）', accountName: 'Wealth Capital Limited', accountNo: '016-456-000-1234', currency: 'HKD' },
+  deposit: { bank: '星展银行（香港）', accountName: 'HKBTC Limited', accountNo: '016-456-000-1234', currency: 'HKD' },
+  withdraw: { bank: '星展银行（香港）', accountName: 'HKBTC Limited', accountNo: '016-456-000-1234', currency: 'HKD' },
 };
 
 // EDDA 授权状态（2026-08-19 老板确认：香港本土 eDDA 快捷入金通道）
@@ -3336,16 +3330,16 @@ export const sectors = ['量子计算', '生物医药', '机器人', '新能源'
 // 后台登录账号与角色（简版；页面/菜单命名"后台账号"——本集合含全部角色，非仅"管理员"super）
 // role: super 超级管理员 / ops 运营 / compliance 合规 / service 客服 / finance 财务 / advisor 专属顾问
 export let adminUsers = [
-  { id: 'ad1', username: 'admin', password: 'admin123', name: '系统管理员', role: 'super', roleLabel: '超级管理员', email: 'admin@wealth-capital.hk', phone: '+852 3000 0001' },
-  { id: 'ad2', username: 'ops', password: 'ops123', name: '王运营', role: 'ops', roleLabel: '运营专员', email: 'ops@wealth-capital.hk', phone: '+852 3000 0002' },
-  { id: 'ad3', username: 'compliance', password: 'compliance123', name: '李合规', role: 'compliance', roleLabel: '合规专员', email: 'compliance@wealth-capital.hk', phone: '+852 3000 0003' },
-  { id: 'ad4', username: 'service', password: 'service123', name: '张客服', role: 'service', roleLabel: '客服专员', email: 'service@wealth-capital.hk', phone: '+852 3000 0004' },
+  { id: 'ad1', username: 'admin', password: 'admin123', name: '系统管理员', role: 'super', roleLabel: '超级管理员', email: 'admin@hkbtc.hk', phone: '+852 3000 0001' },
+  { id: 'ad2', username: 'ops', password: 'ops123', name: '王运营', role: 'ops', roleLabel: '运营专员', email: 'ops@hkbtc.hk', phone: '+852 3000 0002' },
+  { id: 'ad3', username: 'compliance', password: 'compliance123', name: '李合规', role: 'compliance', roleLabel: '合规专员', email: 'compliance@hkbtc.hk', phone: '+852 3000 0003' },
+  { id: 'ad4', username: 'service', password: 'service123', name: '张客服', role: 'service', roleLabel: '客服专员', email: 'service@hkbtc.hk', phone: '+852 3000 0004' },
   // 财务专员（2026-08-24 上线沟通简报待拍板项落地·方案 A）：只关注资金进出（充值/提现/换汇审核 + 流水对账）
-  { id: 'ad8', username: 'fin1', password: 'fin123456', name: '王财务', role: 'finance', roleLabel: '财务专员', email: 'finance@wealth-capital.hk', phone: '+852 3000 0008' },
+  { id: 'ad8', username: 'fin1', password: 'fin123456', name: '王财务', role: 'finance', roleLabel: '财务专员', email: 'finance@hkbtc.hk', phone: '+852 3000 0008' },
   // 专属顾问账号（线索池核心使用者：客户分散给各顾问跟进，各自只看自己的客户；managerId 关联 accountManagers）
-  { id: 'ad5', username: 'advisor1', password: 'advisor123', name: '王慧敏', role: 'advisor', roleLabel: '专属顾问', managerId: 'am1', email: 'wanghuimin@wealth-capital.hk', phone: '+852 3000 0005' },
-  { id: 'ad6', username: 'advisor2', password: 'advisor123', name: '陈志豪', role: 'advisor', roleLabel: '专属顾问', managerId: 'am2', email: 'chenzhihao@wealth-capital.hk', phone: '+852 3000 0006' },
-  { id: 'ad7', username: 'advisor3', password: 'advisor123', name: '李雅婷', role: 'advisor', roleLabel: '专属顾问', managerId: 'am3', email: 'liyating@wealth-capital.hk', phone: '+852 3000 0007' },
+  { id: 'ad5', username: 'advisor1', password: 'advisor123', name: '王慧敏', role: 'advisor', roleLabel: '专属顾问', managerId: 'am1', email: 'wanghuimin@hkbtc.hk', phone: '+852 3000 0005' },
+  { id: 'ad6', username: 'advisor2', password: 'advisor123', name: '陈志豪', role: 'advisor', roleLabel: '专属顾问', managerId: 'am2', email: 'chenzhihao@hkbtc.hk', phone: '+852 3000 0006' },
+  { id: 'ad7', username: 'advisor3', password: 'advisor123', name: '李雅婷', role: 'advisor', roleLabel: '专属顾问', managerId: 'am3', email: 'liyating@hkbtc.hk', phone: '+852 3000 0007' },
 ];
 
 // ===== 角色权限管理（2026-08-24 · 预置角色可配置）=====
@@ -3374,17 +3368,10 @@ export const ADMIN_MENUS = [
   { key: 'events', label: '路演管理', hash: '#admin/events', group: '路演' },
   { key: 'registrations', label: '报名管理', hash: '#admin/registrations', group: '路演' },
   { key: 'projects', label: '项目管理', hash: '#admin/projects', group: '项目' },
+  // 2026-10-16 口径修订：申购记录恢复（线上收集投资意向，后台审核 + 标记线下成交）；
+  // 资金/交易监控/投后 10 模块保持摘除（funds/transactions/transaction-monitor/large-tx/
+  // anomaly/str/edd/spvs/dividends/exits）——资金承载与 SPV 签署全线下。页面文件与 mock 保留。
   { key: 'subscriptions', label: '申购记录', hash: '#admin/subscriptions', group: '项目' },
-  { key: 'funds', label: '资金审核', hash: '#admin/funds', group: '资金' },
-  { key: 'transactions', label: '资金流水', hash: '#admin/transactions', group: '资金' },
-  { key: 'transaction-monitor', label: '交易监控', hash: '#admin/transaction-monitor', group: '合规' },
-  { key: 'large-tx', label: '大额交易审查', hash: '#admin/large-tx', group: '合规' },
-  { key: 'anomaly', label: '异常检测日志', hash: '#admin/anomaly', group: '合规' },
-  { key: 'str', label: 'STR 可疑交易', hash: '#admin/str', group: '合规' },
-  { key: 'edd', label: 'EDD 增强尽调', hash: '#admin/edd', group: '合规' },
-  { key: 'spvs', label: 'SPV 管理', hash: '#admin/spvs', group: '投后' },
-  { key: 'dividends', label: '投后分红', hash: '#admin/dividends', group: '投后' },
-  { key: 'exits', label: '退出分配', hash: '#admin/exits', group: '投后' },
   { key: 'broadcast', label: '通知触达', hash: '#admin/broadcast', group: '运营' },
   { key: 'messages', label: '客户消息', hash: '#admin/messages', group: '运营' }, // 客服工作台（2026-08-24）：响应式 1v1 咨询，与广播（主动触达）相邻成对；service+super
   { key: 'audit', label: '审计日志', hash: '#admin/audit', group: '系统' },
@@ -3398,15 +3385,15 @@ export const ADMIN_MENUS = [
 // audit：审计日志（合规审计角色；super 系统负责）
 export const roleMenuKeys = {
   // 超级管理员 = 最高权限：全部菜单（2026-08-15 用户确认"所有页面所有功能都有"——my-clients 原 advisor 专属，补上）；锁定不可编辑
-  super: ['kyc', 'pi', 'users', 'my-clients', 'projects', 'events', 'registrations', 'subscriptions', 'funds', 'transactions', 'transaction-monitor', 'large-tx', 'anomaly', 'str', 'edd', 'spvs', 'dividends', 'exits', 'broadcast', 'messages', 'audit', 'roles', 'admins', 'config'],
-  ops: ['projects', 'events', 'registrations', 'subscriptions', 'funds', 'transactions', 'spvs', 'dividends', 'exits', 'broadcast', 'users', 'config'],
-  // 合规角色（2026-08-26 更新）：KYC审核 + PI认证 + 用户管理 + 申购记录 + 资金流水 + 交易监控 + SPV管理 + 审计日志
-  // 2026-08-27 T12：新增大额交易审查/异常检测/STR/EDD 合规工作台
-  compliance: ['kyc', 'pi', 'users', 'subscriptions', 'funds', 'transactions', 'transaction-monitor', 'large-tx', 'anomaly', 'str', 'edd', 'spvs', 'audit'],
-  service: ['subscriptions', 'users', 'broadcast', 'messages'], // 客服：看申购 + 客户账户 + 通知触达（主动）+ 客户消息（响应式 1v1 咨询，2026-08-24）；不跟进线索（线索是顾问的职责）
-  // 财务专员（2026-08-24）：只关注资金进出——充值/提现/换汇审核 + 流水对账（上线沟通简报待拍板项·方案 A；
-  // 退出打款若归财务，在角色权限页勾上 exits 即可——这正是本功能的用途）
-  finance: ['funds', 'transactions'],
+  // 2026-10-16 口径修订：申购记录恢复（意向收集链），其余资金/交易/投后 10 key 保持摘除
+  super: ['kyc', 'pi', 'users', 'my-clients', 'projects', 'events', 'registrations', 'subscriptions', 'broadcast', 'messages', 'audit', 'roles', 'admins', 'config'],
+  ops: ['projects', 'events', 'registrations', 'subscriptions', 'broadcast', 'users', 'config'],
+  // 合规角色：KYC审核 + PI认证 + 用户管理 + 申购记录 + 审计日志（交易监控类 7 key 随资金流下线摘除）
+  compliance: ['kyc', 'pi', 'users', 'subscriptions', 'audit'],
+  // 客服：看申购 + 客户账户 + 通知触达（主动）+ 客户消息（响应式 1v1 咨询，2026-08-24）；不跟进线索（线索是顾问的职责）
+  service: ['subscriptions', 'users', 'broadcast', 'messages'],
+  // 财务专员：资金审核/流水两模块已随首期裁剪下线——菜单置空，仅保留角色定义（登录落欢迎首页）
+  finance: [],
   // 专属顾问：「我的客户」单一工作视图（2026-08-15 方案 A——顾问工作单元 = 客户而非模块，
   // 名下客户列表 + 跨模块任务聚合 + 客户详情；替代报名管理，线索跟进并入我的客户「跟进」）
   advisor: ['my-clients'],
@@ -3423,9 +3410,11 @@ function getRoleMenuOverrides() {
 }
 
 // 读角色生效菜单（唯一入口；未知角色 fallback super 全量——沿用原 roleMenuKeys[role] || super 语义）
+// 2026-10-16：返回前过滤 VALID_MENU_KEYS——localStorage 旧快照可能存有已下线模块的 key
+//（首期裁剪前勾选过），不过滤会让 App.jsx 路由守卫放行死路由
 export function getRoleMenuKeys(role) {
   const overrides = getRoleMenuOverrides();
-  return overrides[role] || roleMenuKeys[role] || roleMenuKeys.super;
+  return (overrides[role] || roleMenuKeys[role] || roleMenuKeys.super).filter(k => VALID_MENU_KEYS.has(k));
 }
 
 const VALID_MENU_KEYS = new Set(ADMIN_MENUS.map(m => m.key));
@@ -3832,7 +3821,7 @@ export function resetAdminPassword(id, newPassword, operator = '') {
 export const kycSubmissions = [
   {
     id: 'k1',
-    userId: 'u3',
+    userId: 'u8',
     name: '陈美琪',
     email: 'chen.meiqi@example.com',
     phone: '+852 6111 2233',
@@ -5096,6 +5085,7 @@ export const withdrawRequests = [
 
 // 提现申请（出金）：用户申请 → 后台审核 → 打款（2026-08-19 白名单前置：收款卡须已过白名单验证）
 export function submitWithdrawRequest({ currency, amount, method, cardId, bank, cardNo }) {
+  if (getFreezeState().frozen) return false; // INV-5 凡动必冻：安全冻结期内阻断出金（数据层兜底）
   const key = currency.toLowerCase();
   const w = wallet[key];
   if (!w || !amount || amount <= 0) return false;
@@ -5375,6 +5365,7 @@ export const verificationRequests = [
 ];
 
 export function submitCardVerification({ cardId, currency, amount, remark }) {
+  if (getFreezeState().frozen) return false; // INV-5 凡动必冻：冻结期内阻断出金账户（白名单）变更
   const card = bankCards.find(c => c.id === cardId);
   if (!card || card.whitelistStatus === 'verified') return false;
   if (!amount || amount <= 0) return false;
@@ -5820,7 +5811,7 @@ export const signingEvidence = [
     evidenceUrl: 'https://example.com/spv/p4-agreement.html',
     signedRef: 'SIGN-20260730-0001', signedAt: '2026-07-30 14:00:00',
     signerName: '张三', signerEmail: 'demo@example.com',
-    signatureImage: makeSignatureSvg('张三'), source: 'app',
+    signatureImage: makeSignatureSvg('张三'), source: 'offline',
     status: 'signed', confirmedBy: '系统', confirmedAt: '2026-07-30 14:00:05',
   },
   {
@@ -5830,7 +5821,7 @@ export const signingEvidence = [
     evidenceUrl: 'https://example.com/spv/p3-agreement.html',
     signedRef: 'SIGN-20260802-0015', signedAt: '2026-08-02 11:30:00',
     signerName: '吴世昌', signerEmail: 'wu@example.com',
-    signatureImage: makeSignatureSvg('吴世昌'), source: 'app',
+    signatureImage: makeSignatureSvg('吴世昌'), source: 'offline',
     status: 'signed', confirmedBy: '系统', confirmedAt: '2026-08-02 11:30:08',
   },
   {
@@ -6121,7 +6112,7 @@ export function promoteWaitlist(project, operator = '') {
   const next = waiting[0];
   if (!next) return false;
   next.allocatedAt = formatNow();
-  next.freezeDeadline = formatDeadlineFrom(Date.now() + FREEZE_GRACE_MS);
+  // 2026-10-16 口径修订：线下交割——原 freezeDeadline/freezeFunds 钱包冻结摘除
   next.frozenAmount = next.amount || 0;
   next.status = 'allocated';
   addHistory(next, {
@@ -6129,8 +6120,7 @@ export function promoteWaitlist(project, operator = '') {
     actor: 'platform',
     note: '已获配额 · 由 waitlist 上位（运营协调）',
   });
-  freezeFunds(next.id);
-  logAudit({ operator: operator || '系统', category: 'subscription', action: 'promote', target: project.title, targetId: project.id, note: `waitlist 上位：${next.investorName}（${next.investorNo}）获配额冻结，待运营确认签署` });
+  logAudit({ operator: operator || '系统', category: 'subscription', action: 'promote', target: project.title, targetId: project.id, note: `waitlist 上位：${next.investorName}（${next.investorNo}）获配额 · 线下打款与签署跟进中` });
   return true;
 }
 
@@ -6256,7 +6246,7 @@ export function resetSubscriptionForDemo(subscriptionId) {
   const project = projects.find(p => p.id === sub.projectId);
   sub.status = 'allocated';
   sub.allocatedAt = formatNow();
-  sub.freezeDeadline = formatDeadlineFrom(Date.now() + FREEZE_GRACE_MS);
+  // 2026-10-16 口径修订：线下交割——freezeDeadline（24h 签署宽限期）随冻结语义摘除
   sub.frozenAmount = sub.amount || 0;
   sub.spvDocumentUrl = project?.spvDocumentUrl || 'https://example.com/spv/p3-agreement.html';
   // 清除 signed 相关历史，保留 allocated 历史
@@ -6299,24 +6289,20 @@ export function markSubscriptionAllocated(subscriptionId, operator = '', allocat
     if (n > requested) return { ok: false, error: `实际配额（HK$ ${formatCurrency(n)}）不可高于意向金额（HK$ ${formatCurrency(requested)}）；超募请削减配额或顺延` };
     quota = n;
   }
-  // 2026-08-17 修复：冻结前校验余额——获配即冻结，余额不足先补足资金再获配，避免"获配即注定签署失败"
-  if (quota > 0 && wallet.hkd.balance < quota) {
-    return { ok: false, error: `该投资人可用余额（HK$ ${formatCurrency(wallet.hkd.balance)}）不足以冻结 HK$ ${formatCurrency(quota)}，请先引导补足资金` };
-  }
   const cutPct = requested > 0 ? Math.round((1 - quota / requested) * 100) : 0;
   const quotaNote = cutPct > 0 ? `（意向 HK$ ${formatCurrency(requested)} · 削额 ${cutPct}%）` : '';
   const allocatedAt = formatNow();
   sub.allocatedAt = allocatedAt;
-  sub.freezeDeadline = formatDeadlineFrom(Date.now() + FREEZE_GRACE_MS); // 宽限期到期 = 获配额 + 30s（mock）
+  // 2026-10-16 口径修订：资金交割全线下——原「冻结前余额校验 + freezeFunds 钱包冻结 + 24h 宽限期」
+  // 摘除（钱包账本已下线），frozenAmount 保留为「实际配额金额」字段供确认弹窗与统计复用
   sub.frozenAmount = quota;
   sub.status = 'allocated';
   addHistory(sub, {
     type: 'allocated',
     actor: 'platform',
-    note: `已获配额${quotaNote} · 冻结 24 小时`,
+    note: `已获配额${quotaNote} · 待线下打款与签署`,
   });
-  freezeFunds(sub.id);
-  logAudit({ operator: operator || '系统', category: 'subscription', action: 'allocate', target: sub.projectName, targetId: sub.id, note: `标记已获配额${quotaNote}（冻结 HK$ ${formatCurrency(quota)}）` });
+  logAudit({ operator: operator || '系统', category: 'subscription', action: 'allocate', target: sub.projectName, targetId: sub.id, note: `标记已获配额${quotaNote}（线下交割 HK$ ${formatCurrency(quota)}）` });
   Storage.save();
   return true;
 }
@@ -6328,28 +6314,20 @@ export function markSubscriptionAllocated(subscriptionId, operator = '', allocat
 export function markSubscriptionSigned(subscriptionId, note, operator = '', evidence = null) {
   const sub = subscriptions.find(s => s.id === subscriptionId);
   if (!sub || sub.status !== 'allocated') return { ok: false, error: '状态不符，仅已获配额的意向可签 SPV' };
-  // T8 amlFlags 拦截（PRD 04 §3.8）：扣款（签署）前二级/三级大额标记未解除 → 拒绝
+  // T8 amlFlags 拦截（PRD 04 §3.8）：二级/三级大额标记未解除 → 拒绝签署登记
   const blocking = getBlockingAmlFlags(sub);
   if (blocking.length > 0) {
-    return { ok: false, error: `大额交易审查未完成，无法进行扣款（${blocking.map(f => f.level === 'three' ? '三级' : '二级').join('、')}标记待解除）` };
+    return { ok: false, error: `大额交易审查未完成，无法完成签署登记（${blocking.map(f => f.level === 'three' ? '三级' : '二级').join('、')}标记待解除）` };
   }
   const spv = spvs.find(s => s.projectId === sub.projectId);
   if (!spv) {
-    return { ok: false, error: `该项目（${sub.projectName}）尚未设立 SPV，请先在 SPV 管理设立档案后再签 SPV` };
+    return { ok: false, error: `该项目（${sub.projectName}）尚未设立 SPV，请先登记 SPV 信息后再确认签署` };
   }
   if (!evidence?.signedRef || !evidence?.signedAt) {
     return { ok: false, error: '请填写签署编号与签署时间（合规留痕必需）' };
   }
-  // 2026-08-17 修复：扣款前预检余额——不足直接拒绝（须在录证据之前，否则下次确认会被幂等校验卡死）
   const frozenAmt = sub.frozenAmount || sub.amount || 0;
-  if (frozenAmt > 0 && wallet.hkd.balance < frozenAmt) {
-    return { ok: false, error: `扣款失败：可用余额不足（HK$ ${formatCurrency(wallet.hkd.balance)} < HK$ ${formatCurrency(frozenAmt)}）。请先引导补足资金或顺延该笔申购` };
-  }
-  if (freezeTimers[sub.id]) {
-    clearTimeout(freezeTimers[sub.id]);
-    delete freezeTimers[sub.id];
-  }
-  // 写签署证据台账（幂等：同 subId 已有证据 → 拒绝，防重复扣款）
+  // 写签署证据台账（幂等：同 subId 已有证据 → 拒绝，防重复登记）
   const evRes = recordSigningEvidence({
     spvId: spv.id,
     subId: sub.id,
@@ -6369,16 +6347,16 @@ export function markSubscriptionSigned(subscriptionId, note, operator = '', evid
     actor: 'platform',
     note: note || `SPV 文件已签署（${srcLabel} ${String(evidence.signedRef).trim()} · ${normSignedAt}）`,
   });
-  const settled = settleFunds(sub.id);
-  if (!settled) {
-    // 防御性回滚（settleFunds 内部仍可能失败）：恢复到 allocated + 删除刚录的证据
-    sub.status = 'allocated';
-    sub.history = sub.history.filter(h => h.type !== 'signed');
-    const evIdx = signingEvidence.findIndex(e => e.subId === sub.id);
-    if (evIdx >= 0) signingEvidence.splice(evIdx, 1);
-    return { ok: false, error: '扣款失败，请检查账户余额后重试' };
-  }
-  logAudit({ operator: operator || '系统', category: 'subscription', action: 'sign', target: sub.projectName, targetId: sub.id, note: `确认签署完成（${srcLabel}）· 扣款并生成持仓` });
+  // 2026-10-16 口径修订：资金交割与 SPV 签署全线下——原 settleFunds（钱包扣款 + 交易记录 + 持仓生成）
+  // 不再调用，份额换算保留（mock 8000 HKD/份，与原口径一致），交割以线下凭证为准
+  sub.shares = Math.floor(frozenAmt / 8000);
+  addHistory(sub, {
+    type: 'settled',
+    actor: 'system',
+    note: `份额已确认 · ${sub.shares} 份（资金交割线下完成）`,
+    amount: 0,
+  });
+  logAudit({ operator: operator || '系统', category: 'subscription', action: 'sign', target: sub.projectName, targetId: sub.id, note: `确认签署登记完成（${srcLabel}）· 份额已确认` });
   Storage.save();
   return { ok: true };
 }
@@ -6424,14 +6402,14 @@ export function markSubscriptionUnallocated(subscriptionId, note, operator = '')
   return true;
 }
 
-// allocated → unallocated（手动顺延）：客户确认不签 / 运营协调未成 → 立即解冻 + waitlist 上位（不等 24h 定时器）
+// allocated → unallocated（手动顺延）：客户确认不签 / 运营协调未成 → waitlist 上位
+// （2026-10-16 口径修订：线下交割——原「立即解冻」随钱包冻结摘除）
 export function markSubscriptionForfeit(subscriptionId, reason, operator = '') {
   const sub = subscriptions.find(s => s.id === subscriptionId);
   if (!sub || sub.status !== 'allocated') return false;
   const project = projects.find(p => p.id === sub.projectId);
-  unfreezeFunds(sub.id, reason || '运营确认未签署 · 手动顺延');
   if (project) promoteWaitlist(project, operator);
-  logAudit({ operator: operator || '系统', category: 'subscription', action: 'forfeit', target: sub.projectName, targetId: sub.id, note: `手动顺延（解冻 + waitlist 上位）：${reason || '运营确认未签署'}` });
+  logAudit({ operator: operator || '系统', category: 'subscription', action: 'forfeit', target: sub.projectName, targetId: sub.id, note: `手动顺延（waitlist 上位）：${reason || '运营确认未签署'}` });
   Storage.save();
   return true;
 }
@@ -6531,6 +6509,30 @@ export function restoreKycStatus(userId) {
   return last.status;
 }
 
+// 新注册用户骨架：模块加载时从 pending 账号（"未认证用户"模板）冻结一份空白快照。
+// 冻结的意义：此后运行时的表单填写 / 2FA 绑定 / 卡绑定只会改 testAccounts.pending 本体，
+// 不会污染这个模板（模板若跟着变，新注册用户会继承上一个演示账号填过的资料）。
+const BLANK_USER_SKELETON = JSON.parse(JSON.stringify(testAccounts.pending));
+
+// 造一个"刚注册、尚未认证"的用户（2026-10-12）：
+// 注册成功后必须用它切 data.js 单例——否则合规门控读到的仍是模块默认账号 u1（已通过），
+// 注册后 navigate('kyc-start') 会被「已通过 + 访问 KYC 流程」那段门控打回资产页：
+// 新用户既进不了 KYC 流程，又看到上一个账号的余额（2026-10-12 实测复现）。
+export function createFreshUser({ id, email, name } = {}) {
+  const base = JSON.parse(JSON.stringify(BLANK_USER_SKELETON));
+  base.id = id || `user-${Date.now()}`;
+  base.email = email || '';
+  base.name = name || (email ? String(email).split('@')[0] : '新用户');
+  base.phone = '';                                   // 新用户未绑手机（不继承模板里的演示号）
+  base.account = { hkd: 0, usd: 0, frozen: 0 };      // 新用户零余额
+  base.kyc_status = KYC_STATUS.NOT_STARTED;
+  base.kyc_profile.phone = '';
+  base.kyc_profile.phoneVerified = false;
+  base.kyc_profile.submittedAt = null;
+  base.kyc_profile.rejectReason = null;
+  return base;
+}
+
 export function rejectKyc(reason) {
   currentUser.kyc_status = KYC_STATUS.REJECTED;
   currentUser.kyc_profile.rejectReason = reason;
@@ -6571,7 +6573,92 @@ export function verifyEmailCode(code) {
 
 // ========== 密码重置验证码（2026-08-26 新增） ==========
 // 密码重置专用验证码存储（独立于 KYC 验证码）
-const resetCodeStore = {}; // { account: { code, expiresAt, attempts, lockedAt, verified } }
+// ---- 验证码服务（2026-10-15 UC §5.6 对齐：6位/5min有效/60s重发/5次错锁15min/24h上限10条）----
+// 注册与密码重置共用同一口径、独立存储（验证码不跨场景通用，防一码多用）
+const resetCodeStore = {};   // { account: { code, expiresAt, attempts, lockedAt, verified, lastSentAt, dayStart, dayCount } }
+const registerCodeStore = {}; // 结构同上，注册场景（UC §9.2：验证通过才建号 C14）
+
+const DAILY_CODE_LIMIT = 10; // UC §5.6：24h 发送上限 10 条
+
+// 24h 滑动窗口计数：跨天重置；达上限拒绝下发（UC-00102 口径）
+function codeDailyLimit(entry, now) {
+  if (!entry) return true;
+  if (now - (entry.dayStart || 0) > 24 * 3600 * 1000) { entry.dayStart = now; entry.dayCount = 0; return true; }
+  return (entry.dayCount || 0) < DAILY_CODE_LIMIT;
+}
+
+function sendSceneCode(store, account) {
+  const key = account.trim().toLowerCase();
+  const now = Date.now();
+  const existing = store[key];
+  // 速率限制：60s 重发间隔
+  if (existing && existing.lastSentAt && (now - existing.lastSentAt) < 60000) {
+    return { success: false, message: '请60秒后重试' };
+  }
+  // 24h 发送上限
+  if (!codeDailyLimit(existing, now)) {
+    return { success: false, message: '今日验证码发送次数已达上限，请24小时后重试' };
+  }
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  store[key] = {
+    ...existing,
+    code,
+    expiresAt: now + 5 * 60 * 1000, // 5分钟有效期
+    attempts: 0,
+    lockedAt: null,
+    verified: false,
+    lastSentAt: now,
+    dayStart: existing?.dayStart || now,
+    dayCount: (existing?.dayCount || 0) + 1,
+  };
+  // Mock 模式直接返回验证码（正式环境不返回，仅通过短信/邮件发送）
+  return { success: true, message: '验证码已发送', code };
+}
+
+function verifySceneCode(store, account, code) {
+  const key = account.trim().toLowerCase();
+  const now = Date.now();
+  const entry = store[key];
+
+  // 验证码不存在
+  if (!entry) {
+    return { success: false, message: '请先获取验证码' };
+  }
+
+  // 检查是否锁定（5次失败锁15分钟）
+  if (entry.lockedAt && (now - entry.lockedAt) < 15 * 60 * 1000) {
+    const remainMin = Math.ceil((15 * 60 * 1000 - (now - entry.lockedAt)) / 60000);
+    return { success: false, message: `已锁定，请${remainMin}分钟后重试` };
+  }
+
+  // 解锁（如果锁定期已过）
+  if (entry.lockedAt && (now - entry.lockedAt) >= 15 * 60 * 1000) {
+    entry.lockedAt = null;
+    entry.attempts = 0;
+  }
+
+  // 检查是否过期
+  if (now > entry.expiresAt) {
+    return { success: false, message: '验证码已过期，请重新获取' };
+  }
+
+  // 检查尝试次数
+  if (entry.attempts >= 5) {
+    entry.lockedAt = now;
+    return { success: false, message: '尝试次数过多，已锁定15分钟' };
+  }
+
+  // 验证码比对
+  if (entry.code !== code.trim()) {
+    entry.attempts += 1;
+    const remain = 5 - entry.attempts;
+    return { success: false, message: `验证码错误，还剩${remain}次机会` };
+  }
+
+  // 验证成功
+  entry.verified = true;
+  return { success: true, message: '验证成功' };
+}
 
 /**
  * 判断输入是邮箱还是手机号
@@ -6594,32 +6681,9 @@ export function isEmailOrPhone(value) {
  * @returns {{ success: boolean, message: string, code?: string }}
  */
 export function sendResetCode(account) {
-  const key = account.trim().toLowerCase();
-  const now = Date.now();
-  
-  // 速率限制：1分钟内只能发送1次
-  const existing = resetCodeStore[key];
-  if (existing && existing.lastSentAt && (now - existing.lastSentAt) < 60000) {
-    return { success: false, message: '请60秒后重试' };
-  }
-  
-  // 生成6位随机验证码
-  const code = String(Math.floor(100000 + Math.random() * 900000));
-  const expiresAt = now + 5 * 60 * 1000; // 5分钟有效期
-  
-  resetCodeStore[key] = {
-    code,
-    expiresAt,
-    attempts: 0,
-    lockedAt: null,
-    verified: false,
-    lastSentAt: now,
-  };
-  
-  console.log(`[Mock] 密码重置验证码 → ${account}: ${code}`);
-  
-  // Mock 模式直接返回验证码（正式环境不返回，仅通过短信/邮件发送）
-  return { success: true, message: '验证码已发送', code };
+  const result = sendSceneCode(resetCodeStore, account);
+  if (result.success) console.log(`[Mock] 密码重置验证码 → ${account}: ${result.code}`);
+  return result;
 }
 
 /**
@@ -6629,50 +6693,7 @@ export function sendResetCode(account) {
  * @returns {{ success: boolean, message: string }}
  */
 export function verifyResetCode(account, code) {
-  const key = account.trim().toLowerCase();
-  const now = Date.now();
-  const store = resetCodeStore[key];
-  
-  // 验证码不存在
-  if (!store) {
-    return { success: false, message: '请先获取验证码' };
-  }
-  
-  // 检查是否锁定（5次失败锁15分钟）
-  if (store.lockedAt && (now - store.lockedAt) < 15 * 60 * 1000) {
-    const remainMin = Math.ceil((15 * 60 * 1000 - (now - store.lockedAt)) / 60000);
-    return { success: false, message: `已锁定，请${remainMin}分钟后重试` };
-  }
-  
-  // 解锁（如果锁定期已过）
-  if (store.lockedAt && (now - store.lockedAt) >= 15 * 60 * 1000) {
-    store.lockedAt = null;
-    store.attempts = 0;
-  }
-  
-  // 检查是否过期
-  if (now > store.expiresAt) {
-    return { success: false, message: '验证码已过期，请重新获取' };
-  }
-  
-  // 检查尝试次数
-  if (store.attempts >= 5) {
-    store.lockedAt = now;
-    return { success: false, message: '尝试次数过多，已锁定15分钟' };
-  }
-  
-  // 验证码比对
-  if (store.code !== code.trim()) {
-    store.attempts += 1;
-    const remain = 5 - store.attempts;
-    return { success: false, message: `验证码错误，还剩${remain}次机会` };
-  }
-  
-  // 验证成功
-  store.verified = true;
-  console.log(`[Mock] 密码重置验证码验证成功: ${account}`);
-  
-  return { success: true, message: '验证成功' };
+  return verifySceneCode(resetCodeStore, account, code);
 }
 
 /**
@@ -6684,25 +6705,74 @@ export function verifyResetCode(account, code) {
 export function resetPassword(account, newPassword) {
   const key = account.trim().toLowerCase();
   const store = resetCodeStore[key];
-  
+
   // 检查验证码是否已验证
   if (!store || !store.verified) {
     return { success: false, message: '请先完成验证码验证' };
   }
-  
-  // 密码强度校验（至少6位）
-  if (!newPassword || newPassword.length < 6) {
-    return { success: false, message: '密码至少需要6位' };
+
+  // 密码策略（2026-10-15 与注册口径统一：至少8位，含字母和数字）
+  if (!newPassword || newPassword.length < 8) {
+    return { success: false, message: '密码至少需要 8 个字符' };
   }
-  
+  if (!/(?=.*[A-Za-z])(?=.*\d)/.test(newPassword)) {
+    return { success: false, message: '密码需同时包含字母和数字' };
+  }
+
   // Mock 模式：更新 testAccounts 中的密码（实际环境更新数据库）
   // 这里仅模拟成功，不实际存储密码
   console.log(`[Mock] 密码重置成功: ${account}`);
-  
+
   // 清理验证码存储
   delete resetCodeStore[key];
-  
+
   return { success: true, message: '密码重置成功' };
+}
+
+// ========== 注册验证码与账号判重（2026-10-15 UC §9.2 对齐）==========
+// UC 口径：验证码校验通过才建号（C14 验证未通过不建号、无残留）；集团维度全局判重（R3 命中仅提示「已注册」）
+
+/**
+ * 发送注册验证码（与密码重置同口径：6位/5min/60s重发/24h上限10条）
+ */
+export function sendRegisterCode(account) {
+  const result = sendSceneCode(registerCodeStore, account);
+  if (result.success) console.log(`[Mock] 注册验证码 → ${account}: ${result.code}`);
+  return result;
+}
+
+/**
+ * 校验注册验证码（与密码重置同口径：5次错锁15分钟）
+ */
+export function verifyRegisterCode(account, code) {
+  return verifySceneCode(registerCodeStore, account, code);
+}
+
+// ---- mock 注册账号表：支持「注册成功 → 去登录」全链路演示 ----
+// 仅内存（刷新即失，与验证码 store 同级演示语义）；真实环境由 UC 建号，登录走 UC 登录接口
+const registeredAccounts = {}; // { account(小写): password }
+export function registerAccount(account, password) {
+  registeredAccounts[account.trim().toLowerCase()] = password;
+}
+export function findRegisteredAccount(account) {
+  const key = account.trim().toLowerCase();
+  return key in registeredAccounts ? { account: key, password: registeredAccounts[key] } : null;
+}
+
+/**
+ * 全局判重（UC §9.2/R3）：集团维度唯一；本轮已注册的 mock 账号同样计为已注册。
+ * 手机号归一化：去空白/连字符、去 +852/852 前缀后比较 8 位本地号。
+ */
+export function isAccountRegistered(account) {
+  if (findRegisteredAccount(account)) return true;
+  const isEmailLike = account.includes('@');
+  const norm = account.trim().toLowerCase().replace(/[\s-]/g, '');
+  const bare = (v) => String(v || '').toLowerCase().replace(/[\s-]/g, '').replace(/^(\+?852)?/, '');
+  return Object.values(testAccounts).some(u =>
+    isEmailLike
+      ? String(u.email || '').toLowerCase() === norm
+      : bare(u.phone) === bare(norm)
+  );
 }
 
 export function advanceKycStep(step) {
@@ -6712,6 +6782,483 @@ export function advanceKycStep(step) {
     currentUser.kyc_status = KYC_STATUS.IN_PROGRESS;
   }
   return true;
+}
+
+// ========== 2FA 双重验证体系（2026-09-22 · 复刻交易所 2FA 实践规格） ==========
+// 规格：验证矩阵（INV-9 KYC 分层）+ 降级链（INV-3）+ 验证会话 S-1~S-5 + 凡动必冻（INV-5）
+// 原型语义：真 TOTP（RFC6238）+ mock SMS/Passkey/人脸；规则状态机严格按规格，后端可直接照抄。
+// 演示约定（非规格）：快捷登录 __loginWithTestAccount 豁免 2FA；SMS 演示码固定 123456。
+
+// ---- 演示环境开关（紧急登录动态冻结：默认常用环境 24h；置 true 模拟异地 48h）----
+export let __emergencyEnvUnfamiliar = false;
+export function setEmergencyEnvUnfamiliar(v) { __emergencyEnvUnfamiliar = !!v; }
+
+// ---- 用户安全档案（按 userId 覆盖层：store 持久化 > testAccounts 预设）----
+const SECURITY_STORE_KEY = 'zhifu-user-security';
+let userSecurityStore = {}; // { [userId]: { ga, passkeys, freezeUntil, history, gaResetLog, emergency, lockedUntil } }
+
+function loadSecurityStore() {
+  try {
+    const raw = localStorage.getItem(SECURITY_STORE_KEY);
+    if (raw) userSecurityStore = JSON.parse(raw) || {};
+  } catch (e) { userSecurityStore = {}; }
+}
+function persistSecurityStore() {
+  try { localStorage.setItem(SECURITY_STORE_KEY, JSON.stringify(userSecurityStore)); } catch (e) { /* 隐私模式静默 */ }
+}
+
+// 演示种子（内存预设，store 未覆盖时生效）：u1 有 GA+Passkey（KYC1 强因子态）、u3 仅手机（KYC1 降级态）、u2 无强因子（走注册手机号验证码兜底）
+const SECURITY_SEEDS = {
+  u1: {
+    ga: { bound: true, secret: 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP', boundAt: '2026-06-01 10:00:00' },
+    passkeys: [{ id: 'pk-seed-1', name: 'iPhone 15 Pro', createdAt: '2026-06-01 10:05:00' }],
+  },
+  u3: { ga: { bound: false, secret: null, boundAt: null }, passkeys: [] },
+  u2: { ga: { bound: false, secret: null, boundAt: null }, passkeys: [] },
+};
+
+export function getUserSecurity(userId) {
+  const uid = userId || currentUser.id;
+  const seed = SECURITY_SEEDS[uid] || {};
+  const base = {
+    ga: { bound: false, secret: null, boundAt: null },
+    passkeys: [],
+    freezeUntil: null,
+    freezeReason: null,
+    history: [],
+    gaResetLog: [],
+    emergency: null,       // 紧急登录中间态：{ stage: 'rebind-required', at, dynamicHours }
+    lockedUntil: null,     // 验证失败 5 次锁安全中心修改权限 2h
+  };
+  const stored = userSecurityStore[uid] || {};
+  const merged = {
+    ...base,
+    ...seed,
+    ...stored,
+    ga: { ...base.ga, ...(seed.ga || {}), ...(stored.ga || {}) },
+    passkeys: stored.passkeys || seed.passkeys || [],
+    history: stored.history || seed.history || [],
+    gaResetLog: stored.gaResetLog || [],
+  };
+  return merged;
+}
+
+function saveUserSecurity(userId, sec) {
+  const uid = userId || currentUser.id;
+  userSecurityStore[uid] = sec;
+  persistSecurityStore();
+  Storage.save(); // 双通道同步：主快照也含 userSecurityStore（L7378），漏写会被旧快照在刷新时回滚
+}
+
+// 是否有任一 2FA 因子（决定登录是否强制 2FA / 资金流是否放行）
+export function hasAnyFactor(userId) {
+  const sec = getUserSecurity(userId);
+  const phoneOk = !!(currentUser && currentUser.phone);
+  return sec.ga.bound || sec.passkeys.length > 0 || phoneOk;
+}
+
+// ---- KYC 分层（INV-9）：KYC1 = 已完成 KYC；KYC0 降级仅 SMS ----
+export function isKyc1(userId) {
+  const u = userId ? null : currentUser;
+  return !!u && u.kyc_status === KYC_STATUS.APPROVED;
+}
+
+// ---- TOTP（RFC 6238，30s 窗口，±1 容错；WebCrypto 主路径 + 纯 JS HMAC-SHA1 fallback）----
+const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+
+export function generateTotpSecret() {
+  const bytes = new Uint8Array(20);
+  (window.crypto || {}).getRandomValues ? window.crypto.getRandomValues(bytes) : bytes.forEach((_, i) => { bytes[i] = Math.floor(Math.random() * 256); });
+  let bits = 0, value = 0, out = '';
+  for (const b of bytes) {
+    value = (value << 8) | b; bits += 8;
+    while (bits >= 5) { out += BASE32_ALPHABET[(value >>> (bits - 5)) & 31]; bits -= 5; }
+  }
+  if (bits > 0) out += BASE32_ALPHABET[(value << (5 - bits)) & 31];
+  return out;
+}
+
+function base32Decode(str) {
+  let bits = 0, value = 0; const out = [];
+  for (const c of str.toUpperCase().replace(/=+$/, '')) {
+    const idx = BASE32_ALPHABET.indexOf(c);
+    if (idx === -1) continue;
+    value = (value << 5) | idx; bits += 5;
+    if (bits >= 8) { out.push((value >>> (bits - 8)) & 255); bits -= 8; }
+  }
+  return new Uint8Array(out);
+}
+
+// 纯 JS HMAC-SHA1（secure context 之外的兜底：file:// / http 内网 IP 下 crypto.subtle 不可用）
+function hmacSha1Js(keyBytes, msgBytes) {
+  const block = 64;
+  let key = keyBytes.length > block ? sha1Js(keyBytes) : keyBytes;
+  const padded = new Uint8Array(block);
+  padded.set(key);
+  const oKey = new Uint8Array(block), iKey = new Uint8Array(block);
+  for (let i = 0; i < block; i++) { oKey[i] = padded[i] ^ 0x5c; iKey[i] = padded[i] ^ 0x36; }
+  return sha1Js(concatBytes(oKey, sha1Js(concatBytes(iKey, msgBytes))));
+}
+function concatBytes(a, b) { const out = new Uint8Array(a.length + b.length); out.set(a); out.set(b, a.length); return out; }
+function sha1Js(bytes) {
+  const ml = bytes.length;
+  const withPad = new Uint8Array((((ml + 8) >> 6) + 1) << 6);
+  withPad.set(bytes); withPad[ml] = 0x80;
+  const dv = new DataView(withPad.buffer);
+  dv.setUint32(withPad.length - 4, ml << 3, false);
+  let h0 = 0x67452301, h1 = 0xEFCDAB89, h2 = 0x98BADCFE, h3 = 0x10325476, h4 = 0xC3D2E1F0;
+  const w = new Uint32Array(80);
+  for (let off = 0; off < withPad.length; off += 64) {
+    for (let i = 0; i < 16; i++) w[i] = dv.getUint32(off + i * 4, false);
+    for (let i = 16; i < 80; i++) w[i] = ((w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16]) << 1) | ((w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16]) >>> 31);
+    let a = h0, b = h1, c = h2, d = h3, e = h4;
+    for (let i = 0; i < 80; i++) {
+      const f = i < 20 ? (b & c) | (~b & d) : i < 40 ? b ^ c ^ d : i < 60 ? (b & c) | (b & d) | (c & d) : b ^ c ^ d;
+      const k = i < 20 ? 0x5A827999 : i < 40 ? 0x6ED9EBA1 : i < 60 ? 0x8F1BBCDC : 0xCA62C1D6;
+      const tmp = (((a << 5) | (a >>> 27)) + f + e + k + w[i]) >>> 0;
+      e = d; d = c; c = (b << 30) | (b >>> 2); b = a; a = tmp;
+    }
+    h0 = (h0 + a) >>> 0; h1 = (h1 + b) >>> 0; h2 = (h2 + c) >>> 0; h3 = (h3 + d) >>> 0; h4 = (h4 + e) >>> 0;
+  }
+  const out = new Uint8Array(20), odv = new DataView(out.buffer);
+  [h0, h1, h2, h3, h4].forEach((h, i) => odv.setUint32(i * 4, h, false));
+  return out;
+}
+
+async function totpAt(secretBase32, counter) {
+  const key = base32Decode(secretBase32);
+  const msg = new Uint8Array(8);
+  new DataView(msg.buffer).setUint32(4, counter, false);
+  let hmac;
+  if (window.crypto && crypto.subtle) {
+    try {
+      const keyObj = await crypto.subtle.importKey('raw', key, { name: 'HMAC', hash: 'SHA-1' }, false, ['sign']);
+      hmac = new Uint8Array(await crypto.subtle.sign('HMAC', keyObj, msg));
+    } catch (e) { hmac = hmacSha1Js(key, msg); }
+  } else {
+    hmac = hmacSha1Js(key, msg);
+  }
+  const offset = hmac[hmac.length - 1] & 0xf;
+  const bin = ((hmac[offset] & 0x7f) << 24) | (hmac[offset + 1] << 16) | (hmac[offset + 2] << 8) | hmac[offset + 3];
+  return String(bin % 1000000).padStart(6, '0');
+}
+
+// 演示便利模式（2026-09-23）：GA 验证码降级为固定演示码，与 SMS 对齐——演示免装 App/免算码。
+// 切回真 TOTP：置 false 即恢复 RFC 6238 真码校验（totp.mjs 工具可算码），代码零改动。
+export const GA_DEMO_MODE = true; // UI 按此切换 GA 提示文案
+const DEMO_OTP = '123456'; // 全因子统一演示码（SMS/GA），与 UI 提示文案对齐 // 全因子统一演示码（SMS/GA），与 UI 提示文案对齐
+
+export async function verifyTotp(secretBase32, code) {
+  if (!secretBase32 || !/^\d{6}$/.test(code || '')) return false;
+  if (GA_DEMO_MODE) return code === DEMO_OTP;
+  const counter = Math.floor(Date.now() / 30000);
+  for (const drift of [0, -1, 1]) { // ±1 窗口容错（时钟偏移）
+    if ((await totpAt(secretBase32, counter + drift)) === code) return true;
+  }
+  return false;
+}
+
+// ---- 验证会话引擎（S-1~S-5：10min 会话 / 一次性 token / 只接受最新）----
+const VERIFY_SESSION_TTL = 10 * 60 * 1000;
+const AUTH_TOKEN_TTL = 10 * 60 * 1000;
+const verifySessions = new Map(); // id -> session
+let latestToken = null; // S-3：只接受最新 token
+
+export function createVerifySession(itemTypes) {
+  const sec = getUserSecurity();
+  if (sec.lockedUntil && new Date(String(sec.lockedUntil).replace(' ', 'T')) > new Date()) {
+    return { ok: false, locked: true, until: sec.lockedUntil };
+  }
+  const items = itemTypes.map(type => ({ type, done: false }));
+  const session = {
+    id: `vs${Date.now()}${Math.floor(Math.random() * 1000)}`,
+    items,
+    createdAt: Date.now(),
+    expiresAt: Date.now() + VERIFY_SESSION_TTL,
+    failures: 0,
+  };
+  verifySessions.set(session.id, session);
+  return { ok: true, sessionId: session.id, items, expiresAt: session.expiresAt };
+}
+
+function getSession(id) {
+  const s = verifySessions.get(id);
+  if (!s) return null;
+  if (Date.now() > s.expiresAt) { verifySessions.delete(id); return null; } // S-2 超时全作废
+  return s;
+}
+
+// 校验单项。passkey/face 由组件动画完成后调 completeVerifyItem 免 code 标记。
+export async function submitVerifyItem(sessionId, type, code) {
+  const s = getSession(sessionId);
+  if (!s) return { ok: false, reason: 'expired' };
+  const sec = getUserSecurity();
+  if (sec.lockedUntil && new Date(String(sec.lockedUntil).replace(' ', 'T')) > new Date()) {
+    return { ok: false, reason: 'locked', until: sec.lockedUntil };
+  }
+  const item = s.items.find(i => i.type === type && !i.done);
+  if (!item) return { ok: false, reason: 'invalid_item' };
+
+  let passed = false;
+  if (type === 'sms' || type === 'email') {
+    passed = code === DEMO_OTP; // 演示码（全因子统一，见 verifyTotp 上方常量）
+  } else if (type === 'ga') {
+    passed = sec.ga.bound ? await verifyTotp(sec.ga.secret, code) : false;
+  }
+  if (passed) {
+    item.done = true;
+    return { ok: true, progress: `${s.items.filter(i => i.done).length}/${s.items.length}`, allDone: s.items.every(i => i.done) };
+  }
+  s.failures += 1;
+  if (s.failures >= 5) { // X-5：失败 5 次锁安全中心修改权限 2h（冲突 #1 裁决值）
+    sec.lockedUntil = new Date(Date.now() + 2 * 3600 * 1000).toISOString();
+    saveUserSecurity(currentUser.id, sec);
+    return { ok: false, reason: 'too_many_failures' };
+  }
+  return { ok: false, reason: type === 'ga' ? 'ga_code_error' : 'sms_code_error', remain: 5 - s.failures };
+}
+
+// passkey / 人脸模拟因子：动画完成即通过（原型语义，无真实生物特征）
+export function completeVerifyItem(sessionId, type) {
+  const s = getSession(sessionId);
+  if (!s) return { ok: false, reason: 'expired' };
+  const item = s.items.find(i => i.type === type && !i.done);
+  if (!item) return { ok: false, reason: 'invalid_item' };
+  item.done = true;
+  return { ok: true, progress: `${s.items.filter(i => i.done).length}/${s.items.length}`, allDone: s.items.every(i => i.done) };
+}
+
+// S-1：最终放行逐一重校验 + 发放一次性授权 token（S-3/S-4/S-5）
+export function finalizeVerifySession(sessionId) {
+  const s = verifySessions.get(sessionId);
+  if (!s) return { ok: false, reason: 'expired' };
+  if (Date.now() > s.expiresAt) { verifySessions.delete(sessionId); return { ok: false, reason: 'expired' }; }
+  if (!s.items.every(i => i.done)) return { ok: false, reason: 'incomplete' }; // 防流程逃逸
+  verifySessions.delete(sessionId);
+  latestToken = {
+    token: `at${Date.now()}${Math.floor(Math.random() * 100000)}`,
+    expiresAt: Date.now() + AUTH_TOKEN_TTL,
+    used: false,
+  };
+  return { ok: true, token: latestToken.token };
+}
+
+export function consumeAuthToken(token) {
+  if (!latestToken || latestToken.token !== token) return { ok: false, reason: 'stale' }; // S-3 只接受最新
+  if (latestToken.used) return { ok: false, reason: 'used' }; // S-5 一次性
+  if (Date.now() > latestToken.expiresAt) return { ok: false, reason: 'expired' }; // S-4
+  latestToken.used = true;
+  return { ok: true };
+}
+
+// ---- 登录选路矩阵（2026-10-15 UC §9.4 对齐：注册通道即强制因子，不存在免验证登录）----
+// GA/Passkey 延迟绑定（可后补），但登录验证不可免：无强因子时走注册手机号/邮箱验证码兜底；
+// KYC1 叠加人脸（INV-9）。空数组 = 无任何可达通道（异常态），LoginPage 阻断引导绑定。
+export function resolveLoginFactors() {
+  const sec = getUserSecurity();
+  const kyc1 = isKyc1();
+  const items = [];
+  if (sec.passkeys.length > 0) {
+    items.push('passkey'); // 第一级：Passkey 生物识别
+  } else if (sec.ga.bound) {
+    items.push('ga');
+  }
+  if (items.length === 0) {
+    if (currentUser.phone) {
+      items.push('sms');
+      if (kyc1) items.push('face');
+    } else if (currentUser.email) {
+      items.push('email');
+    }
+  }
+  return items;
+}
+
+// ---- 敏感操作验证矩阵（规格 5.2）----
+export function resolveSensitiveFactors() {
+  const sec = getUserSecurity();
+  const phoneOk = !!currentUser.phone;
+  if (sec.passkeys.length > 0) return ['passkey']; // Passkey 单验，豁免其余
+  if (sec.ga.bound) return ['ga', 'sms'];          // GA + SMS 双验
+  if (phoneOk) return isKyc1() ? ['sms', 'face'] : ['sms']; // 降级
+  return []; // 无因子 → 调用方阻断并引导绑手机
+}
+
+// ---- 凡动必冻（INV-5 / X-1）：KYC1 冻结出金 24h，KYC0 不实际生效 ----
+export function triggerSecurityFreeze(hours, reason) {
+  if (!isKyc1()) return false; // KYC0 无交易权限，冻结不实际生效（规格 5.3.2 风险决策）
+  const sec = getUserSecurity();
+  const until = new Date(Date.now() + hours * 3600 * 1000).toISOString();
+  sec.freezeUntil = until;
+  sec.freezeReason = reason || '安全项变更';
+  saveUserSecurity(currentUser.id, sec);
+  return true;
+}
+
+export function getFreezeState() {
+  const sec = getUserSecurity();
+  if (!sec.freezeUntil) return { frozen: false };
+  const until = new Date(String(sec.freezeUntil).replace(' ', 'T'));
+  if (until <= new Date()) return { frozen: false };
+  return { frozen: true, until: sec.freezeUntil, reason: sec.freezeReason, hoursLeft: Math.ceil((until - new Date()) / 3600000) };
+}
+
+// ---- 安全历史 / 警报 / 审计（X-2/X-4/X-7）----
+export function pushSecurityHistory(type, method) {
+  const sec = getUserSecurity();
+  sec.history.unshift({ time: formatNow(), type, device: navigator.userAgent.includes('iPhone') ? 'iPhone' : 'Desktop', ip: 'demo-ip', method });
+  sec.history = sec.history.slice(0, 20);
+  saveUserSecurity(currentUser.id, sec);
+  logAudit({ operator: currentUser.name || '投资人', category: 'security', action: type, target: currentUser.name, targetId: currentUser.id, note: `${type}（验证方式：${method}）` });
+}
+
+// 安全项变更全渠道警报：站内通知双条（模拟「原手机+原邮箱」双通道）+ console 邮件
+export function pushSecurityAlert(what) {
+  pushNotification({ type: 'security', title: `安全提醒：${what}`, body: `您的${what}。若非本人操作，请立即冻结账户并联系客服。` });
+  console.log(`[Mock 邮件→${currentUser.email}] 安全警报：您的${what}。若非本人操作，请立即冻结账户。`);
+}
+
+// ---- GA 生命周期（规格 5.3.2）----
+// secret 由调用方先展示给用户（GaSetupFlow），GA 出码验证通过后原样落库——保证「验证的密钥 = 绑定的密钥」
+export function bindGa(secret) {
+  const sec = getUserSecurity();
+  if (sec.ga.bound) return { ok: false, message: 'GA 已绑定' };
+  if (!secret) secret = generateTotpSecret();
+  sec.ga = { bound: true, secret, boundAt: formatNow() };
+  saveUserSecurity(currentUser.id, sec);
+  pushSecurityHistory('绑定 GA', '安全验证');
+  pushSecurityAlert('GA 绑定成功');
+  triggerSecurityFreeze(24, '绑定安全项');
+  return { ok: true, secret: sec.ga.secret };
+}
+
+export function unbindGaCurrent() { // 紧急登录强制解绑用
+  const sec = getUserSecurity();
+  const had = sec.ga.bound;
+  sec.ga = { bound: false, secret: null, boundAt: null };
+  saveUserSecurity(currentUser.id, sec);
+  return had;
+}
+
+export function requestGaReset() { // 频控：24h ≤ 2 次
+  const sec = getUserSecurity();
+  const dayAgo = Date.now() - 24 * 3600 * 1000;
+  const recent = sec.gaResetLog.filter(t => new Date(t).getTime() > dayAgo);
+  if (recent.length >= 2) return { ok: false, message: '重置次数已达上限（24小时内最多 2 次）' };
+  sec.gaResetLog = [...recent, new Date().toISOString()];
+  saveUserSecurity(currentUser.id, sec);
+  return { ok: true };
+}
+
+export function confirmGaReset(secret) { // 新密钥通过验证瞬间生效，旧密钥作废
+  const sec = getUserSecurity();
+  if (!secret) secret = generateTotpSecret();
+  sec.ga = { bound: true, secret, boundAt: formatNow() };
+  saveUserSecurity(currentUser.id, sec);
+  pushSecurityHistory('重置 GA', '降级链验证');
+  pushSecurityAlert('GA 已重置');
+  triggerSecurityFreeze(24, '重置安全项');
+  return { ok: true, secret: sec.ga.secret };
+}
+
+// ---- Passkey 生命周期（规格 5.3.1：上限 3 / 自动命名 / 删除需验证 + 冻结 + 通知）----
+export function listPasskeys() { return getUserSecurity().passkeys; }
+
+export function addPasskey(deviceName) {
+  // UC §4.4（V1.2 定稿）：绑定 Passkey 前置 KYC 核验，未通过拒绝——数据层兜底（入口 UI 另有 gate，防越权）
+  if (!isKyc1()) return { ok: false, message: '完成身份认证后可绑定通行密钥' };
+  const sec = getUserSecurity();
+  if (sec.passkeys.length >= 3) return { ok: false, message: '通行密钥数量已达上限 (3/3)。请删除旧密钥后重试。' };
+  const name = deviceName || (navigator.userAgent.includes('iPhone') ? 'iPhone' : navigator.userAgent.includes('Mac') ? 'Mac' : '此设备');
+  const pk = { id: `pk${Date.now()}`, name, createdAt: formatNow() };
+  sec.passkeys.push(pk);
+  saveUserSecurity(currentUser.id, sec);
+  pushSecurityHistory('添加通行密钥', '安全验证');
+  pushSecurityAlert(`新通行密钥（${name}）已添加`);
+  console.log(`[Mock 邮件→${currentUser.email}] 您的账户新增了一枚通行密钥：${name}`);
+  return { ok: true, passkey: pk };
+}
+
+export function removePasskey(pkId) {
+  const sec = getUserSecurity();
+  const pk = sec.passkeys.find(p => p.id === pkId);
+  if (!pk) return { ok: false, message: '通行密钥不存在' };
+  sec.passkeys = sec.passkeys.filter(p => p.id !== pkId);
+  saveUserSecurity(currentUser.id, sec);
+  pushSecurityHistory('删除通行密钥', '安全验证');
+  pushSecurityAlert(`通行密钥（${pk.name}）已删除`);
+  triggerSecurityFreeze(24, '删除安全项');
+  const lastOne = sec.passkeys.length === 0 && !sec.ga.bound;
+  return { ok: true, lastFactorRemoved: lastOne, hint: lastOne ? '删除后将使用短信验证码登录' : null };
+}
+
+// ---- 紧急登录（规格 5.5：Passkey+GA 双失效）----
+export function startEmergencyLogin() {
+  const sec = getUserSecurity();
+  sec.emergency = { stage: 'verifying', at: formatNow() };
+  saveUserSecurity(currentUser.id, sec);
+  return { ok: true };
+}
+
+// 全部验证项完成瞬间：强制解绑 + 动态冻结 + 进入阻断式重绑中间态（持久化，刷新不丢）
+// 注意：getUserSecurity() 每次返回新 merged 对象——本函数全程单 get 单 save，禁止中途调用
+// 其它 get+save 型函数（如 triggerSecurityFreeze），否则外层 save 会把内部写入回滚
+export function completeEmergencyUnbind() {
+  const sec = getUserSecurity();
+  const kyc1 = isKyc1();
+  sec.ga = { bound: false, secret: null, boundAt: null };
+  sec.passkeys = [];
+  const dynamicHours = (!kyc1 || __emergencyEnvUnfamiliar) ? 48 : 24; // 常用环境 24h / 异常 48h
+  if (kyc1) {
+    sec.freezeUntil = new Date(Date.now() + dynamicHours * 3600 * 1000).toISOString();
+    sec.freezeReason = '紧急登录重置';
+  }
+  sec.emergency = { stage: 'rebind-required', at: formatNow(), dynamicHours, kyc1 };
+  saveUserSecurity(currentUser.id, sec);
+  pushSecurityAlert('账户安全项已紧急重置（GA 与通行密钥已解绑）');
+  pushSecurityHistory('紧急重置：解绑 GA/通行密钥', '紧急登录');
+  return { ok: true, dynamicHours, kyc1 };
+}
+
+export function getEmergencyState() { return getUserSecurity().emergency; }
+
+// 阻断式重绑完成：清除中间态
+export function finishEmergencyRebind() {
+  const sec = getUserSecurity();
+  sec.emergency = null;
+  saveUserSecurity(currentUser.id, sec);
+  pushSecurityHistory('紧急重置：绑定新安全项', '重绑流程');
+  return { ok: true };
+}
+
+// ---- C 端修改登录密码（规格 5.2 敏感操作清单第一项）----
+// 密码覆盖持久化（同后台 ADMIN_PWD_KEY 模式）：zhifu-user-pwd；LoginPage 校验时优先读覆盖
+const USER_PWD_KEY = 'zhifu-user-pwd';
+export function getUserPasswordOverride() {
+  try { return JSON.parse(localStorage.getItem(USER_PWD_KEY) || 'null'); } catch (e) { return null; }
+}
+
+export function changeUserPassword(newPassword) {
+  // 密码策略（2026-10-15 与注册口径统一：至少8位，含字母和数字）
+  if (!newPassword || newPassword.length < 8) return { ok: false, message: '密码至少需要 8 个字符' };
+  if (!/(?=.*[A-Za-z])(?=.*\d)/.test(newPassword)) return { ok: false, message: '密码需同时包含字母和数字' };
+  try { localStorage.setItem(USER_PWD_KEY, JSON.stringify({ password: newPassword })); } catch (e) { return { ok: false, message: '保存失败' }; }
+  pushSecurityHistory('修改登录密码', '安全验证');
+  pushSecurityAlert('登录密码已被修改');
+  triggerSecurityFreeze(24, '修改密码');
+  // UC 事件④（§9.8）：改密全端失效（总 Token+RT）；原型单设备，以提示语义演示「已注销所有端会话」，
+  // 本端强制重新登录由 SecurityCenter 固定文案页执行
+  console.log('[Mock] 已注销该账户所有端的会话（UC 事件④ 全端失效）');
+  return { ok: true, message: '密码已修改' };
+}
+
+// ---- 演示重置钩子：恢复被紧急登录/测试改动的安全档案 ----
+export function resetUserSecurityDemo(userId) {
+  const uid = userId || currentUser.id;
+  delete userSecurityStore[uid];
+  persistSecurityStore();
+  Storage.save(); // 双通道同步：只清独立 key 时，主快照里的旧 userSecurityStore 会在刷新后复活
+  return { ok: true };
 }
 
 // ========== 申购提交（含 waitlist 自动入队） ==========
@@ -6849,7 +7396,11 @@ export function submitSubscription({ project, amount, currency = 'HKD' }) {
 // 30：2026-09-15 KYC 回归纯 CDD（用户裁决：KYC 内「用户声明」「电子签名法律效力」模块移除——签署责任收敛到注册/PI/SPV 三节点；
 //     预置 kycSubmissions 快照与 submitKyc 写入的 signatureImage/kycAgreementVersion/kycAgreedAt 字段删除、agreementRecords 预置 ar2 删除——数据结构变更）
 //     ——旧快照（29）KYC 数据含幽灵签名字段，重置后 KYC 链路无签署残留
-const STATE_VERSION = 30;
+// 31：2026-09-22 2FA 双重验证体系（新增 userSecurityStore 用户安全档案持久化：GA/Passkey/冻结/安全历史/紧急登录中间态
+//     ——数据结构变更）——旧快照（30）无安全档案，重置展示完整 2FA 矩阵
+// 32：2026-10-15 集团品牌令：APP 名称统一 HKBTC（platformBrand/基金名/活动/后台账号邮箱/法务文本全量替换
+//     ——数据内容变更）——旧快照（31）持久化层带「财富/Wealth Capital」旧品牌，重置后以 HKBTC mock 为权威初始态
+const STATE_VERSION = 32;
 const STORAGE_KEY = 'zhifu-app-state';
 
 /**
@@ -6909,6 +7460,8 @@ export const Storage = {
         pepRecords: pepRecords,
         nomineeRisks: nomineeRisks,
         crossBorderTransactions: crossBorderTransactions,
+        // 2FA 用户安全档案（2026-09-22 · GA/Passkey/冻结/历史/紧急登录中间态）
+        userSecurityStore: userSecurityStore,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
     } catch (e) {
@@ -7094,6 +7647,10 @@ export const Storage = {
         userAccountManagers = {};
         Object.assign(userAccountManagers, data.userAccountManagers);
       }
+      // 2FA 用户安全档案恢复（2026-09-22；缺省 = 演示种子，向后兼容）
+      if (data.userSecurityStore) {
+        userSecurityStore = data.userSecurityStore;
+      }
       // 合规数据恢复（2026-08-26 新增；缺省 = mock 预置，向后兼容）
       if (Array.isArray(data.enhancedDueDiligence)) {
         enhancedDueDiligence.length = 0;
@@ -7142,6 +7699,7 @@ export const Storage = {
  * 返回是否成功加载了持久化数据
  */
 export function initState(resetTarget) {
+  loadSecurityStore(); // 2FA 安全档案独立 key，先于快照恢复（2026-09-22）
   return Storage.load(resetTarget);
 }
 
@@ -7160,11 +7718,11 @@ export const auditLogs = [
   { id: 'a1', at: '2026-08-12 09:15:22', operator: '王运营', category: 'kyc', action: 'approve', target: '陈美琪', targetId: 'k1', note: 'KYC 审核通过（专业投资者认证）' },
   { id: 'a2', at: '2026-08-12 10:05:47', operator: '李合规', category: 'fund', action: 'approve', target: '张三', targetId: 'dr1', note: '充值确认到账 HK$ 300万' },
   { id: 'a3', at: '2026-08-12 11:30:00', operator: '系统管理员', category: 'project', action: 'update', target: 'QuantumCore Technologies', targetId: 'p1', note: '编辑项目资料（估值/上市计划）' },
-  { id: 'a4', at: '2026-08-12 14:20:15', operator: '王运营', category: 'subscription', action: 'allocate', target: 'SkyNet Robotics', targetId: 's2', note: '标记已获配额（冻结意向金额）' },
+  { id: 'a4', at: '2026-08-12 14:20:15', operator: '王运营', category: 'subscription', action: 'allocate', target: 'SkyNet Robotics', targetId: 's2', note: '标记已获配额（线下交割）' },
   { id: 'a5', at: '2026-08-12 16:45:00', operator: '张客服', category: 'lead', action: 'update', target: '吴世昌', targetId: 'u9', note: '客户跟进：新线索 → 已联系' },
   { id: 'a6', at: '2026-08-13 09:10:00', operator: '王运营', category: 'event', action: 'update', target: 'QuantumCore 线上路演', targetId: 'e1', note: '编辑路演资料（议程/看点）' },
   { id: 'a7', at: '2026-08-13 10:00:00', operator: '李合规', category: 'kyc', action: 'reject', target: '林大伟', targetId: 'k2', note: '拒绝原因：证件照片不清晰' },
-  { id: 'a8', at: '2026-08-13 11:25:00', operator: '系统管理员', category: 'config', action: 'update', target: '系统配置', targetId: '', note: '冻结宽限期 30s → 60s' },
+  { id: 'a8', at: '2026-08-13 11:25:00', operator: '系统管理员', category: 'config', action: 'update', target: '系统配置', targetId: '', note: '签署宽限期 30s → 60s' },
   { id: 'a9', at: '2026-08-13 14:05:00', operator: '王运营', category: 'registration', action: 'checkin', target: '量子计算实验室参观', targetId: 'reg3', note: '现场签到核验（凭证码核验通过）' },
   { id: 'a10', at: '2026-08-13 15:40:00', operator: '张客服', category: 'user', action: 'assign', target: '黄俊杰', targetId: 'u16', note: '专属顾问：王慧敏 → 陈志豪' },
   { id: 'a11', at: '2026-08-13 16:00:00', operator: '系统管理员', category: 'exit', action: 'approve', target: 'GreenCell Energy', targetId: 'er1', note: '退出审批通过并回款 HK$ 360万' },
@@ -7357,7 +7915,7 @@ export const ANOMALY_RULES = {
   R002: { id: 'R002', name: '大额集中', description: '同一用户90天内累计申购 ≥ 3000万港币', riskLevel: RISK_LEVEL.HIGH },
   R003: { id: 'R003', name: '频繁申购', description: '同一用户30天内申购次数 ≥ 3笔', riskLevel: RISK_LEVEL.MEDIUM },
   R004: { id: 'R004', name: '频繁入金', description: '同一用户7天内入金次数 ≥ 3笔', riskLevel: RISK_LEVEL.MEDIUM },
-  R005: { id: 'R005', name: '频繁冻结释放', description: '同一用户30天内 ≥ 2次 allocated → unallocated', riskLevel: RISK_LEVEL.MEDIUM },
+  R005: { id: 'R005', name: '频繁获配顺延', description: '同一用户30天内 ≥ 2次 allocated → unallocated', riskLevel: RISK_LEVEL.MEDIUM },
   R006: { id: 'R006', name: '入出金倒挂', description: '同一用户90天内出金 > 入金', riskLevel: RISK_LEVEL.HIGH },
   R007: { id: 'R007', name: '关联账户', description: '不同用户使用相同银行卡/IP/地址', riskLevel: RISK_LEVEL.HIGH },
 };
@@ -7394,7 +7952,7 @@ export function createAnomalyDetectionLog({ userId, ruleId }) {
 
 /**
  * 异常交易检测引擎（T10 · PRD 04 §3.9 异常交易检测制度）
- * 7 条核心规则的事件触发扫描：在申购/入金/出金/冻结释放等业务事件后调用，
+ * 7 条核心规则的事件触发扫描：在申购/入金/出金/获配顺延等业务事件后调用，
  * 命中规则则创建 anomalyDetectionLog（pending 入 compliance 待审队列）。
  * @param {string} userId - 用户ID
  * @param {'subscription'|'deposit'|'withdraw'|'freeze_release'} eventType - 事件类型

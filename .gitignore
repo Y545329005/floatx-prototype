@@ -10,6 +10,8 @@ dist/
 # Local tooling
 .impeccable/
 .playwright-cli/
+.openchamber/
+.dev-server.log
 
 # 内部文档/演示页：不进公开仓库（GitHub Pages 公开托管，最小化公开面）
 docs/
@@ -17,3 +19,5 @@ demo.html
 assets/
 DESIGN.md
 *.tar.gz
+AGENTS.md
+AGENTS-state.md

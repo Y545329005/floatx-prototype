@@ -184,7 +184,7 @@ export default function KYCSubmitted({ navigate, goBack }) {
       {/* 进度条：3 步骤全部 done（2026-09-15 收敛为 3 步；KYC 内签署模块已移除） */}
       <div className="kyc-progress">
         <div className="kyc-progress-bar">
-          <div className="kyc-progress-fill" style={{ width: '100%', background: 'var(--success)' }} />
+          <div className="kyc-progress-fill" style={{ '--fill': 1, background: 'var(--success)' }} />
           <span className="kyc-progress-dot done" style={{ left: '16.5%' }} />
           <span className="kyc-progress-dot done" style={{ left: '50%' }} />
           <span className="kyc-progress-dot done" style={{ left: '83.5%' }} />

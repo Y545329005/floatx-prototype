@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { ArrowLeft, Mail, Check, AlertCircle, Edit3 } from "lucide-react";
 import { useLang } from "../i18n";
-import { currentUser, sendEmailVerifyCode, verifyEmailCode } from "../mock/data";
+import { currentUser, sendEmailVerifyCode, verifyEmailCode, resolveSensitiveFactors, consumeAuthToken } from "../mock/data";
+import SecurityVerifySheet from "../components/SecurityVerifySheet";
 
 // 独立「更换邮箱」功能：账号安全（邮箱是登录凭证）
-// 入口：设置中心 → 登录安全 → 更换邮箱
+// 入口：安全中心 → 登录邮箱卡（2026-09-23 收编，Settings 直达入口已移除）
+// 2FA（2026-09-22 · 规格 5.2）：更换邮箱属敏感操作，先过安全验证弹窗再进入编辑
 export default function ChangeEmail({ goBack, setToast }) {
   const { t } = useLang();
   const [email, setEmail] = useState(currentUser.email || '');
@@ -13,16 +15,17 @@ export default function ChangeEmail({ goBack, setToast }) {
   const [countdown, setCountdown] = useState(0);
   const [errors, setErrors] = useState({});
   const [editing, setEditing] = useState(false);
+  const [verifyFlow, setVerifyFlow] = useState(false);
 
   const isValidEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
 
   const enterEditMode = () => {
-    setEditing(true);
-    setEmail('');
-    setCode('');
-    setCodeSent(false);
-    setErrors({});
-    setCountdown(0);
+    const factors = resolveSensitiveFactors();
+    if (factors.length === 0) {
+      if (setToast) setToast(t('为保护账户安全，请先完成安全项绑定'));
+      return;
+    }
+    setVerifyFlow(true);
   };
 
   const cancelEdit = () => {
@@ -177,7 +180,7 @@ export default function ChangeEmail({ goBack, setToast }) {
               <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-start', marginTop: 'var(--space-3)', padding: 'var(--space-3)', background: 'var(--primary-light)', borderRadius: 'var(--radius-md)' }}>
                 <AlertCircle size={14} style={{ color: 'var(--primary)', flexShrink: 0, marginTop: 2 }} />
                 <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                  {t('演示模式：验证码为 123456（控制台输出）')}
+                  {t('演示模式：验证码为 123456')}
                 </div>
               </div>
 
@@ -204,6 +207,26 @@ export default function ChangeEmail({ goBack, setToast }) {
             {t('确认更换')}
           </button>
         </div>
+      )}
+
+      {/* 更换邮箱前置安全验证（规格 5.2 敏感操作矩阵） */}
+      {verifyFlow && (
+        <SecurityVerifySheet
+          open
+          factors={resolveSensitiveFactors()}
+          onVerified={(token) => {
+            if (!consumeAuthToken(token).ok) { if (setToast) setToast(t('验证凭证已失效，请重新验证')); return; }
+            setVerifyFlow(false);
+            setEditing(true);
+            setEmail('');
+            setCode('');
+            setCodeSent(false);
+            setErrors({});
+            setCountdown(0);
+          }}
+          onClose={() => setVerifyFlow(false)}
+          subtitle={t('验证通过后可更换邮箱')}
+        />
       )}
     </div>
   );

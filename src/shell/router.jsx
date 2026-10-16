@@ -1,0 +1,98 @@
+// 共享路由表（2026-10-09 嵌入集团 APP 方案 · 方案A）：APP 端页面组件的 lazy 清单与
+// path→页面渲染映射。独立原型壳（App.jsx）与嵌入壳（embed/EmbedApp.jsx）共用——
+// 新增页面只改这里，双壳自动同步（原 App.jsx renderPage switch 等价搬入，props 逐项未动）。
+
+import { lazy } from 'react';
+
+// APP 端页面按需加载（2026-09-24 主包瘦身 Phase 1 模式延续：36 页全部 lazy）
+// 2026-10-16 首期裁剪：资产树 13 页路由摘除（钱包/出入金/换汇/银行卡/持仓/报告等线上账本页，
+// 文件保留不删，二期按「线下转账+凭证登记」新形态恢复）；申购链恢复意向收集
+// （subscriptions/my-subscription），spv-sign 保持摘除——SPV 签署全线下，后台登记进度
+const ProjectMarket = lazy(() => import('../pages/ProjectMarket'));
+const Wealth = lazy(() => import('../pages/Wealth'));
+const ProjectDetail = lazy(() => import('../pages/ProjectDetail'));
+const ProjectHeat = lazy(() => import('../pages/ProjectHeat'));
+const SearchPage = lazy(() => import('../pages/Search'));
+const Events = lazy(() => import('../pages/Events'));
+const EventDetail = lazy(() => import('../pages/EventDetail'));
+const Subscriptions = lazy(() => import('../pages/Subscriptions'));
+const MySubscription = lazy(() => import('../pages/MySubscription'));
+const Profile = lazy(() => import('../pages/Profile'));
+const Notifications = lazy(() => import('../pages/Notifications'));
+const Support = lazy(() => import('../pages/Support'));
+const Settings = lazy(() => import('../pages/Settings'));
+const SecurityCenter = lazy(() => import('../pages/SecurityCenter'));
+const Help = lazy(() => import('../pages/Help'));
+const About = lazy(() => import('../pages/About'));
+const BindPhone = lazy(() => import('../pages/BindPhone'));
+const ChangeEmail = lazy(() => import('../pages/ChangeEmail'));
+const KYCStart = lazy(() => import('../pages/KYCStart'));
+const KYCIdUpload = lazy(() => import('../pages/KYCIdUpload'));
+const KYCAddressProof = lazy(() => import('../pages/KYCAddressProof'));
+const KYCSubmitted = lazy(() => import('../pages/KYCSubmitted'));
+const KYCPI = lazy(() => import('../pages/KYCPI'));
+const PISubmitted = lazy(() => import('../pages/PISubmitted'));
+
+// 渲染 APP 端页面（门控放行后调用）。
+// ctx: { navigate, goBack, setToast, isLoggedIn, setIsLoggedIn, embed }
+export function renderAppPage(path, param, ctx) {
+  const { navigate, goBack, setToast, isLoggedIn, setIsLoggedIn, embed } = ctx;
+  switch (path) {
+    case 'search':
+      return <SearchPage navigate={navigate} goBack={goBack} isLoggedIn={isLoggedIn} />;
+    case 'projects':
+      return <ProjectMarket navigate={navigate} embed={embed} goBack={goBack} />;
+    case 'wealth':
+      // 财富聚合页（2026-10-13 嵌入形态双 Tab 改版）：路演+项目+资产一级整合
+      return <Wealth navigate={navigate} />;
+    case 'project':
+      return <ProjectDetail id={param} navigate={navigate} goBack={goBack} />;
+    case 'project-heat':
+      return <ProjectHeat id={param} navigate={navigate} goBack={goBack} />;
+    case 'events':
+      return <Events navigate={navigate} setToast={setToast} isLoggedIn={isLoggedIn} embed={embed} goBack={goBack} />;
+    case 'event':
+      return <EventDetail id={param} navigate={navigate} goBack={goBack} setToast={setToast} />;
+    case 'subscriptions':
+      return <Subscriptions navigate={navigate} goBack={goBack} />;
+    case 'my-subscription':
+      return <MySubscription id={param} navigate={navigate} goBack={goBack} />;
+    // 2026-10-16 首期裁剪：资产树 13 路由摘除（wallet/transactions/fund-requests/fund-request/
+    // fund-operation/holdings/assets/asset-trend/exchange/bank-cards/funds/reports/spv-sign）——
+    // 命中即落 default 分支（资讯页）。申购意向链已恢复（subscriptions/my-subscription）；
+    // spv-sign 保持摘除：SPV 签署与资金全部线下，APP 只做意向收集与进度查看
+    case 'about':
+      return <About navigate={navigate} goBack={goBack} setToast={setToast} />;
+    case 'notifications':
+      return <Notifications navigate={navigate} goBack={goBack} />;
+    case 'support':
+      return <Support navigate={navigate} goBack={goBack} />;
+    case 'settings':
+      return <Settings navigate={navigate} goBack={goBack} />;
+    case 'security-center':
+      return <SecurityCenter navigate={navigate} goBack={goBack} setToast={setToast} setIsLoggedIn={setIsLoggedIn} />;
+    case 'bind-phone':
+      return <BindPhone navigate={navigate} goBack={goBack} setToast={setToast} />;
+    case 'change-email':
+      return <ChangeEmail navigate={navigate} goBack={goBack} setToast={setToast} />;
+    case 'help':
+      return <Help navigate={navigate} goBack={goBack} />;
+    case 'profile':
+      return <Profile navigate={navigate} setIsLoggedIn={setIsLoggedIn} />;
+    // KYC 流程页面（3 步：基本信息 → 证件上传 → 地址证明 + 提交后等待审核）
+    case 'kyc-start':
+      return <KYCStart navigate={navigate} goBack={goBack} setIsLoggedIn={setIsLoggedIn} />;
+    case 'kyc-id-upload':
+      return <KYCIdUpload navigate={navigate} goBack={goBack} setIsLoggedIn={setIsLoggedIn} />;
+    case 'kyc-address-proof':
+      return <KYCAddressProof navigate={navigate} goBack={goBack} setIsLoggedIn={setIsLoggedIn} />;
+    case 'kyc-submitted':
+      return <KYCSubmitted navigate={navigate} goBack={goBack} />;
+    case 'kyc-pi':
+      return <KYCPI navigate={navigate} goBack={goBack} />;
+    case 'pi-submitted':
+      return <PISubmitted navigate={navigate} goBack={goBack} />;
+    default:
+      return <Events navigate={navigate} setToast={setToast} isLoggedIn={isLoggedIn} embed={embed} goBack={goBack} />;
+  }
+}

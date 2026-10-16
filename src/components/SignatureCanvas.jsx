@@ -41,7 +41,8 @@ function SignatureCanvas({ ref, onChange }) {
       ctx.lineWidth = 2.6;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
-      ctx.strokeStyle = '#1a2b5e';
+      // 笔迹色读 token（canvas 不支持 CSS var），fallback Zinc-900
+      ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#18181B';
     };
     setup();
     window.addEventListener('resize', setup);

@@ -5,7 +5,7 @@ import {
   Newspaper,
 } from "lucide-react";
 
-export const BRAND = "财富";
+export const BRAND = "HKBTC";
 
 export const eventModeMeta = {
   online: { label: "线上活动", icon: MonitorPlay },
@@ -453,9 +453,9 @@ export function downloadEventCalendar(event) {
   const content = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Wealth Platform//Events//CN",
+    "PRODID:-//HKBTC//Events//CN",
     "BEGIN:VEVENT",
-    `UID:${escapeCalendarText(event.id)}@wealth-platform.demo`,
+    `UID:${escapeCalendarText(event.id)}@hkbtc.demo`,
     `DTSTAMP:${formatCalendarDate(new Date())}`,
     `DTSTART:${formatCalendarDate(start)}`,
     `DTEND:${formatCalendarDate(end)}`,
@@ -826,4 +826,35 @@ export function validateProjectForm(form, { forPublication = false } = {}) {
   ));
   if (invalidAttachment) return "PDF 文件无效，请重新选择。";
   return "";
+}
+
+// ===== 可达性（2026-09-24 audit P1）：非按钮可点元素的键盘支持 =====
+// 用法：<div className="row" {...clickable(() => navigate(...))}>
+// 给 div/span 可点区块补 role="button" + tabIndex，Enter / 空格 触发同一 handler
+export function clickable(handler) {
+  return {
+    role: "button",
+    tabIndex: 0,
+    onClick: handler,
+    onKeyDown: (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        handler();
+      }
+    },
+  };
+}
+
+// 同 clickable，但用于内部嵌套真实 <button> 的行容器：
+// 只补 tabIndex + 键盘触发，不声明 role="button"（避免 button 嵌套的 ARIA 冲突）
+export function keyed(handler) {
+  return {
+    tabIndex: 0,
+    onKeyDown: (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        handler();
+      }
+    },
+  };
 }

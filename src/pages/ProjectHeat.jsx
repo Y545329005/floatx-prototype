@@ -98,7 +98,8 @@ export default function ProjectHeat({ id, navigate, goBack }) {
         </p>
       </div>
 
-      {/* CTA：已申购用户引导去我的申购详情页；未申购用户引导提交 */}
+      {/* CTA：已申购用户引导去我的申购详情页；未申购用户引导提交
+          （2026-10-16 口径修订恢复：线上收集投资意向，资金与 SPV 签署全线下） */}
       {hasActiveSub && mySub && (
         <button className="heat-cta-link" onClick={() => navigate(`#my-subscription/${mySub.id}`)}>
           <span>{t('查看我的申购进度 ›')}</span>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { keyed } from '../lib';
 import { Coins, Tags, ArrowLeftRight, Mail, Landmark, Building2, Edit3, Plus, Trash2, Save, RotateCcw, X, FileText } from 'lucide-react';
 import {
   sectors, exchangeRates, businessContact,
@@ -257,7 +258,7 @@ export default function AdminConfig({ admin }) {
             <div className="admin-config-account-title">收款账户（投资人充值入金）</div>
             <div className="form-row">
               {accountField('deposit', '银行', 'bank', '如：星展银行（香港）')}
-              {accountField('deposit', '户名', 'accountName', '如：Wealth Capital Limited')}
+              {accountField('deposit', '户名', 'accountName', '如：HKBTC Limited')}
             </div>
             <div className="form-row">
               {accountField('deposit', '账号', 'accountNo', '如：004-123456-789')}
@@ -274,7 +275,7 @@ export default function AdminConfig({ admin }) {
             <div className="admin-config-account-title">打款账户（投资人提现出金）</div>
             <div className="form-row">
               {accountField('withdraw', '银行', 'bank', '如：星展银行（香港）')}
-              {accountField('withdraw', '户名', 'accountName', '如：Wealth Capital Limited')}
+              {accountField('withdraw', '户名', 'accountName', '如：HKBTC Limited')}
             </div>
             <div className="form-row">
               {accountField('withdraw', '账号', 'accountNo', '如：004-123456-789')}
@@ -297,17 +298,17 @@ export default function AdminConfig({ admin }) {
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">平台简称</label>
-                <input className="form-input" value={brand.nameZh} placeholder="如：财富资本" onChange={e => setBrand({ ...brand, nameZh: e.target.value })} />
+                <input className="form-input" value={brand.nameZh} placeholder="如：HKBTC" onChange={e => setBrand({ ...brand, nameZh: e.target.value })} />
               </div>
               <div className="form-group">
                 <label className="form-label">公司全称</label>
-                <input className="form-input" value={brand.nameFullZh} placeholder="如：财富资本有限公司" onChange={e => setBrand({ ...brand, nameFullZh: e.target.value })} />
+                <input className="form-input" value={brand.nameFullZh} placeholder="如：HKBTC Limited" onChange={e => setBrand({ ...brand, nameFullZh: e.target.value })} />
               </div>
             </div>
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">英文名</label>
-                <input className="form-input" value={brand.nameEn} placeholder="如：Wealth Capital Limited" onChange={e => setBrand({ ...brand, nameEn: e.target.value })} />
+                <input className="form-input" value={brand.nameEn} placeholder="如：HKBTC Limited" onChange={e => setBrand({ ...brand, nameEn: e.target.value })} />
               </div>
               <div className="form-group">
                 <label className="form-label">牌照编号（CE No.）</label>
@@ -355,7 +356,7 @@ export default function AdminConfig({ admin }) {
         {CONFIG_ITEMS.map(item => {
           const Icon = item.icon;
           return (
-            <div key={item.key} className="admin-config-item" onClick={() => openEdit(item.key)}>
+            <div key={item.key} className="admin-config-item" {...keyed(() => openEdit(item.key))}>
               <span className="admin-config-item-icon"><Icon size={16} /></span>
               <div className="admin-config-item-body">
                 <strong>{item.name}</strong>

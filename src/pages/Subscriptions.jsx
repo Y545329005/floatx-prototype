@@ -47,14 +47,6 @@ export default function Subscriptions({ navigate, goBack }) {
                 <span>{t('提交时间')}</span>
                 <span className="date-iso">{formatISODateTime(s.createdAt)}</span>
               </div>
-              {s.frozenAmount > 0 && (
-                <div className="subscription-info-row freeze-info-row">
-                  <span>{t('已冻结')}</span>
-                  <div className="freeze-info-right">
-                    <strong className="date-iso">HK$ {formatCurrency(s.frozenAmount)}</strong>
-                  </div>
-                </div>
-              )}
               {s.shares && (
                 <div className="subscription-info-row">
                   <span>{t('获得份额')}</span>

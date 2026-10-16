@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { clickable } from '../lib';
 import { ArrowLeft, Calendar, Monitor, MapPin, TrendingUp, ChevronRight, X, Link2, Copy, Navigation, Users } from 'lucide-react';
 import { events, projects, currentUser, getProjectHeroGradient, getProjectHeroEmoji, projectStageColors, projectStatusLabels, registerEvent, unregisterEvent, isEventRegistered, getEventRegistration, getCheckInCode, formatCurrency, formatDateCN, getProjectStageSlug, isEventLive, getCurrencySymbol } from '../mock/data';
 import { useLang } from '../i18n';
@@ -183,7 +184,7 @@ export default function EventDetail({ id, navigate, goBack, setToast }) {
             <div className="capacity-bar">
               <div
                 className={`capacity-fill ${full ? 'full' : ''}`}
-                style={{ width: `${capPct}%` }}
+                style={{ '--fill': capPct / 100 }}
               />
             </div>
             <span className={`capacity-text ${full ? 'full' : ''}`}>
@@ -244,7 +245,7 @@ export default function EventDetail({ id, navigate, goBack, setToast }) {
       </div>
 
       {project && (
-        <div className="card card-accent event-project-card" onClick={() => navigate(`#project/${project.id}`)}>
+        <div className="card card-accent event-project-card" {...clickable(() => navigate(`#project/${project.id}`))}>
           <div className="event-project-top">
             <div>
               <div className="event-project-tags">

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { MapPin, Monitor, Search, ChevronDown, Check } from 'lucide-react';
+import { clickable } from '../lib';
+import { MapPin, Monitor, Search, ChevronDown, Check, ArrowLeft } from 'lucide-react';
 import { events, projects, getProjectHeroGradient, getProjectHeroEmoji, isEventRegistered, isEventLive, eventStatusLabels } from '../mock/data';
 import { useLang } from '../i18n';
 import BusinessContact from '../components/BusinessContact';
@@ -10,7 +11,7 @@ const TYPE_OPTIONS = [
   { value: 'offline', labelKey: '线下活动' },
 ];
 
-export default function Events({ navigate, setToast, isLoggedIn = false }) {
+export default function Events({ navigate, setToast, isLoggedIn = false, embed = false, goBack }) {
   const { t } = useLang();
   const [tab, setTab] = useState('upcoming');
   const [typeFilter, setTypeFilter] = useState('all'); // 'all' | 'online' | 'offline'
@@ -44,13 +45,13 @@ export default function Events({ navigate, setToast, isLoggedIn = false }) {
     const heroSector = proj ? proj.sector : e.projectName;
     const live = isEventLive(e);
     return (
-      <div key={e.id} className="card project-card" onClick={() => navigate(`#event/${e.id}`)}>
+      <div key={e.id} className="card project-card" {...clickable(() => navigate(`#event/${e.id}`))}>
         <div
           className="event-card-hero-lg"
           style={{ background: getProjectHeroGradient(heroSector) }}
         >
           {e.coverImage ? (
-            <img src={e.coverImage} alt={e.title} />
+            <img src={e.coverImage} alt={e.title} loading="lazy" decoding="async" />
           ) : (
             <span className="event-card-hero-icon">{getProjectHeroEmoji(heroSector)}</span>
           )}
@@ -88,7 +89,14 @@ export default function Events({ navigate, setToast, isLoggedIn = false }) {
     <div className="page events-page">
       <div className="market-sticky">
         <div className="market-header">
-          <h1>{t('路演活动')}</h1>
+          <div className="market-header-title">
+            {embed && (
+              <button className="back-btn" aria-label={t('返回')} onClick={() => goBack('#wealth')}>
+                <ArrowLeft size={20} />
+              </button>
+            )}
+            <h1>{t('路演活动')}</h1>
+          </div>
           <div className="market-header-actions">
             <div className="type-dropdown" ref={typeRef}>
               <button

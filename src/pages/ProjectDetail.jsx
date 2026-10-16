@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { clickable } from '../lib';
 import { ArrowLeft, Calendar, TrendingUp, FileText, Headphones, X, ChevronRight, Check } from 'lucide-react';
-import { getProjectById, getEventsByProject, projectStageColors, projectStatusLabels, getProjectHeroGradient, getProjectHeroEmoji, subscriptions, getInvestorRoster, currentUser, getInvestorNo, formatCurrency, formatISODateTime, formatListDateTime, getProjectStageSlug, getCurrencySymbol, getSubscriptionGate } from '../mock/data';
+import { getProjectById, getEventsByProject, projectStatusLabels, getProjectHeroGradient, getProjectHeroEmoji, subscriptions, getInvestorRoster, currentUser, getInvestorNo, formatCurrency, formatListDateTime, getProjectStageSlug, getCurrencySymbol, getSubscriptionGate } from '../mock/data';
 import AccountManager from '../components/AccountManager';
 import SubscribeSheet from '../components/SubscribeSheet';
 import { useLang } from '../i18n';
@@ -136,7 +137,7 @@ export default function ProjectDetail({ id, navigate, goBack }) {
           </div>
           <div className="heat-list">
             {mySub && mySub.status !== 'unallocated' && (
-              <div className="heat-me-rank" onClick={() => navigate(`#project-heat/${project.id}`)}>
+              <div className="heat-me-rank" {...clickable(() => navigate(`#project-heat/${project.id}`))}>
                 <span className="heat-me-rank-label">{t('我的当前位次')}</span>
                 <span className="heat-me-rank-value">{t('第 {} 位').replace('{}', myRank)}</span>
                 <span className="heat-me-rank-meta">
@@ -214,7 +215,7 @@ export default function ProjectDetail({ id, navigate, goBack }) {
         <div className="card card-secondary">
           <div className="card-title">{t('相关路演')}</div>
           {relatedEvents.map(e => (
-            <div key={e.id} className="related-event" onClick={() => navigate(`#event/${e.id}`)}>
+            <div key={e.id} className="related-event" {...clickable(() => navigate(`#event/${e.id}`))}>
               <Calendar size={16} />
               <div>
                 <span>{e.title}</span>
@@ -243,7 +244,9 @@ export default function ProjectDetail({ id, navigate, goBack }) {
         <ChevronRight size={15} />
       </button>
 
-      {/* CTA 二态：未提交 / 已提交（含 unallocated 可重提） / 已签 SPV */}
+      {/* 申购意向 CTA（2026-10-16 口径修订恢复：线上只收集投资意愿，资金与 SPV 签署全线下——
+          状态卡是后台登记进度的镜像，用户侧无签署/支付动作入口；signed 卡原「查看持仓」
+          随资产树摘除改指我的申购） */}
       <div className="detail-actions">
         {!mySub && isOpen && gate.ok && (
           <button className="btn btn-primary btn-full" onClick={() => setShowSubscribe(true)}>
@@ -276,8 +279,8 @@ export default function ProjectDetail({ id, navigate, goBack }) {
                 <strong>{mySub.shares} {t('份')}</strong>
               </div>
             </div>
-            <button className="text-btn-cta" onClick={() => navigate('#holdings')}>
-              {t('查看持仓 ›')}
+            <button className="text-btn-cta" onClick={() => navigate(`#my-subscription/${mySub.id}`)}>
+              {t('查看我的申购 ›')}
             </button>
           </>
         )}
@@ -322,7 +325,7 @@ export default function ProjectDetail({ id, navigate, goBack }) {
               </div>
               <div className="cta-status-meta">
                 <span>
-                  {mySub.status === 'allocated' ? t('已冻结 · 等待签署 SPV') : t('等待线下协调额度')}
+                  {mySub.status === 'allocated' ? t('已获配额 · 待线下打款与签署') : t('等待线下协调额度')}
                 </span>
               </div>
             </div>
@@ -348,7 +351,11 @@ export default function ProjectDetail({ id, navigate, goBack }) {
       )}
 
       {showSubscribe && (
-        <SubscribeSheet project={project} onClose={() => setShowSubscribe(false)} onSubmitted={() => setRefresh(v => v + 1)} />
+        <SubscribeSheet
+          project={project}
+          onClose={() => setShowSubscribe(false)}
+          onSubmitted={() => { setShowSubscribe(false); setRefresh(v => v + 1); }}
+        />
       )}
     </div>
   );

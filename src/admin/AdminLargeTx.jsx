@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { clickable } from '../lib';
 import { Search, X, ShieldAlert, DollarSign, FileText } from 'lucide-react';
 import {
   largeTransactionReviews,
@@ -215,7 +216,7 @@ export default function AdminLargeTx({ navigate, detailId, admin }) {
           const lm = LEVEL_META[r.reviewLevel] || {};
           const sm = STATUS_META[r.status] || {};
           return (
-            <div key={r.id} className="admin-table-row" onClick={() => navigate(`#admin/large-tx/${r.id}`)}>
+            <div key={r.id} className="admin-table-row" {...clickable(() => navigate(`#admin/large-tx/${r.id}`))}>
               <span className="col-id">{r.id}</span>
               <span className="col-project">
                 <strong>{sub?.investorName || '未知投资人'}</strong>

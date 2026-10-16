@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { ArrowLeft, ClipboardList, Calendar, Wallet, Headphones, CheckCheck, Trash2, X } from 'lucide-react';
+import { ArrowLeft, ClipboardList, Calendar, Headphones, CheckCheck, Trash2, X } from 'lucide-react';
 import { notifications, currentUser, markNotificationRead, removeNotification, clearNotifications } from '../mock/data';
 import { useLang } from '../i18n';
 
+// 2026-10-16 口径修订：资金与 SPV 签署全线下——wallet（资金）分类随钱包账本摘除，
+// 通知只保留 申购/活动/服务 三类
 const typeMeta = {
   subscription: { labelKey: '申购', icon: ClipboardList, cls: 'sub' },
   event: { labelKey: '活动', icon: Calendar, cls: 'event' },
-  wallet: { labelKey: '资金', icon: Wallet, cls: 'wallet' },
   service: { labelKey: '服务', icon: Headphones, cls: 'service' },
 };
 
@@ -14,7 +15,6 @@ const tabs = [
   { key: 'all', labelKey: '全部' },
   { key: 'subscription', labelKey: '申购' },
   { key: 'event', labelKey: '活动' },
-  { key: 'wallet', labelKey: '资金' },
   { key: 'service', labelKey: '服务' },
 ];
 

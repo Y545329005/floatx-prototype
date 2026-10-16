@@ -259,12 +259,12 @@ export default function AdminKYC({ navigate, detailId, admin }) {
                 <div className="kyc-review-row"><span>证件号码</span><strong>{sel.profile.idDocNumber || '—'}</strong></div>
                 <div className="kyc-review-doc">
                   <div className="kyc-review-img">
-                    {imgSrc(sel.profile.idDocFront) ? <img src={imgSrc(sel.profile.idDocFront)} alt="证件正面" /> : <><ImageIcon size={18} /><span>正面</span></>}
+                    {imgSrc(sel.profile.idDocFront) ? <img src={imgSrc(sel.profile.idDocFront)} alt="证件正面" loading="lazy" decoding="async" /> : <><ImageIcon size={18} /><span>正面</span></>}
                     <span className="kyc-review-img-label">正面</span>
                   </div>
                   {sel.profile.idDocBack && (
                     <div className="kyc-review-img">
-                      {imgSrc(sel.profile.idDocBack) ? <img src={imgSrc(sel.profile.idDocBack)} alt="证件背面" /> : <><ImageIcon size={18} /><span>背面</span></>}
+                      {imgSrc(sel.profile.idDocBack) ? <img src={imgSrc(sel.profile.idDocBack)} alt="证件背面" loading="lazy" decoding="async" /> : <><ImageIcon size={18} /><span>背面</span></>}
                       <span className="kyc-review-img-label">背面</span>
                     </div>
                   )}
@@ -276,7 +276,7 @@ export default function AdminKYC({ navigate, detailId, admin }) {
                 <div className="kyc-review-row"><span><MapPin size={14} /></span><strong>{sel.profile.addressLine || '—'}</strong></div>
                 <div className="kyc-review-doc">
                   <div className="kyc-review-img">
-                    {imgSrc(sel.profile.addressProof) ? <img src={imgSrc(sel.profile.addressProof)} alt="地址证明" /> : <><ImageIcon size={18} /><span>证明文件</span></>}
+                    {imgSrc(sel.profile.addressProof) ? <img src={imgSrc(sel.profile.addressProof)} alt="地址证明" loading="lazy" decoding="async" /> : <><ImageIcon size={18} /><span>证明文件</span></>}
                     <span className="kyc-review-img-label">证明文件</span>
                   </div>
                 </div>

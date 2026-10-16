@@ -1,88 +1,41 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { LoginPage, RegisterPage, ForgotPasswordPage, ResetPasswordPage } from './components/AuthPages';
+// 登录四页为 AuthPages 具名导出，lazy 需转 default（未登录首帧才需要）
+const LoginPage = lazy(() => import('./components/AuthPages').then(m => ({ default: m.LoginPage })));
+const RegisterPage = lazy(() => import('./components/AuthPages').then(m => ({ default: m.RegisterPage })));
+const ForgotPasswordPage = lazy(() => import('./components/AuthPages').then(m => ({ default: m.ForgotPasswordPage })));
+const ResetPasswordPage = lazy(() => import('./components/AuthPages').then(m => ({ default: m.ResetPasswordPage })));
 import BottomNav from './components/BottomNav';
 import AdminSidebar from './components/AdminSidebar';
 
-import ProjectMarket from './pages/ProjectMarket';
-import ProjectDetail from './pages/ProjectDetail';
-import ProjectHeat from './pages/ProjectHeat';
-import SearchPage from './pages/Search';
-import Events from './pages/Events';
-import EventDetail from './pages/EventDetail';
-import Subscriptions from './pages/Subscriptions';
-import MySubscription from './pages/MySubscription';
-import Wallet from './pages/Wallet';
-import Transactions from './pages/Transactions';
-import FundRequests from './pages/FundRequests';
-import FundRequestDetail from './pages/FundRequestDetail';
-import FundOperation from './pages/FundOperation';
-import Holdings from './pages/Holdings';
-import AssetOverview from './pages/AssetOverview';
-import AssetTrend from './pages/AssetTrend';
-import Exchange from './pages/Exchange';
-import Funds from './pages/Funds';
-import Reports from './pages/Reports';
-import Profile from './pages/Profile';
-import Notifications from './pages/Notifications';
-import Support from './pages/Support';
-import Settings from './pages/Settings';
-import Help from './pages/Help';
-import BankCards from './pages/BankCards';
-import About from './pages/About';
-import BindPhone from './pages/BindPhone';
-import ChangeEmail from './pages/ChangeEmail';
-import KYCStart from './pages/KYCStart';
-import KYCIdUpload from './pages/KYCIdUpload';
-import KYCAddressProof from './pages/KYCAddressProof';
-
-import KYCSubmitted from './pages/KYCSubmitted';
-import KYCPI from './pages/KYCPI';
-import PISubmitted from './pages/PISubmitted';
-import SpvSign from './pages/SpvSign';
 import TermsUpdateGate from './components/TermsUpdateGate';
-
-import AdminProjects from './admin/AdminProjects';
-import AdminEvents from './admin/AdminEvents';
-import AdminRegistrations from './admin/AdminRegistrations';
-import AdminMyClients from './admin/AdminMyClients';
-import AdminSubscriptions from './admin/AdminSubscriptions';
+import OnboardingGate from './components/OnboardingGate';
 import AdminLogin from './admin/AdminLogin';
-import AdminKYC from './admin/AdminKYC';
-import AdminPI from './admin/AdminPI';
-import AdminFunds from './admin/AdminFunds';
-import AdminTransactions from './admin/AdminTransactions';
-import AdminTransactionMonitor from './admin/AdminTransactionMonitor';
-import AdminLargeTx from './admin/AdminLargeTx';
-import AdminAnomaly from './admin/AdminAnomaly';
-import AdminSTR from './admin/AdminSTR';
-import AdminEDD from './admin/AdminEDD';
-import AdminDividends from './admin/AdminDividends';
-import AdminSpvs from './admin/AdminSpvs';
-import AdminExits from './admin/AdminExits';
-import AdminUsers from './admin/AdminUsers';
-import AdminAuditLogs from './admin/AdminAuditLogs';
-import AdminAdmins from './admin/AdminAdmins';
-import AdminRoles from './admin/AdminRoles';
-import AdminNotifications from './admin/AdminNotifications';
-import AdminSupport from './admin/AdminSupport';
-import AdminConfig from './admin/AdminConfig';
-import AdminHome from './admin/AdminHome';
+// 共享内核（2026-10-09 嵌入方案·方案A）：路由解析/合规门控决策/APP 端路由表提取至 shell/，
+// 与嵌入壳（embed/EmbedApp.jsx）共用单一事实源；本文件仅保留独立原型壳职责（登录四页/admin/测试钩子）。
+import { parseHash, resolveGate } from './shell/guard';
+import { renderAppPage } from './shell/router';
 
-import { KYC_STATUS, testAccounts, approveKyc, setMockCurrentUser, restoreKycStatus, currentUser as currentUserData, initState, resetSubscriptionForDemo, getRoleMenuKeys, termsState } from './mock/data';
+// 后台页面按需加载（2026-09-24 audit P2：后台 25 页拆出主包，首屏不下载后台代码）
+// AdminLogin 保持静态引入：它是登录门（未登录首帧即渲染，不能等 chunk）
+// 2026-10-16 首期裁剪：资金/交易/申购/投后 11 个后台页 lazy 与渲染分支摘除（文件保留）
+const AdminHome = lazy(() => import('./admin/AdminHome'));
+const AdminProjects = lazy(() => import('./admin/AdminProjects'));
+const AdminEvents = lazy(() => import('./admin/AdminEvents'));
+const AdminRegistrations = lazy(() => import('./admin/AdminRegistrations'));
+const AdminMyClients = lazy(() => import('./admin/AdminMyClients'));
+const AdminSubscriptions = lazy(() => import('./admin/AdminSubscriptions'));
+const AdminKYC = lazy(() => import('./admin/AdminKYC'));
+const AdminPI = lazy(() => import('./admin/AdminPI'));
+const AdminUsers = lazy(() => import('./admin/AdminUsers'));
+const AdminAuditLogs = lazy(() => import('./admin/AdminAuditLogs'));
+const AdminAdmins = lazy(() => import('./admin/AdminAdmins'));
+const AdminRoles = lazy(() => import('./admin/AdminRoles'));
+const AdminNotifications = lazy(() => import('./admin/AdminNotifications'));
+const AdminSupport = lazy(() => import('./admin/AdminSupport'));
+const AdminConfig = lazy(() => import('./admin/AdminConfig'));
 
-function parseHash(hash) {
-  // hash 里可能带 query string（如 #project/p3?reset=1），先剥离 ? 及后面的内容
-  const h = (hash.replace(/^#/, '').split('?')[0]) || 'events';
-  const parts = h.split('/');
-  const path = parts[0];
-  const param = parts[1] || null;
-  // param2：二级参数（后台详情 URL 化 #admin/{module}/{id}，ADMIN_DESIGN_SYSTEM §六 D1）
-  const param2 = parts[2] || null;
-  // param3：三级参数（后台 tabs+详情 URL 化 #admin/{module}/{tab}/{id}，资金运营 2026-08-14）
-  const param3 = parts[3] || null;
-  return { path, param, param2, param3, full: h };
-}
+import { KYC_STATUS, PI_STATUS, getPiStatusForUser, testAccounts, approveKyc, setMockCurrentUser, restoreKycStatus, currentUser as currentUserData, initState, resetSubscriptionForDemo, getRoleMenuKeys, termsState, resetUserSecurityDemo, hasAgreedOnboarding } from './mock/data';
 
 // 管理员登录落地（2026-08-20：独立欢迎首页；无 param 的 #admin 与旧链接 #admin/dashboard 均落 #admin/home）
 const ADMIN_HOME = 'home';
@@ -219,9 +172,9 @@ export default function App() {
       setCurrentUser(testAccounts.approved);
       setMockCurrentUser(testAccounts.approved);  // 桥梁同步（此前缺失：data.js currentUser 残留上一账号）
     };
-    // 测试账号登录函数
+    // 测试账号登录函数（演示通道：豁免 2FA。approved=u1 有 GA+Passkey / pending=u2 仅手机 KYC0 / pep=u3 仅手机 KYC1）
     window.__loginWithTestAccount = (type) => {
-      const account = type === 'approved' ? testAccounts.approved : testAccounts.pending;
+      const account = type === 'approved' ? testAccounts.approved : type === 'pep' ? testAccounts.pep : testAccounts.pending;
       setCurrentUser(account);
       setMockCurrentUser(account);
       // 2026-09-20：从提交记录回读 KYC 状态（testAccounts 预设刷新即重置，与 kycSubmissions 快照脱节）
@@ -234,7 +187,10 @@ export default function App() {
         KYC_STATUS.REQUIRES_ACTION,
       ];
       if (account.kyc_status === KYC_STATUS.APPROVED) {
-        navigate('assets');
+        // 2026-10-16 首期裁剪：#assets 摘除,落地改 #events;PI 认证通过才能浏览资讯,
+        // 种子 PI 非 verified 时与门控 redirect 语义一致落 kyc-pi
+        const piOk = getPiStatusForUser(account.id) === PI_STATUS.APPROVED;
+        navigate(piOk ? 'events' : 'kyc-pi');
       } else if (submittedStatuses.includes(account.kyc_status)) {
         navigate('kyc-submitted');
       } else {
@@ -250,12 +206,19 @@ export default function App() {
     window.__resetSubscription = (id) => {
       resetSubscriptionForDemo(id || 's2');
     };
+    // 2FA 演示重置：恢复被紧急登录/测试改动的安全档案（解绑的 GA/Passkey、冻结、中间态）
+    window.__reset2faDemo = (userId) => {
+      const res = resetUserSecurityDemo(userId);
+      setCurrentUser(u => ({ ...u }));
+      return res;
+    };
     return () => {
       delete window.__setMockLoggedIn;
       delete window.__resetMockLogin;
       delete window.__loginWithTestAccount;
       delete window.__approveKyc;
       delete window.__resetSubscription;
+      delete window.__reset2faDemo;
     };
   }, []);
 
@@ -327,6 +290,7 @@ export default function App() {
         <AdminSidebar current={effectiveSub} onNavigate={navigate} admin={adminUser} onLogout={handleAdminLogout} />
         <main className="admin-content">
           <ErrorBoundary>
+            <Suspense fallback={<div className="admin-lazy-loading">加载中…</div>}>
             {effectiveSub === 'home' && <AdminHome admin={adminUser} />}
             {effectiveSub === 'projects' && <AdminProjects navigate={navigate} admin={adminUser} />}
             {effectiveSub === 'events' && <AdminEvents navigate={navigate} admin={adminUser} />}
@@ -335,16 +299,9 @@ export default function App() {
             {effectiveSub === 'subscriptions' && <AdminSubscriptions navigate={navigate} detailId={hash.param2} admin={adminUser} />}
             {effectiveSub === 'kyc' && <AdminKYC navigate={navigate} detailId={hash.param2} admin={adminUser} />}
             {effectiveSub === 'pi' && <AdminPI navigate={navigate} detailId={hash.param2} admin={adminUser} />}
-            {effectiveSub === 'funds' && <AdminFunds navigate={navigate} tab={hash.param2} detailId={hash.param3} admin={adminUser} />}
-            {effectiveSub === 'transactions' && <AdminTransactions />}
-            {effectiveSub === 'transaction-monitor' && <AdminTransactionMonitor admin={adminUser} />}
-            {effectiveSub === 'large-tx' && <AdminLargeTx navigate={navigate} detailId={hash.param2} admin={adminUser} />}
-            {effectiveSub === 'anomaly' && <AdminAnomaly navigate={navigate} detailId={hash.param2} admin={adminUser} />}
-            {effectiveSub === 'str' && <AdminSTR navigate={navigate} detailId={hash.param2} admin={adminUser} />}
-            {effectiveSub === 'edd' && <AdminEDD navigate={navigate} detailId={hash.param2} admin={adminUser} />}
-            {effectiveSub === 'dividends' && <AdminDividends navigate={navigate} detailId={hash.param2} admin={adminUser} />}
-            {effectiveSub === 'spvs' && <AdminSpvs navigate={navigate} detailId={hash.param2} admin={adminUser} />}
-            {effectiveSub === 'exits' && <AdminExits navigate={navigate} detailId={hash.param2} />}
+            {/* 2026-10-16 口径修订：申购记录恢复（意向收集链）；funds/transactions/transaction-monitor/
+                large-tx/anomaly/str/edd/dividends/spvs/exits 10 个资金/投后渲染分支保持摘除——越权直敲
+                由 getRoleMenuKeys 过滤（VALID_MENU_KEYS）落欢迎首页兜底 */}
             {effectiveSub === 'users' && <AdminUsers navigate={navigate} detailId={hash.param2} admin={adminUser} />}
             {effectiveSub === 'audit' && <AdminAuditLogs />}
             {effectiveSub === 'roles' && <AdminRoles admin={adminUser} />}
@@ -352,149 +309,28 @@ export default function App() {
             {effectiveSub === 'broadcast' && <AdminNotifications admin={adminUser} />}
             {effectiveSub === 'messages' && <AdminSupport admin={adminUser} detailId={hash.param2} navigate={navigate} />}
             {effectiveSub === 'config' && <AdminConfig admin={adminUser} />}
+            </Suspense>
           </ErrorBoundary>
         </main>
       </div>
     );
   }
 
-  // KYC 相关路由（登录前后都可访问，KYC APPROVED 后不能访问）
-  const KYC_PATHS = new Set([
-    'kyc-start', 'kyc-id-upload', 'kyc-address-proof', 'kyc-submitted',
-  ]);
-
-  // 游客态拦截：详情/私密/我的资产相关路由 → 跳 LoginPage（PI 合规 + 漏斗转化）
-  const PRIVATE_PATHS = new Set([
-    'login', 'project', 'event', 'project-heat', 'my-subscription',
-    'subscriptions', 'wallet', 'transactions', 'fund-requests', 'fund-request', 'fund-operation', 'holdings', 'assets', 'asset-trend', 'exchange', 'bank-cards',
-    'funds', 'reports', 'notifications', 'support', 'settings', 'help', 'profile',
-    'bind-phone', 'change-email',
-    'kyc-start', 'kyc-id-upload', 'kyc-address-proof', 'kyc-pi', 'pi-submitted',
-    'spv-sign',
-  ]);
-
-  // 合规门控：KYC 未通过的用户只能访问的页面（PI 强制要求）
-  // 2026-09-20（拍板）：PI 材料提交与 KYC 审核解耦——kyc-pi / pi-submitted 放行，
-  // 用户提交完 KYC 即可连贯提交 PI 资料，两项审核并行；PI 生效后的申购仍被本门控挡住（申购页不在白名单）
-  const KYC_ONLY_PATHS = new Set([
-    'kyc-start', 'kyc-id-upload', 'kyc-address-proof', 'kyc-submitted',
-    'kyc-pi', 'pi-submitted',
-    'login', 'register', 'forgot-password', 'reset-password',
-    'profile',  // 允许访问 Profile（用于退出登录）
-  ]);
-
-  // 2026-09-18：合规门控始终读 data.js 模块级 currentUser（submitKyc 直接 mutate 它，永远是最新值）。
-  // 若读 App local state：submitKyc 不调 setCurrentUser → local state stale（仍 APPROVED）→
-  // 门控条件 !isKycApproved 恒为 false → 拦截失效，点受保护页面会穿透成空白。
-  const isKycApproved = currentUserData.kyc_status === KYC_STATUS.APPROVED;
-
+  // 门控决策与 APP 端路由表已提取至 shell/guard.js + shell/router.jsx（2026-10-09 嵌入方案·方案A），
+  // 与嵌入壳共用单一事实源；此处仅执行决策结果（渲染 LoginPage / 执行导航副作用）。
   const renderPage = () => {
-    // 未登录 + 访问需要登录的页面 → LoginPage
-    if (!isLoggedIn && PRIVATE_PATHS.has(hash.path)) {
+    const gate = resolveGate({ path: hash.path, isLoggedIn, user: currentUserData });
+    if (gate?.type === 'login') {
       return <LoginPage navigate={navigate} setIsLoggedIn={setIsLoggedIn} setUser={setUser} setToast={setToast} />;
     }
-    // 合规门控：已登录 + KYC 未通过 + 访问非 KYC 白名单页面 → 重定向到认证流程
-    // 2026-09-18：区分目标——"已提交过"的状态（待审核/被拒/补件）引导到状态页，
-    // 用户第一需求是查看审核结果/被拒原因（状态页内已有"重新提交"按钮指向 kyc-start）；
-    // "未提交过"的状态（未开始/进行中/过期）才直接进 kyc-start 填写。
-    // 此前统一跳 kyc-start 会让刚提交完或被拒的用户看到空白表单，误以为点进了 PI 认证。
-    if (isLoggedIn && !isKycApproved && !KYC_ONLY_PATHS.has(hash.path)) {
-      const submittedStatuses = [
-        KYC_STATUS.PENDING_REVIEW,
-        KYC_STATUS.REJECTED,
-        KYC_STATUS.REQUIRES_ACTION,
-      ];
-      if (submittedStatuses.includes(currentUserData.kyc_status)) {
-        navigate('kyc-submitted');
-      } else {
-        navigate('kyc-start');
-      }
+    if (gate?.type === 'redirect') {
+      navigate(gate.to);
       return null;
     }
-    // KYC 已通过但访问 KYC 流程 → 重定向到 assets
-    // 例外：#kyc-submitted（认证状态页）允许已通过用户重访查看"认证已通过"结果
-    if (isLoggedIn && isKycApproved && KYC_PATHS.has(hash.path) && hash.path !== 'kyc-submitted') {
-      navigate('assets');
-      return null;
-    }
-    switch (hash.path) {
-      case 'search':
-        return <SearchPage navigate={navigate} goBack={goBack} isLoggedIn={isLoggedIn} />;
-      case 'projects':
-        return <ProjectMarket navigate={navigate} />;
-      case 'project':
-        return <ProjectDetail id={hash.param} navigate={navigate} goBack={goBack} />;
-      case 'project-heat':
-        return <ProjectHeat id={hash.param} navigate={navigate} goBack={goBack} />;
-      case 'events':
-        return <Events navigate={navigate} setToast={setToast} isLoggedIn={isLoggedIn} />;
-      case 'event':
-        return <EventDetail id={hash.param} navigate={navigate} goBack={goBack} setToast={setToast} />;
-      case 'subscriptions':
-        return <Subscriptions navigate={navigate} goBack={goBack} />;
-      case 'my-subscription':
-        return <MySubscription id={hash.param} navigate={navigate} goBack={goBack} />;
-      case 'wallet':
-        return <Wallet navigate={navigate} goBack={goBack} />;
-      case 'transactions':
-        return <Transactions navigate={navigate} goBack={goBack} />;
-      case 'fund-requests':
-        return <FundRequests navigate={navigate} goBack={goBack} />;
-      case 'fund-request':
-        return <FundRequestDetail id={hash.param} navigate={navigate} goBack={goBack} />;
-      case 'fund-operation':
-        return <FundOperation mode={hash.param} navigate={navigate} goBack={goBack} />;
-      case 'holdings':
-        return <Holdings navigate={navigate} goBack={goBack} />;
-      case 'assets':
-        return <AssetOverview navigate={navigate} />;
-      case 'asset-trend':
-        return <AssetTrend navigate={navigate} goBack={goBack} />;
-      case 'exchange':
-        return <Exchange navigate={navigate} goBack={goBack} />;
-      case 'bank-cards':
-        return <BankCards navigate={navigate} goBack={goBack} />;
-      case 'about':
-        return <About navigate={navigate} goBack={goBack} setToast={setToast} />;
-      case 'funds':
-        return <Funds navigate={navigate} goBack={goBack} setToast={setToast} />;
-      case 'reports':
-        return <Reports navigate={navigate} goBack={goBack} setToast={setToast} />;
-      case 'notifications':
-        return <Notifications navigate={navigate} goBack={goBack} />;
-      case 'support':
-        return <Support navigate={navigate} goBack={goBack} />;
-      case 'settings':
-        return <Settings navigate={navigate} goBack={goBack} />;
-      case 'bind-phone':
-        return <BindPhone navigate={navigate} goBack={goBack} setToast={setToast} />;
-      case 'change-email':
-        return <ChangeEmail navigate={navigate} goBack={goBack} setToast={setToast} />;
-      case 'help':
-        return <Help navigate={navigate} goBack={goBack} />;
-      case 'profile':
-        return <Profile navigate={navigate} setIsLoggedIn={setIsLoggedIn} />;
-      // KYC 流程页面（3 步：基本信息 → 证件上传 → 地址证明 + 提交后等待审核）
-      case 'kyc-start':
-        return <KYCStart navigate={navigate} goBack={goBack} setIsLoggedIn={setIsLoggedIn} />;
-      case 'kyc-id-upload':
-        return <KYCIdUpload navigate={navigate} goBack={goBack} setIsLoggedIn={setIsLoggedIn} />;
-      case 'kyc-address-proof':
-        return <KYCAddressProof navigate={navigate} goBack={goBack} setIsLoggedIn={setIsLoggedIn} />;
-      case 'kyc-submitted':
-        return <KYCSubmitted navigate={navigate} goBack={goBack} />;
-      case 'kyc-pi':
-        return <KYCPI navigate={navigate} goBack={goBack} />;
-      case 'pi-submitted':
-        return <PISubmitted navigate={navigate} goBack={goBack} />;
-      case 'spv-sign':
-        return <SpvSign id={hash.param} navigate={navigate} goBack={goBack} />;
-      default:
-        return <Events navigate={navigate} setToast={setToast} isLoggedIn={isLoggedIn} />;
-    }
+    return renderAppPage(hash.path, hash.param, { navigate, goBack, setToast, isLoggedIn, setIsLoggedIn });
   };
 
-  const TOP_LEVEL_PAGES = ['events', 'projects', 'assets', 'profile'];
+  const TOP_LEVEL_PAGES = ['events', 'projects', 'profile'];
   const isTopLevel = TOP_LEVEL_PAGES.includes(hash.path);
   // 联动决定 BottomNav 显示 + .app-content 72px 留白（避免游客态 TopLevel 出现死间距）
   const showBottomNav = isTopLevel && isLoggedIn;
@@ -502,13 +338,27 @@ export default function App() {
   return (
     <div className="app-container">
       <div className={`app-content${showBottomNav ? '' : ' no-bottom-pad'}`}>
-        <ErrorBoundary>{renderPage()}</ErrorBoundary>
+        <ErrorBoundary>
+          <Suspense fallback={<div className="p-lazy-loading">加载中…</div>}>
+            {renderPage()}
+          </Suspense>
+        </ErrorBoundary>
       </div>
       {showBottomNav && <BottomNav current={hash.path} onNavigate={navigate} />}
       {toast && <div className="toast toast-success">{toast}</div>}
       {/* 条款更新重同意闸门（2026-09-15 · 对齐公司实践：版本升级后登录弹窗，重新勾选后方可继续） */}
       {isLoggedIn && termsState.agreedVersion !== termsState.currentVersion && (
         <TermsUpdateGate onAgreed={() => setTermsTick(t => t + 1)} />
+      )}
+      {/* 开户协议闸门（2026-10-15 · UC 对齐）：KYC 通过后首次进 APP 签署基金业务协议（三件套），
+          注册环节已零协议勾选；判定读 data.js 单例，签署后 agreementRecords 持久化，闸门随之消失 */}
+      {isLoggedIn
+        && currentUserData.kyc_status === KYC_STATUS.APPROVED
+        && !hasAgreedOnboarding() && (
+        <OnboardingGate
+          onAgreed={() => setTermsTick(t => t + 1)}
+          onDecline={() => { setIsLoggedIn(false); navigate('#login'); }}
+        />
       )}
     </div>
   );

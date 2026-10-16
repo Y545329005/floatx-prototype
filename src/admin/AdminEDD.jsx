@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { clickable } from '../lib';
 import { Search, X, ShieldAlert, FileText, User, Upload } from 'lucide-react';
 import {
   enhancedDueDiligence,
@@ -170,7 +171,7 @@ export default function AdminEDD({ navigate, detailId, admin }) {
         {pageRows.map(r => {
           const sm = STATUS_META[r.status] || {};
           return (
-            <div key={r.id} className="admin-table-row" onClick={() => navigate(`#admin/edd/${r.id}`)}>
+            <div key={r.id} className="admin-table-row" {...clickable(() => navigate(`#admin/edd/${r.id}`))}>
               <span className="col-id">{r.id}</span>
               <span className="col-project">
                 <strong>{TRIGGER_LABELS[r.triggerType] || r.triggerType}</strong>

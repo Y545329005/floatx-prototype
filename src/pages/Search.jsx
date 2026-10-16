@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { clickable } from '../lib';
 import { ArrowLeft, Search, X } from 'lucide-react';
 import { projects, events, projectStatusLabels, getProjectHeroGradient, getProjectHeroEmoji, subscriptions, sectors, isEventRegistered, currentUser, getInvestorNo } from '../mock/data';
 import { useLang } from '../i18n';
@@ -56,13 +57,13 @@ export default function SearchPage({ navigate, goBack }) {
     // 多用户化（2026-08-13）：按投资人过滤，"已申购"仅当前用户的记录
     const mySub = subscriptions.find(s => s.projectId === p.id && s.investorNo === getInvestorNo(currentUser.id));
     return (
-      <div key={p.id} className="card project-card" onClick={() => navigate(`#project/${p.id}`)}>
+      <div key={p.id} className="card project-card" {...clickable(() => navigate(`#project/${p.id}`))}>
         <div
           className="project-card-hero"
           style={{ background: getProjectHeroGradient(p.sector) }}
         >
           {p.coverImage ? (
-            <img className="project-card-hero-img" src={p.coverImage} alt={p.title} />
+            <img className="project-card-hero-img" src={p.coverImage} alt={p.title} loading="lazy" decoding="async" />
           ) : (
             <span className="project-card-hero-icon">{getProjectHeroEmoji(p.sector)}</span>
           )}
@@ -84,13 +85,13 @@ export default function SearchPage({ navigate, goBack }) {
     const proj = projects.find(p => p.id === e.projectId);
     const heroSector = proj ? proj.sector : e.projectName;
     return (
-      <div key={e.id} className="card project-card" onClick={() => navigate(`#event/${e.id}`)}>
+      <div key={e.id} className="card project-card" {...clickable(() => navigate(`#event/${e.id}`))}>
         <div
           className="project-card-hero"
           style={{ background: getProjectHeroGradient(heroSector) }}
         >
           {e.coverImage ? (
-            <img className="project-card-hero-img" src={e.coverImage} alt={e.title} />
+            <img className="project-card-hero-img" src={e.coverImage} alt={e.title} loading="lazy" decoding="async" />
           ) : (
             <span className="project-card-hero-icon">{getProjectHeroEmoji(heroSector)}</span>
           )}

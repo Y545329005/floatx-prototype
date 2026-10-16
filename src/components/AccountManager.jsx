@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { clickable } from '../lib';
 import { Phone, Mail, MessageCircle, Headphones, ChevronRight, X } from 'lucide-react';
 import { currentUser } from '../mock/data';
 import { useLang } from '../i18n';
@@ -48,7 +49,7 @@ export default function AccountManager({ onEscalate, compact }) {
   if (compact) {
     return (
       <>
-        <div className="account-manager-row" onClick={() => setShowSheet(true)}>
+        <div className="account-manager-row" {...clickable(() => setShowSheet(true))}>
           <div className="account-manager-row-icon">
             <Headphones size={18} />
           </div>

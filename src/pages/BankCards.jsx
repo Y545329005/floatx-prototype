@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft, Plus, CreditCard, Trash2, X, ShieldCheck, ShieldQuestion, Zap, Check } from 'lucide-react';
-import { bankCards, platformAccounts, eddaAuth, authorizeEdda, submitCardVerification, recordAgreement } from '../mock/data';
+import { bankCards, platformAccounts, eddaAuth, authorizeEdda, submitCardVerification, recordAgreement, getFreezeState } from '../mock/data';
 import { useLang } from '../i18n';
 import AgreementModal from '../components/AgreementModal';
 
@@ -17,6 +17,8 @@ const suggestAmount = (currency) => (currency === 'USD' ? 1300 : currency === 'C
 // 白名单验证：向平台收款账户转账 ≥1万 HKD（或等值 USD）→ 财务核对到账 → 卡片置白名单
 export default function BankCards({ navigate, goBack }) {
   const { t } = useLang();
+  // 冻结拦截提示（INV-5：银行卡页无 setToast prop，用错误条演示）
+  const [freezeBlocked, setFreezeBlocked] = useState(false);
   const [cards, setCards] = useState(bankCards.map(c => ({ ...c })));
   const [showAdd, setShowAdd] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(null);
@@ -29,6 +31,12 @@ export default function BankCards({ navigate, goBack }) {
   const [viewingDoc, setViewingDoc] = useState(null);
 
   const removeCard = (id) => {
+    // INV-5 凡动必冻：冻结期内阻断出金账户（银行卡）解绑（数据层无对应函数，UI 层拦截）
+    if (getFreezeState().frozen) {
+      setConfirmRemove(null);
+      setFreezeBlocked(true);
+      return;
+    }
     const idx = bankCards.findIndex(c => c.id === id);
     if (idx >= 0) bankCards.splice(idx, 1);
     setCards(cards.filter(c => c.id !== id));
@@ -37,6 +45,11 @@ export default function BankCards({ navigate, goBack }) {
 
   // 发起白名单验证：转账验证款 → 财务核对 → 置白名单
   const startVerification = (cardId) => {
+    // INV-5 凡动必冻：置白名单 = 出金账户能力变更，冻结期内连同入口一起阻断
+    if (getFreezeState().frozen) {
+      setFreezeBlocked(true);
+      return;
+    }
     const card = cards.find(c => c.id === cardId);
     if (!card) return;
     setVerifyingCard(cardId);
@@ -45,6 +58,12 @@ export default function BankCards({ navigate, goBack }) {
   };
 
   const submitVerification = () => {
+    // INV-5 凡动必冻：Sheet 打开期间冻结生效的兜底（正常路径已在入口拦截）
+    if (getFreezeState().frozen) {
+      setVerifyingCard(null);
+      setFreezeBlocked(true);
+      return;
+    }
     const amount = parseFloat(verifyForm.amount) || 0;
     if (amount <= 0) { setVerifyError(t('请输入有效的验证转账金额')); return; }
     const ok = submitCardVerification({
@@ -136,6 +155,15 @@ export default function BankCards({ navigate, goBack }) {
           <h1>{t('银行卡管理')}</h1>
         </div>
       </div>
+
+      {/* 凡动必冻横幅（INV-5：出金账户变更冻结） */}
+      {getFreezeState().frozen && (
+        <div className="sc-freeze-banner">
+          <ShieldCheck size={16} />
+          <span>{t('安全冻结生效中：出金账户变更将暂停至 {time}（{reason}）').replace('{time}', String(getFreezeState().until).replace('T', ' ').slice(0, 16)).replace('{reason}', getFreezeState().reason || '')}</span>
+        </div>
+      )}
+      {freezeBlocked && <div className="sc-freeze-banner">{t('安全冻结生效中：安全项变更后 24 小时内无法变更出金账户')}</div>}
 
       <p className="text-muted text-sm bank-cards-note">
         {t('出入金仅限「白名单」银行卡。新卡需通过转账验证（≥1万 HKD 或等值 USD）后方可用于资金往来。')}
@@ -268,6 +296,12 @@ export default function BankCards({ navigate, goBack }) {
                 style={{ opacity: addAgreed ? 1 : 0.45 }}
                 onClick={() => {
                   if (!addAgreed) return;
+                  // INV-5 凡动必冻：新增出金账户在冻结期内阻断
+                  if (getFreezeState().frozen) {
+                    setShowAdd(false);
+                    setFreezeBlocked(true);
+                    return;
+                  }
                   // 协议签署留痕（版本固化 + 审计日志）
                   recordAgreement({ type: 'bank-card', agreementIds: ['bank-card-service'] });
                   // 演示阶段：新增卡加入真实数据源（unverified），以便演示白名单验证流程

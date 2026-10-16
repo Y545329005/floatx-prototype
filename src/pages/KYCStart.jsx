@@ -208,7 +208,7 @@ const [errors, setErrors] = useState({});
               <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowExitConfirm(false)}>
                 {t('取消')}
               </button>
-              <button className="btn btn-primary" style={{ flex: 1, background: 'var(--danger)', border: 'none', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => { setIsLoggedIn(false); navigate('login'); }}>
+              <button className="btn btn-danger" style={{ flex: 1 }} onClick={() => { setIsLoggedIn(false); navigate('login'); }}>
                 {t('确认退出')}
               </button>
             </div>
@@ -219,7 +219,7 @@ const [errors, setErrors] = useState({});
       {/* 进度条（2026-09-15 收敛为 3 步：基本信息 → 身份证件 → 地址证明；KYC 内签署模块已移除） */}
       <div className="kyc-progress">
         <div className="kyc-progress-bar">
-          <div className="kyc-progress-fill" style={{ width: '33.3%' }} />
+          <div className="kyc-progress-fill" style={{ '--fill': 0.333 }} />
           <span className="kyc-progress-dot active" style={{ left: '16.5%' }} />
           <span className="kyc-progress-dot" style={{ left: '50%' }} />
           <span className="kyc-progress-dot" style={{ left: '83.5%' }} />

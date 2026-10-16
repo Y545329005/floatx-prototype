@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { clickable } from '../lib';
 import { ArrowLeft, Upload } from 'lucide-react';
 import { depositRequests, withdrawRequests, exchangeRequests, wallet, formatCurrency, submitDepositEvidence, getEvidencePreview } from '../mock/data';
 import { useLang } from '../i18n';
@@ -187,7 +188,7 @@ export default function FundRequestDetail({ id, navigate, goBack }) {
               <span className="text-muted">{t('补传原因')}</span>
               <strong className="text-danger">{req.requestEvidenceReason || '—'}</strong>
             </div>
-            <div className="fund-evidence-box detail" onClick={() => fileRef.current && fileRef.current.click()}>
+            <div className="fund-evidence-box detail" {...clickable(() => fileRef.current && fileRef.current.click())}>
               <input
                 ref={fileRef}
                 type="file"

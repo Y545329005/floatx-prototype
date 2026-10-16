@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { clickable } from '../lib';
 import { ArrowLeft, X, BadgeCheck } from 'lucide-react';
 import { holdings, exitEvents, confirmExitEvent, EXIT_TYPE_META, getProjectById, getProjectHeroGradient, getProjectHeroEmoji, formatCurrency } from '../mock/data';
 import { useLang } from '../i18n';
@@ -64,9 +65,9 @@ export default function Holdings({ navigate, goBack }) {
           const ev = activeExitByProject[h.projectId];
           return (
             <div key={h.id} className="card holding-card">
-              <div className="holding-card-hero" style={{ background: bg }} onClick={() => navigate(`#project/${h.projectId}`)}>
+              <div className="holding-card-hero" style={{ background: bg }} {...clickable(() => navigate(`#project/${h.projectId}`))}>
                 {project && project.coverImage ? (
-                  <img src={project.coverImage} alt={h.projectName} />
+                  <img src={project.coverImage} alt={h.projectName} loading="lazy" decoding="async" />
                 ) : (
                   <span className="holding-card-hero-emoji">{emoji}</span>
                 )}

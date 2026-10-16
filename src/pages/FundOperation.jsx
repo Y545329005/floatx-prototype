@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react';
+import { clickable } from '../lib';
 import { ArrowLeft, Landmark, Upload, Zap, ShieldCheck } from 'lucide-react';
 import {
   wallet, bankCards, platformAccounts, eddaAuth, authorizeEdda,
   depositRequests, withdrawRequests, submitDepositRequest, submitWithdrawRequest, formatCurrency,
+  getFreezeState,
 } from '../mock/data';
 import { useLang } from '../i18n';
 
@@ -33,6 +35,8 @@ export default function FundOperation({ mode, navigate, goBack }) {
   const cur = wallet[currency];
   const amountNum = parseFloat(amount) || 0;
   const [eddaReady, setEddaReady] = useState(eddaAuth.status === 'authorized'); // eddaAuth 非 React state，本地镜像驱动渲染
+  // INV-5 凡动必冻：安全冻结期内阻断出金（UI 层前置拦截 + 数据层兜底）
+  const freeze = getFreezeState();
 
   // 模拟凭证选择：读取文件名作为凭证（演示阶段，接后端由真实文件上传替换）
   const handleEvidenceFile = (e) => {
@@ -49,6 +53,10 @@ export default function FundOperation({ mode, navigate, goBack }) {
     const bc = bankCards.find(b => b.id === bankCard);
     if (!bc) {
       setError(isDeposit ? t('请选择已通过白名单验证的付款银行卡') : t('请选择已通过白名单验证的收款银行卡'));
+      return;
+    }
+    if (!isDeposit && freeze.frozen) { // 凡动必冻拦截
+      setError(t('安全冻结生效中：安全项变更后 24 小时内无法提现'));
       return;
     }
     const opts = {
@@ -132,6 +140,14 @@ export default function FundOperation({ mode, navigate, goBack }) {
           ? `${t('线下转账 + 登记核销：请先向平台收款账户完成转账，再登记转账金额并上传凭证，财务核对到账后上账')}`
           : `${t('当前可用')} ${cur.label} ${cur.symbol}${formatCurrency(cur.balance)}`}
       </p>
+
+      {/* 凡动必冻横幅（INV-5） */}
+      {!isDeposit && freeze.frozen && (
+        <div className="sc-freeze-banner">
+          <ShieldCheck size={16} />
+          <span>{t('安全冻结生效中：提现功能将暂停至 {time}（{reason}）').replace('{time}', String(freeze.until).replace('T', ' ').slice(0, 16)).replace('{reason}', freeze.reason || '')}</span>
+        </div>
+      )}
 
       {isDeposit && renderAccountCard()}
 
@@ -253,7 +269,7 @@ export default function FundOperation({ mode, navigate, goBack }) {
               placeholder={t('转账后银行回执上的参考号')}
               onChange={() => { if (error) setError(''); }}
             />
-            <div className="fund-evidence-box" onClick={() => fileRef.current && fileRef.current.click()}>
+            <div className="fund-evidence-box" {...clickable(() => fileRef.current && fileRef.current.click())}>
               <input
                 ref={fileRef}
                 type="file"

@@ -1,4 +1,5 @@
-import { Wallet, ClipboardList, PieChart, ChevronRight } from 'lucide-react';
+import { Wallet, ClipboardList, PieChart, ChevronRight, ArrowLeft } from 'lucide-react';
+import { clickable } from '../lib';
 import { assetHistory, holdings, currentUser, exchangeRates, transactions, formatCurrency } from '../mock/data';
 import { useLang } from '../i18n';
 
@@ -6,7 +7,7 @@ const SPARK_W = 340;
 const SPARK_H = 38;
 const SPARK_PAD = 4;
 
-export default function AssetOverview({ navigate }) {
+export default function AssetOverview({ navigate, embed = false, goBack }) {
   const { t } = useLang();
   const latestTotal = assetHistory[assetHistory.length - 1].total;
 
@@ -41,6 +42,19 @@ export default function AssetOverview({ navigate }) {
 
   return (
     <div className="page asset-overview-page">
+      {/* 嵌入形态二级页页头：返回 + 标题（独立原型为 Tab 根页，不渲染） */}
+      {embed && (
+        <div className="market-sticky">
+          <div className="market-header">
+            <div className="market-header-title">
+              <button className="back-btn" aria-label={t('返回')} onClick={() => goBack('#wealth')}>
+                <ArrowLeft size={20} />
+              </button>
+              <h1>{t('资产总览')}</h1>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="asset-hero-card">
         <div className="asset-hero-head">
           <span className="asset-hero-label">{t('总资产（折合 HKD）')}</span>
@@ -50,7 +64,7 @@ export default function AssetOverview({ navigate }) {
         </div>
         <div className="asset-hero-main">
           <div className="asset-hero-value">{formatCurrency(latestTotal)}</div>
-          <div className="asset-hero-spark" onClick={() => navigate('#asset-trend')}>
+          <div className="asset-hero-spark" {...clickable(() => navigate('#asset-trend'))}>
             <svg viewBox={`0 0 ${SPARK_W} ${SPARK_H}`} preserveAspectRatio="none">
               <defs>
                 <linearGradient id="assetSparkFill" x1="0" y1="0" x2="0" y2="1">
@@ -125,7 +139,7 @@ export default function AssetOverview({ navigate }) {
             </div>
             <div className="holding-preview-list">
               {holdings.map(h => (
-                <div key={h.id} className="holding-preview-row" onClick={() => navigate(`#project/${h.projectId}`)}>
+                <div key={h.id} className="holding-preview-row" {...clickable(() => navigate(`#project/${h.projectId}`))}>
                   <div className="holding-preview-name">
                     <span className="holding-preview-dot">{h.projectName[0]}</span>
                     <span>{h.projectName}</span>

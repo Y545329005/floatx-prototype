@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { ArrowLeft, Smartphone, Check, AlertCircle, Edit3 } from "lucide-react";
 import { useLang } from "../i18n";
-import { currentUser, sendPhoneVerifyCode, verifyPhoneCode } from "../mock/data";
+import { currentUser, sendPhoneVerifyCode, verifyPhoneCode, resolveSensitiveFactors, consumeAuthToken } from "../mock/data";
+import SecurityVerifySheet from "../components/SecurityVerifySheet";
 
 // 独立「绑定手机」功能：从 KYC 流程剥离的账户安全功能
-// 入口：设置中心 → 登录安全 → 绑定手机
+// 入口：安全中心 → 短信验证卡（2026-09-23 收编，Settings 直达入口已移除）；无因子阻断引导（安全中心/资金触点）同页
+// 2FA（2026-09-22 · 规格 5.3.3）：首绑无既有安全项可验，直接绑定+验证码；换绑（变更态）需先过安全验证弹窗
 export default function BindPhone({ goBack, setToast }) {
   const { t } = useLang();
   const profile = currentUser.kyc_profile || {};
@@ -16,15 +18,17 @@ export default function BindPhone({ goBack, setToast }) {
   const [errors, setErrors] = useState({});
   const [verified, setVerified] = useState(!!profile.phoneVerified);
   const [editing, setEditing] = useState(false);
+  const [verifyFlow, setVerifyFlow] = useState(false); // 换绑前置安全验证
 
   const isValidPhone = (p) => /^(\+?852)?[569]\d{7}$/.test(p.replace(/[\s-]/g, ''));
 
   const enterEditMode = () => {
-    setEditing(true);
-    setCode('');
-    setCodeSent(false);
-    setErrors({});
-    setCountdown(0);
+    const factors = resolveSensitiveFactors();
+    if (factors.length === 0) {
+      if (setToast) setToast(t('为保护账户安全，请先完成安全项绑定'));
+      return;
+    }
+    setVerifyFlow(true);
   };
 
   const cancelEdit = () => {
@@ -181,7 +185,7 @@ export default function BindPhone({ goBack, setToast }) {
               <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-start', marginTop: 'var(--space-3)', padding: 'var(--space-3)', background: 'var(--primary-light)', borderRadius: 'var(--radius-md)' }}>
                 <AlertCircle size={14} style={{ color: 'var(--primary)', flexShrink: 0, marginTop: 2 }} />
                 <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                  {t('演示模式：验证码为 123456（控制台输出）')}
+                  {t('演示模式：验证码为 123456')}
                 </div>
               </div>
 
@@ -210,6 +214,25 @@ export default function BindPhone({ goBack, setToast }) {
             {t('验证手机号')}
           </button>
         </div>
+      )}
+
+      {/* 换绑前置安全验证（规格 5.2 敏感操作矩阵） */}
+      {verifyFlow && (
+        <SecurityVerifySheet
+          open
+          factors={resolveSensitiveFactors()}
+          onVerified={(token) => {
+            if (!consumeAuthToken(token).ok) { if (setToast) setToast(t('验证凭证已失效，请重新验证')); return; }
+            setVerifyFlow(false);
+            setEditing(true);
+            setCode('');
+            setCodeSent(false);
+            setErrors({});
+            setCountdown(0);
+          }}
+          onClose={() => setVerifyFlow(false)}
+          subtitle={t('验证通过后可更换手机号')}
+        />
       )}
     </div>
   );

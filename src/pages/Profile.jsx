@@ -1,25 +1,16 @@
 import { useState } from 'react';
-import { Shield, ChevronRight, LogOut, FileText, Bell, Settings, HelpCircle, BadgeCheck, Info, Award, Palette } from 'lucide-react';
-import { currentUser, notifications, KYC_STATUS } from '../mock/data';
+import { Shield, ChevronRight, LogOut, Bell, Settings, HelpCircle, BadgeCheck, Info, Award } from 'lucide-react';
+import { currentUser, notifications, KYC_STATUS, PI_STATUS, getPiStatusForUser } from '../mock/data';
 import AccountManager from '../components/AccountManager';
 import { useLang } from '../i18n';
-import { getTheme, setTheme } from '../theme';
-
-// 主题选项（2026-09-14 双皮肤）：切换即时生效，localStorage 记忆，刷新保持
-const THEME_OPTIONS = [
-  { value: '', label: '经典', desc: '默认金融蓝主题' },
-  { value: 'hkbtc', label: 'HKBTC 2.0', desc: '公司设计 UIkit 换肤' },
-];
 
 export default function Profile({ navigate, setIsLoggedIn }) {
   const { t } = useLang();
-  const [theme, setThemeState] = useState(getTheme);
-  const handleTheme = (v) => { setTheme(v); setThemeState(v); };
   // 2026-09-11 定向通知后：未读计数只统计当前用户可见通知（全员 + 发给当前用户）
   const unreadCount = notifications.filter(n => !n.toUserId || n.toUserId === currentUser.id).filter(n => !n.read).length;
+  // 2026-10-16 首期裁剪：合规报告入口摘除（#reports 随资产树下线）；消息通知副标题去申购/资金口径
   const menuItems = [
-    { icon: FileText, label: t('合规报告'), sub: t('资产报告 · 合规披露'), hash: '#reports' },
-    { icon: Bell, label: t('消息通知'), sub: t('申购 · 路演 · 资金动态'), hash: '#notifications', badge: unreadCount },
+    { icon: Bell, label: t('消息通知'), sub: t('申购 · 路演动态'), hash: '#notifications', badge: unreadCount },
     { icon: Settings, label: t('账户设置'), sub: t('个人信息 · 认证 · 安全'), hash: '#settings' },
     { icon: HelpCircle, label: t('帮助中心'), sub: t('常见问题 · 客服支持'), hash: '#help' },
     { icon: Info, label: t('关于'), sub: t('公司信息 · 政策文件'), hash: '#about' },
@@ -28,9 +19,7 @@ export default function Profile({ navigate, setIsLoggedIn }) {
   // 2026-08-14：PI 独立审核流——PI 状态由 currentUser.pi.status 驱动（不再与 piCertified 捆绑）
   // 2026-09-20：PI 状态入口统一由下方 piMeta badge 承担（全状态可点击直达，原 piEntry 引导卡
   // 在所有态与 badge 跳转目标重复，整块删除节省页面空间、保持信息单一承载）
-  const piStatus = currentUser.pi?.status || 'none';
-  const piExpiresAt = currentUser.pi?.expiresAt;
-  const piExpired = !!(piExpiresAt && new Date(piExpiresAt.replace(' ', 'T')).getTime() < Date.now());
+  // 2026-10-16：PI 状态判定移至下方与门控同源（getPiStatusForUser），原三行 expiresAt 手工计算删除
 
   // 2026-09-11（会议纪要「我的模块：KYC 认证状态」）：KYC 状态 badge 直达展示 + 非已认证点击引导。
   // EXPIRED 不在 submitKyc 允许集合（IN_PROGRESS/REJECTED/REQUIRES_ACTION 才能重提），引导至客服而非 kyc-start
@@ -48,7 +37,9 @@ export default function Profile({ navigate, setIsLoggedIn }) {
   const kycBadge = kycMeta[currentUser.kyc_status] || kycMeta[KYC_STATUS.NOT_STARTED];
 
   // 2026-09-20：PI badge 全状态映射（对称 kycMeta）——此前 pending 无 badge，提交后「我的」页无任何 PI 状态提示；
-  // rejected/expired 同步补齐（KYC badge 即全状态直达）。expired 为派生态（verified 但超 expiresAt）。
+  // rejected/expired 同步补齐（KYC badge 即全状态直达）。
+  // 2026-10-16：状态判定与门控同源——getPiStatusForUser 含「verified 且过期 → EXPIRED」派生，
+  // 门控与 badge 不再各自计算 expiresAt（防两处口径漂移）
   const piMeta = {
     pending:  { label: 'PI 审核中',     cls: 'pi-pending',  target: '#pi-submitted' },
     rejected: { label: 'PI 未通过',     cls: 'pi-error',    target: '#kyc-pi' },
@@ -56,7 +47,13 @@ export default function Profile({ navigate, setIsLoggedIn }) {
     verified: { label: 'PI 认证投资者', cls: 'pi-verified', target: null },
     none:     { label: 'PI 未认证',     cls: 'pi-muted',    target: '#kyc-pi' },
   };
-  const piState = piStatus === 'verified' && piExpired ? 'expired' : piStatus;
+  const piStateMap = {
+    [PI_STATUS.APPROVED]: 'verified',
+    [PI_STATUS.EXPIRED]: 'expired',
+    [PI_STATUS.PENDING_REVIEW]: 'pending',
+    [PI_STATUS.REJECTED]: 'rejected',
+  };
+  const piState = piStateMap[getPiStatusForUser(currentUser.id)] || 'none';
   const piBadge = piMeta[piState] || piMeta.none;
 
   const handleLogout = () => {
@@ -120,31 +117,6 @@ export default function Profile({ navigate, setIsLoggedIn }) {
             </div>
           );
         })}
-      </div>
-
-      {/* 设计主题（2026-09-14 双皮肤切换：经典 / HKBTC 2.0 kit） */}
-      <div className="theme-switch">
-        <div className="theme-switch-head">
-          <Palette size={18} />
-          <span className="menu-item-title">{t('设计主题')}</span>
-        </div>
-        <div className="theme-switch-options">
-          {THEME_OPTIONS.map(opt => (
-            <button
-              key={opt.value}
-              type="button"
-              className={`theme-option${theme === opt.value ? ' selected' : ''}`}
-              onClick={() => handleTheme(opt.value)}
-            >
-              <span className="theme-option-swatch" data-theme-preview={opt.value} />
-              <span className="theme-option-label">
-                <span className="theme-option-name">{t(opt.label)}</span>
-                <span className="theme-option-desc">{t(opt.desc)}</span>
-              </span>
-              <span className="theme-option-check" />
-            </button>
-          ))}
-        </div>
       </div>
 
       <div className="profile-footer">

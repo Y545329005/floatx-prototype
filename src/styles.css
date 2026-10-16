@@ -27,64 +27,71 @@
 
 /* ========== Design Tokens（来自 DESIGN_SYSTEM.md，2026-08-06 + 2026-08-07 通盘修复）========== */
 :root {
-  /* Colors - 金融标准色系 */
-  --bg:            #F5F5F7;  /* 苹果/金融 app 主流浅灰 */
+  /* Colors - 品牌/语义色（HKBTC 2.0 kit：Primary #3660FF / Success Green-600 / Error Red-600 / Warning Orange-600；
+     2026-10-12 单主题化：集团规范即唯一标准，legacy 蓝金值已删，备份见 docs/archive/prototype-theme-legacy-backup-2026-10-12.tar.gz） */
+  --bg:            #F4F4F5;  /* Zinc-100 */
   --bg-card:       #ffffff;
-  --text:          #1A1A1A;
-  --text-secondary: #5C5C5C;
-  --text-tertiary:  #AEAEB2;
-  --border:        #E0E0E0;
-  --border-light:  #F0F0F0;
-  --primary:       #005EB8;  /* 正蓝，持牌金融机构标准色 */
-  --primary-hover: #004E9E;
-  --accent:        #B8860B;  /* 深金，沉稳不艳 */
-  --accent-light:  #FDF6E3;
-  --accent-hover:  #9A7209;
-  --success:       #1B6B32;  /* 深绿，英式银行惯用 */
-  --danger:        #C62828;  /* 深红，风险/亏损 */
-  --warning:       #E65100;  /* 深橙，一般警告（图形/大字号） */
-  --warning-text:  #B24000;  /* 警告文字档：白底小字号 ≥4.5:1 AA 达标 */
+  --text:          #18181B;  /* Zinc-900 */
+  --text-secondary: #51525C; /* kit 辅助文字 */
+  --text-tertiary:  #A0A0AB; /* Zinc-400（placeholder 同源） */
+  --border:        #D1D1D6;  /* kit 输入框强边框 */
+  --border-light:  #E4E4E7;  /* Zinc-200 弱边框 */
+  --primary:       #3660FF;  /* Primary 按钮/focus/链接（白字对比度 4.9:1，AA 过线） */
+  --primary-hover: #2441A8;  /* kit 品牌渐变深端 */
+  --accent:        #7F56D9;  /* 品牌紫（金退场决策 2026-09-14：已申购/已报名标记改紫） */
+  --accent-light:  #F4EBFF;  /* Untitled UI purple-50 浅紫底 */
+  --accent-hover:  #6941C6;  /* purple-700 */
+  --success:       #16A34A;  /* Green-600（涨/成功） */
+  --danger:        #DC2626;  /* Red-600 */
+  --warning:       #EA580C;  /* Orange-600 */
+  --warning-text:  #C2410C;  /* Orange-700：白底小字号 AA 达标档 */
 
-  /* 派生色 token 体系（2026-08-07 通盘修复，禁止硬编码 rgba）*/
+  /* 派生色 token 体系（按 HKBTC 2.0 基色重算，禁止硬编码 rgba）*/
   /* --primary 系列 */
-  --primary-light:  rgba(0, 94, 184, 0.06);   /* 浅主色底（CTA 选中、关联强调） */
-  --primary-bg:     rgba(0, 94, 184, 0.04);   /* 次浅主色底 */
-  --primary-strong: rgba(0, 94, 184, 0.85);   /* 强主色底（深色按钮按下） */
-  --primary-border: rgba(0, 94, 184, 0.2);    /* 主色细边框 */
+  --primary-light:  rgba(54, 96, 255, 0.08);   /* 浅主色底（CTA 选中、关联强调） */
+  --primary-bg:     rgba(54, 96, 255, 0.05);   /* 次浅主色底 */
+  --primary-strong: rgba(36, 65, 168, 0.95);   /* 强主色底（深色按钮按下） */
+  --primary-border: rgba(54, 96, 255, 0.28);   /* 主色细边框 */
   /* --success 系列 */
-  --success-light:  rgba(27, 107, 50, 0.06);
-  --success-bg:     rgba(27, 107, 50, 0.04);
-  --success-strong: rgba(27, 107, 50, 0.85);
-  --success-border: rgba(27, 107, 50, 0.2);
+  --success-light:  rgba(22, 163, 74, 0.08);
+  --success-bg:     rgba(22, 163, 74, 0.05);
+  --success-strong: rgba(21, 128, 61, 0.92);
+  --success-border: rgba(22, 163, 74, 0.25);
   /* --warning 系列 */
-  --warning-light:  rgba(230, 81, 0, 0.06);
-  --warning-bg:     rgba(230, 81, 0, 0.04);
-  --warning-strong: rgba(230, 81, 0, 0.85);
-  --warning-border: rgba(230, 81, 0, 0.2);
+  --warning-light:  rgba(234, 88, 12, 0.08);
+  --warning-bg:     rgba(234, 88, 12, 0.05);
+  --warning-strong: rgba(194, 65, 12, 0.92);
+  --warning-border: rgba(234, 88, 12, 0.25);
   /* --danger 系列 */
-  --danger-light:  rgba(198, 40, 40, 0.06);
-  --danger-bg:     rgba(198, 40, 40, 0.04);
-  --danger-strong: rgba(198, 40, 40, 0.85);
-  --danger-border: rgba(198, 40, 40, 0.2);
+  --danger-light:   rgba(220, 38, 38, 0.07);
+  --danger-bg:      rgba(220, 38, 38, 0.05);
+  --danger-strong:  rgba(185, 28, 28, 0.92);
+  --danger-border:  rgba(220, 38, 38, 0.25);
   /* --compliance 系列 */
-  --compliance:     #B71C1C;
-  --compliance-light:  rgba(183, 28, 28, 0.06);
-  --compliance-bg:     rgba(183, 28, 28, 0.04);
-  --compliance-strong: rgba(183, 28, 28, 0.85);
-  --compliance-border: rgba(183, 28, 28, 0.2);
+  --compliance:     #B91C1C;  /* Red-700（kit Inputs 错误深档） */
+  --compliance-light:  rgba(185, 28, 28, 0.07);
+  --compliance-bg:     rgba(185, 28, 28, 0.05);
+  --compliance-strong: rgba(153, 27, 27, 0.92);
+  --compliance-border: rgba(185, 28, 28, 0.25);
+  /* --info 系列（提示性信息，2026-09-24 audit 补定义：此前仅以 fallback 值存在）
+     --info-text 白底 5.79:1 / --info-bg 底 5.03:1，均 AA 达标 */
+  --info:           #1565C0;
+  --info-text:      #1565C0;
+  --info-bg:        #E3F2FD;
+  --info-border:    #90CAF9;
   /* --accent 系列 */
-  --accent-border:  rgba(184, 134, 11, 0.45);
+  --accent-border:  rgba(127, 86, 217, 0.4);
   /* 中档浅底（0.12 档：图标底/hero 光晕，介于 light 0.06 与 border 0.2 之间） */
-  --primary-tint:  rgba(0, 94, 184, 0.12);
-  --success-tint:  rgba(27, 107, 50, 0.12);
-  --warning-tint:  rgba(230, 81, 0, 0.12);
+  --primary-tint:  rgba(54, 96, 255, 0.14);
+  --success-tint:  rgba(22, 163, 74, 0.14);
+  --warning-tint:  rgba(234, 88, 12, 0.14);
 
-  /* 深色背景专用亮色（hero/深色卡内） */
+  /* 深色背景专用亮色（hero/深色卡内；涨跌亮色为 kit Green-400 / Red-400） */
   --text-on-dark:              #FFFFFF;
   --text-on-dark-secondary:    rgba(255, 255, 255, 0.7);
   --text-on-dark-tertiary:     rgba(255, 255, 255, 0.55);
-  --success-on-dark:           #4CD07D;
-  --danger-on-dark:            #FF7A7A;
+  --success-on-dark:           #4ADE80;
+  --danger-on-dark:            #F87171;
 
   /* 系统色（特殊场景） */
   --ios-green: #34C759;  /* iOS 系统绿（通知图标/原生 badge） */
@@ -102,6 +109,10 @@
   --text-2xl:  18px;
   --text-3xl:  20px;
   --text-4xl:  28px;
+  /* Display 档（大号数字/图形字号，2026-09-24 audit 补：旧 30/36/42px 就近归档到 32/40） */
+  --text-display-sm: 32px;  /* 换汇结果/持仓汇总数字 */
+  --text-display-md: 40px;  /* 卡片 hero 图标/装饰字 */
+  --text-display-lg: 56px;  /* 详情页 hero 图标 */
 
   /* Spacing - 9 档 */
   --space-1:  4px;
@@ -114,16 +125,16 @@
   --space-8:  32px;
   --space-10: 40px;
 
-  /* Border Radius - 4 档 */
+  /* Border Radius - 4 档（--radius-lg 16px = kit 容器档，2026-10-12 单主题化转正） */
   --radius-sm: 4px;
   --radius-md: 8px;
-  --radius-lg: 12px;
+  --radius-lg: 16px;
   --radius-xl: 16px;
 
-  /* Shadows - 3 档 */
-  --shadow-sm: 0 1px 8px rgba(0,94,184,0.06);
-  --shadow-md: 0 2px 12px rgba(0,94,184,0.08), 0 1px 3px rgba(0,94,184,0.04);
-  --shadow-lg: 0 4px 24px rgba(0,94,184,0.16);
+  /* Shadows - 3 档（kit Effect styles：Untitled UI 黑基阶梯） */
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.10);
+  --shadow-md: 0 2px 4px rgba(16, 24, 40, 0.06), 0 4px 8px rgba(16, 24, 40, 0.10);
+  --shadow-lg: 0 8px 8px rgba(16, 24, 40, 0.03), 0 20px 24px rgba(16, 24, 40, 0.08);
 
   /* Legacy aliases（兼容旧代码，逐步替换） */
   --radius: var(--radius-xl);
@@ -132,77 +143,8 @@
   /* 遮罩层（抽屉/弹层共用，2026-08-24 token 化：值不变，仅收敛硬编码） */
   --overlay-mask: rgba(0, 0, 0, 0.4);
 
-  /* 半结构 token（2026-09-14 双主题化：legacy 皮肤 = 现状值，hkbtc 皮肤见下方覆盖块） */
-  --font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-}
-
-/* ============================================
-   HKBTC 2.0 主题（data-theme="hkbtc"）
-   来源：公司 Figma UI kit「HKBTC 2.0」（VATP_Web，Untitled UI 品牌化版本）
-   提取依据：FOUNDATIONS/Colors、Typography、Effect styles、Spacing；Buttons/Inputs 页验证语义色
-   仅覆盖 token 值，不写组件级规则 → 组件结构零改动，切换无重渲染成本
-   ============================================ */
-:root[data-theme="hkbtc"] {
-  /* 品牌/语义色（kit: Primary #3660FF / Success Green-600 / Error Red-600 / Warning Orange-600） */
-  --primary:       #3660FF;  /* Primary 按钮/focus/链接（白字对比度 4.9:1，AA 过线） */
-  --primary-hover: #2441A8;  /* kit 品牌渐变深端 */
-  --accent:        #7F56D9;  /* 品牌紫（金退场决策 2026-09-14：已申购/已报名标记改紫） */
-  --accent-light:  #F4EBFF;  /* Untitled UI purple-50 浅紫底 */
-  --accent-hover:  #6941C6;  /* purple-700 */
-  --success:       #16A34A;  /* Green-600（涨/成功） */
-  --danger:        #DC2626;  /* Red-600 */
-  --warning:       #EA580C;  /* Orange-600 */
-  --warning-text:  #C2410C;  /* Orange-700：白底小字号 AA 达标档 */
-
-  /* 中性色（kit: Zinc 系 + Tailwind Blue-50） */
-  --bg:            #F4F4F5;  /* Zinc-100 */
-  --bg-card:       #ffffff;
-  --text:          #18181B;  /* Zinc-900 */
-  --text-secondary: #51525C; /* kit 辅助文字 */
-  --text-tertiary:  #A0A0AB; /* Zinc-400（placeholder 同源） */
-  --border:        #D1D1D6;  /* kit 输入框强边框 */
-  --border-light:  #E4E4E7;  /* Zinc-200 弱边框 */
-
-  /* 派生色（按新基色重算，保持「改主色全跟随」机制） */
-  --primary-light:  rgba(54, 96, 255, 0.08);
-  --primary-bg:     rgba(54, 96, 255, 0.05);
-  --primary-strong: rgba(36, 65, 168, 0.95);
-  --primary-border: rgba(54, 96, 255, 0.28);
-  --success-light:  rgba(22, 163, 74, 0.08);
-  --success-bg:     rgba(22, 163, 74, 0.05);
-  --success-strong: rgba(21, 128, 61, 0.92);
-  --success-border: rgba(22, 163, 74, 0.25);
-  --warning-light:  rgba(234, 88, 12, 0.08);
-  --warning-bg:     rgba(234, 88, 12, 0.05);
-  --warning-strong: rgba(194, 65, 12, 0.92);
-  --warning-border: rgba(234, 88, 12, 0.25);
-  --danger-light:   rgba(220, 38, 38, 0.07);
-  --danger-bg:      rgba(220, 38, 38, 0.05);
-  --danger-strong:  rgba(185, 28, 28, 0.92);
-  --danger-border:  rgba(220, 38, 38, 0.25);
-  --compliance:     #B91C1C;  /* Red-700（kit Inputs 错误深档） */
-  --compliance-light:  rgba(185, 28, 28, 0.07);
-  --compliance-bg:     rgba(185, 28, 28, 0.05);
-  --compliance-strong: rgba(153, 27, 27, 0.92);
-  --compliance-border: rgba(185, 28, 28, 0.25);
-  --accent-border:  rgba(127, 86, 217, 0.4);
-  --primary-tint:  rgba(54, 96, 255, 0.14);
-  --success-tint:  rgba(22, 163, 74, 0.14);
-  --warning-tint:  rgba(234, 88, 12, 0.14);
-
-  /* 深色底涨跌亮色（kit Green-400 / Red-400） */
-  --success-on-dark: #4ADE80;
-  --danger-on-dark:  #F87171;
-
-  /* 半结构覆盖 */
+  /* 半结构 token（Inter = kit Typography 字体栈，2026-10-12 单主题化转正） */
   --font-ui: Inter, -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --radius-lg: 16px;                                 /* kit 容器档（卡片 12→16，42 处引用已列入目检） */
-  --radius-2xl: 32px;                                /* kit 大区块档（备用，不强推） */
-
-  /* 阴影（kit Effect styles：Untitled UI 黑基阶梯） */
-  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.10);
-  --shadow-md: 0 2px 4px rgba(16, 24, 40, 0.06), 0 4px 8px rgba(16, 24, 40, 0.10);
-  --shadow-lg: 0 8px 8px rgba(16, 24, 40, 0.03), 0 20px 24px rgba(16, 24, 40, 0.08);
 }
 body {
   font-family: var(--font-ui);
@@ -275,6 +217,15 @@ input, select, textarea {
   align-items: center;
   justify-content: center;
   transition: background 0.2s;
+  position: relative;
+}
+
+/* 触控热区扩大 36→48px（手指操作性，2026-09-23），视觉不变 */
+.back-btn::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
 }
 
 .back-btn:hover {
@@ -442,6 +393,15 @@ input, select, textarea {
   font-weight: 700;
   line-height: 1.2;
 }
+
+/* 页头标题组：嵌入形态的业务二级页在标题左侧挂返回箭头（2026-10-13 双 Tab 改版）。
+   独立原型下箭头条件渲染不出现，仅 h1 参与布局，与改版前等价。 */
+.market-header-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
 .search-icon-btn {
   width: 40px;
   height: 40px;
@@ -476,7 +436,7 @@ input, select, textarea {
   background: var(--primary-light);
   color: var(--primary);
   border: none;
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   font-size: var(--text-sm);
   font-weight: 500;
   white-space: nowrap;
@@ -673,6 +633,14 @@ input, select, textarea {
   color: var(--text-secondary);
   flex-shrink: 0;
   cursor: pointer;
+  position: relative;
+}
+
+/* 触控热区扩大 24→44px（手指操作性，2026-09-23），视觉不变 */
+.search-clear-btn::after {
+  content: '';
+  position: absolute;
+  inset: -10px;
 }
 
 .search-clear-btn:active {
@@ -932,7 +900,7 @@ input, select, textarea {
 }
 
 .asset-hero-value {
-  font-size: 30px;
+  font-size: var(--text-display-sm);
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1;
@@ -1218,7 +1186,7 @@ input, select, textarea {
 }
 
 .project-card-hero-icon {
-  font-size: 42px;
+  font-size: var(--text-display-md);
   opacity: 0.3;
  color: var(--bg-card);
 }
@@ -1294,10 +1262,14 @@ input, select, textarea {
 }
 
 .progress-fill {
+  width: 100%;
   height: 100%;
   background: var(--primary);
   border-radius: var(--radius-sm);
-  transition: width 0.5s ease;
+  /* 审计 2026-09-24：布局属性动画改 transform（scaleX），消除 width 过渡的布局抖动 */
+  transform: scaleX(var(--fill, 0));
+  transform-origin: left center;
+  transition: transform 0.5s ease;
 }
 
 .progress-labels {
@@ -1353,7 +1325,7 @@ input, select, textarea {
 }
 
 .event-card-hero-lg .event-card-hero-icon {
-  font-size: 40px;
+  font-size: var(--text-display-md);
   opacity: 0.3;
   color: var(--bg-card);
 }
@@ -1534,7 +1506,7 @@ input, select, textarea {
 }
 
 .project-detail-hero-icon {
-  font-size: 56px;
+  font-size: var(--text-display-lg);
   opacity: 0.25;
   color: var(--bg-card);
 }
@@ -1946,10 +1918,13 @@ input, select, textarea {
 }
 
 .capacity-fill {
+  width: 100%;
   height: 100%;
   border-radius: var(--radius-sm);
   background: var(--primary);
-  transition: width 0.3s ease;
+  transform: scaleX(var(--fill, 0));
+  transform-origin: left center;
+  transition: transform 0.3s ease;
 }
 
 .capacity-fill.full {
@@ -2366,7 +2341,7 @@ input, select, textarea {
   padding: 0 var(--space-3);
   border: 1.5px solid var(--border);
   border-radius: var(--radius-md);
-  font-size: var(--text-lg);
+  font-size: var(--text-md);             /* 规范 L273：输入框 → --text-md（2026-09-23 全站对齐，原 text-lg 偏离） */
   outline: none;
   transition: border-color 0.2s, background 0.2s;
   background: var(--bg);
@@ -2749,7 +2724,7 @@ input, select, textarea {
 }
 
 .exchange-result-amount {
-  font-size: 32px;
+  font-size: var(--text-display-sm);
   font-weight: 700;
   color: var(--primary);
   letter-spacing: -0.02em;
@@ -2889,103 +2864,6 @@ input, select, textarea {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   overflow: hidden;
-}
-
-/* 设计主题切换（2026-09-14 双皮肤 · Profile 页入口） */
-.theme-switch {
-  background: var(--bg-card);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  padding: var(--space-3);
-}
-
-.theme-switch-head {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--text);
-  font-size: var(--text-md);
-  font-weight: 600;
-  padding: var(--space-1) var(--space-1) var(--space-3);
-}
-
-.theme-switch-options {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.theme-option {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  width: 100%;
-  min-height: var(--min-touch-target);
-  padding: var(--space-2) var(--space-3);
-  background: var(--bg);
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  text-align: left;
-  transition: border-color 0.15s, background 0.15s;
-}
-
-.theme-option.selected {
-  background: var(--primary-light);
-  border-color: var(--primary-border);
-}
-
-.theme-option-swatch {
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-sm);
-  background: var(--primary);
-}
-
-/* 注意：swatch 是「两套皮肤的色板预览」，必须脱离当前皮肤变量固定显示各自色值（硬编码为语义正确，勿 token 化） */
-.theme-option-swatch[data-theme-preview='hkbtc'] {
-  background: linear-gradient(135deg, #2441A8 0%, #3660FF 100%);
-}
-
-.theme-option-swatch[data-theme-preview=''] {
-  background: linear-gradient(135deg, #005EB8 0%, #003C80 100%);
-}
-
-.theme-option-label {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-  min-width: 0;
-}
-
-.theme-option-name {
-  font-size: var(--text-md);
-  font-weight: 600;
-  color: var(--text);
-}
-
-.theme-option-desc {
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
-}
-
-.theme-option-check {
-  flex-shrink: 0;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 1.5px solid var(--border);
-}
-
-.theme-option.selected .theme-option-check {
-  border-color: var(--primary);
-  background: var(--primary);
-  box-shadow: inset 0 0 0 3px var(--bg-card);
-}
-
-.theme-option.selected .theme-option-name {
-  color: var(--primary);
 }
 
 .search-bar {
@@ -3418,13 +3296,13 @@ input, select, textarea {
 }
 
 .auth-mock-hint {
-  background: var(--info-bg, #e3f2fd);
-  border: 1px solid var(--info-border, #90caf9);
+  background: var(--info-bg);
+  border: 1px solid var(--info-border);
   border-radius: var(--radius-md);
   padding: var(--space-3);
   margin-bottom: var(--space-4);
   font-size: var(--text-sm);
-  color: var(--info-text, #1565c0);
+  color: var(--info-text);
   text-align: center;
 }
 
@@ -3438,9 +3316,9 @@ input, select, textarea {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: var(--success, #22c55e);
+  background: var(--success);
   color: white;
-  font-size: 32px;
+  font-size: var(--text-display-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3451,7 +3329,7 @@ input, select, textarea {
   text-align: center;
   margin-top: var(--space-4);
   padding-top: var(--space-4);
-  border-top: 1px solid var(--border-light, #e5e7eb);
+  border-top: 1px solid var(--border-light);
 }
 
 .auth-resend-btn {
@@ -3469,7 +3347,7 @@ input, select, textarea {
 }
 
 .auth-resend-text {
-  color: var(--text-secondary, #6b7280);
+  color: var(--text-secondary);
   font-size: var(--text-md);
 }
 
@@ -5045,10 +4923,6 @@ input, select, textarea {
   min-width: 50px;
 }
 
-.wallet-currency-select:focus {
-  outline: none;
-}
-
 .wallet-currency-chevron {
   color: var(--text-secondary);
   transition: transform 0.2s;
@@ -5207,7 +5081,7 @@ input, select, textarea {
 }
 
 .holdings-summary-value {
-  font-size: 30px;
+  font-size: var(--text-display-sm);
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1;
@@ -5269,7 +5143,7 @@ input, select, textarea {
   position: absolute;
   right: 14px;
   bottom: 46px;
-  font-size: 36px;
+  font-size: var(--text-display-md);
   opacity: 0.5;
 }
 
@@ -5628,7 +5502,6 @@ input, select, textarea {
 .amount-summary-input {
   width: 6em;
   border: none;
-  outline: none;
   background: transparent;
   font-size: var(--text-xl);
   font-weight: 700;
@@ -6093,15 +5966,18 @@ input, select, textarea {
 .kyc-progress-bar {
   height: 4px;
   background: var(--border-light);
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
   position: relative;
 }
 
 .kyc-progress-fill {
+  width: 100%;
   height: 100%;
   background: var(--primary);
-  border-radius: 2px;
-  transition: width 0.3s ease;
+  border-radius: var(--radius-sm);
+  transform: scaleX(var(--fill, 0));
+  transform-origin: left center;
+  transition: transform 0.3s ease;
 }
 
 /* 节点圆点（叠在进度条上，对应 3 个步骤位置：16.67% / 50% / 83.33%） */
@@ -6671,7 +6547,8 @@ input, select, textarea {
   gap: var(--space-2);
 }
 
-.kyc-phone-input-group .kyc-form-input {
+.kyc-phone-input-group .kyc-form-input,
+.kyc-phone-input-group .form-input {
   flex: 1;
 }
 
@@ -7555,6 +7432,43 @@ input, select, textarea {
   line-height: 1.5;
 }
 
+/* 开户协议闸门 · 拒绝出口（2026-10-15）：二次确认后登出 */
+.terms-gate-decline {
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+  padding: var(--space-2);
+  cursor: pointer;
+}
+.terms-gate-decline-confirm {
+  margin-top: var(--space-3);
+  padding: var(--space-4);
+  background: var(--bg);
+  border-radius: var(--radius-lg);
+}
+.terms-gate-decline-confirm p {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+.terms-gate-decline-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+.terms-gate-decline-actions .btn { flex: 1; }
+.terms-gate-decline-cancel {
+  background: var(--bg-card);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.terms-gate-decline-ok {
+  background: var(--danger);
+  color: #fff;
+}
+
 /* ===== 注册页 · 协议与营销勾选（2026-09-15） ===== */
 .auth-marketing-row { position: relative; }
 .auth-marketing-help {
@@ -7641,4 +7555,177 @@ input, select, textarea {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
+}
+
+/* ================= 安全验证弹窗 SecurityVerifySheet（2026-09-22 · 复刻 2FA 体系） ================= */
+.svs-sheet { max-height: 88vh; overflow-y: auto; }
+
+.svs-header-right { display: flex; align-items: center; gap: var(--space-2); }
+.svs-timer {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.svs-close {
+  background: none; border: none; padding: var(--space-1);
+  color: var(--text-secondary); cursor: pointer; display: flex;
+  border-radius: var(--radius-sm);
+}
+.svs-close:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.svs-sub { margin-bottom: var(--space-3); }
+.svs-progress { color: var(--primary); font-weight: 600; }
+
+.svs-list { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-3); }
+
+.svs-item {
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-card);
+}
+.svs-item.active { border-color: var(--primary-border); }
+.svs-item.done { opacity: 0.75; }
+.svs-item-head {
+  display: flex; align-items: center; gap: var(--space-3);
+  width: 100%; padding: var(--space-3);
+  background: none; border: none; cursor: pointer; text-align: left;
+}
+.svs-item-head:disabled { cursor: default; }
+.svs-item-head:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.svs-item-icon {
+  width: 32px; height: 32px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-md);
+  background: var(--primary-light); color: var(--primary);
+}
+.svs-item-icon.done { background: var(--success-light); color: var(--success); }
+.svs-item-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.svs-item-text strong { font-size: var(--text-base); font-weight: 600; }
+.svs-item-state { font-size: var(--text-xs); color: var(--text-tertiary); flex-shrink: 0; }
+.svs-item-state.done { color: var(--success); font-weight: 600; }
+
+.svs-item-body {
+  padding: 0 var(--space-3) var(--space-3);
+  display: flex; flex-direction: column; gap: var(--space-2);
+}
+.svs-code-row { display: flex; gap: var(--space-2); align-items: center; }
+.svs-code-row .btn-sm { align-self: stretch; height: auto; } /* 与 44px 码框等高（DESIGN_SYSTEM 对齐） */
+.svs-code {
+  flex: 1;
+  letter-spacing: 0.2em;
+  font-variant-numeric: tabular-nums;
+}
+.svs-code::placeholder { letter-spacing: normal; } /* 空态提示不带码位间距 */
+.svs-item-verify { align-self: flex-start; }
+.svs-link {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: none; border: none;
+  /* 触控热区扩大 ≈17→37px 高（手指操作性，2026-09-23）；padding+负 margin 保持布局原位 */
+  padding: 10px 0; margin: -10px 0;
+  color: var(--primary); font-size: var(--text-sm); cursor: pointer;
+}
+.svs-link:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: var(--radius-sm); }
+
+/* 模拟生物识别面板（passkey / face） */
+.svs-sim { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); padding: var(--space-3) 0; }
+.svs-sim-ring {
+  position: relative;
+  width: 72px; height: 72px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--primary-light); color: var(--primary);
+  overflow: hidden;
+}
+.svs-sim-scan {
+  position: absolute; left: 0; right: 0; height: 2px;
+  background: var(--primary);
+  animation: svsScan 1.2s ease-in-out infinite;
+}
+@keyframes svsScan {
+  0%, 100% { top: 12%; opacity: 0.4; }
+  50% { top: 86%; opacity: 1; }
+}
+
+.svs-msg {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-3);
+}
+.svs-msg.error { background: var(--danger-bg); color: var(--danger); }
+.svs-msg.info { background: var(--primary-bg); color: var(--primary); }
+
+.svs-confirm { margin-top: 0; }
+.svs-confirm:disabled { opacity: 0.5; }
+.svs-note { text-align: center; margin-top: var(--space-2); }
+
+.svs-locked {
+  display: flex; flex-direction: column; align-items: center; gap: var(--space-2);
+  padding: var(--space-6) 0 var(--space-4);
+  color: var(--warning-text);
+  text-align: center;
+}
+
+/* ================= GA 绑定流程 + 紧急登录重绑（2026-09-22） ================= */
+.ga-flow { display: flex; flex-direction: column; gap: var(--space-4); }
+.ga-flow-step {
+  display: flex; align-items: center; gap: var(--space-2);
+  color: var(--primary); font-size: var(--text-sm);
+}
+.ga-flow-qr { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); text-align: center; }
+.ga-qr-grid {
+  display: grid; grid-template-columns: repeat(9, 10px); grid-auto-rows: 10px; gap: 1px;
+  padding: var(--space-2); background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+}
+.ga-qr-grid span { background: var(--bg-card); }
+.ga-qr-grid span.on { background: var(--text); }
+.ga-flow-secret {
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+}
+.ga-secret-text {
+  flex: 1; font-family: ui-monospace, monospace; font-size: var(--text-xs);
+  word-break: break-all; color: var(--text-secondary);
+}
+.ga-flow-verify { display: flex; flex-direction: column; gap: var(--space-2); }
+/* 验证码输入：48px 手指触控 + 居中大字（安全关键输入，2026-09-23 定，见 GaSetupFlow 注释） */
+.ga-code {
+  height: var(--min-touch-target);
+  text-align: center;
+  font-size: var(--text-xl);
+  letter-spacing: 0.5em;
+  text-indent: 0.5em;                  /* 补偿末位字距，6 位码真居中 */
+  font-variant-numeric: tabular-nums;
+}
+.ga-code::placeholder { letter-spacing: normal; text-indent: 0; }
+.ga-flow-actions { display: flex; gap: var(--space-2); margin-top: var(--space-1); }
+.ga-flow-actions .btn { flex: 1; }
+
+.emergency-risk {
+  display: flex; flex-direction: column; align-items: center; gap: var(--space-2);
+  padding: var(--space-3) 0 var(--space-4);
+  color: var(--warning-text); text-align: center;
+}
+.emergency-risk-actions { display: flex; gap: var(--space-2); }
+.emergency-risk-actions .btn { flex: 1; }
+
+.rebind-options { margin-bottom: var(--space-2); }
+.rebind-divider {
+  display: flex; align-items: center; gap: var(--space-3);
+  margin: var(--space-3) 0; color: var(--text-tertiary); font-size: var(--text-sm);
+}
+.rebind-divider::before, .rebind-divider::after { content: ''; flex: 1; height: 1px; background: var(--border-light); }
+.rebind-passkey { margin-bottom: var(--space-4); }
+
+/* APP 端路由懒加载占位（与 admin-lazy-loading 同语义，2026-09-24 Phase 1） */
+.p-lazy-loading {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: var(--text-md);
 }

@@ -3,7 +3,7 @@ import { Eye, X, Search, UserCheck, ShieldCheck, Wallet, History, Plus, Trash2, 
 import {
   getInvestorUsers, getClientTasks,
   kycSubmissions, testAccounts, subscriptions, eventRegistrationsList,
-  exitEvents, depositRequests, withdrawRequests, holdings, bankCards,
+  bankCards,
   KYC_STATUS, PI_STATUS, formatCurrency, formatISODateTime,
   regLeadStatusLabels, updateClientLeadStatus, getLeadClients, addCompanion, removeCompanion,
   accountManagers,
@@ -157,21 +157,16 @@ export default function AdminMyClients({ navigate, detailId, admin }) {
     const a = Object.values(testAccounts).find(x => x.id === sel.userId);
     return a?.kyc_profile || null;
   })() : null;
+  // 2026-10-16 口径修订：selSubs（申购记录）恢复——意向收集链后台视图；
+  // selFunds/selHeld 及 fundLabel/fundStatus/fundMeta 保持摘除（资金/持仓随账本下线）
   const selSubs = sel ? subscriptions.filter(s => s.userId === sel.userId) : [];
   const selRegs = sel ? eventRegistrationsList.filter(r => r.userId === sel.userId) : [];
-  const selFunds = sel ? [
-    // 退出分配事件（SPV 级无 userId，mock 单客户视角全量展示，2026-08-21 重构）
-    ...exitEvents.map(ev => ({ ...ev, kind: 'exit' })),
-    ...depositRequests.filter(r => r.userId === sel.userId).map(r => ({ ...r, kind: 'deposit' })),
-    ...withdrawRequests.filter(r => r.userId === sel.userId).map(r => ({ ...r, kind: 'withdraw' })),
-  ].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')) : [];
   const selKyc = sel ? kycSubmissions.find(x => x.userId === sel.userId) : null;
   const kycSubmittedAt = selKyc?.submittedAt || null;
   const kycHandledAt = (() => {
     const acted = [...(selKyc?.history || [])].reverse().find(x => x.action !== 'submitted');
     return acted ? acted.at : null;
   })();
-  const selHeld = sel && sel.holdingCount > 0 ? holdings : [];
   const selBankCards = sel ? bankCards.filter(c => c.userId === sel.userId) : [];
   // 跟进：线索状态 + 记录时间轴（getLeadClients 派生）
   const selLead = sel ? getLeadClients().find(c => c.userId === sel.userId) : null;
@@ -179,33 +174,6 @@ export default function AdminMyClients({ navigate, detailId, admin }) {
   const selFollowups = selLead?.followups || [];
   const companions = selLead?.companions || [];
   const telHref = (phone) => phone ? `tel:${phone.replace(/[^+\d]/g, '')}` : '#';
-
-  const fundLabel = (f) => {
-    if (f.kind === 'exit') return `退出分配 ${f.projectName || ''}`;
-    if (f.kind === 'deposit') return `入金 HK$ ${formatCurrency(f.amount)}`;
-    return `提现 HK$ ${formatCurrency(f.amount)}`;
-  };
-  const fundStatus = (f) => {
-    if (f.kind === 'exit') {
-      // 退出分配状态机：announced/paying/completed（2026-08-21 重构）
-      if (f.status === 'announced') return { text: '待确认', cls: 'admin-status-pending' };
-      if (f.status === 'paying') return { text: '打款中', cls: 'admin-status-pending' };
-      return { text: '已到账', cls: 'admin-status-approved' };
-    }
-    if (f.status === 'rejected') return { text: '已拒绝', cls: 'admin-status-rejected' };
-    if (f.status === 'approved') {
-      const t = f.kind === 'deposit' ? '已到账' : '已打款';
-      return { text: t, cls: 'admin-status-approved' };
-    }
-    return { text: '待审核', cls: 'admin-status-pending' };
-  };
-  const fundMeta = (f) => {
-    const parts = [f.createdAt];
-    if (f.kind === 'exit' && f.netAmount != null) parts.push(`净回款 HK$ ${formatCurrency(f.netAmount)}`);
-    else if (f.amount != null && f.kind !== 'exit') parts.push(`HK$ ${formatCurrency(f.amount)}`);
-    if (f.handledBy) parts.push(f.handledBy);
-    return parts.join(' · ');
-  };
 
   // 跟进状态：本页全是顾问名下客户，直接改（无需 confirm——顾问本人维护自己的客户）
   const changeLeadStatus = (uid, status) => {
@@ -343,7 +311,7 @@ export default function AdminMyClients({ navigate, detailId, admin }) {
           </div>
           <div className="admin-tabs admin-drawer-tabs">
             <button className={`admin-tab ${tab === 'profile' ? 'active' : ''}`} onClick={() => setTab('profile')}>资料</button>
-            <button className={`admin-tab ${tab === 'assets' ? 'active' : ''}`} onClick={() => setTab('assets')}>资产</button>
+            {/* 2026-10-16 首期裁剪:「资产」Tab 摘除(资金/持仓随链路下线) */}
             <button className={`admin-tab ${tab === 'records' ? 'active' : ''}`} onClick={() => setTab('records')}>记录</button>
             <button className={`admin-tab ${tab === 'followup' ? 'active' : ''}`} onClick={() => setTab('followup')}>跟进</button>
           </div>
@@ -397,50 +365,10 @@ export default function AdminMyClients({ navigate, detailId, admin }) {
                 </div>
               </>
             )}
-            {/* Tab2 资产 */}
-            {tab === 'assets' && (
-              <div className="card kyc-review-block">
-                <h4 className="card-title"><Wallet size={14} /> 资产与持仓</h4>
-                {sel.account && (sel.account.hkd > 0 || sel.account.frozen > 0) && (
-                  <>
-                    <div className="kyc-review-row"><span>可用资金</span><strong>HK$ {formatCurrency(sel.account.hkd)}</strong></div>
-                    <div className="kyc-review-row"><span>冻结资金</span><strong>HK$ {formatCurrency(sel.account.frozen)}</strong></div>
-                  </>
-                )}
-                {selHeld.length > 0 ? (
-                  <>
-                    <div className="kyc-review-row"><span>持仓</span><strong>{selHeld.length} 项</strong></div>
-                    {selHeld.map(h => (
-                      <div className="admin-user-hold-row" key={h.id}>
-                        <div className="admin-user-hold-head">
-                          <strong>{h.projectName}</strong>
-                          <span className="admin-user-hold-value">HK$ {formatCurrency(h.currentValue)}</span>
-                        </div>
-                        <div className="admin-user-hold-meta">{h.shares} 份 · 成本 HK$ {formatCurrency(h.costBasis)} · 估值变动 +{h.return}%</div>
-                      </div>
-                    ))}
-                  </>
-                ) : <div className="kyc-review-row"><span>持仓</span><strong>0 项</strong></div>}
-              </div>
-            )}
+            {/* 2026-10-16 首期裁剪:原「资产与持仓」Tab2 区块摘除;申购记录卡随意向收集链恢复 */}
             {/* Tab3 记录 */}
             {tab === 'records' && (
               <>
-                <div className="card kyc-review-block">
-                  <h4 className="card-title"><Wallet size={14} /> 资金操作（{selFunds.length}）</h4>
-                  {selFunds.length > 0 ? selFunds.map(f => {
-                    const fs = fundStatus(f);
-                    return (
-                      <div className="admin-user-rec" key={f.id}>
-                        <div className="admin-user-rec-head">
-                          <strong>{fundLabel(f)}</strong>
-                          <span className={`status-badge ${fs.cls}`}>{fs.text}</span>
-                        </div>
-                        <div className="admin-user-rec-meta">{fundMeta(f)}</div>
-                      </div>
-                    );
-                  }) : <div className="text-muted text-sm">暂无资金操作</div>}
-                </div>
                 <div className="card kyc-review-block">
                   <h4 className="card-title">申购记录（{selSubs.length}）{selSubs.length > 0 && <span className="card-title-sub">累计 HK$ {formatCurrency(sel.subTotal)}</span>}</h4>
                   {selSubs.length > 0 ? selSubs.map(s => (
@@ -479,7 +407,7 @@ export default function AdminMyClients({ navigate, detailId, admin }) {
                       {selTasks.pendingLead > 0 && <div className="kyc-review-row"><span>客户跟进</span><strong><TaskBadge kind="lead" text={selTasks.leadStatus === 'new' ? '待联系' : '跟进中'} /></strong></div>}
                       {selTasks.pendingSign > 0 && <div className="kyc-review-row"><span>SPV 签署</span><strong><TaskBadge kind="sign" text={`${selTasks.pendingSign} 笔待签`} /></strong></div>}
                     </div>
-                    <p className="admin-form-hint">资金/SPV 审批由资金运营处理，顾问负责联系客户跟进签署。</p>
+                    <p className="admin-form-hint">资金/SPV 签署已转为线下，顾问负责联系客户协助安排线下交割与签署。</p>
                   </div>
                 )}
 

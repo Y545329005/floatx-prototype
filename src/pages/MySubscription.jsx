@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ArrowLeft, User, Building2, Zap, PenLine, RefreshCcw } from 'lucide-react';
-import { getProjectById, getInvestorRoster, currentUser, getInvestorNo, formatCurrency, formatISODateTime, historyTypeLabels, actorLabels, subscriptionStatusLabels, subscriptions, spvs, getSigningEvidenceBySub, formatListDateTime, resetSubscriptionForDemo } from '../mock/data';
+import { getProjectById, getInvestorRoster, currentUser, getInvestorNo, formatCurrency, formatISODateTime, historyTypeLabels, actorLabels, subscriptionStatusLabels, subscriptions, getSigningEvidenceBySub, formatListDateTime, resetSubscriptionForDemo } from '../mock/data';
 import SubscriptionMilestone from '../components/SubscriptionMilestone';
 import { useLang } from '../i18n';
 
@@ -21,14 +21,6 @@ export default function MySubscription({ id, navigate, goBack }) {
   const { t } = useLang();
   const [, setRefresh] = useState(0);
   const subRecord = subscriptions.find(s => s.id === id);
-
-  useEffect(() => {
-    if (subRecord && subRecord.status === 'allocated') {
-      const timer = setInterval(() => setRefresh(v => v + 1), 1000);
-      return () => clearInterval(timer);
-    }
-    return undefined;
-  }, [subRecord && subRecord.status]);
 
   if (!subRecord) {
     return (
@@ -66,19 +58,10 @@ export default function MySubscription({ id, navigate, goBack }) {
           <span>{t('意向金额')}</span>
           <strong className="date-iso">HK$ {formatCurrency(subRecord.amount || 0)}</strong>
         </div>
-        {/* 冻结宽限期行：仅 allocated（已获配额）冻结期间显示；signed 已出资、其他状态不显示 */}
-        {subRecord.status === 'allocated' && subRecord.frozenAmount > 0 && (
-          <div className="subscription-info-row freeze-info-row">
-            <span>{t('已冻结')}</span>
-            <div className="freeze-info-right">
-              <strong className="date-iso">HK$ {formatCurrency(subRecord.frozenAmount)}</strong>
-              <span className="text-muted text-sm">{t('请在 24 小时内签署')}</span>
-            </div>
-          </div>
-        )}
-        {/* 冻结语义说明：冻结=锁定非扣款，签署期限=签署期 */}
+        {/* 2026-10-16 口径修订：资金与 SPV 签署全线下——原「冻结宽限期/冻结语义说明」
+            （钱包语义）摘除，allocated 改为线下打款与签署指引 */}
         {subRecord.status === 'allocated' && (
-          <p className="freeze-note">{t('冻结 = 锁定意向金额（不扣款），签署 SPV 时实际出资；请在 24 小时内完成签署')}</p>
+          <p className="freeze-note">{t('已获配额：请按客户经理指引完成线下打款；SPV 协议将在线下签署，专人协助安排')}</p>
         )}
         {subRecord.shares && (
           <div className="subscription-info-row">
@@ -93,34 +76,14 @@ export default function MySubscription({ id, navigate, goBack }) {
         <SubscriptionMilestone status={subRecord.status} />
       </div>
 
-      {/* 签署指引（仅 allocated 获配额冻结期显示）：APP 内阅读协议 + 电子签名完成签署（2026-09-15 · 对齐公司实践） */}
-      {subRecord.status === 'allocated' && (() => {
-        // 签署对象从 SPV 档案按项目关联派生（spvs.projectId ↔ subscription.projectId，数据层零改动）
-        const spv = spvs.find(s => s.projectId === subRecord.projectId);
-        return (
-          <div className="card card-secondary sign-guide-card">
-            <div className="card-title">{t('签署 SPV 协议')}</div>
-            <p className="sign-guide-desc">{t('签署将在 APP 内完成：阅读协议全文并使用电子签名确认，签名与协议版本将固化存档，与手写签名具有同等法律效力。')}</p>
-            {spv && (
-              <div className="sign-guide-row">
-                <span>{t('签署对象')}</span>
-                <strong>{spv.spvName} · {spv.agreementVersion}</strong>
-              </div>
-            )}
-            <div className="sign-guide-steps">
-              <div className="sign-guide-step"><strong>1</strong><span>{t('阅读协议')}</span></div>
-              <div className="sign-guide-step"><strong>2</strong><span>{t('APP 内签名')}</span></div>
-              <div className="sign-guide-step"><strong>3</strong><span>{t('扣款持仓')}</span></div>
-            </div>
-            <button
-              className="btn btn-primary btn-full sign-guide-cta"
-              onClick={() => navigate(`#spv-sign/${subRecord.id}`)}
-            >
-              <PenLine size={15} /> {t('立即签署')}
-            </button>
-          </div>
-        );
-      })()}
+      {/* 线下打款与签署指引（仅 allocated 显示）。2026-10-16 口径修订：原「APP 内电子签署」
+          指引卡（含 #spv-sign 跳转）摘除——大额资金交易签署全线下，APP 只做意向收集与进度查看 */}
+      {subRecord.status === 'allocated' && (
+        <div className="card card-secondary sign-guide-card">
+          <div className="card-title">{t('线下打款与签署')}</div>
+          <p className="sign-guide-desc">{t('本基金为线下认购：获配后请按客户经理指引完成线下资金交割，SPV 协议将在线下完成签署，专属客户经理将全程协助安排。')}</p>
+        </div>
+      )}
 
       {/* 签署凭证（signed 后展示：APP 内电子签署 / 线下登记的证据摘要，2026-09-15） */}
       {subRecord.status === 'signed' && (() => {
@@ -135,7 +98,7 @@ export default function MySubscription({ id, navigate, goBack }) {
             <div className="subscription-info-row"><span>{t('签署时间')}</span><strong className="date-iso">{formatListDateTime(ev.signedAt)}</strong></div>
             {ev.signatureImage && (
               <div className="sign-evidence-signature">
-                <img src={ev.signatureImage} alt={t('电子签名')} />
+                <img src={ev.signatureImage} alt={t('电子签名')} loading="lazy" decoding="async" />
               </div>
             )}
           </div>
