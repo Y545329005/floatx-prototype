@@ -3,7 +3,7 @@ import { ArrowLeft, FileText, ShieldCheck } from 'lucide-react';
 import { useLang } from '../i18n';
 import {
   subscriptions, spvs, getProjectById,
-  signSpvInApp, buildSpvAgreementSections, E_SIGNATURE_NOTICE_TEXT, formatCurrency,
+  signSpvInApp, buildSpvAgreementSections, E_SIGNATURE_NOTICE_TEXT, formatCurrency, resolveBrand,
 } from '../mock/data';
 import SignatureCanvas from '../components/SignatureCanvas';
 import AgreeCheckbox from '../components/AgreeCheckbox';
@@ -105,7 +105,7 @@ export default function SpvSign({ id, navigate, goBack }) {
       <div className="card card-secondary spv-sign-sign-card">
         <div className="card-title">{t('电子签名法律效力')}</div>
         <div className="agreement-section">
-          <p>{pick(E_SIGNATURE_NOTICE_TEXT)}</p>
+          <p>{resolveBrand(pick(E_SIGNATURE_NOTICE_TEXT))}</p>
         </div>
 
         <AgreeCheckbox

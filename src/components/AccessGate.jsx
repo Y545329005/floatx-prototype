@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLang } from '../i18n';
+import { platformBrand } from '../mock/data';
 
 // 云端演示环境访问口令（2026-08-27）
 // 定位：GitHub Pages 公开托管时为「防君子不防小人」的一层入口保护，防止匿名访问直接看到私募/合规业务界面。
@@ -30,7 +31,7 @@ export default function AccessGate({ children }) {
   // AccessGate 常驻挂载（授权后 return children 仍保留本组件），故标题同步集中在此：
   // 口令层阶段 App 尚未挂载也能正确显示，授权后语言切换同样生效。
   useEffect(() => {
-    document.title = t('HKBTC');
+    document.title = platformBrand.nameZh;
   }, [t]);
 
   if (granted) return children;
@@ -53,7 +54,7 @@ export default function AccessGate({ children }) {
   return (
     <div className="access-gate">
       <form className="access-gate-card" onSubmit={handleSubmit}>
-        <div className="access-gate-brand">{t('HKBTC')}</div>
+        <div className="access-gate-brand">{platformBrand.nameZh}</div>
         <div className="access-gate-title">{t('内部演示环境')}</div>
         <p className="access-gate-desc">{t('私募股权信息平台原型 · 凭口令访问')}</p>
         <input

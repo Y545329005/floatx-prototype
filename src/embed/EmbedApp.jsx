@@ -30,7 +30,7 @@ const MINE_TAB = { key: 'profile', label: '我的', icon: UserRound };
 const MINE_TAB_PATHS = new Set([
   'profile',
   'kyc-start', 'kyc-id-upload', 'kyc-address-proof', 'kyc-submitted', 'kyc-pi', 'pi-submitted',
-  'bank-cards', 'security-center', 'notifications', 'support', 'settings', 'help', 'about',
+  'security-center', 'notifications', 'support', 'settings', 'help', 'about',
   'bind-phone', 'change-email',
 ]);
 
@@ -97,6 +97,10 @@ export default function EmbedApp() {
   // WebView 侧滑/物理返回手势 → hash 历史 → 本栈自动同步，天然兼容宿主返回。）
   const navStackRef = useRef([]);
   const lastHashRef = useRef(hash.full || 'wealth');
+  // goBack 走 fallback（栈空）时的「返回语义」标记：hashchange 消费后即清。
+  // fallback 跳转若被按前进压栈，深链直入详情→返回列表后子页残留在栈里，
+  // 下次返回时「栈顶优先」弹回子页——列表⇄详情双返回键页成死循环（与 App.jsx 同修）。
+  const goBackFallbackRef = useRef(false);
 
   useEffect(() => {
     const onHashChange = () => {
@@ -108,6 +112,9 @@ export default function EmbedApp() {
         const stack = navStackRef.current;
         if (stack[stack.length - 1] === newFull) {
           navStackRef.current = stack.slice(0, -1);
+        } else if (goBackFallbackRef.current) {
+          // goBack fallback（返回语义）：不压栈，消费标记
+          goBackFallbackRef.current = false;
         } else {
           navStackRef.current = [...stack, prevFull];
         }
@@ -142,6 +149,7 @@ export default function EmbedApp() {
     const target = stack[stack.length - 1] || fallback || 'wealth';
     const current = parseHash(window.location.hash).full || 'wealth';
     if (target !== current) {
+      goBackFallbackRef.current = stack.length === 0;
       window.location.hash = target;
     }
   }, []);

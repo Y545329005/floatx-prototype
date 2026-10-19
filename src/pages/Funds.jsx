@@ -1,5 +1,5 @@
 import { ArrowLeft } from 'lucide-react';
-import { funds, projectStageColors, formatCurrency } from '../mock/data';
+import { funds, projectStageColors, formatCurrency, resolveBrand } from '../mock/data';
 import { useLang } from '../i18n';
 
 export default function Funds({ navigate, goBack, setToast }) {
@@ -25,7 +25,7 @@ export default function Funds({ navigate, goBack, setToast }) {
             <span className="tag tag-outline">{f.type}</span>
             <span className="tag tag-outline tag-purchasable">{t('可申购')}</span>
           </div>
-          <h3>{f.name}</h3>
+          <h3>{resolveBrand(f.name)}</h3>
           <p className="text-muted text-sm">{f.description}</p>
           <div className="fund-metrics">
             <div className="fund-metric">

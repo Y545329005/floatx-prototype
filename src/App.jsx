@@ -97,6 +97,11 @@ export default function App() {
   // 否则 → 压入上一页（前进导航）。navigate 本身不手动压栈，全靠 hashchange 校正。
   const navStackRef = useRef([]);
   const lastHashRef = useRef(hash.full || 'events');
+  // goBack 走 fallback（栈空）时的「返回语义」标记：hashchange 消费后即清。
+  // fallback 跳转若被按前进压栈，深链直入详情→返回列表后子页残留在栈里，
+  // 下次返回时「栈顶优先」弹回子页——列表⇄详情双返回键页成死循环
+  // （#subscriptions⇄#my-subscription 实测复现，2026-10-19 修复）。
+  const goBackFallbackRef = useRef(false);
 
   useEffect(() => {
     const onHashChange = () => {
@@ -109,6 +114,9 @@ export default function App() {
         if (stack[stack.length - 1] === newFull) {
           // 返回：新 hash 是栈顶 → 弹栈
           navStackRef.current = stack.slice(0, -1);
+        } else if (goBackFallbackRef.current) {
+          // goBack fallback（返回语义）：不压栈，消费标记
+          goBackFallbackRef.current = false;
         } else {
           // 前进：新导航 → 压入上一页
           navStackRef.current = [...stack, prevFull];
@@ -145,6 +153,7 @@ export default function App() {
     const target = stack[stack.length - 1] || fallback || 'events';
     const current = parseHash(window.location.hash).full || 'events';
     if (target !== current) {
+      goBackFallbackRef.current = stack.length === 0;
       window.location.hash = target;
     }
   }, []);

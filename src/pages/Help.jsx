@@ -4,7 +4,7 @@ import { faqItems } from '../mock/data';
 import { useLang } from '../i18n';
 
 export default function Help({ navigate, goBack }) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [openIdx, setOpenIdx] = useState(null);
 
   return (
@@ -31,11 +31,11 @@ export default function Help({ navigate, goBack }) {
           {faqItems.map((item, i) => (
             <div key={i} className={`faq-item ${openIdx === i ? 'open' : ''}`}>
               <button className="faq-question" onClick={() => setOpenIdx(openIdx === i ? null : i)}>
-                <span>{t(item.q)}</span>
+                <span>{item.q[lang] || item.q['zh-CN']}</span>
                 <ChevronDown size={16} className="faq-chevron" />
               </button>
               {openIdx === i && (
-                <p className="faq-answer">{t(item.a)}</p>
+                <p className="faq-answer">{item.a[lang] || item.a['zh-CN']}</p>
               )}
             </div>
           ))}

@@ -114,8 +114,11 @@ export default function KYCStart({ navigate, goBack, setIsLoggedIn }) {
   const profile = currentUser.kyc_profile || {};
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
+  // E1（2026-10-16）：英文姓名拆姓氏/名字两框；旧数据只有 name_en 时按首空格拆（香港习惯姓在前，如 CHAN Tai Man）
+  const legacyName = profile.name_en || "";
   const [formData, setFormData] = useState({
-    name_en: profile.name_en || "",
+    name_en_last: profile.name_en_last || (legacyName ? legacyName.split(/\s+/)[0] : ""),
+    name_en_first: profile.name_en_first || (legacyName ? legacyName.split(/\s+/).slice(1).join(" ") : ""),
     name_cn: profile.name_cn || "",
     gender: profile.gender || "",
     nationality: profile.nationality || "",
@@ -136,7 +139,9 @@ const [errors, setErrors] = useState({});
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.name_en) newErrors.name_en = t("请输入英文姓名");
+    if (!formData.name_en_last) newErrors.name_en_last = t("请输入英文姓氏");
+    if (!formData.name_en_first) newErrors.name_en_first = t("请输入英文名字");
+    if (!formData.name_cn) newErrors.name_cn = t("请输入中文姓名");
     if (!formData.gender) newErrors.gender = t("请选择性别");
     if (!formData.nationality) newErrors.nationality = t("请选择国籍");
     if (!formData.birth_date) newErrors.birth_date = t("请输入出生日期");
@@ -153,9 +158,16 @@ const [errors, setErrors] = useState({});
 
   const handleSubmit = () => {
     if (!validateForm()) return;
+    const nameEn = `${formData.name_en_last} ${formData.name_en_first}`.trim();
     updateKycProfile({
-      name_en: formData.name_en,
+      name_en_last: formData.name_en_last,
+      name_en_first: formData.name_en_first,
+      name_en: nameEn,
       name_cn: formData.name_cn,
+      // 同步后台展示字段：submitKyc 快照读 fullName/fullNameEn，此前表单从不写这两个键，
+      // 新用户走完流程后台英文名/中文名恒为空（快照白名单错位，随 E1/E2 一并闭合）
+      fullName: formData.name_cn,
+      fullNameEn: nameEn,
       gender: formData.gender,
       nationality: formData.nationality,
       birthDate: formData.birth_date,
@@ -247,32 +259,47 @@ const [errors, setErrors] = useState({});
             {t('请确保姓名与证件上的信息一致')}
           </div>
 
-          {/* 英文姓名 */}
+          {/* 英文姓名（E1：姓氏/名字分开，与证件一致） */}
           <div className="kyc-form-group">
             <label className="kyc-form-label">
               <User size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
               {t('英文姓名（与证件一致）')}
             </label>
-            <input
-              type="text"
-              className={`kyc-form-input ${errors.name_en ? 'error' : ''}`}
-              placeholder={t('例如：CHAN Tai Man')}
-              value={formData.name_en}
-              onChange={e => update('name_en', e.target.value)}
-            />
-            {errors.name_en && <span className="kyc-form-error">{errors.name_en}</span>}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
+              <div>
+                <input
+                  type="text"
+                  className={`kyc-form-input ${errors.name_en_last ? 'error' : ''}`}
+                  placeholder={t('姓氏，如 CHAN')}
+                  value={formData.name_en_last}
+                  onChange={e => update('name_en_last', e.target.value)}
+                />
+                {errors.name_en_last && <span className="kyc-form-error">{errors.name_en_last}</span>}
+              </div>
+              <div>
+                <input
+                  type="text"
+                  className={`kyc-form-input ${errors.name_en_first ? 'error' : ''}`}
+                  placeholder={t('名字，如 Tai Man')}
+                  value={formData.name_en_first}
+                  onChange={e => update('name_en_first', e.target.value)}
+                />
+                {errors.name_en_first && <span className="kyc-form-error">{errors.name_en_first}</span>}
+              </div>
+            </div>
           </div>
 
-          {/* 中文姓名 */}
+          {/* 中文姓名（E2：改必填） */}
           <div className="kyc-form-group">
             <label className="kyc-form-label">{t('中文姓名')}</label>
             <input
               type="text"
-              className="kyc-form-input"
-              placeholder={t('可选')}
+              className={`kyc-form-input ${errors.name_cn ? 'error' : ''}`}
+              placeholder={t('例如：陈大文')}
               value={formData.name_cn}
               onChange={e => update('name_cn', e.target.value)}
             />
+            {errors.name_cn && <span className="kyc-form-error">{errors.name_cn}</span>}
           </div>
 
           {/* 性别 */}

@@ -18,12 +18,12 @@ const isValidAccount = (v) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ||
   /^(\+?852)?[569]\d{7}$/.test(v.replace(/[\s-]/g, ''));
 
-/* ===== 共享：品牌标识（白底圆章"致"字标 + 金色细描边 + 平台名） ===== */
+/* ===== 共享：品牌标识（白底圆章品牌首字标 + 金色细描边 + 平台名；首字走配置防换主体残留） ===== */
 function AuthBrand({ compact }) {
   return (
     <div className={`auth-brand${compact ? ' auth-brand-compact' : ''}`}>
       <div className="auth-brand-logo">
-        <span className="auth-brand-mark">致</span>
+        <span className="auth-brand-mark">{(platformBrand.nameZh || '').charAt(0)}</span>
       </div>
       <div className="auth-brand-text">
         <strong className="auth-brand-name">{platformBrand.nameZh}</strong>
@@ -282,7 +282,7 @@ export function LoginPage({ navigate, setIsLoggedIn, setUser, setToast }) {
   return (
     <div className="auth-page">
       <AuthHero
-        title={t('登录您的 HKBTC 账户')}
+        title={t('登录您的账户')}
       />
 
       <div className="auth-body">
@@ -630,7 +630,7 @@ export function RegisterPage({ navigate, setIsLoggedIn, setUser, setToast }) {
 
   return (
     <div className="auth-page">
-      <AuthHero compact title={t('注册')} subtitle={t('创建您的 HKBTC 账号')} />
+      <AuthHero compact title={t('注册')} subtitle={t('创建您的账号')} />
 
       <div className="auth-body">
         <div className="auth-card">

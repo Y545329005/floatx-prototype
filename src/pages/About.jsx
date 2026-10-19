@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { ArrowLeft, FileText, Building2, ShieldCheck } from 'lucide-react';
-import { companyPolicies, platformBrand } from '../mock/data';
+import { companyPolicies, platformBrand, resolveBrand } from '../mock/data';
 import { useLang } from '../i18n';
 import AgreementModal from '../components/AgreementModal';
 
 // 公司政策文件 → 协议中心映射（2026-09-15 · 对齐协议签署实践：协议文档可点开阅读全文，不再是占位 toast）
+// 2026-10-19：cp1/cp2 接入抽屉正文（company-profile / license-info），全量可读——应用市场审核要求
 const POLICY_AGREEMENT_MAP = {
+  cp1: 'company-profile',
+  cp2: 'license-info',
   cp3: 'privacy-policy',
   cp4: 'user-agreement',
   cp5: 'risk-disclosure',
@@ -51,7 +54,7 @@ export default function About({ navigate, goBack, setToast }) {
               <FileText size={16} />
               <div className="doc-item-body">
                 <span>{t(p.title)}</span>
-                <span className="text-muted text-sm">{t(p.subtitle)}</span>
+                <span className="text-muted text-sm">{resolveBrand(t(p.subtitle))}</span>
               </div>
               <span className="text-muted text-sm">{p.date}</span>
             </a>
@@ -63,15 +66,15 @@ export default function About({ navigate, goBack, setToast }) {
         <div className="about-compliance-row">
           <ShieldCheck size={16} className="about-compliance-icon" />
           <div>
-            <strong>香港证监会第 9 类牌照</strong>
-            <span className="text-muted text-sm">就资产管理提供意见 · 牌照编号 CE No. {platformBrand.licenseNo}</span>
+            <strong>{platformBrand.licenseType}</strong>
+            <span className="text-muted text-sm">{platformBrand.licenseDesc} · 牌照编号 CE No. {platformBrand.licenseNo}</span>
           </div>
         </div>
       </div>
 
       <div className="about-version">
-        <span className="text-muted text-sm">版本 2.0.0</span>
-        <span className="text-muted text-sm">© 2026 {platformBrand.nameFullZh}</span>
+        <span className="text-muted text-sm">版本 {platformBrand.appVersion}</span>
+        <span className="text-muted text-sm">© {new Date().getFullYear()} {platformBrand.nameFullZh}</span>
       </div>
 
       {/* 协议全文弹窗 */}

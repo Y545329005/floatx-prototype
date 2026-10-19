@@ -6,8 +6,9 @@ import { lazy } from 'react';
 
 // APP 端页面按需加载（2026-09-24 主包瘦身 Phase 1 模式延续：36 页全部 lazy）
 // 2026-10-16 首期裁剪：资产树 13 页路由摘除（钱包/出入金/换汇/银行卡/持仓/报告等线上账本页，
-// 文件保留不删，二期按「线下转账+凭证登记」新形态恢复）；申购链恢复意向收集
-// （subscriptions/my-subscription），spv-sign 保持摘除——SPV 签署全线下，后台登记进度
+// 文件保留不删，二期按「线下转账+凭证登记」新形态恢复）；
+// 2026-10-19：#subscriptions 汇总页摘除（无入口死页 + 死循环，见下方 case 区注释），
+// my-subscription 保留（项目详情内直达），spv-sign 保持摘除
 const ProjectMarket = lazy(() => import('../pages/ProjectMarket'));
 const Wealth = lazy(() => import('../pages/Wealth'));
 const ProjectDetail = lazy(() => import('../pages/ProjectDetail'));
@@ -15,7 +16,6 @@ const ProjectHeat = lazy(() => import('../pages/ProjectHeat'));
 const SearchPage = lazy(() => import('../pages/Search'));
 const Events = lazy(() => import('../pages/Events'));
 const EventDetail = lazy(() => import('../pages/EventDetail'));
-const Subscriptions = lazy(() => import('../pages/Subscriptions'));
 const MySubscription = lazy(() => import('../pages/MySubscription'));
 const Profile = lazy(() => import('../pages/Profile'));
 const Notifications = lazy(() => import('../pages/Notifications'));
@@ -53,13 +53,13 @@ export function renderAppPage(path, param, ctx) {
       return <Events navigate={navigate} setToast={setToast} isLoggedIn={isLoggedIn} embed={embed} goBack={goBack} />;
     case 'event':
       return <EventDetail id={param} navigate={navigate} goBack={goBack} setToast={setToast} />;
-    case 'subscriptions':
-      return <Subscriptions navigate={navigate} goBack={goBack} />;
     case 'my-subscription':
       return <MySubscription id={param} navigate={navigate} goBack={goBack} />;
     // 2026-10-16 首期裁剪：资产树 13 路由摘除（wallet/transactions/fund-requests/fund-request/
     // fund-operation/holdings/assets/asset-trend/exchange/bank-cards/funds/reports/spv-sign）——
-    // 命中即落 default 分支（资讯页）。申购意向链已恢复（subscriptions/my-subscription）；
+    // 命中即落 default 分支（资讯页）。
+    // 2026-10-19：#subscriptions 汇总页摘除（双壳均无活入口的死页；深链直入后列表⇄详情
+    // 双返回键成死循环）。申购进度以项目为粒度：项目详情/热度页 CTA 直达 #my-subscription/:id；
     // spv-sign 保持摘除：SPV 签署与资金全部线下，APP 只做意向收集与进度查看
     case 'about':
       return <About navigate={navigate} goBack={goBack} setToast={setToast} />;

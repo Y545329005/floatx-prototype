@@ -153,8 +153,11 @@ export const testAccounts = {
       pepPositionType: '',
       pepOrganization: '',
       pepTenure: '',
-      // CRS/FATCA字段（2026-08-26 新增）
+      // CRS/FATCA字段（2026-08-26 新增；2026-10-16 C 组逐地 TIN + B 组财务字段补演示数据）
       taxResidencies: ['HK'],
+      taxDetails: { HK: { tin: 'A123456(7)', noTinReason: '', noTinNote: '' } },
+      employmentStatus: 'employed',
+      incomeSources: ['salary', 'investment'],
       usPerson: false,
       tin: '',
       crsDeclared: true,
@@ -291,6 +294,11 @@ export const testAccounts = {
       addressProofType: 'bank',
       addressProof: 'images/demo-address.jpg',
       addressLine: '香港中环金融街88号',
+      // 2026-10-16：u3（PEP 演示账号）补 CRS + 财务演示数据，后台抽屉各卡均有内容
+      taxResidencies: ['US'],
+      taxDetails: { US: { tin: '123-45-6789', noTinReason: '', noTinNote: '' } },
+      employmentStatus: 'self_employed',
+      incomeSources: ['business', 'rent'],
       phone: '+852 5555 6666',
       phoneVerified: true,
       phoneVerifyCode: null,
@@ -663,7 +671,7 @@ export const projects = [
 export const funds = [
   {
     id: 'f1',
-    name: 'HKBTC 稳健增长基金',
+    name: '{{BRAND}} 稳健增长基金',
     type: '债券型',
     riskLevel: '低风险',
     annualReturn: '4.5-5.5%',
@@ -674,7 +682,7 @@ export const funds = [
   },
   {
     id: 'f2',
-    name: 'HKBTC 多元资产配置基金',
+    name: '{{BRAND}} 多元资产配置基金',
     type: '混合型',
     riskLevel: '中风险',
     annualReturn: '7-10%',
@@ -685,7 +693,7 @@ export const funds = [
   },
   {
     id: 'f3',
-    name: 'HKBTC 大中华科技基金',
+    name: '{{BRAND}} 大中华科技基金',
     type: '股票型',
     riskLevel: '中高风险',
     annualReturn: '12-18%',
@@ -2819,20 +2827,83 @@ export function getInvestorRoster(project) {
   return buildInvestorRoster(project);
 }
 
+// 三语文本 helper（2026-10-19 上移至 faqItems 之前：FAQ 三语化直接引用，避免 const TDZ；
+// 原位于 agreements 区，此前 2026-09-20 也因同类引用上移过一次）
+const AG = (zhCN, zhHK, en) => ({ 'zh-CN': zhCN, 'zh-HK': zhHK, en });
+
+// 帮助中心 FAQ（2026-10-19 三语化：q/a 为 { 'zh-CN','zh-HK','en' } 结构，Help 页按当前语言直读，不再走 i18n 词条）。
+// 现有 6 条的繁/英译文自 i18n 词条表（zhHK.js/en.js）原样搬运，渲染结果与迁移前逐字一致。
+// 后台「系统配置」可增删改（addFaqItem/updateFaqItem/removeFaqItem），新增条目三语录入，繁/英留空回退简体。
 export const faqItems = [
-  { q: '申购意向提交后需要做什么？', a: '意向提交后，平台会记录您的意向次序并作为协调额度的参考。后续是否获配、签署 SPV 等由平台与项目方协调后线下联系您，期间无需额外操作。' },
-  { q: '意向会冻结资金吗？', a: '不会。申购意向仅为兴趣表达，不冻结任何资金。实际出资发生在与项目方协商并签署 SPV 文件之后。' },
-  { q: '「未获配额」是什么意思？', a: '本轮份额有限，您本轮未获得分配额度。项目若仍开放，可关注后续轮次并重新提交意向。' },
-  { q: '如何联系我的专属客户经理？', a: '在「我的」页面点击客户经理卡片即可查看其联系方式，包括电话、邮箱与 WhatsApp。经理未响应时可转在线客服。' },
-  { q: '合规报告在哪里查看？', a: '在「我的」页面进入「合规报告」，可查看月度资产报告、季度投资组合报告及合规披露文件。' },
-  { q: '如何保证我的信息与资金安全？', a: '平台采用金融级数据加密，账户已开启双重验证（2FA），资金托管于持牌托管机构，交易全程合规留痕。' },
+  {
+    q: AG('申购意向提交后需要做什么？', '申購意向提交後需要做什麼？', 'What should I do after submitting a subscription intent?'),
+    a: AG('意向提交后，平台会记录您的意向次序并作为协调额度的参考。后续是否获配、签署 SPV 等由平台与项目方协调后线下联系您，期间无需额外操作。', '意向提交後，平台會記錄您的意向次序並作為協調額度的參考。後續是否獲配、簽署 SPV 等由平台與項目方協調後線下聯繫您，期間無需額外操作。', 'After submitting your intent, the platform will record your order of preference as a reference for allocation. Whether you receive an allocation and the signing of SPV will be coordinated offline by the platform and the project team, who will contact you directly. No additional action is required from you during this period.'),
+  },
+  {
+    q: AG('意向会冻结资金吗？', '意向會凍結資金嗎？', 'Will the intent freeze my funds?'),
+    a: AG('不会。申购意向仅为兴趣表达，不冻结任何资金。实际出资发生在与项目方协商并签署 SPV 文件之后。', '不會。申購意向僅為興趣表達，不凍結任何資金。實際出資產生在與項目方協商並簽署 SPV 文件之後。', 'No. A subscription intent is simply an expression of interest and does not freeze any funds. Actual capital contribution occurs only after negotiation with the project team and signing of the SPV document.'),
+  },
+  {
+    q: AG('「未获配额」是什么意思？', '「未獲配額」是什麼意思？', 'What does "unallocated" mean?'),
+    a: AG('本轮份额有限，您本轮未获得分配额度。项目若仍开放，可关注后续轮次并重新提交意向。', '本輪份額有限，您本輪未獲得分配額度。項目若仍開放，可關注後續輪次並重新提交意向。', 'This round had limited availability and you did not receive an allocation. If the project remains open, you may watch for subsequent rounds and resubmit your intent.'),
+  },
+  {
+    q: AG('如何联系我的专属客户经理？', '如何聯繫我的專屬客戶經理？', 'How do I contact my dedicated account manager?'),
+    a: AG('在「我的」页面点击客户经理卡片即可查看其联系方式，包括电话、邮箱与 WhatsApp。经理未响应时可转在线客服。', '在「我的」頁面點擊客戶經理卡片即可查看其聯繫方式，包括電話、郵箱與 WhatsApp。經理未響應時可轉在線客服。', 'Click on your dedicated account manager card in the "My" section to view their contact information, including phone, email and WhatsApp. If your manager does not respond, you may escalate to online customer service.'),
+  },
+  {
+    q: AG('合规报告在哪里查看？', '合規報告在哪裡查看？', 'Where can I find compliance reports?'),
+    a: AG('在「我的」页面进入「合规报告」，可查看月度资产报告、季度投资组合报告及合规披露文件。', '在「我的」頁面進入「合規報告」，可查看月度資產報告、季度投資組合報告及合規披露文件。', 'Access the "Compliance Reports" section in the "My" page to view monthly asset reports, quarterly investment portfolio reports and compliance disclosure documents.'),
+  },
+  {
+    q: AG('如何保证我的信息与资金安全？', '如何保證我的資訊與資金安全？', 'How is my information and funds security guaranteed?'),
+    a: AG('平台采用金融级数据加密，账户已开启双重验证（2FA），资金托管于持牌托管机构，交易全程合规留痕。', '平台採用金融級數據加密，賬戶已開啟雙重驗證（2FA），資金託管於持牌託管機構，交易全程合規留痕。', 'The platform uses financial-grade data encryption, your account has two-factor authentication (2FA) enabled, funds are custodied with licensed custodians, and all transactions leave a full compliance audit trail.'),
+  },
 ];
+
+// FAQ 增删改（后台系统配置页可配置——Help 页实时读取共享数组，配置即生效）
+// 校验 + 审计 + 持久化；繁/英留空回退简体（Help 渲染 item.q[lang] || item.q['zh-CN']）
+export function addFaqItem({ q, a }, operator = '') {
+  const qCN = (q?.['zh-CN'] || '').trim();
+  const aCN = (a?.['zh-CN'] || '').trim();
+  if (!qCN || !aCN) return { ok: false, error: '问题与答案的简体内容必填' };
+  faqItems.push({
+    q: AG(qCN, (q?.['zh-HK'] || '').trim(), (q?.en || '').trim()),
+    a: AG(aCN, (a?.['zh-HK'] || '').trim(), (a?.en || '').trim()),
+  });
+  logAudit({ operator, category: 'config', action: 'update', target: '帮助FAQ', targetId: '', note: `新增 FAQ：${qCN}` });
+  Storage.save();
+  return { ok: true };
+}
+
+export function updateFaqItem(index, { q, a }, operator = '') {
+  if (index < 0 || index >= faqItems.length) return { ok: false, error: 'FAQ 条目不存在' };
+  const qCN = (q?.['zh-CN'] || '').trim();
+  const aCN = (a?.['zh-CN'] || '').trim();
+  if (!qCN || !aCN) return { ok: false, error: '问题与答案的简体内容必填' };
+  faqItems[index] = {
+    q: AG(qCN, (q?.['zh-HK'] || '').trim(), (q?.en || '').trim()),
+    a: AG(aCN, (a?.['zh-HK'] || '').trim(), (a?.en || '').trim()),
+  };
+  logAudit({ operator, category: 'config', action: 'update', target: '帮助FAQ', targetId: '', note: `修改 FAQ：${qCN}` });
+  Storage.save();
+  return { ok: true };
+}
+
+export function removeFaqItem(index, operator = '') {
+  if (index < 0 || index >= faqItems.length) return { ok: false, error: 'FAQ 条目不存在' };
+  const removed = faqItems[index];
+  faqItems.splice(index, 1);
+  logAudit({ operator, category: 'config', action: 'update', target: '帮助FAQ', targetId: '', note: `删除 FAQ：${removed.q['zh-CN']}` });
+  Storage.save();
+  return { ok: true };
+}
 
 export const companyPolicies = [
   {
     id: 'cp1',
     title: '公司简介',
-    subtitle: 'HKBTC Limited',
+    subtitle: '{{BRAND_FULL}}',
     file: 'hkbtc-profile.pdf',
     date: '2026-06-30',
     size: '1.2 MB',
@@ -2840,7 +2911,7 @@ export const companyPolicies = [
   {
     id: 'cp2',
     title: '牌照及监管信息',
-    subtitle: '香港证监会第 9 类牌照（资产管理）',
+    subtitle: '{{LICENSE_TYPE}}',
     file: 'license-info.pdf',
     date: '2026-06-30',
     size: '0.8 MB',
@@ -2876,15 +2947,15 @@ export const companyPolicies = [
 // 协议全文（多语言）放本数据源，不进 i18n 对象——防止 I18N 大文件膨胀引发渲染 key 静默丢失（2026-08-31 教训八）。
 // 结构：{ id, version, effectiveAt, titleKey(三语标题), sections: [{ h, p }] }；titleKey.i18n = i18n 对象中的标题 key（UI 标签），正文全在 sections。
 
-const AG = (zhCN, zhHK, en) => ({ 'zh-CN': zhCN, 'zh-HK': zhHK, en });
+// AG 已上移至 faqItems 之前（2026-10-19，FAQ 三语化引用；避免 const TDZ 与重复声明）
 
 // ---- 法定声明文本（来源：公司协议签署实践案例 · YUiNQxqL/QDZq2ovV/TKCPH5Vk；主体名替换为本平台） ----
 // 2026-09-20 上移至 agreements 之前：pi-declaration 协议条目直接引用，避免 const TDZ
 // KYC「04 协议签署」步骤声明（零售版全文；PI 为独立审核流，其附加段见 PI_CONFIRM_EXTRA_TEXT）
 export const KYC_DECLARATION_TEXT = AG(
-  '本人特此无条件且不可撤销地声明，本人已阅读并同意遵守HKBTC提供的隐私信息收集声明（PICS）、条款与条件、风险披露声明及其他所要求的相关文件。本人在此表格中提供的所有资料均真实、准确且完整。如HKBTC提出要求，本人将提供HKBTC可能需要验证上述资料的进一步补充信息或文件。如未能提供所需信息或文件，本人明白HKBTC可能无法提供相关服务。本人同意并授权HKBTC不时向本人索取进一步资料或文件，并承诺在资料发生变更时及时通知HKBTC（或其继承人或受让人）。本人认可并同意，HKBTC可进行反洗钱审查或为了解客户所需，将本人资料用于HKBTC提供的产品和/或服务。',
-  '本人特此無條件且不可撤銷地聲明，本人已閱讀並同意遵守HKBTC提供的隱私信息收集聲明（PICS）、條款與條件、風險披露聲明及其他所要求的相關文件。本人在此表格中提供的所有資料均真實、準確且完整。如HKBTC提出要求，本人將提供HKBTC可能需要驗證上述資料的進一步補充信息或文件。如未能提供所需信息或文件，本人明白HKBTC可能無法提供相關服務。本人同意並授權HKBTC不時向本人索取進一步資料或文件，並承諾在資料發生變更時及時通知HKBTC（或其繼承人或受讓人）。本人認可並同意，HKBTC可進行反洗錢審查或為了解客戶所需，將本人資料用於HKBTC提供的產品和/或服務。',
-  'I hereby unconditionally and irrevocably declare that I have read and agree to abide by the Personal Information Collection Statement (PICS), Terms and Conditions, Risk Disclosure Statement and other required documents provided by HKBTC. All information provided by me in this form is true, accurate, and complete. Upon request by HKBTC, I will provide any additional information or documents that may be required to verify the aforementioned details. I understand that failure to provide the requested information or documents may result in HKBTC being unable to offer the relevant services. I agree and authorize HKBTC to request further information or documents from me from time to time and commit to promptly notifying HKBTC (or its successors or assigns) of any changes to the provided information. I acknowledge and agree that HKBTC may use my information for anti-money laundering checks or Know Your Customer (KYC) purposes as required for the provision of its products and/or services.'
+  '本人特此无条件且不可撤销地声明，本人已阅读并同意遵守{{BRAND}}提供的隐私信息收集声明（PICS）、条款与条件、风险披露声明及其他所要求的相关文件。本人在此表格中提供的所有资料均真实、准确且完整。如{{BRAND}}提出要求，本人将提供{{BRAND}}可能需要验证上述资料的进一步补充信息或文件。如未能提供所需信息或文件，本人明白{{BRAND}}可能无法提供相关服务。本人同意并授权{{BRAND}}不时向本人索取进一步资料或文件，并承诺在资料发生变更时及时通知{{BRAND}}（或其继承人或受让人）。本人认可并同意，{{BRAND}}可进行反洗钱审查或为了解客户所需，将本人资料用于{{BRAND}}提供的产品和/或服务。',
+  '本人特此無條件且不可撤銷地聲明，本人已閱讀並同意遵守{{BRAND}}提供的隱私信息收集聲明（PICS）、條款與條件、風險披露聲明及其他所要求的相關文件。本人在此表格中提供的所有資料均真實、準確且完整。如{{BRAND}}提出要求，本人將提供{{BRAND}}可能需要驗證上述資料的進一步補充信息或文件。如未能提供所需信息或文件，本人明白{{BRAND}}可能無法提供相關服務。本人同意並授權{{BRAND}}不時向本人索取進一步資料或文件，並承諾在資料發生變更時及時通知{{BRAND}}（或其繼承人或受讓人）。本人認可並同意，{{BRAND}}可進行反洗錢審查或為了解客戶所需，將本人資料用於{{BRAND}}提供的產品和/或服務。',
+  'I hereby unconditionally and irrevocably declare that I have read and agree to abide by the Personal Information Collection Statement (PICS), Terms and Conditions, Risk Disclosure Statement and other required documents provided by {{BRAND}}. All information provided by me in this form is true, accurate, and complete. Upon request by {{BRAND}}, I will provide any additional information or documents that may be required to verify the aforementioned details. I understand that failure to provide the requested information or documents may result in {{BRAND}} being unable to offer the relevant services. I agree and authorize {{BRAND}} to request further information or documents from me from time to time and commit to promptly notifying {{BRAND}} (or its successors or assigns) of any changes to the provided information. I acknowledge and agree that {{BRAND}} may use my information for anti-money laundering checks or Know Your Customer (KYC) purposes as required for the provision of its products and/or services.'
 );
 
 // PI 认证附加确认段（在 KYC 声明基础上追加，对齐实践案例"个人专业投资者"版本）
@@ -2902,9 +2973,9 @@ export const agreements = [
     title: AG('用户协议', '用戶協議', 'Terms of Use'),
     sections: [
       { h: AG('一、服务范围', '一、服務範圍', '1. Scope of Services'), p: AG(
-        'HKBTC Limited（下称"本平台"）依据香港证监会第 9 类牌照（资产管理），为专业投资者提供私募股权投资机会的信息展示、意向提交、申购协助及投后信息服务。本平台不提供公开募集、公开推介或任何形式的投资保证。',
-        'HKBTC Limited（下稱"本平台"）依據香港證監會第 9 類牌照（資產管理），為專業投資者提供私募股權投資機會的信息展示、意向提交、申購協助及投後信息服務。本平台不提供公開募集、公開推介或任何形式的投資保證。',
-        'HKBTC Limited (the "Platform"), licensed under SFC Type 9 (Asset Management), provides professional investors with information on private equity opportunities, subscription assistance and post-investment services. The Platform does not offer public offerings or any form of investment guarantee.'
+        '{{BRAND_FULL}}（下称"本平台"）依据{{LICENSE_TYPE}}，为专业投资者提供私募股权投资机会的信息展示、意向提交、申购协助及投后信息服务。本平台不提供公开募集、公开推介或任何形式的投资保证。',
+        '{{BRAND_FULL}}（下稱"本平台"）依據{{LICENSE_TYPE}}，為專業投資者提供私募股權投資機會的信息展示、意向提交、申購協助及投後信息服務。本平台不提供公開募集、公開推介或任何形式的投資保證。',
+        '{{BRAND_FULL}} (the "Platform"), licensed under {{LICENSE_TYPE}}, provides professional investors with information on private equity opportunities, subscription assistance and post-investment services. The Platform does not offer public offerings or any form of investment guarantee.'
       ) },
       { h: AG('二、账户与安全', '二、賬戶與安全', '2. Account and Security'), p: AG(
         '您应妥善保管账户凭证，并对账户内的全部操作负责。平台有权对异常操作执行风控措施（含冻结、限制出入金），并依法履行反洗钱审查义务。',
@@ -3036,10 +3107,62 @@ export const agreements = [
       { h: AG('二、专业投资者附加确认', '二、專業投資者附加確認', '2. PI Additional Confirmation'), p: PI_CONFIRM_EXTRA_TEXT },
     ],
   },
+  // 2026-10-19：About 公司政策 cp1/cp2 的抽屉化正文（消灭「文档预览即将开放」toast——应用市场审核
+  // 要求主体与监管信息文档真实可访问）。⚠️ 正文为占位模板，发审核前须替换为公司真实备案内容。
+  {
+    id: 'company-profile',
+    version: 'v1.0',
+    effectiveAt: '2026-09-01',
+    title: AG('公司简介', '公司簡介', 'Company Profile'),
+    sections: [
+      { h: AG('一、公司概况', '一、公司概況', '1. Overview'), p: AG(
+        '{{BRAND_FULL}}（「本公司」）为根据香港《公司条例》注册成立的有限公司，持有{{LICENSE_TYPE}}，面向专业投资者提供私募股权投资信息服务。【占位模板：发审核前替换为公司真实备案简介，含注册编号、注册地址、董事信息等。】',
+        '{{BRAND_FULL}}（「本公司」）為根據香港《公司條例》註冊成立的有限公司，持有{{LICENSE_TYPE}}，面向專業投資者提供私募股權投資信息服務。【佔位模板：發審核前替換為公司真實備案簡介，含註冊編號、註冊地址、董事信息等。】',
+        '{{BRAND_FULL}} (the "Company") is a limited company incorporated in Hong Kong under the Companies Ordinance, licensed for {{LICENSE_TYPE}}, providing private equity investment information services to professional investors. [Placeholder: replace with the company\'s actual registered profile (registration no., registered address, directors) before app-store review.]'
+      ) },
+    ],
+  },
+  {
+    id: 'license-info',
+    version: 'v1.0',
+    effectiveAt: '2026-09-01',
+    title: AG('牌照及监管信息', '牌照及監管信息', 'Licence & Regulatory Information'),
+    sections: [
+      { h: AG('一、监管牌照', '一、監管牌照', '1. Licence'), p: AG(
+        '本公司持有{{LICENSE_TYPE}}，中央编号（CE No.）{{LICENSE_NO}}。持牌信息可于香港证监会持牌人登记册公开查询（apps.sfc.hk）。',
+        '本公司持有{{LICENSE_TYPE}}，中央編號（CE No.）{{LICENSE_NO}}。持牌信息可於香港證監會持牌人登記冊公開查詢（apps.sfc.hk）。',
+        'The Company holds {{LICENSE_TYPE}} (Central Number / CE No. {{LICENSE_NO}}). The licence status is publicly verifiable via the SFC Register of Licensed Persons (apps.sfc.hk).'
+      ) },
+      { h: AG('二、受监管活动', '二、受監管活動', '2. Regulated Activities'), p: AG(
+        '本平台信息展示与申购协助服务在其牌照允许的范围内提供，不构成公开募集、公开推介或任何形式的投资保证。【占位模板：发审核前核对真实牌照的受规管活动描述。】',
+        '本平台信息展示與申購協助服務在其牌照允許的範圍內提供，不構成公開募集、公開推介或任何形式的投資保證。【佔位模板：發審核前核對真實牌照的受規管活動描述。】',
+        'The Platform\'s information display and subscription assistance services are provided within the scope permitted by its licence, and do not constitute a public offer, solicitation, or any form of investment guarantee. [Placeholder: verify against the actual licensed regulated activities before review.]'
+      ) },
+    ],
+  },
 ];
 
 export function getAgreementById(id) {
-  return agreements.find(a => a.id === id) || null;
+  // 返回时做品牌插值（浅拷贝 sections）：协议 mock 源以 {{BRAND*}}/{{LICENSE_TYPE}} 占位，
+  // 展示为 Admin 配置的真实主体名。version/effectiveAt 元数据原样保留（固化语义）。
+  const found = agreements.find(a => a.id === id);
+  if (!found) return null;
+  return {
+    ...found,
+    sections: (found.sections || []).map(s => ({
+      ...s,
+      h: typeof s.h === 'string' ? resolveBrand(s.h) : brandResolveAg(s.h),
+      p: typeof s.p === 'string' ? resolveBrand(s.p) : brandResolveAg(s.p),
+    })),
+  };
+}
+
+// AG 结构（{ 'zh-CN', 'zh-HK', en }）三语字段插值
+function brandResolveAg(ag) {
+  if (!ag || typeof ag !== 'object') return ag;
+  const out = { ...ag };
+  Object.keys(out).forEach(k => { out[k] = resolveBrand(out[k]); });
+  return out;
 }
 
 // （2026-09-20：KYC_DECLARATION_TEXT / PI_CONFIRM_EXTRA_TEXT 上移至 agreements 数组之前——
@@ -3047,9 +3170,9 @@ export function getAgreementById(id) {
 
 // 电子签名法律提示（对齐实践案例 §3.7）
 export const E_SIGNATURE_NOTICE_TEXT = AG(
-  '通过在上方提供本人的电子签名，本人确认并同意此电子签名构成本人手写签名的合法且有约束力的表示。该等电子签署的文件将具有有效性和法律效力，与用笔和纸签署的实体合同具有同等有效性。在电子签署前，本人已经仔细审阅了HKBTC的有关条款和条件，并且完全理解并同意受其所载之权利和义务的约束。',
-  '通過在上方提供本人的電子簽名，本人確認並同意此電子簽名構成本人手寫簽名的合法且有約束力的表示。該等電子簽署的文件將具有有效性和法律效力，與用筆和紙簽署的實體合同具有同等有效性。在電子簽署前，本人已經仔細審閱了HKBTC的有關條款和條件，並且完全理解並同意受其所載之權利和義務的約束。',
-  'By providing my electronic signature above, I confirm and agree that such electronic signature constitutes a legal and binding representation of my handwritten signature. Electronically signed documents shall be valid and enforceable to the same effect as a contract executed by pen and paper. Before electronically signing, I have carefully reviewed the relevant terms and conditions of HKBTC and fully understand and agree to be bound by the rights and obligations contained therein.'
+  '通过在上方提供本人的电子签名，本人确认并同意此电子签名构成本人手写签名的合法且有约束力的表示。该等电子签署的文件将具有有效性和法律效力，与用笔和纸签署的实体合同具有同等有效性。在电子签署前，本人已经仔细审阅了{{BRAND}}的有关条款和条件，并且完全理解并同意受其所载之权利和义务的约束。',
+  '通過在上方提供本人的電子簽名，本人確認並同意此電子簽名構成本人手寫簽名的合法且有約束力的表示。該等電子簽署的文件將具有有效性和法律效力，與用筆和紙簽署的實體合同具有同等有效性。在電子簽署前，本人已經仔細審閱了{{BRAND}}的有關條款和條件，並且完全理解並同意受其所載之權利和義務的約束。',
+  'By providing my electronic signature above, I confirm and agree that such electronic signature constitutes a legal and binding representation of my handwritten signature. Electronically signed documents shall be valid and enforceable to the same effect as a contract executed by pen and paper. Before electronically signing, I have carefully reviewed the relevant terms and conditions of {{BRAND}} and fully understand and agree to be bound by the rights and obligations contained therein.'
 );
 
 // SPV 协议全文模板（APP 内签署页展示用；按 SPV 档案与申购单插值，接后端由发行方协议文本替换）
@@ -3249,7 +3372,23 @@ export const platformBrand = {
   nameFullZh: 'HKBTC Limited',   // 全称（About 品牌卡 / 版权）
   nameEn: 'HKBTC Limited',
   licenseNo: 'BLA1234',            // 牌照编号（SFC CE No.）
+  licenseType: '香港证监会第 9 类牌照（资产管理）', // 牌照类型（About 合规卡 / 公司政策列表）
+  licenseDesc: '就资产管理提供意见',               // 牌照业务描述（About 合规卡副行）
+  appVersion: '2.0.0',             // 应用版本号（About 版本行；与应用市场注册版本保持一致）
 };
+
+// 法定文本品牌插值（2026-10-19）：协议/基金名 mock 源以 {{BRAND_FULL}}/{{BRAND}} 占位，
+// 渲染时替换为 Admin 配置的真实主体名——改真实主体只需后台改品牌信息，不动法务文案源。
+// 语义注记：替换发生在渲染时，协议文本随品牌配置变化；「版本固化」指 version/effectiveAt
+// 元数据，正文主体名以当前配置为准（原型阶段无签署时文本快照，真实接入时由后端固化）。
+export function resolveBrand(text) {
+  if (!text || text.indexOf('{{') === -1) return text;
+  return String(text)
+    .split('{{BRAND_FULL}}').join(platformBrand.nameFullZh)
+    .split('{{BRAND}}').join(platformBrand.nameZh)
+    .split('{{LICENSE_TYPE}}').join(platformBrand.licenseType)
+    .split('{{LICENSE_NO}}').join(platformBrand.licenseNo);
+}
 
 export function updatePlatformBrand(fields, operator) {
   const clean = {
@@ -3257,10 +3396,14 @@ export function updatePlatformBrand(fields, operator) {
     nameFullZh: String(fields.nameFullZh || '').trim(),
     nameEn: String(fields.nameEn || '').trim(),
     licenseNo: String(fields.licenseNo || '').trim(),
+    licenseType: String(fields.licenseType || '').trim(),
+    licenseDesc: String(fields.licenseDesc || '').trim(),
+    appVersion: String(fields.appVersion || '').trim(),
   };
   if (!clean.nameZh || !clean.nameFullZh || !clean.nameEn || !clean.licenseNo) return { ok: false, error: '请完整填写品牌信息（简称/全称/英文名/牌照编号）' };
+  if (!clean.licenseType || !clean.appVersion) return { ok: false, error: '请完整填写牌照类型与应用版本号' };
   Object.assign(platformBrand, clean);
-  logAudit({ operator, category: 'config', action: 'update', target: '平台品牌信息', targetId: '', note: `更新平台品牌（${clean.nameZh} / CE No. ${clean.licenseNo}）` });
+  logAudit({ operator, category: 'config', action: 'update', target: '平台品牌信息', targetId: '', note: `更新平台品牌（${clean.nameZh} / CE No. ${clean.licenseNo} / ${clean.licenseType} / v${clean.appVersion}）` });
   Storage.save();
   return { ok: true };
 }
@@ -6473,6 +6616,7 @@ export function submitKyc() {
       piCertified: p.piCertified,
       idDocType: p.idDocType,
       idDocNumber: p.idDocNumber || '—',
+      idDocExpiry: p.idDocExpiry,
       idDocFront: p.idDocFront,
       idDocBack: p.idDocBack,
       idDocHandheld: p.idDocHandheld,
@@ -6480,6 +6624,12 @@ export function submitKyc() {
       addressProof: p.addressProof,
       addressLine: p.addressLine,
       phone: p.phone,
+      // 2026-10-16 C 组：财务信息 + 逐地税务随快照入队，后台审核抽屉可见
+      employmentStatus: p.employmentStatus,
+      incomeSources: p.incomeSources,
+      taxResidencies: p.taxResidencies,
+      taxDetails: p.taxDetails,
+      crsDeclared: p.crsDeclared,
     },
   });
   Storage.save();
@@ -7400,7 +7550,9 @@ export function submitSubscription({ project, amount, currency = 'HKD' }) {
 //     ——数据结构变更）——旧快照（30）无安全档案，重置展示完整 2FA 矩阵
 // 32：2026-10-15 集团品牌令：APP 名称统一 HKBTC（platformBrand/基金名/活动/后台账号邮箱/法务文本全量替换
 //     ——数据内容变更）——旧快照（31）持久化层带「财富/Wealth Capital」旧品牌，重置后以 HKBTC mock 为权威初始态
-const STATE_VERSION = 32;
+// 33：2026-10-19 帮助 FAQ 三语化 + 后台可配置（faqItems 结构升级为 AG 三语对象——数据结构变更）——旧快照（32）FAQ 为纯字符串，重置后用新结构
+// 34：2026-10-19 清理配置走查期间的 FAQ 测试条目（走查新增数据经 Storage 落盘后，reset 钩子按设计不还原配置类数据，以版本递进恢复出厂）
+const STATE_VERSION = 34;
 const STORAGE_KEY = 'zhifu-app-state';
 
 /**
@@ -7441,6 +7593,7 @@ export const Storage = {
         piSubmissions: piSubmissions,         // PI 认证审核队列（2026-08-14 独立审核流）
         projects: projects,   // 后台 CRUD 内容持久化（2026-08-12）
         events: events,       // 后台 CRUD 内容持久化（2026-08-12）
+        faqItems: faqItems,   // 帮助 FAQ（2026-10-19 三语化 + 后台可配置）
         // 系统配置持久化（2026-08-12 规范审查 P1-④：配置中心"已保存"需刷新保留）
         sectors: sectors,
         exchangeRates: exchangeRates,
@@ -7611,6 +7764,11 @@ export const Storage = {
         sectors.length = 0;
         data.sectors.forEach(s => sectors.push(s));
       }
+      // 帮助 FAQ（2026-10-19 后台可配置；空/缺省 = mock 预置）
+      if (Array.isArray(data.faqItems)) {
+        faqItems.length = 0;
+        data.faqItems.forEach(f => faqItems.push(f));
+      }
       if (data.exchangeRates) {
         Object.keys(exchangeRates).forEach(k => delete exchangeRates[k]);
         Object.keys(data.exchangeRates).forEach(k => { exchangeRates[k] = data.exchangeRates[k]; });
@@ -7630,8 +7788,8 @@ export const Storage = {
         Object.keys(data.platformAccounts).forEach(k => { platformAccounts[k] = data.platformAccounts[k]; });
       }
       // 平台品牌信息恢复（2026-08-14 配置页清单化；缺省 = mock 初始）
+      // 2026-10-19 改 merge：旧快照无新增字段（licenseType 等）时保留 mock 缺省，防「先删后拷」丢字段渲染 undefined
       if (data.platformBrand) {
-        Object.keys(platformBrand).forEach(k => delete platformBrand[k]);
         Object.keys(data.platformBrand).forEach(k => { platformBrand[k] = data.platformBrand[k]; });
       }
       // 用户管理 + 审计日志恢复（缺省 = mock 预置，向后兼容）
@@ -7736,12 +7894,7 @@ export function logAudit({ operator = '系统', category = '', action = '', targ
 
 // ========== 系统配置（后台系统配置页可改；置于文件末尾确保依赖已初始化） ==========
 
-export const systemConfig = {
-  amountPresets: amountPresets,        // 引用共享数组（档位）
-  sectors: sectors,                    // 引用共享数组（行业分类）
-  exchangeRates: exchangeRates,        // 引用共享对象（汇率）
-  businessContact: businessContact,    // 引用共享对象（商务联系）
-};
+// （systemConfig 聚合对象已于 2026-10-19 删除：全仓零引用的死代码，各配置真源以独立导出为准）
 
 // ========== 合规数据模型（2026-08-26 · PRD §4.5 合规数据模型） ==========
 // 基于PRD 08-数据字典 §4.5 合规数据模型设计，新增7个合规实体

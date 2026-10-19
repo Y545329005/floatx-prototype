@@ -27,7 +27,7 @@ export default function MySubscription({ id, navigate, goBack }) {
       <div className="page my-subscription-page">
         <div className="subpage-sticky">
           <div className="page-header">
-            <button className="back-btn" onClick={() => goBack('#subscriptions')}><ArrowLeft size={20} /></button>
+            <button className="back-btn" onClick={() => goBack('#projects')}><ArrowLeft size={20} /></button>
             <h1>{t('我的申购')}</h1>
           </div>
         </div>
@@ -46,7 +46,7 @@ export default function MySubscription({ id, navigate, goBack }) {
     <div className="page my-subscription-page">
       <div className="subpage-sticky">
         <div className="page-header no-margin">
-          <button className="back-btn" onClick={() => goBack('#subscriptions')}><ArrowLeft size={20} /></button>
+          <button className="back-btn" onClick={() => goBack(`#project/${subRecord.projectId}`)}><ArrowLeft size={20} /></button>
           <h1>{subRecord.projectName}</h1>
           <StatusBadge status={subRecord.status} />
         </div>
@@ -58,11 +58,6 @@ export default function MySubscription({ id, navigate, goBack }) {
           <span>{t('意向金额')}</span>
           <strong className="date-iso">HK$ {formatCurrency(subRecord.amount || 0)}</strong>
         </div>
-        {/* 2026-10-16 口径修订：资金与 SPV 签署全线下——原「冻结宽限期/冻结语义说明」
-            （钱包语义）摘除，allocated 改为线下打款与签署指引 */}
-        {subRecord.status === 'allocated' && (
-          <p className="freeze-note">{t('已获配额：请按客户经理指引完成线下打款；SPV 协议将在线下签署，专人协助安排')}</p>
-        )}
         {subRecord.shares && (
           <div className="subscription-info-row">
             <span>{t('获得份额')}</span>

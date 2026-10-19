@@ -19,6 +19,10 @@ export default function KYCIdUpload({ navigate, goBack, setIsLoggedIn }) {
  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
 const [idType, setIdType] = useState(profile.idDocType || "HK_ID");
+// A 组（2026-10-16）：证件号码/有效期落结构化字段（此前仅存照片靠人工看图，OCR 已识别但无记录载体）
+const [idNumber, setIdNumber] = useState(profile.idDocNumber || "");
+const [idExpiry, setIdExpiry] = useState(profile.idDocExpiry === 'permanent' ? "" : (profile.idDocExpiry || ""));
+const [idNoExpiry, setIdNoExpiry] = useState(profile.idDocExpiry === 'permanent');
 const [frontFile, setFrontFile] = useState(null);
 const [backFile, setBackFile] = useState(null);
  const [errors, setErrors] = useState({});
@@ -54,6 +58,8 @@ const [backFile, setBackFile] = useState(null);
  const newErrors = {};
  if (!frontFile) newErrors.front = t("请上传证件正面");
  if (idType !== 'PASSPORT' && !backFile) newErrors.back = t("请上传证件背面");
+ if (!idNumber) newErrors.idNumber = t("请输入证件号码");
+ if (!idNoExpiry && !idExpiry) newErrors.idExpiry = t("请选择证件有效期");
  setErrors(newErrors);
  return Object.keys(newErrors).length === 0;
  };
@@ -109,6 +115,8 @@ const [backFile, setBackFile] = useState(null);
  // 已通过核验 → 落档证件信息并跳转步骤③
  updateKycProfile({
  idDocType: idType,
+ idDocNumber: idNumber,
+ idDocExpiry: idNoExpiry ? 'permanent' : idExpiry,
  idDocFront: frontFile,
  idDocBack: backFile,
  });
@@ -205,6 +213,57 @@ const [backFile, setBackFile] = useState(null);
  <div className="kyc-form-hint">
  {idType === 'PASSPORT' ? t('请上传 1 张') : t('请上传 2 张（正面 + 背面）')}
  </div>
+ </div>
+
+ {/* 证件号码（A1） */}
+ <div className="kyc-form-group">
+ <label className="kyc-form-label">{t('证件号码')}</label>
+ <input
+ type="text"
+ className={`kyc-form-input ${errors.idNumber ? 'error' : ''}`}
+ placeholder={idType === 'HK_ID' ? t('例如：A123456(7)') : idType === 'PASSPORT' ? t('例如：P12345678') : t('例如：E12345678')}
+ value={idNumber}
+ onChange={e => {
+ setIdNumber(e.target.value);
+ if (errors.idNumber) setErrors(prev => ({ ...prev, idNumber: null }));
+ }}
+ />
+ {errors.idNumber && <span className="kyc-form-error">{errors.idNumber}</span>}
+ <div className="kyc-form-hint">{t('须与证件影像上的号码一致，eKYC 核验时会自动比对')}</div>
+ </div>
+
+ {/* 证件有效期（A2）：HK 身份证常见永久，勾选后免填日期 */}
+ <div className="kyc-form-group">
+ <label className="kyc-form-label">{t('证件有效期')}</label>
+ {idNoExpiry ? (
+ <div className="kyc-form-input" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
+ <span>{t('永久有效')}</span>
+ <button type="button" className="kyc-btn kyc-btn-secondary" style={{ padding: '4px 12px', fontSize: 'var(--text-xs)' }} onClick={() => setIdNoExpiry(false)}>
+ {t('修改')}
+ </button>
+ </div>
+ ) : (
+ <>
+ <input
+ type="date"
+ className={`kyc-form-input ${errors.idExpiry ? 'error' : ''}`}
+ value={idExpiry}
+ onChange={e => {
+ setIdExpiry(e.target.value);
+ if (errors.idExpiry) setErrors(prev => ({ ...prev, idExpiry: null }));
+ }}
+ />
+ {errors.idExpiry && <span className="kyc-form-error">{errors.idExpiry}</span>}
+ <div
+ className="kyc-checkbox-row"
+ onClick={() => setIdNoExpiry(true)}
+ style={{ cursor: 'pointer', marginTop: 'var(--space-2)' }}
+ >
+ <div className="kyc-checkbox" />
+ <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>{t('证件永久有效（如香港身份证）')}</span>
+ </div>
+ </>
+ )}
  </div>
 
  {/* 证件正面 */}

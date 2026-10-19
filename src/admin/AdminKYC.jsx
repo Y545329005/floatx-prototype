@@ -32,6 +32,17 @@ const FILTERS = [
 
 const PAGE_SIZE = 5;
 
+// 收入来源值 → 展示文案（2026-10-16 B 组）
+const INCOME_LABELS = {
+  salary: '薪金',
+  business: '经营收入',
+  investment: '投资收益',
+  rent: '租金收入',
+  inheritance: '继承或赠与',
+  pension: '退休金',
+  other: '其他',
+};
+
 export default function AdminKYC({ navigate, detailId, admin }) {
   const [items, setItems] = useState([...kycSubmissions]);
   // 审核动作展开（2026-08-13）：null | 'reject'（拒绝）| 'require'（退回补件）——原因必填共用表单
@@ -257,6 +268,7 @@ export default function AdminKYC({ navigate, detailId, admin }) {
                 <h4 className="card-title">证件</h4>
                 <div className="kyc-review-row"><span>证件类型</span><strong>{sel.profile.idDocType === 'HK_ID' ? '香港身份证' : sel.profile.idDocType === 'PASSPORT' ? '护照' : '内地通行证'}</strong></div>
                 <div className="kyc-review-row"><span>证件号码</span><strong>{sel.profile.idDocNumber || '—'}</strong></div>
+                <div className="kyc-review-row"><span>证件有效期</span><strong>{sel.profile.idDocExpiry === 'permanent' ? '永久有效' : (sel.profile.idDocExpiry || '—')}</strong></div>
                 <div className="kyc-review-doc">
                   <div className="kyc-review-img">
                     {imgSrc(sel.profile.idDocFront) ? <img src={imgSrc(sel.profile.idDocFront)} alt="证件正面" loading="lazy" decoding="async" /> : <><ImageIcon size={18} /><span>正面</span></>}
@@ -272,7 +284,7 @@ export default function AdminKYC({ navigate, detailId, admin }) {
               </div>
               <div className="card kyc-review-block">
                 <h4 className="card-title">地址证明</h4>
-                <div className="kyc-review-row"><span>证明类型</span><strong>{sel.profile.addressProofType === 'utility' ? '水电费账单' : sel.profile.addressProofType === 'bank' ? '银行月结单' : '政府文件'}</strong></div>
+                <div className="kyc-review-row"><span>证明类型</span><strong>{sel.profile.addressProofType === 'utility' ? '水电费账单' : sel.profile.addressProofType === 'bank' ? '银行月结单' : '其他带姓名及地址的文件'}</strong></div>
                 <div className="kyc-review-row"><span><MapPin size={14} /></span><strong>{sel.profile.addressLine || '—'}</strong></div>
                 <div className="kyc-review-doc">
                   <div className="kyc-review-img">
@@ -280,6 +292,31 @@ export default function AdminKYC({ navigate, detailId, admin }) {
                     <span className="kyc-review-img-label">证明文件</span>
                   </div>
                 </div>
+              </div>
+              {/* 财务与税务卡（2026-10-16 B/C 组：就业/收入 + 逐地 TIN 审核可见） */}
+              <div className="card kyc-review-block">
+                <h4 className="card-title">财务与税务</h4>
+                <div className="kyc-review-row"><span>就业状态</span><strong>{{employed:'受雇',self_employed:'自雇',retired:'退休',other:'其他'}[sel.profile.employmentStatus] || '—'}</strong></div>
+                <div className="kyc-review-row">
+                  <span>收入来源</span>
+                  <strong>{(sel.profile.incomeSources || []).map(v => INCOME_LABELS[v]).filter(Boolean).join('、') || '—'}</strong>
+                </div>
+                <div className="kyc-review-row"><span>税务居民地</span><strong>{(sel.profile.taxResidencies || []).join('、') || '—'}</strong></div>
+                {(sel.profile.taxResidencies || []).map(code => {
+                  const d = (sel.profile.taxDetails || {})[code] || {};
+                  const reasonMap = {
+                    not_issued: '辖区不发放',
+                    not_required: '主管机关毋须披露',
+                    cannot_obtain: `无法取得${d.noTinNote ? `（${d.noTinNote}）` : ''}`,
+                  };
+                  return (
+                    <div className="kyc-review-row" key={code}>
+                      <span>TIN · {code}</span>
+                      <strong>{d.tin || reasonMap[d.noTinReason] || '—'}</strong>
+                    </div>
+                  );
+                })}
+                <div className="kyc-review-row"><span>CRS 声明</span><strong>{sel.profile.crsDeclared ? '已签署' : '未签署'}</strong></div>
               </div>
               <div className="card kyc-review-block">
                 <h4 className="card-title">联系与提交</h4>

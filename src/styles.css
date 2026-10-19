@@ -325,7 +325,6 @@ input, select, textarea {
 }
 
 .wallet-page,
-.subscriptions-page,
 .funds-page,
 .settings-page,
 .help-page,
@@ -3142,7 +3141,7 @@ input, select, textarea {
   flex-shrink: 0;
 }
 
-/* 文字标："致"（品牌首字，替代 lucide 占位 icon，真实私行文字标形态） */
+/* 文字标：品牌简称首字（走 platformBrand 配置，替代 lucide 占位 icon，真实私行文字标形态） */
 .auth-brand-mark {
   font-size: var(--text-2xl);
   font-weight: 700;
