@@ -92,10 +92,6 @@ export default function Settings({ navigate, goBack }) {
             <span className="detail-stat-label">{t('姓名')}</span>
             <span className="detail-stat-value">{currentUser.name}</span>
           </div>
-          <div className="detail-stat">
-            <span className="detail-stat-label">{t('手机')}</span>
-            <span className="detail-stat-value">{currentUser.phone}</span>
-          </div>
         </div>
         <div className="detail-stat-row">
           <div className="detail-stat">
@@ -148,7 +144,7 @@ export default function Settings({ navigate, goBack }) {
             <Shield size={18} />
             <span className="menu-item-label">
               <span className="menu-item-title">{t('双重验证 (2FA)')}</span>
-              <span className="menu-item-sub">{t('管理 GA / 通行密钥 / 短信验证')}</span>
+              <span className="menu-item-sub">{t('管理 GA / 通行密钥 / 邮箱验证')}</span>
             </span>
             <ChevronRight size={16} className="text-muted" />
           </div>

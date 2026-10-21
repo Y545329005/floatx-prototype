@@ -195,7 +195,7 @@ export default function AdminRegistrations({ admin }) {
 
       </div>
 
-      {/* 客户名单表格（按账户去重 · 姓名/手机/邮箱全脱敏 PDPO） */}
+      {/* 客户名单表格（按账户去重 · 姓名/电话/邮箱全脱敏 PDPO） */}
       <div className="admin-table admin-table--leads">
         <div className="admin-table-header">
           <span className="col-name">客户</span>
@@ -217,7 +217,7 @@ export default function AdminRegistrations({ admin }) {
                 <span className="text-muted text-sm">{c.investorNo}</span>
               </span>
               <span className="col-contact">
-                <span className="admin-lead-phone">{maskPhone(c.phone)}</span>
+                <span className="admin-lead-phone">{maskPhone(c.phone) || '未填电话'}</span>
                 <span className="text-muted text-sm">{maskEmail(c.email)}</span>
               </span>
               <span className="col-count">{c.eventCount} 场</span>
@@ -261,7 +261,7 @@ export default function AdminRegistrations({ admin }) {
             <div className="card kyc-review-block">
               <h4 className="card-title">身份与联系</h4>
               <div className="admin-reg-contact">
-                <span className="admin-reg-contact-item"><Phone size={15} /><strong className="date-iso">{selected.phone}</strong></span>
+                <span className="admin-reg-contact-item"><Phone size={15} /><strong className="date-iso">{selected.phone || '未填电话'}</strong></span>
                 <span className="admin-reg-contact-item"><Mail size={15} /><span>{selected.email}</span></span>
               </div>
               <div className="kyc-review-row"><span>账户人（KYC）</span><strong className="date-iso">{selected.investorNo}</strong></div>

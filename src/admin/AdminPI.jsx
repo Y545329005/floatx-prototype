@@ -3,7 +3,7 @@ import { CheckCircle, XCircle, ImageIcon, X, Search, History, Eye, ClipboardChec
 import {
   piSubmissions, approvePiSubmission, rejectPiSubmission, PI_STATUS,
   kycSubmissions, KYC_STATUS,
-  maskName, maskPhone,
+  maskName,
 } from '../mock/data';
 
 // PI 认证审核（2026-08-14 · 独立 PI 审核流）：KYC=实名认证（AdminKYC），PI=资格认证（本页）。
@@ -96,7 +96,6 @@ export default function AdminPI({ navigate, detailId, admin }) {
   const isSearching = kw.length > 0;
   const matches = (k) =>
     (k.name || '').toLowerCase().includes(kw)
-    || (k.phone || '').toLowerCase().includes(kw)
     || (k.email || '').toLowerCase().includes(kw);
   const filtered = isSearching ? items.filter(matches) : items.filter(k => k.status === filter);
 
@@ -185,8 +184,8 @@ export default function AdminPI({ navigate, detailId, admin }) {
           <Search size={16} className="admin-search-icon" />
           <input
             className="admin-search-input"
-            aria-label="搜索姓名 / 手机 / 邮箱"
-            placeholder="搜索姓名 / 手机 / 邮箱"
+            aria-label="搜索姓名 / 邮箱"
+            placeholder="搜索姓名 / 邮箱"
             value={keyword}
             onChange={e => onSearchChange(e.target.value)}
           />
@@ -200,7 +199,6 @@ export default function AdminPI({ navigate, detailId, admin }) {
         <div className="admin-table-header">
           <span className="col-name">申请人</span>
           <span className="col-type">资格类型</span>
-          <span className="col-phone">联系方式</span>
           <span className="col-date">提交时间</span>
           <span className="col-status">状态</span>
           <span className="col-actions">操作</span>
@@ -218,7 +216,6 @@ export default function AdminPI({ navigate, detailId, admin }) {
                 <strong>{maskName(k.name)}</strong>
               </span>
               <span className="col-type">{k.piType === 'asset' ? '资产达标' : '专业投资人'}</span>
-              <span className="col-phone">{maskPhone(k.phone)}</span>
               <span className="col-date">{k.submittedAt}</span>
               <span className="col-status">
                 <span className={`status-badge ${meta.cls}`}>{meta.label}</span>
@@ -333,7 +330,6 @@ export default function AdminPI({ navigate, detailId, admin }) {
               </div>
               <div className="card kyc-review-block">
                 <h4 className="card-title">联系与提交</h4>
-                <div className="kyc-review-row"><span>手机</span><strong>{sel.phone}</strong></div>
                 <div className="kyc-review-row"><span>邮箱</span><strong>{sel.email}</strong></div>
                 {sel.status === PI_STATUS.REJECTED && (
                   <div className="kyc-review-reject">拒绝原因：{sel.rejectReason}</div>

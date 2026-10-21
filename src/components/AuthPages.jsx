@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Smartphone, Lock, ShieldCheck, Globe, Check, X, AlertTriangle, Fingerprint } from "lucide-react";
+import { Mail, Lock, ShieldCheck, Globe, Check, X, AlertTriangle, Fingerprint } from "lucide-react";
 import { useLang, LANGUAGES } from "../i18n";
 import BusinessContact from "./BusinessContact";
 import SecurityVerifySheet from "./SecurityVerifySheet";
@@ -13,10 +13,16 @@ import {
   sendRegisterCode, verifyRegisterCode, registerAccount, findRegisteredAccount, isAccountRegistered,
 } from "../mock/data";
 
-// 账号校验：邮箱 或 香港手机号（+852 可选，8 位，首位 5/6/9）
-const isValidAccount = (v) =>
-  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ||
-  /^(\+?852)?[569]\d{7}$/.test(v.replace(/[\s-]/g, ''));
+// 账号校验：仅邮箱（邮箱单通道）
+const isValidAccount = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v).trim());
+
+// 测试账号邮箱 → 账号键（demo@example.com 为 u1 演示别名）
+function matchTestAccount(input) {
+  const v = String(input || '').trim().toLowerCase();
+  if (v === 'demo@example.com') return { key: 'approved', account: testAccounts.approved };
+  const hit = Object.entries(testAccounts).find(([, u]) => String(u.email || '').toLowerCase() === v);
+  return hit ? { key: hit[0], account: hit[1] } : null;
+}
 
 /* ===== 共享：品牌标识（白底圆章品牌首字标 + 金色细描边 + 平台名；首字走配置防换主体残留） ===== */
 function AuthBrand({ compact }) {
@@ -102,12 +108,12 @@ function AuthFooter({ children, setToast, banner = false }) {
 
 /* ================= 登录 ================= */
 // 2026-09-22 2FA 改造（复刻规格 5.1/5.5）：
-// - 密码验证后进入安全验证阶段，因子按绑定态自动选路（Passkey→GA→注册通道验证码 SMS/Email±人脸，INV-3 降级链）
-// - 2026-10-15 UC 对齐（§9.4）：注册通道（手机号/邮箱）即强制因子，不存在免验证登录——GA/Passkey 可延迟绑定，
-//   但无强因子时必走注册通道验证码兜底；「延迟绑定」语义仅指 GA/Passkey 绑定时机
-// - 「无法获取验证码」→ 紧急登录（规格 5.5）：KYC1 先风险确认 → SMS+人脸 → 全部通过瞬间强制解绑 GA/Passkey + 动态冻结 → 阻断式重绑
-//   （email 因子项不提供紧急入口，转客服引导——无手机用户无法走 SMS+人脸链）
-// - 中断回溯：重绑前刷新（Kill App 等价），下次登录检测 rebind-required 中间态 → 强制 SMS+人脸全套复核后才能进绑定页
+// - 密码验证后进入安全验证阶段，因子按绑定态自动选路（Passkey→GA→注册邮箱验证码±人脸，INV-3 降级链）
+// - 2026-10-15 UC 对齐（§9.4）：注册邮箱即强制因子，不存在免验证登录——GA/Passkey 可延迟绑定，
+//   但无强因子时必走注册邮箱验证码兜底；「延迟绑定」语义仅指 GA/Passkey 绑定时机
+// - 「无法获取验证码」→ 紧急登录（规格 5.5）：KYC1 先风险确认 → 邮箱验证码+人脸 → 全部通过瞬间强制解绑 GA/Passkey + 动态冻结 → 阻断式重绑
+//   （email 因子项不提供紧急入口，转客服引导）
+// - 中断回溯：重绑前刷新（Kill App 等价），下次登录检测 rebind-required 中间态 → 强制邮箱+人脸全套复核后才能进绑定页
 // - 演示约定（非规格）：快捷登录按钮豁免 2FA
 export function LoginPage({ navigate, setIsLoggedIn, setUser, setToast }) {
   const [account, setAccount] = useState("");
@@ -130,17 +136,18 @@ export function LoginPage({ navigate, setIsLoggedIn, setUser, setToast }) {
     }
   }, []);
 
-  // 记住账号：登录页初始化时预填已保存的账号（邮箱/手机号）
+  // 记住账号：登录页初始化时预填已保存的邮箱
   useEffect(() => {
     try {
       const saved = localStorage.getItem('zhifu-remember-email');
-      if (saved) setAccount(saved);
+      if (saved && saved.includes('@')) setAccount(saved);
+      else if (saved) localStorage.removeItem('zhifu-remember-email');
     } catch (e) { /* SSR / 隐私模式 */ }
   }, []);
 
   const finishLogin = () => {
     setIsLoggedIn(true);
-    setUser({ id: currentUserData.id, email: account, name: currentUserData.name });
+    setUser({ id: currentUserData.id, email: currentUserData.email || account, name: currentUserData.name });
     setToast(t("登录成功"));
     navigate("events");
   };
@@ -149,9 +156,9 @@ export function LoginPage({ navigate, setIsLoggedIn, setUser, setToast }) {
     const newErrors = {};
 
     if (!account) {
-      newErrors.account = t("请输入邮箱或手机号");
+      newErrors.account = t("请输入邮箱");
     } else if (!isValidAccount(account)) {
-      newErrors.account = t("请输入有效的邮箱或手机号");
+      newErrors.account = t("请输入有效的邮箱地址");
     }
 
     if (!password) {
@@ -173,31 +180,31 @@ export function LoginPage({ navigate, setIsLoggedIn, setUser, setToast }) {
 
     setIsLoading(true);
 
-    // 模拟登录请求（测试账号：邮箱 demo@example.com / 手机号 51234567；密码覆盖 = 安全中心修改后的密码；
-    // 本轮注册账号走 mock 注册账号表 registerAccount 校验，支持「注册成功 → 去登录」链路）
+    // 模拟登录请求：demo@example.com 与账号 A/B/C 邮箱均可登录；密码覆盖 = 安全中心修改后的密码；
+    // 本轮注册账号走 mock 注册账号表 registerAccount 校验，支持「注册成功 → 去登录」链路
     setTimeout(() => {
       const expectedPwd = getUserPasswordOverride()?.password || "password123";
-      const isDemo = (account === "demo@example.com" || account === "51234567") && password === expectedPwd;
+      const testHit = matchTestAccount(account);
+      const isDemo = !!testHit && password === expectedPwd;
       // 本轮注册账号（UC 对齐）：注册时密码已记入 mock 注册账号表
       const reg = findRegisteredAccount(account);
       const isRegistered = !!reg && reg.password === password;
       if (isDemo || isRegistered) {
         try {
-          if (remember) localStorage.setItem('zhifu-remember-email', account);
+          if (remember) localStorage.setItem('zhifu-remember-email', testHit ? testHit.account.email : account);
           else localStorage.removeItem('zhifu-remember-email');
         } catch (e) {}
-        // 桥梁同步：手动登录 = 登录「当前活跃演示账号」（默认账号 A；快捷切换 B/C 后跟随该账号，
-        // 见 docs/test/测试资产与复用指南.md 登录矩阵锚点）。该账号就是 data.js 单例本身，无需重设；
-        // 真正的对齐动作是把 KYC 状态从提交快照回读，保证门控与 2FA 因子按最新审核结果选路。
-        // （2026-10-12 修正：原写法 setMockCurrentUser(currentUserData) 传的是 currentUser 自身＝空操作）
-        // 本轮注册账号不回读快照（注册单例仅内存存在，刷新后不可再登录——mock 边界，见 registerAccount 注释）
-        if (isDemo && currentUserData.id !== 'u1') restoreKycStatus(currentUserData.id);
+        // 桥梁同步：手动登录必须切到对应演示账号，否则 2FA/KYC 门控仍读 u1
+        if (isDemo) {
+          setMockCurrentUser(testHit.account);
+          if (testHit.account.id !== 'u1') restoreKycStatus(testHit.account.id);
+        }
         // 2FA 自动选路（UC §9.4 判级对齐）：系统按绑定态选因子，用户不手挑；
-        // 注册通道（手机号/邮箱）为强制因子兜底——不存在免验证登录（UC 裁决，原「延迟绑定免 2FA」已废除）
+        // 注册邮箱为强制因子兜底——不存在免验证登录（UC 裁决，原「延迟绑定免 2FA」已废除）
         const factors = resolveLoginFactors();
         if (factors.length === 0) {
-          // 异常态兜底：无任何可达验证通道（不应出现），阻断并引导绑定，不建立会话
-          setErrors({ form: t("账户未绑定可验证通道，请先绑定手机号") });
+          // 异常态兜底：无任何可达验证通道（不应出现），阻断并联系客服，不建立会话
+          setErrors({ form: t("账户未绑定可验证通道，请联系客服") });
         } else {
           setPendingFactors(factors);
           setStage('twofactor');
@@ -211,7 +218,7 @@ export function LoginPage({ navigate, setIsLoggedIn, setUser, setToast }) {
 
   // 紧急登录入口（GA 项「无法获取验证码」）：KYC1 先风险确认，KYC0 直接验证
   const startEmergency = () => {
-    const factors = ['sms', ...(isKyc1() ? ['face'] : [])];
+    const factors = ['email', ...(isKyc1() ? ['face'] : [])];
     setEmergencyFactors(factors);
     if (isKyc1()) {
       setStage('emergency-confirm');
@@ -268,7 +275,7 @@ export function LoginPage({ navigate, setIsLoggedIn, setUser, setToast }) {
           <div className="auth-card">
             <SecurityVerifySheet
               open
-              factors={['sms', ...(isKyc1() ? ['face'] : [])]}
+              factors={['email', ...(isKyc1() ? ['face'] : [])]}
               onVerified={() => setStage('rebind')}
               onClose={backToForm}
               subtitle={t('完成以下验证后继续重绑')}
@@ -292,14 +299,14 @@ export function LoginPage({ navigate, setIsLoggedIn, setUser, setToast }) {
 
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label className="form-label">{t('邮箱 / 手机号')}</label>
+              <label className="form-label">{t('邮箱')}</label>
               <div className="auth-input-wrap">
-                <Smartphone size={16} />
+                <Mail size={16} />
                 <input
                   type="text"
                   inputMode="email"
                   className={`form-input ${errors.account ? 'error' : ''}`}
-                  placeholder={t('请输入邮箱或手机号')}
+                  placeholder={t('请输入邮箱')}
                   value={account}
                   onChange={(e) => setAccount(e.target.value)}
                 />
@@ -362,7 +369,7 @@ export function LoginPage({ navigate, setIsLoggedIn, setUser, setToast }) {
                 className="btn-demo btn-demo-approved"
                 onClick={() => window.__loginWithTestAccount && window.__loginWithTestAccount('pep')}
               >
-                {t('账号 C：PEP（仅短信验证）')}
+                {t('账号 C：PEP（邮箱+人脸）')}
               </button>
             </div>
           </div>
@@ -406,7 +413,7 @@ export function LoginPage({ navigate, setIsLoggedIn, setUser, setToast }) {
         </>
       )}
 
-      {/* 紧急登录验证（SMS±人脸，规格 5.5） */}
+      {/* 紧急登录验证（邮箱+人脸，规格 5.5） */}
       {stage === 'emergency-verify' && (
         <SecurityVerifySheet
           open
@@ -460,7 +467,7 @@ function RebindPasskey({ onDone }) {
 // - 全局判重（R3）：命中仅提示「已注册」，不披露任何关联账号
 // - 注册≠登录（UC 语义）：成功后进确认页，主动线「开始身份认证」免登进 KYC（向集团报备口径），
 //   次链接「去登录」严格走 UC 两段语义
-// - 注册账号落库为登录强制因子通道（P0）：手机号注册 → currentUser.phone；邮箱注册 → email
+// - 注册账号落库为登录强制因子通道（P0）：仅邮箱注册 → currentUser.email
 export function RegisterPage({ navigate, setIsLoggedIn, setUser, setToast }) {
   const { t } = useLang();
   const [formData, setFormData] = useState({
@@ -487,16 +494,16 @@ export function RegisterPage({ navigate, setIsLoggedIn, setUser, setToast }) {
     // 每次点击重新校验并清除上一次的错误（防残留提示与成功提示并存）
     setErrors({});
     if (!formData.account) {
-      setErrors({ account: t("请输入邮箱或手机号") });
+      setErrors({ account: t("请输入邮箱") });
       return;
     }
     if (!isValidAccount(formData.account)) {
-      setErrors({ account: t("请输入有效的邮箱或手机号") });
+      setErrors({ account: t("请输入有效的邮箱地址") });
       return;
     }
     // 全局判重前置：已注册账号不发码（R3）
     if (isAccountRegistered(formData.account)) {
-      setErrors({ account: t("该邮箱/手机号已注册") });
+      setErrors({ account: t("该邮箱已注册") });
       return;
     }
     const r = sendRegisterCode(formData.account);
@@ -513,9 +520,9 @@ export function RegisterPage({ navigate, setIsLoggedIn, setUser, setToast }) {
     const newErrors = {};
 
     if (!formData.account) {
-      newErrors.account = t("请输入邮箱或手机号");
+      newErrors.account = t("请输入邮箱");
     } else if (!isValidAccount(formData.account)) {
-      newErrors.account = t("请输入有效的邮箱或手机号");
+      newErrors.account = t("请输入有效的邮箱地址");
     }
 
     if (!formData.password) {
@@ -549,7 +556,7 @@ export function RegisterPage({ navigate, setIsLoggedIn, setUser, setToast }) {
 
     // 全局判重（UC §9.2/R3）：命中仅提示「已注册」，不披露任何关联账号、不建号
     if (isAccountRegistered(formData.account)) {
-      setErrors({ account: t("该邮箱/手机号已注册") });
+      setErrors({ account: t("该邮箱已注册") });
       return;
     }
 
@@ -565,13 +572,8 @@ export function RegisterPage({ navigate, setIsLoggedIn, setUser, setToast }) {
     // 模拟注册请求：全部校验通过 → 建号并置「正常」（已激活）
     setTimeout(() => {
       const account = formData.account;
-      const isEmail = account.includes("@");
-      const userData = createFreshUser({ id: `user-${Date.now()}`, email: isEmail ? account : "" });
-      // P0（UC §9.4 前置）：注册账号落库为登录强制因子通道——手机号注册 → phone；邮箱注册 → email
-      if (!isEmail) {
-        const digits = account.replace(/[\s-]/g, "");
-        userData.phone = "+852 " + digits.replace(/^(\+?852)?/, "");
-      }
+      const userData = createFreshUser({ id: `user-${Date.now()}`, email: account });
+      // P0（UC §9.4 前置）：注册账号落库为登录强制因子通道——仅邮箱
       // 协议签署（2026-10-15 · UC 对齐）：注册=集团 UC 身份层开户，基金业务协议（三件套）
       // 后置到 KYC 通过后首次进 APP 的开户协议闸门签署（type:'onboarding'），注册环节零协议勾选
       // mock 注册账号表：支持「注册成功 → 去登录」链路（内存态，见 data.js registerAccount 注释）
@@ -636,15 +638,15 @@ export function RegisterPage({ navigate, setIsLoggedIn, setUser, setToast }) {
         <div className="auth-card">
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label className="form-label">{t('邮箱 / 手机号')}</label>
+              <label className="form-label">{t('邮箱')}</label>
               <div className="auth-input-wrap">
-                <Smartphone size={16} />
+                <Mail size={16} />
                 <input
                   type="text"
                   inputMode="email"
                   name="account"
                   className={`form-input ${errors.account ? 'error' : ''}`}
-                  placeholder={t('请输入邮箱或手机号')}
+                  placeholder={t('请输入邮箱')}
                   value={formData.account}
                   onChange={handleChange}
                 />
@@ -688,7 +690,7 @@ export function RegisterPage({ navigate, setIsLoggedIn, setUser, setToast }) {
             {/* 验证码（UC §9.2：验证通过才建号 C14） */}
             <div className="form-group">
               <label className="form-label">{t('验证码')}</label>
-              <div className="kyc-phone-input-group">
+              <div className="code-input-group">
                 <input
                   type="text"
                   inputMode="numeric"
@@ -701,7 +703,7 @@ export function RegisterPage({ navigate, setIsLoggedIn, setUser, setToast }) {
                 />
                 <button
                   type="button"
-                  className="kyc-phone-code-btn"
+                  className="code-send-btn"
                   onClick={handleSendCode}
                   disabled={codeCountdown > 0}
                 >
@@ -745,7 +747,6 @@ export function ForgotPasswordPage({ navigate, setToast }) {
   // 步骤状态：'input' → 'verify' → 'reset' → 'success'
   const [step, setStep] = useState('input');
   const [account, setAccount] = useState('');
-  const [accountType, setAccountType] = useState(''); // 'phone' | 'email'
   const [verifyCode, setVerifyCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -761,24 +762,20 @@ export function ForgotPasswordPage({ navigate, setToast }) {
     return () => clearTimeout(timer);
   }, [resendCountdown]);
 
-  // 判断输入类型
-  const detectAccountType = (value) => {
-    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'email';
-    return 'phone';
-  };
-
   // 步骤1：发送验证码
   const handleSendCode = async (e) => {
     e.preventDefault();
     setErrors({});
     
     if (!account.trim()) {
-      setErrors({ account: t('请输入邮箱或手机号') });
+      setErrors({ account: t('请输入邮箱') });
+      return;
+    }
+    if (!isValidAccount(account)) {
+      setErrors({ account: t('请输入有效的邮箱地址') });
       return;
     }
     
-    const type = detectAccountType(account);
-    setAccountType(type);
     setIsLoading(true);
     
     // 调用 mock 函数
@@ -1025,19 +1022,19 @@ export function ForgotPasswordPage({ navigate, setToast }) {
   // 步骤1：输入账号页面（默认）
   return (
     <div className="auth-page">
-      <AuthHero compact title={t('忘记密码')} subtitle={t('输入您的邮箱或手机号，我们将发送验证码')} />
+      <AuthHero compact title={t('忘记密码')} subtitle={t('输入您的注册邮箱，我们将发送验证码')} />
       <div className="auth-body">
         <div className="auth-card">
           <form onSubmit={handleSendCode}>
             <div className="form-group">
-              <label className="form-label">{t('邮箱 / 手机号')}</label>
+              <label className="form-label">{t('邮箱')}</label>
               <div className="auth-input-wrap">
-                <Smartphone size={16} />
+                <Mail size={16} />
                 <input
                   type="text"
                   inputMode="email"
                   className={`form-input ${errors.account ? 'error' : ''}`}
-                  placeholder={t('请输入邮箱或手机号')}
+                  placeholder={t('请输入邮箱')}
                   value={account}
                   onChange={(e) => { setAccount(e.target.value); if (errors.account) setErrors({}); }}
                 />

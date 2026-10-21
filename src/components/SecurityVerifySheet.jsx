@@ -1,17 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Smartphone, KeyRound, ScanFace, Fingerprint, ShieldCheck, AlertTriangle, Check, RefreshCw, LifeBuoy, Mail } from 'lucide-react';
+import { X, KeyRound, ScanFace, Fingerprint, ShieldCheck, AlertTriangle, Check, RefreshCw, LifeBuoy, Mail } from 'lucide-react';
 import { useLang } from '../i18n';
 import { GA_DEMO_MODE, createVerifySession, submitVerifyItem, completeVerifyItem, finalizeVerifySession } from '../mock/data';
 
 // 安全验证弹窗（2026-09-22 · 复刻规格第 4 章：逐项验证 BottomSheet）
 // - 逐项验证模式（规格 4.1，不可回退并行填写）：每项独立提交独立验证，进度 N/N
 // - 协议三时机（规格 4.2）：打开建会话 / 每项完成即提交 / 全部完成 finalize 换授权 token
-// - 因子：sms/email（mock 演示码 123456）/ ga（真 TOTP）/ passkey·face（模拟生物识别动画）
-//   2026-10-15 UC 对齐：新增 email 因子（注册邮箱为强制通道，§9.4）；email 项屏蔽紧急登录入口，
-//   无手机用户转客服引导（UC §10.5 人工核身兜底，一期不模拟人工流）
+// - 因子：email（mock 演示码 123456）/ ga（真 TOTP）/ passkey·face（模拟生物识别动画）
+//   2026-10-15 UC 对齐：email 为注册邮箱强制通道（§9.4）；email 项屏蔽紧急登录入口，
+//   接收异常时转客服引导（UC §10.5 人工核身兜底，一期不模拟人工流）
 // - 会话 10 分钟（S-2），关闭弹窗即作废，下次重头开始
 const FACTOR_META = {
-  sms: { icon: Smartphone, title: '短信验证码', desc: '验证码将发送至您的手机' },
   email: { icon: Mail, title: '邮箱验证码', desc: '验证码将发送至您的注册邮箱' },
   ga: { icon: KeyRound, title: '谷歌验证器', desc: '输入 GA App 中的 6 位验证码' },
   passkey: { icon: Fingerprint, title: '通行密钥', desc: '使用本机生物识别验证' },
@@ -23,7 +22,7 @@ export default function SecurityVerifySheet({ open, factors, onVerified, onClose
   const [session, setSession] = useState(null); // { sessionId, items, expiresAt }
   const [activeItem, setActiveItem] = useState(null); // 当前展开的项
   const [code, setCode] = useState('');
-  const [smsSent, setSmsSent] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [gaErrors, setGaErrors] = useState(0); // 错误梯度（规格 3.2：2 次提示时间同步，3 次降级）
   const [simulating, setSimulating] = useState(null); // 'passkey' | 'face' 动画中
@@ -42,7 +41,7 @@ export default function SecurityVerifySheet({ open, factors, onVerified, onClose
     const res = createVerifySession(factors);
     if (!res.ok && res.locked) { setLocked(res.until); return; }
     setSession({ sessionId: res.sessionId, items: res.items, expiresAt: res.expiresAt });
-    setActiveItem(null); setCode(''); setSmsSent(false); setCountdown(0);
+    setActiveItem(null); setCode(''); setCodeSent(false); setCountdown(0);
     setGaErrors(0); setSimulating(null); setMsg(null); setLocked(null); setFinalizing(false);
     return clearTimers;
   }, [open, factors]);
@@ -63,7 +62,7 @@ export default function SecurityVerifySheet({ open, factors, onVerified, onClose
     return () => clearInterval(iv);
   }, [session, t]);
 
-  // 发送短信倒计时
+  // 发送验证码倒计时
   useEffect(() => {
     if (countdown <= 0) return;
     const iv = setInterval(() => setCountdown(c => c - 1), 1000);
@@ -71,17 +70,17 @@ export default function SecurityVerifySheet({ open, factors, onVerified, onClose
   }, [countdown]);
 
   const sendCode = useCallback(() => {
-    setSmsSent(true);
+    setCodeSent(true);
     setCountdown(60);
-    console.log('[Mock] 2FA 验证码（sms/email 演示统一）: 123456');
+    console.log('[Mock] 2FA 邮箱验证码（演示）: 123456');
     setMsg({ type: 'info', text: t('演示模式：验证码为 123456') });
   }, [t]);
 
   const handleSubmitItem = async (type) => {
     if (!session) return;
     setMsg(null);
-    const isCodeFactor = type === 'sms' || type === 'email';
-    if (isCodeFactor && !smsSent) { sendCode(); return; }
+    const isCodeFactor = type === 'email';
+    if (isCodeFactor && !codeSent) { sendCode(); return; }
     const res = await submitVerifyItem(session.sessionId, type, code);
     if (!res.ok) {
       if (res.reason === 'expired') { setSession(null); setMsg({ type: 'error', text: t('验证会话已超时，请重新开始') }); return; }
@@ -98,7 +97,7 @@ export default function SecurityVerifySheet({ open, factors, onVerified, onClose
         else if (n === 2) setMsg({ type: 'error', text: t('验证码错误，请检查设备时间同步后重试') });
         else setMsg({ type: 'error', text: t('验证码错误，请重试') });
       } else {
-        setMsg({ type: 'error', text: type === 'email' ? t('邮箱验证码不正确，请重新输入') : t('短信验证码不正确，请重新输入') });
+        setMsg({ type: 'error', text: t('邮箱验证码不正确，请重新输入') });
         setCode('');
       }
       return;
@@ -207,7 +206,7 @@ export default function SecurityVerifySheet({ open, factors, onVerified, onClose
                     : <span className="svs-item-state">{isActive ? '' : t('待验证')}</span>}
                 </button>
 
-                {isActive && (item.type === 'sms' || item.type === 'email') && (
+                {isActive && item.type === 'email' && (
                   <div className="svs-item-body">
                     <div className="svs-code-row">
                       <input
@@ -218,7 +217,7 @@ export default function SecurityVerifySheet({ open, factors, onVerified, onClose
                         value={code}
                         onChange={e => setCode(e.target.value.replace(/\D/g, ''))}
                       />
-                      {smsSent
+                      {codeSent
                         ? <button className="btn btn-secondary btn-sm" disabled={countdown > 0} onClick={sendCode}>
                             {countdown > 0 ? `${countdown}s` : <><RefreshCw size={13} /> {t('重新发送')}</>}
                           </button>

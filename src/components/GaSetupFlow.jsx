@@ -5,7 +5,7 @@ import { generateTotpSecret, verifyTotp, bindGa, confirmGaReset, GA_DEMO_MODE } 
 
 // GA 绑定/重置流程（2026-09-22 · 规格 5.3.2）
 // 前置：调用方已完成安全验证（SecurityVerifySheet）；本组件负责 密钥展示 → GA 出码验证 → 落库。
-// 单手机绑定路径（规格 3.2）：二维码为演示占位，密钥文本可复制，GA App「输入设置密钥」手动添加。
+// 单设备绑定路径（规格 3.2）：二维码为演示占位，密钥文本可复制，GA App「输入设置密钥」手动添加。
 // 验证码框 48px（.ga-code · var(--min-touch-target)）：APP 手指触控 + 安全关键输入，
 // 偏离 DESIGN_SYSTEM §三.3 的 44px 下限档，2026-09-23 用户拍板（文档不改）。
 export default function GaSetupFlow({ mode = 'bind', onDone, onCancel }) {
@@ -44,7 +44,7 @@ export default function GaSetupFlow({ mode = 'bind', onDone, onCancel }) {
       </div>
 
       <div className="ga-flow-qr">
-        {/* 演示占位二维码（无 qrcode 依赖）：单手机用户复制密钥文本手动添加 */}
+        {/* 演示占位二维码（无 qrcode 依赖）：单设备用户复制密钥文本手动添加 */}
         <div className="ga-qr-grid" aria-hidden="true">
           {Array.from({ length: 81 }).map((_, i) => (
             <span key={i} className={((i * 7 + (i % 5) * 13) % 3 === 0 || i < 9 || (i >= 36 && i < 45) || i > 71) ? 'on' : ''} />

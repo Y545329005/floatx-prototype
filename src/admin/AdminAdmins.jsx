@@ -24,7 +24,7 @@ export default function AdminAdmins({ admin }) {
   const [view, setView] = useState(null); // 'form' | 'detail' | 'reset' | 'delete'
   const [editingId, setEditingId] = useState(null); // form 编辑目标
   const [selId, setSelId] = useState(null); // detail 目标
-  const [form, setForm] = useState({ username: '', name: '', role: 'ops', password: '', managerId: '', email: '', phone: '' });
+  const [form, setForm] = useState({ username: '', name: '', role: 'ops', password: '', managerId: '', email: '' });
   const [formError, setFormError] = useState('');
   const [isNew, setIsNew] = useState(false);
   const [resetPwd, setResetPwd] = useState('');
@@ -64,23 +64,23 @@ export default function AdminAdmins({ admin }) {
 
   // —— 表单 ——
   const openNew = () => {
-    setForm({ username: '', name: '', role: 'ops', password: '', managerId: '', email: '', phone: '' });
+    setForm({ username: '', name: '', role: 'ops', password: '', managerId: '', email: '' });
     setIsNew(true); setEditingId(null); setFormError(''); setView('form');
   };
   const openEdit = (a) => {
-    setForm({ username: a.username, name: a.name, role: a.role, password: '', managerId: a.managerId || '', email: a.email || '', phone: a.phone || '' });
+    setForm({ username: a.username, name: a.name, role: a.role, password: '', managerId: a.managerId || '', email: a.email || '' });
     setIsNew(false); setEditingId(a.id); setFormError(''); setView('form');
   };
   const saveForm = () => {
     const payload = {
       username: form.username.trim(), name: form.name.trim(), role: form.role, password: form.password,
-      managerId: form.managerId || undefined, email: form.email.trim(), phone: form.phone.trim() || undefined,
+      managerId: form.managerId || undefined, email: form.email.trim(),
     };
     let res;
     if (isNew) {
       res = addAdmin(payload, admin?.name);
     } else {
-      const patch = { username: payload.username, name: payload.name, role: payload.role, email: payload.email, phone: payload.phone || '' };
+      const patch = { username: payload.username, name: payload.name, role: payload.role, email: payload.email };
       if (form.role === 'advisor') patch.managerId = payload.managerId;
       if (form.password) patch.password = form.password; // 编辑时密码留空 = 不改
       res = updateAdmin(editingId, patch, admin?.name);
@@ -203,13 +203,8 @@ export default function AdminAdmins({ admin }) {
                   )}
                   <div className="form-group">
                     <label className="form-label">绑定邮箱 <span className="required-mark">*</span></label>
-                    <input type="email" className="form-input" placeholder="用于找回密码 / 安全通知（如 ops@hkbtc.hk）" value={form.email}
+                    <input type="email" className="form-input" placeholder="用于找回密码 / 安全通知（如 ops@highblockgroup.com）" value={form.email}
                       onChange={e => { setForm(f => ({ ...f, email: e.target.value })); setFormError(''); }} />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">绑定手机（选填）</label>
-                    <input className="form-input" placeholder="用于登录二次验证（2FA 预留）" value={form.phone}
-                      onChange={e => { setForm(f => ({ ...f, phone: e.target.value })); setFormError(''); }} />
                   </div>
                   <div className="form-group">
                     <label className="form-label">{isNew ? '初始密码' : '新密码（留空不改）'} <span className="required-mark">{isNew ? '*' : ''}</span></label>
@@ -235,7 +230,6 @@ export default function AdminAdmins({ admin }) {
                   <div className="card kyc-review-block">
                     <h4 className="card-title">联系方式</h4>
                     <div className="kyc-review-row"><span>绑定邮箱</span><strong>{sel.email || '—'}</strong></div>
-                    <div className="kyc-review-row"><span>绑定手机</span><strong>{sel.phone || '—'}</strong></div>
                     <div className="kyc-review-row"><span>说明</span><strong className="text-secondary">禁用后该账号无法登录后台；密码重置后原密码立即失效。绑定邮箱用于找回密码与安全通知。</strong></div>
                   </div>
                   {opMsg && <p className="form-success">{opMsg}</p>}

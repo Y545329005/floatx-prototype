@@ -181,7 +181,7 @@ export default function App() {
       setCurrentUser(testAccounts.approved);
       setMockCurrentUser(testAccounts.approved);  // 桥梁同步（此前缺失：data.js currentUser 残留上一账号）
     };
-    // 测试账号登录函数（演示通道：豁免 2FA。approved=u1 有 GA+Passkey / pending=u2 仅手机 KYC0 / pep=u3 仅手机 KYC1）
+    // 测试账号登录函数（演示通道：豁免 2FA。approved=u1 有 GA+Passkey / pending=u2 仅邮箱 KYC0 / pep=u3 邮箱+人脸 KYC1）
     window.__loginWithTestAccount = (type) => {
       const account = type === 'approved' ? testAccounts.approved : type === 'pep' ? testAccounts.pep : testAccounts.pending;
       setCurrentUser(account);

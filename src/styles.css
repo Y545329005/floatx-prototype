@@ -337,7 +337,6 @@ input, select, textarea {
 .asset-trend-page,
 .support-page,
 .my-subscription-page,
-.bind-phone-page,
 .change-email-page,
 .transactions-page,
 .fund-requests-page {
@@ -6540,18 +6539,18 @@ input, select, textarea {
   object-fit: cover;
 }
 
-/* KYC 手机验证 */
-.kyc-phone-input-group {
+/* KYC 验证码输入 */
+.code-input-group {
   display: flex;
   gap: var(--space-2);
 }
 
-.kyc-phone-input-group .kyc-form-input,
-.kyc-phone-input-group .form-input {
+.code-input-group .kyc-form-input,
+.code-input-group .form-input {
   flex: 1;
 }
 
-.kyc-phone-code-btn {
+.code-send-btn {
   padding: 0 var(--space-3);
   height: 44px;
   background: var(--primary-light);
@@ -6565,13 +6564,13 @@ input, select, textarea {
   min-width: 100px;
 }
 
-.kyc-phone-code-btn:disabled {
+.code-send-btn:disabled {
   background: var(--border-light);
   color: var(--text-tertiary);
   cursor: not-allowed;
 }
 
-/* 账号认证态展示（手机/邮箱等）· 已绑定状态展示 */
+/* 账号认证态展示（邮箱等）· 已绑定状态展示 */
 .kyc-account-bound {
   display: flex;
   flex-direction: column;

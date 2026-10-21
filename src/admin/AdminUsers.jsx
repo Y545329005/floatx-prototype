@@ -4,7 +4,7 @@ import {
   getInvestorUsers, assignAccountManager, toggleUserDisabled,
   accountManagers, kycSubmissions, testAccounts, subscriptions, eventRegistrationsList,
   exitEvents, depositRequests, withdrawRequests, holdings, notifications, currentUser,
-  bankCards, KYC_STATUS, PI_STATUS, maskName, maskPhone, formatCurrency,
+  bankCards, KYC_STATUS, PI_STATUS, maskName, formatCurrency,
 } from '../mock/data';
 import { useDrawerFocus } from './useDrawerFocus';
 
@@ -79,12 +79,11 @@ export default function AdminUsers({ navigate, detailId, admin }) {
     return acc;
   }, {});
 
-  // 跨状态搜索（姓名/手机/邮箱/investorNo 原文匹配，脱敏不影响搜索）
+  // 跨状态搜索（姓名/邮箱/investorNo 原文匹配，脱敏不影响搜索）
   const kw = keyword.trim().toLowerCase();
   const isSearching = kw.length > 0;
   const matches = (u) =>
     (u.name || '').toLowerCase().includes(kw)
-    || (u.phone || '').toLowerCase().includes(kw)
     || (u.email || '').toLowerCase().includes(kw)
     || (u.investorNo || '').toLowerCase().includes(kw);
   const filtered = isSearching ? users.filter(matches) : users.filter(matchFilter);
@@ -181,7 +180,6 @@ export default function AdminUsers({ navigate, detailId, admin }) {
   // 2026-08-15 银行卡（mock：bankCards 加 userId，按 sel.userId 过滤；u1 有 2 张卡）
   const selBankCards = sel ? bankCards.filter(c => c.userId === sel.userId) : [];
   // P-5 联系方式可点击（tel 去空格横线）
-  const telHref = (phone) => phone ? `tel:${phone.replace(/[^+\d]/g, '')}` : '#';
 
   const handleAssign = () => {
     if (!sel || !mgrSelect) return;
@@ -223,8 +221,8 @@ export default function AdminUsers({ navigate, detailId, admin }) {
           <Search size={16} className="admin-search-icon" />
           <input
             className="admin-search-input"
-            aria-label="搜索姓名 / 手机 / 邮箱 / 编号"
-            placeholder="搜索姓名 / 手机 / 邮箱 / 编号"
+            aria-label="搜索姓名 / 邮箱 / 编号"
+            placeholder="搜索姓名 / 邮箱 / 编号"
             value={keyword}
             onChange={e => onSearchChange(e.target.value)}
           />
@@ -238,7 +236,6 @@ export default function AdminUsers({ navigate, detailId, admin }) {
       <div className="admin-table admin-table--users">
         <div className="admin-table-header">
           <span className="col-name">投资人</span>
-          <span className="col-phone">联系方式</span>
           <span className="col-kyc">KYC 状态</span>
           <span className="col-pi">PI 认证</span>
           <span className="col-mgr">专属顾问</span>
@@ -262,7 +259,6 @@ export default function AdminUsers({ navigate, detailId, admin }) {
                 <strong>{maskName(u.name)}</strong>
                 <span className="col-name-sub">{u.investorNo}</span>
               </span>
-              <span className="col-phone">{maskPhone(u.phone)}</span>
               <span className="col-kyc">
                 <span className={`status-badge ${km.cls}`}>{km.label}</span>
               </span>
@@ -331,7 +327,6 @@ export default function AdminUsers({ navigate, detailId, admin }) {
                 <div className="admin-user-info-item"><span>性别</span><strong>{selProfile?.gender === 'M' ? '男' : selProfile?.gender === 'F' ? '女' : '—'}</strong></div>
                 <div className="admin-user-info-item"><span>出生日期</span><strong>{selProfile?.birthDate || '—'}</strong></div>
                 <div className="admin-user-info-item"><span>国籍</span><strong>{selProfile?.nationality || '—'}</strong></div>
-                <div className="admin-user-info-item"><span>手机号</span>{sel.phone ? <strong><a className="admin-user-link" href={telHref(sel.phone)} title="拨打电话">{sel.phone}</a></strong> : <strong>—</strong>}</div>
                 <div className="admin-user-info-item"><span>邮箱</span>{sel.email ? <strong><a className="admin-user-link admin-user-info-ellipsis" href={`mailto:${sel.email}`} title="发送邮件">{sel.email}</a></strong> : <strong>—</strong>}</div>
                 <div className="admin-user-info-item"><span>注册时间</span><strong>{sel.registeredAt || '—'}</strong></div>
                 <div className="admin-user-info-item"><span>账户状态</span><strong className={sel.disabled ? 'text-danger' : ''}>{sel.disabled ? '已禁用（风控冻结）' : '正常'}</strong></div>

@@ -5,7 +5,7 @@ import {
   Newspaper,
 } from "lucide-react";
 
-export const BRAND = "HKBTC";
+export const BRAND = "HighBlock";
 
 export const eventModeMeta = {
   online: { label: "线上活动", icon: MonitorPlay },
@@ -453,9 +453,9 @@ export function downloadEventCalendar(event) {
   const content = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//HKBTC//Events//CN",
+    "PRODID:-//HighBlock//Events//CN",
     "BEGIN:VEVENT",
-    `UID:${escapeCalendarText(event.id)}@hkbtc.demo`,
+    `UID:${escapeCalendarText(event.id)}@highblock.demo`,
     `DTSTAMP:${formatCalendarDate(new Date())}`,
     `DTSTART:${formatCalendarDate(start)}`,
     `DTEND:${formatCalendarDate(end)}`,

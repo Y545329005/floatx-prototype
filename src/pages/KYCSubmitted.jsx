@@ -124,7 +124,7 @@ export default function KYCSubmitted({ navigate, goBack }) {
         <div className="kyc-success-desc">
           {t('您的实名认证资料已成功提交，我们将在 1-3 个工作日内完成审核。')}
           <br /><br />
-          {t('审核结果将通过短信及站内通知发送，请保持手机畅通。')}
+          {t('审核结果将通过站内通知及邮件发送，请注意查收。')}
         </div>
 
         {/* 2026-09-18：明确"无需重复提交"——用户从受保护页面（如账户设置）被门控引导到本页时，

@@ -442,21 +442,21 @@ export default function AdminConfig({ admin }) {
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">平台简称</label>
-                <input className="form-input" value={brand.nameZh} placeholder="如：HKBTC" onChange={e => setBrand({ ...brand, nameZh: e.target.value })} />
+                <input className="form-input" value={brand.nameZh} placeholder="如：HighBlock" onChange={e => setBrand({ ...brand, nameZh: e.target.value })} />
               </div>
               <div className="form-group">
                 <label className="form-label">公司全称</label>
-                <input className="form-input" value={brand.nameFullZh} placeholder="如：HKBTC Limited" onChange={e => setBrand({ ...brand, nameFullZh: e.target.value })} />
+                <input className="form-input" value={brand.nameFullZh} placeholder="如：HighBlock Securities Limited" onChange={e => setBrand({ ...brand, nameFullZh: e.target.value })} />
               </div>
             </div>
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">英文名</label>
-                <input className="form-input" value={brand.nameEn} placeholder="如：HKBTC Limited" onChange={e => setBrand({ ...brand, nameEn: e.target.value })} />
+                <input className="form-input" value={brand.nameEn} placeholder="如：HighBlock Securities Limited" onChange={e => setBrand({ ...brand, nameEn: e.target.value })} />
               </div>
               <div className="form-group">
                 <label className="form-label">牌照编号（CE No.）</label>
-                <input className="form-input" value={brand.licenseNo} placeholder="如：BLA1234" onChange={e => setBrand({ ...brand, licenseNo: e.target.value })} />
+                <input className="form-input" value={brand.licenseNo} placeholder="如：(F)256390" onChange={e => setBrand({ ...brand, licenseNo: e.target.value })} />
               </div>
             </div>
             <div className="form-row">

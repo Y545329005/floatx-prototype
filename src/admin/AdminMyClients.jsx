@@ -84,7 +84,7 @@ export default function AdminMyClients({ navigate, detailId, admin }) {
     return ts.length ? ts.sort().pop() : null;
   };
 
-  // 筛选：搜索（姓名/手机/邮箱/编号）+ 跟进状态 / 有任务
+  // 筛选：搜索（姓名/电话/邮箱/编号）+ 跟进状态 / 有任务
   const kw = keyword.trim().toLowerCase();
   const isSearching = kw.length > 0;
   const matches = (u) =>
@@ -231,8 +231,8 @@ export default function AdminMyClients({ navigate, detailId, admin }) {
           <Search size={16} className="admin-search-icon" />
           <input
             className="admin-search-input"
-            aria-label="搜索姓名 / 手机 / 邮箱 / 编号"
-            placeholder="搜索姓名 / 手机 / 邮箱 / 编号"
+            aria-label="搜索姓名 / 电话 / 邮箱 / 编号"
+            placeholder="搜索姓名 / 电话 / 邮箱 / 编号"
             value={keyword}
             onChange={e => onSearchChange(e.target.value)}
           />
@@ -273,7 +273,7 @@ export default function AdminMyClients({ navigate, detailId, admin }) {
                 {t.pendingSign > 0 && <TaskBadge kind="sign" text={`待签 SPV ${t.pendingSign}`} />}
               </span>
               <span className="col-contact">
-                <span className="admin-lead-phone">{u.phone}</span>
+                <span className="admin-lead-phone">{u.phone || '未填电话'}</span>
                 <span className="text-muted text-sm">{u.email}</span>
               </span>
               <span className="col-date">{(() => { const d = latestRegAtOf(u.userId); return d ? formatISODateTime(d).slice(0, 16) : '—'; })()}</span>
@@ -327,7 +327,7 @@ export default function AdminMyClients({ navigate, detailId, admin }) {
                     <div className="admin-user-info-item"><span>性别</span><strong>{selProfile?.gender === 'M' ? '男' : selProfile?.gender === 'F' ? '女' : '—'}</strong></div>
                     <div className="admin-user-info-item"><span>出生日期</span><strong>{selProfile?.birthDate || '—'}</strong></div>
                     <div className="admin-user-info-item"><span>国籍</span><strong>{selProfile?.nationality || '—'}</strong></div>
-                    <div className="admin-user-info-item"><span>手机号</span>{sel.phone ? <strong><a className="admin-user-link" href={telHref(sel.phone)} title="拨打电话">{sel.phone}</a></strong> : <strong>—</strong>}</div>
+                    <div className="admin-user-info-item"><span>联系电话</span>{sel.phone ? <strong><a className="admin-user-link" href={telHref(sel.phone)} title="拨打电话">{sel.phone}</a></strong> : <strong>—</strong>}</div>
                     <div className="admin-user-info-item"><span>邮箱</span>{sel.email ? <strong><a className="admin-user-link admin-user-info-ellipsis" href={`mailto:${sel.email}`} title="发送邮件">{sel.email}</a></strong> : <strong>—</strong>}</div>
                     <div className="admin-user-info-item"><span>注册时间</span><strong>{sel.registeredAt || '—'}</strong></div>
                     <div className="admin-user-info-item"><span>账户状态</span><strong className={sel.disabled ? 'text-danger' : ''}>{sel.disabled ? '已禁用（风控冻结）' : '正常'}</strong></div>

@@ -62,10 +62,6 @@ export const kycProfile = {
   addressProofType: 'utility',  // 'utility' | 'bank' | 'gov'
   addressProof: null,
   addressLine: '',
-  // 手机
-  phone: '',
-  phoneVerified: false,
-  phoneVerifyCode: null,
   // 审核
   submittedAt: null,
   rejectReason: null,
@@ -78,7 +74,6 @@ export const testAccounts = {
     id: 'u1',
     name: '张三',
     email: 'chen.my@example.com',
-    phone: '+852 6123 4567',
     avatar: null,
     isPI: true,
     piVerified: true,
@@ -87,7 +82,7 @@ export const testAccounts = {
       name: '王慧敏',
       role: '专属客户经理',
       phone: '+852 9300 1122',
-      email: 'huimin.wang@hkbtc.com',
+      email: 'huimin.wang@highblockgroup.com',
       imType: 'WhatsApp',
       im: '+852 9300 1122',
     },
@@ -106,7 +101,6 @@ export const testAccounts = {
     },
     security: {
       twoFactorEnabled: true,
-      phoneBound: true,
       lastLogin: '2026-08-01 09:12',
       loginDevice: 'Mac · Chrome',
     },
@@ -143,9 +137,6 @@ export const testAccounts = {
       addressProofType: 'bank',
       addressProof: 'images/demo-address.jpg',
       addressLine: '香港中环皇后大道中 99 号',
-      phone: '+852 6123 4567',
-      phoneVerified: true,
-      phoneVerifyCode: null,
       submittedAt: '2026-05-10 14:30:00',
       rejectReason: null,
       // PEP声明字段（2026-08-26 新增）
@@ -168,7 +159,6 @@ export const testAccounts = {
     id: 'u2',
     name: '李四',
     email: 'li.si@example.com',
-    phone: '+852 9876 5432',
     avatar: null,
     isPI: false,
     piVerified: false,
@@ -177,7 +167,7 @@ export const testAccounts = {
       name: '王慧敏',
       role: '专属客户经理',
       phone: '+852 9300 1122',
-      email: 'huimin.wang@hkbtc.com',
+      email: 'huimin.wang@highblockgroup.com',
       imType: 'WhatsApp',
       im: '+852 9300 1122',
     },
@@ -198,7 +188,6 @@ export const testAccounts = {
     },
     security: {
       twoFactorEnabled: false,
-      phoneBound: false,
       lastLogin: null,
       loginDevice: null,
     },
@@ -226,9 +215,6 @@ export const testAccounts = {
       addressProofType: 'utility',
       addressProof: null,
       addressLine: '',
-      phone: '+852 9876 5432',
-      phoneVerified: false,
-      phoneVerifyCode: null,
       submittedAt: null,
       rejectReason: null,
     },
@@ -238,7 +224,6 @@ export const testAccounts = {
     id: 'u3',
     name: '王五',
     email: 'wang.wu@example.com',
-    phone: '+852 5555 6666',
     avatar: null,
     isPI: true,
     piVerified: true,
@@ -247,7 +232,7 @@ export const testAccounts = {
       name: '王慧敏',
       role: '专属客户经理',
       phone: '+852 9300 1122',
-      email: 'huimin.wang@hkbtc.com',
+      email: 'huimin.wang@highblockgroup.com',
       imType: 'WhatsApp',
       im: '+852 9300 1122',
     },
@@ -266,7 +251,6 @@ export const testAccounts = {
     },
     security: {
       twoFactorEnabled: true,
-      phoneBound: true,
       lastLogin: '2026-08-20 14:30',
       loginDevice: 'iPhone · Safari',
     },
@@ -299,9 +283,6 @@ export const testAccounts = {
       taxDetails: { US: { tin: '123-45-6789', noTinReason: '', noTinNote: '' } },
       employmentStatus: 'self_employed',
       incomeSources: ['business', 'rent'],
-      phone: '+852 5555 6666',
-      phoneVerified: true,
-      phoneVerifyCode: null,
       submittedAt: '2026-05-25 10:00:00',
       rejectReason: null,
     },
@@ -729,7 +710,7 @@ export const events = [
       '会后可与管理层一对一交流尽调',
     ],
     speakerBio: '前 Google 量子计算研究员，主导室温量子比特路线研发，拥有多项核心专利。',
-    joinNote: '线上会议 · 报名成功后，会议链接将在活动前 24 小时通过短信发送至您预留的手机。',
+    joinNote: '线上会议 · 报名成功后，会议链接将在活动前 24 小时通过站内通知及邮件发送。',
     joinUrl: 'https://us06web.zoom.us/j/83852001177',
     status: 'upcoming',
     speaker: '张振宇 (CEO)',
@@ -760,7 +741,7 @@ export const events = [
       '会后可预约一对一尽调沟通',
     ],
     speakerBio: '前中科院上海药物所教授，PROTAC 平台核心技术创始人。',
-    joinNote: '线上会议 · 报名成功后，会议链接将在活动前 24 小时通过短信发送至您预留的手机。',
+    joinNote: '线上会议 · 报名成功后，会议链接将在活动前 24 小时通过站内通知及邮件发送。',
     joinUrl: 'https://meeting.tencent.com/dm/BioNova-CS',
     status: 'upcoming',
     speaker: 'Dr. 王思远 (CSO)',
@@ -823,7 +804,7 @@ export const events = [
       '现场演示自研 SLAM 算法精度',
     ],
     speakerBio: '前大疆技术总监，主导 AMR 核心算法与产品架构设计。',
-    joinNote: '线上会议 · 报名成功后，会议链接将在活动前 24 小时通过短信发送至您预留的手机。',
+    joinNote: '线上会议 · 报名成功后，会议链接将在活动前 24 小时通过站内通知及邮件发送。',
     joinUrl: 'https://meeting.tencent.com/dm/SkyNet-Demo',
     status: 'upcoming',
     speaker: '林志远 (CEO)',
@@ -854,7 +835,7 @@ export const events = [
       '会后可预约一对一深入交流',
     ],
     speakerBio: '前高盛 VP，深谙数字资产与私募市场交叉领域。',
-    joinNote: '线上会议 · 报名成功后，会议链接将在活动前 24 小时通过短信发送至您预留的手机。',
+    joinNote: '线上会议 · 报名成功后，会议链接将在活动前 24 小时通过站内通知及邮件发送。',
     joinUrl: 'https://us06web.zoom.us/j/86523177409',
     status: 'upcoming',
     speaker: '黄天佑 (CEO)',
@@ -893,7 +874,7 @@ export const events = [
   {
     id: 'e7',
     projectId: null,
-    projectName: "HKBTC",
+    projectName: "HighBlock",
     sector: '财富管理',
     coverImage: 'images/e7-market-outlook.jpg',
     type: 'online',
@@ -901,7 +882,7 @@ export const events = [
     date: '2026-09-25',
     time: '19:00-20:30',
     timezone: 'HKT',
-    description: 'HKBTC 研究院年度分享：解析下半年私募市场趋势、新经济赛道估值逻辑与高净值配置建议，并预告四季度上新项目。',
+    description: 'HighBlock 研究院年度分享：解析下半年私募市场趋势、新经济赛道估值逻辑与高净值配置建议，并预告四季度上新项目。',
     agenda: [
       { time: '19:00', topic: '下半年私募市场趋势总览' },
       { time: '19:30', topic: '新经济赛道估值逻辑拆解' },
@@ -914,10 +895,10 @@ export const events = [
       '首席策略师在线答疑',
     ],
     speakerBio: '专注大中华区另类资产配置研究，十年私募市场从业经验。',
-    joinNote: '线上会议 · 报名成功后，会议链接将在活动前 24 小时通过短信发送至您预留的手机。',
+    joinNote: '线上会议 · 报名成功后，会议链接将在活动前 24 小时通过站内通知及邮件发送。',
     joinUrl: 'https://us06web.zoom.us/j/84560219317',
     status: 'upcoming',
-    speaker: 'HKBTC 研究院 · 首席策略师',
+    speaker: 'HighBlock 研究院 · 首席策略师',
     capacity: null,
     registered: 126,
   },
@@ -1961,7 +1942,7 @@ export const eventRegistrationsList = [
     name: '吴世昌',
     phone: '+852 6222 3344',
     accompanying: 1,
-    checkInCode: getCheckInCode('e3', '+852 6222 3344', 1),
+    checkInCode: getCheckInCode('e3', 'u9', 1),
     registeredAt: '2026-08-01 10:22:33',
     status: 'registered', // registered | checked-in
     leadStatus: 'converted', // 线索跟进状态：已转化（演示）
@@ -1975,7 +1956,7 @@ export const eventRegistrationsList = [
     name: '郑婉仪',
     phone: '+852 9555 6677',
     accompanying: 0,
-    checkInCode: getCheckInCode('e3', '+852 9555 6677', 0),
+    checkInCode: getCheckInCode('e3', 'u10', 0),
     registeredAt: '2026-08-02 14:05:11',
     status: 'checked-in',
     checkedInAt: '2026-08-02 16:20:48',
@@ -1990,7 +1971,7 @@ export const eventRegistrationsList = [
     name: '陈嘉豪',
     phone: '+852 6333 2211',
     accompanying: 0,
-    checkInCode: getCheckInCode('e3', '+852 6333 2211', 0),
+    checkInCode: getCheckInCode('e3', 'u12', 0),
     registeredAt: '2026-08-05 09:15:02',
     status: 'registered',
   },
@@ -2003,7 +1984,7 @@ export const eventRegistrationsList = [
     name: '梁美琪',
     phone: '+852 9777 1100',
     accompanying: 2,
-    checkInCode: getCheckInCode('e3', '+852 9777 1100', 2),
+    checkInCode: getCheckInCode('e3', 'u13', 2),
     registeredAt: '2026-08-08 15:40:19',
     status: 'registered',
     companions: [
@@ -2020,7 +2001,7 @@ export const eventRegistrationsList = [
     name: '罗志强',
     phone: '+852 6100 8877',
     accompanying: 0,
-    checkInCode: getCheckInCode('e3', '+852 6100 8877', 0),
+    checkInCode: getCheckInCode('e3', 'u14', 0),
     registeredAt: '2026-08-10 11:08:55',
     status: 'checked-in',
     checkedInAt: '2026-08-12 18:33:21',
@@ -2216,7 +2197,7 @@ export const eventRegistrationsList = [
     registeredAt: '2026-08-10 15:20:09',
     status: 'registered',
   },
-  // ---- e7 线上市场展望（HKBTC，2026-09-25）----
+  // ---- e7 线上市场展望（HighBlock，2026-09-25）----
   {
     id: 'reg22',
     eventId: 'e7',
@@ -2282,7 +2263,7 @@ export const accountManagers = [
 // mock 用户 → 专属顾问映射（顾问 = KYC 用户账户级属性；报名通过 userId 派生顾问，见 getManagerForUser）
 // let + Storage 持久化：用户管理可分配专属顾问（#38），接后端由账户体系管理
 let userAccountManagers = {
-  u1: 'am1', u9: 'am1', u10: 'am2', u11: 'am3', u12: 'am1', u13: 'am2', u14: 'am3',
+  u1: 'am1', u2: 'am1', u3: 'am1', u9: 'am1', u10: 'am2', u11: 'am3', u12: 'am1', u13: 'am2', u14: 'am3',
   u15: 'am1', u16: 'am2', u17: 'am3', u18: 'am1', u19: 'am2', u20: 'am3',
   u21: 'am1', u22: 'am2', u23: 'am3', u24: 'am1', u25: 'am2', u26: 'am3',
   u27: 'am1', u28: 'am2', u29: 'am3', u30: 'am1',
@@ -2432,7 +2413,9 @@ export function getLeadClients() {
     // 展示信息 + 客户级跟进状态都取最新一条（registeredAt 最大，2026-08-15 修复：
     //   原实现按数组顺序最后一条覆盖，而 registerEvent unshift 让最新报名在数组头 → 取到最老一条的 bug）
     if (String(r.registeredAt) > String(c.latestAt)) {
-      c.name = r.name; c.phone = r.phone; c.email = r.email; c.investorNo = r.investorNo;
+      c.name = r.name; c.email = r.email; c.investorNo = r.investorNo;
+      // 线上报名手机选填：空值不覆盖历史有效号码
+      if (r.phone) c.phone = r.phone;
       c.latestAt = r.registeredAt;
       c.leadStatus = r.leadStatus || 'new';
     }
@@ -2464,15 +2447,17 @@ eventRegistrationsList.forEach(r => {
 // 用户报名：写入报名名单（后台报名管理可查）
 // phone/email = 报名表单联系方式（用户可改）——报名表是客户线索（发掘潜在客户），联系方式为核心字段
 export function registerEvent(id, accompanying = 0, phone = '', email = '') {
+  const evt = events.find(e => e.id === id);
+  const regPhone = String(phone || '').trim();
+  const regEmail = String(email || currentUser.email || '').trim();
+  const isOffline = evt && evt.type === 'offline';
+  // 线下活动必须留联系电话；线上活动选填（没有短信通道，仅用于人工联络）
+  if (isOffline && !regPhone) return false;
+  if (!regEmail) return false;
   registeredEventIds.add(id);
   registeredEventIds_arr.push(id);
   const registeredAt = new Date().toISOString();
   eventRegistrations[id] = { accompanying, registeredAt };
-  // 同步写入报名名单（后台报名管理可查）
-  const evt = events.find(e => e.id === id);
-  const regPhone = phone || currentUser.phone || '';
-  const regEmail = email || currentUser.email || '';
-  const isOffline = evt && evt.type === 'offline';
   // 新报名跟进状态（2026-08-15 方案 C：中段继承 + 终态重置）
   //   CRM 客户级跟进不因新报名倒退：已联系/已邀约客户报新场 = 持续兴趣 → 继承当前状态；
   //   已转化/暂缓客户复报 = 新机会 → 重置"待联系"（重新激活）
@@ -2492,7 +2477,8 @@ export function registerEvent(id, accompanying = 0, phone = '', email = '') {
     accompanying,
     companions: [], // 陪同人姓名（仅后台维护：一人报名多人参加）
     // 凭证码仅线下生成（线上凭 joinUrl 加入会议，无入场签到概念）
-    checkInCode: isOffline ? getCheckInCode(id, regPhone, accompanying) : null,
+    // userId 派生：同一手机号（家庭/公司共用）不会撞码
+    checkInCode: isOffline ? getCheckInCode(id, currentUser.id, accompanying) : null,
     registeredAt,
     status: 'registered',
     leadStatus: inheritStatus,
@@ -2501,6 +2487,7 @@ export function registerEvent(id, accompanying = 0, phone = '', email = '') {
   syncEventRegistered(); // 名单派生总数
   logAudit({ operator: currentUser.name || '投资人', category: 'registration', action: 'register', target: evt ? evt.title : id, targetId: id, note: `报名活动（陪同 ${accompanying} 人）` });
   Storage.save();
+  return true;
 }
 
 export function unregisterEvent(id) {
@@ -2553,6 +2540,14 @@ export function getEventRegistration(id) {
   return eventRegistrations[id] || null;
 }
 
+// 报名表预填：取当前用户最近一条「非空」报名手机号（线上空值不覆盖）
+export function getLastContactPhone(userId = currentUser.id) {
+  const list = eventRegistrationsList
+    .filter(r => r.userId === userId && r.phone)
+    .sort((a, b) => String(b.registeredAt).localeCompare(String(a.registeredAt)));
+  return list[0]?.phone || '';
+}
+
 // 判断事件是否正在进行（基于当前时间）
 export function isEventLive(event) {
   if (event.status === 'past') return false;
@@ -2582,8 +2577,8 @@ export function isEventOverdue(event) {
   return new Date(y, m - 1, d, eh, em) < new Date();
 }
 
-export function getCheckInCode(eventId, phone, accompanying = 0) {
-  const src = `${eventId}|${phone || ''}|${accompanying}`;
+export function getCheckInCode(eventId, regKey, accompanying = 0) {
+  const src = `${eventId}|${regKey || ''}|${accompanying}`;
   let h1 = 0;
   let h2 = 0;
   for (let i = 0; i < src.length; i++) {
@@ -2610,7 +2605,7 @@ export const notifications = [
     id: 'n2',
     type: 'event',
     title: '路演提醒',
-    body: 'QuantumCore 线上路演将于 8 月 15 日 14:00 开始，会议链接将在活动前 24 小时短信发送。',
+    body: 'QuantumCore 线上路演将于 8 月 15 日 14:00 开始，会议链接将在活动前 24 小时通过站内通知及邮件发送。',
     createdAt: '2026-07-30 10:00',
     read: false,
   },
@@ -2652,7 +2647,7 @@ export const broadcastLogs = [
     orderNo: genOrderNo('BR', '2026-08-11 14:00:00'),
     type: 'event',
     title: 'QuantumCore 线上路演提醒',
-    body: 'QuantumCore 线上路演将于 8 月 15 日 14:00 开始，会议链接将在活动前 24 小时发送至报名手机号。',
+    body: 'QuantumCore 线上路演将于 8 月 15 日 14:00 开始，会议链接将在活动前 24 小时通过站内通知及邮件发送。',
     target: '全部投资人',
     operator: '系统管理员',
     createdAt: '2026-08-11 14:00:00',
@@ -2904,7 +2899,7 @@ export const companyPolicies = [
     id: 'cp1',
     title: '公司简介',
     subtitle: '{{BRAND_FULL}}',
-    file: 'hkbtc-profile.pdf',
+    file: 'highblock-profile.pdf',
     date: '2026-06-30',
     size: '1.2 MB',
   },
@@ -3011,9 +3006,9 @@ export const agreements = [
         'Your personal data is collected for: (i) account opening and identity verification (KYC/AML); (ii) professional investor verification; (iii) processing subscriptions, transfers and signings; (iv) regulatory reporting; (v) marketing communications upon your separate consent.'
       ) },
       { h: AG('二、收集项目', '二、收集項目', '2. Categories of Data'), p: AG(
-        '姓名、证件号码及证件影像、联系方式、住址、税务居民身份、财务状况信息、风险承受能力评估结果、电子签名图片及操作日志。',
-        '姓名、證件號碼及證件影像、聯繫方式、住址、稅務居民身份、財務狀況信息、風險承受能力評估結果、電子簽名圖片及操作日誌。',
-        'Name, identity document data and images, contact details, residential address, tax residency, financial information, risk assessment results, e-signature images and operation logs.'
+        '姓名、证件号码及证件影像、联系方式、住址、税务居民身份、财务状况信息、风险承受能力评估结果、电子签名图片及操作日志。活动报名时提供的联系电话仅用于活动通知与现场联络。',
+        '姓名、證件號碼及證件影像、聯繫方式、住址、稅務居民身份、財務狀況信息、風險承受能力評估結果、電子簽名圖片及操作日誌。活動報名時提供的聯繫電話僅用於活動通知與現場聯絡。',
+        'Name, identity document data and images, contact details, residential address, tax residency, financial information, risk assessment results, e-signature images and operation logs. A contact phone number provided for event registration is used solely for event notices and on-site coordination.'
       ) },
       { h: AG('三、保留期限', '三、保留期限', '3. Retention'), p: AG(
         '依照《个人资料（私隐）条例》（Cap. 486）及 AMLO (Cap. 615) 要求，账户相关记录于账户关闭后至少保留 7 年；营销同意记录保留至您撤回同意。',
@@ -3368,10 +3363,10 @@ export function withdrawFunds({ currency, amount, method }) {
 
 // ========== 平台品牌信息（后台系统配置页可维护；About 页/登录页消费，2026-08-14 配置页清单化时纳入） ==========
 export const platformBrand = {
-  nameZh: 'HKBTC',              // 简称（登录页品牌区）
-  nameFullZh: 'HKBTC Limited',   // 全称（About 品牌卡 / 版权）
-  nameEn: 'HKBTC Limited',
-  licenseNo: 'BLA1234',            // 牌照编号（SFC CE No.）
+  nameZh: 'HighBlock',              // 简称（登录页品牌区）
+  nameFullZh: 'HighBlock Securities Limited', // 全称（About 品牌卡 / 版权；上架·持牌主体）
+  nameEn: 'HighBlock Securities Limited',
+  licenseNo: '(F)256390',           // 牌照编号（SFC CE No.）
   licenseType: '香港证监会第 9 类牌照（资产管理）', // 牌照类型（About 合规卡 / 公司政策列表）
   licenseDesc: '就资产管理提供意见',               // 牌照业务描述（About 合规卡副行）
   appVersion: '2.0.0',             // 应用版本号（About 版本行；与应用市场注册版本保持一致）
@@ -3411,7 +3406,7 @@ export function updatePlatformBrand(fields, operator) {
 // ========== 商务合作联系方式（对外公开，游客可见） ==========
 export const businessContact = {
   intro: '如有意向将项目提交至本平台路演、寻求机构合作或其他业务合作，请通过以下方式联系我们。',
-  email: 'partners@hkbtc.hk',
+  email: 'partners@highblockgroup.com',
   phone: '+852 3568 8888',
   whatsapp: '+852 3568 8888',
 };
@@ -3473,16 +3468,16 @@ export const sectors = ['量子计算', '生物医药', '机器人', '新能源'
 // 后台登录账号与角色（简版；页面/菜单命名"后台账号"——本集合含全部角色，非仅"管理员"super）
 // role: super 超级管理员 / ops 运营 / compliance 合规 / service 客服 / finance 财务 / advisor 专属顾问
 export let adminUsers = [
-  { id: 'ad1', username: 'admin', password: 'admin123', name: '系统管理员', role: 'super', roleLabel: '超级管理员', email: 'admin@hkbtc.hk', phone: '+852 3000 0001' },
-  { id: 'ad2', username: 'ops', password: 'ops123', name: '王运营', role: 'ops', roleLabel: '运营专员', email: 'ops@hkbtc.hk', phone: '+852 3000 0002' },
-  { id: 'ad3', username: 'compliance', password: 'compliance123', name: '李合规', role: 'compliance', roleLabel: '合规专员', email: 'compliance@hkbtc.hk', phone: '+852 3000 0003' },
-  { id: 'ad4', username: 'service', password: 'service123', name: '张客服', role: 'service', roleLabel: '客服专员', email: 'service@hkbtc.hk', phone: '+852 3000 0004' },
+  { id: 'ad1', username: 'admin', password: 'admin123', name: '系统管理员', role: 'super', roleLabel: '超级管理员', email: 'admin@highblockgroup.com' },
+  { id: 'ad2', username: 'ops', password: 'ops123', name: '王运营', role: 'ops', roleLabel: '运营专员', email: 'ops@highblockgroup.com' },
+  { id: 'ad3', username: 'compliance', password: 'compliance123', name: '李合规', role: 'compliance', roleLabel: '合规专员', email: 'compliance@highblockgroup.com' },
+  { id: 'ad4', username: 'service', password: 'service123', name: '张客服', role: 'service', roleLabel: '客服专员', email: 'service@highblockgroup.com' },
   // 财务专员（2026-08-24 上线沟通简报待拍板项落地·方案 A）：只关注资金进出（充值/提现/换汇审核 + 流水对账）
-  { id: 'ad8', username: 'fin1', password: 'fin123456', name: '王财务', role: 'finance', roleLabel: '财务专员', email: 'finance@hkbtc.hk', phone: '+852 3000 0008' },
+  { id: 'ad8', username: 'fin1', password: 'fin123456', name: '王财务', role: 'finance', roleLabel: '财务专员', email: 'finance@highblockgroup.com' },
   // 专属顾问账号（线索池核心使用者：客户分散给各顾问跟进，各自只看自己的客户；managerId 关联 accountManagers）
-  { id: 'ad5', username: 'advisor1', password: 'advisor123', name: '王慧敏', role: 'advisor', roleLabel: '专属顾问', managerId: 'am1', email: 'wanghuimin@hkbtc.hk', phone: '+852 3000 0005' },
-  { id: 'ad6', username: 'advisor2', password: 'advisor123', name: '陈志豪', role: 'advisor', roleLabel: '专属顾问', managerId: 'am2', email: 'chenzhihao@hkbtc.hk', phone: '+852 3000 0006' },
-  { id: 'ad7', username: 'advisor3', password: 'advisor123', name: '李雅婷', role: 'advisor', roleLabel: '专属顾问', managerId: 'am3', email: 'liyating@hkbtc.hk', phone: '+852 3000 0007' },
+  { id: 'ad5', username: 'advisor1', password: 'advisor123', name: '王慧敏', role: 'advisor', roleLabel: '专属顾问', managerId: 'am1', email: 'wanghuimin@highblockgroup.com' },
+  { id: 'ad6', username: 'advisor2', password: 'advisor123', name: '陈志豪', role: 'advisor', roleLabel: '专属顾问', managerId: 'am2', email: 'chenzhihao@highblockgroup.com' },
+  { id: 'ad7', username: 'advisor3', password: 'advisor123', name: '李雅婷', role: 'advisor', roleLabel: '专属顾问', managerId: 'am3', email: 'liyating@highblockgroup.com' },
 ];
 
 // ===== 角色权限管理（2026-08-24 · 预置角色可配置）=====
@@ -3852,7 +3847,7 @@ const ADMIN_USERS_KEY = 'zhifu-admin-users';
 const ADMIN_ROLE_LABELS = Object.fromEntries(ADMIN_ROLES.map(r => [r.key, r.label]));
 
 // 当前管理员集合：localStorage 快照（上次会话增删改）> mock 初始
-// 缺省兼容：旧快照（绑定邮箱/手机字段加入前）无 email/phone，补空串（编辑时必填校验兜底）
+// 缺省兼容：旧快照（绑定邮箱字段加入前）无 email，补空串（编辑时必填校验兜底）
 // 迁移补丁（2026-08-24 复盘）：旧版快照（finance 角色加入前的增删改）不含 fin1——快照优先会导致
 // 财务演示账号消失、无法登录（演示翻车）。检测缺失则补入 mock 新增账号；只补新增、不触碰其余
 // 快照内容（用户自建/删除的账号不受影响；fin1 若被手动删除后刷新会复活，mock 阶段可接受）。
@@ -3863,10 +3858,10 @@ export function getAdminUsers() {
     if (raw) {
       const saved = JSON.parse(raw);
       if (Array.isArray(saved) && saved.length) {
-        const list = saved.map(a => ({ email: '', phone: '', ...a }));
+        const list = saved.map(a => ({ email: '', ...a }));
         MOCK_ADDED_ADMIN_IDS.forEach(id => {
           const seed = adminUsers.find(a => a.id === id);
-          if (seed && !list.some(a => a.id === id)) list.push({ email: '', phone: '', ...seed });
+          if (seed && !list.some(a => a.id === id)) list.push({ email: '', ...seed });
         });
         return list;
       }
@@ -3883,15 +3878,15 @@ function persistAdminUsers(list) {
 }
 
 // 新增后台账号（角色专属校验：advisor 需 managerId 关联专属顾问）
-// 绑定联系方式（2026-08-14 · 方案 A）：email 必填（找回密码/安全通知/审计唯一化主通道）+ phone 选填（2FA 预留）
-export function addAdmin({ username, password, name, role, managerId, email, phone }, operator = '') {
+// 绑定联系方式（2026-08-14 · 方案 A）：email 必填（找回密码/安全通知/审计唯一化主通道）
+export function addAdmin({ username, password, name, role, managerId, email }, operator = '') {
   const list = getAdminUsers();
   if (!username || !name) return { ok: false, error: '请填写用户名和姓名' };
   if (list.some(a => a.username === username)) return { ok: false, error: '用户名已存在' };
   if (!password || password.length < 6) return { ok: false, error: '密码至少 6 位' };
   if (role === 'advisor' && !managerId) return { ok: false, error: '专属顾问需指定关联客户经理' };
   if (!email || !EMAIL_RE.test(email)) return { ok: false, error: '请填写有效邮箱（找回密码/安全通知主通道）' };
-  const newAdmin = { id: `ad${Date.now()}`, username, password, name, role, roleLabel: ADMIN_ROLE_LABELS[role] || role, email, ...(phone ? { phone } : {}), ...(managerId ? { managerId } : {}) };
+  const newAdmin = { id: `ad${Date.now()}`, username, password, name, role, roleLabel: ADMIN_ROLE_LABELS[role] || role, email, ...(managerId ? { managerId } : {}) };
   list.push(newAdmin);
   persistAdminUsers(list);
   logAudit({ operator, category: 'admin', action: 'create', target: name, targetId: newAdmin.id, note: `新增后台账号 ${username}（${newAdmin.roleLabel}）` });
@@ -3964,10 +3959,9 @@ export function resetAdminPassword(id, newPassword, operator = '') {
 export const kycSubmissions = [
   {
     id: 'k1',
-    userId: 'u8',
+    userId: 'u35',
     name: '陈美琪',
     email: 'chen.meiqi@example.com',
-    phone: '+852 6111 2233',
     status: KYC_STATUS.PENDING_REVIEW,
     submittedAt: '2026-08-10 10:12:33',
     rejectReason: null,
@@ -3997,7 +3991,6 @@ export const kycSubmissions = [
       addressProofType: 'utility',
       addressProof: 'images/demo-address.jpg',
       addressLine: '香港九龙尖沙咀弥敦道 132 号',
-      phone: '+852 6111 2233',
     },
     // 制裁/PEP筛查字段（2026-08-26 任务5新增）
     pepStatus: PEP_STATUS.FOREIGN,
@@ -4018,7 +4011,6 @@ export const kycSubmissions = [
     userId: 'u4',
     name: '林大伟',
     email: 'lin.dawei@example.com',
-    phone: '+852 6333 4455',
     status: KYC_STATUS.PENDING_REVIEW,
     submittedAt: '2026-08-11 09:45:02',
     rejectReason: null,
@@ -4039,7 +4031,6 @@ export const kycSubmissions = [
       addressProofType: 'bank',
       addressProof: 'images/demo-address.jpg',
       addressLine: '深圳市南山区科技园路 88 号',
-      phone: '+852 6333 4455',
     },
     // 制裁/PEP筛查字段（2026-08-26 任务5新增）
     pepStatus: PEP_STATUS.NONE,
@@ -4057,7 +4048,6 @@ export const kycSubmissions = [
     userId: 'u5',
     name: '周芷若',
     email: 'zhou.zhiruo@example.com',
-    phone: '+852 6555 6677',
     status: KYC_STATUS.PENDING_REVIEW,
     submittedAt: '2026-08-12 08:30:15',
     rejectReason: null,
@@ -4078,7 +4068,6 @@ export const kycSubmissions = [
       addressProofType: 'utility',
       addressProof: 'images/demo-address.jpg',
       addressLine: '香港湾仔告士打道 200 号',
-      phone: '+852 6555 6677',
     },
     // 制裁/PEP筛查字段（2026-08-26 任务5新增）
     pepStatus: PEP_STATUS.NONE,
@@ -4096,7 +4085,6 @@ export const kycSubmissions = [
     userId: 'u6',
     name: '吴世昌',
     email: 'wu.shichang@example.com',
-    phone: '+852 6777 8899',
     status: KYC_STATUS.PENDING_REVIEW,
     submittedAt: '2026-08-12 14:05:41',
     rejectReason: null,
@@ -4117,7 +4105,6 @@ export const kycSubmissions = [
       addressProofType: 'bank',
       addressProof: 'images/demo-address.jpg',
       addressLine: '香港铜锣湾希慎道 33 号',
-      phone: '+852 6777 8899',
     },
     // 制裁/PEP筛查字段（2026-08-26 任务5新增）
     pepStatus: PEP_STATUS.NONE,
@@ -4135,7 +4122,6 @@ export const kycSubmissions = [
     userId: 'u7',
     name: '刘倩',
     email: 'liu.qian@example.com',
-    phone: '+852 6888 9900',
     status: KYC_STATUS.PENDING_REVIEW,
     submittedAt: '2026-08-13 09:20:17',
     rejectReason: null,
@@ -4156,7 +4142,6 @@ export const kycSubmissions = [
       addressProofType: 'gov',
       addressProof: 'images/demo-address.jpg',
       addressLine: '香港荃湾大河道 88 号',
-      phone: '+852 6888 9900',
     },
     // 制裁/PEP筛查字段（2026-08-26 任务5新增）
     pepStatus: PEP_STATUS.NONE,
@@ -4174,7 +4159,6 @@ export const kycSubmissions = [
     userId: 'u8',
     name: '赵明轩',
     email: 'zhao.mingxuan@example.com',
-    phone: '+852 6999 0011',
     status: KYC_STATUS.PENDING_REVIEW,
     submittedAt: '2026-08-13 11:45:03',
     rejectReason: null,
@@ -4195,7 +4179,6 @@ export const kycSubmissions = [
       addressProofType: 'utility',
       addressProof: 'images/demo-address.jpg',
       addressLine: '台北市信义区松寿路 1 号',
-      phone: '+852 6999 0011',
     },
     // 制裁/PEP筛查字段（2026-08-26 任务5新增）
     pepStatus: PEP_STATUS.NONE,
@@ -4213,7 +4196,6 @@ export const kycSubmissions = [
     userId: 'u9',
     name: '孙雅婷',
     email: 'sun.yating@example.com',
-    phone: '+852 6222 3344',
     status: KYC_STATUS.PENDING_REVIEW,
     submittedAt: '2026-08-13 15:30:52',
     rejectReason: null,
@@ -4234,7 +4216,6 @@ export const kycSubmissions = [
       addressProofType: 'bank',
       addressProof: 'images/demo-address.jpg',
       addressLine: '香港九龙观塘开源道 55 号',
-      phone: '+852 6222 3344',
     },
     // 制裁/PEP筛查字段（2026-08-26 任务5新增）
     pepStatus: PEP_STATUS.NONE,
@@ -4252,7 +4233,6 @@ export const kycSubmissions = [
     userId: 'u10',
     name: '郑国豪',
     email: 'zheng.guohao@example.com',
-    phone: '+852 6333 5566',
     status: KYC_STATUS.APPROVED,
     submittedAt: '2026-08-11 10:08:29',
     rejectReason: null,
@@ -4276,7 +4256,6 @@ export const kycSubmissions = [
       addressProofType: 'utility',
       addressProof: 'images/demo-address.jpg',
       addressLine: '香港沙田银城街 100 号',
-      phone: '+852 6333 5566',
     },
     // 制裁/PEP筛查字段（2026-08-26 任务5新增）
     pepStatus: PEP_STATUS.NONE,
@@ -4294,7 +4273,6 @@ export const kycSubmissions = [
     userId: 'u31', // 何嘉欣独立账户（不与 subscriptions u11 陈伟强冲突，2026-08-13 用户管理聚合发现）
     name: '何嘉欣',
     email: 'ho.kayan@example.com',
-    phone: '+852 6444 7788',
     status: KYC_STATUS.REJECTED,
     submittedAt: '2026-08-10 13:22:36',
     rejectReason: '证件照片不清晰，请重新上传',
@@ -4318,7 +4296,6 @@ export const kycSubmissions = [
       addressProofType: 'utility',
       addressProof: 'images/demo-address.jpg',
       addressLine: '香港将军澳唐贤街 9 号',
-      phone: '+852 6444 7788',
     },
     // 制裁/PEP筛查字段（2026-08-26 任务5新增）
     pepStatus: PEP_STATUS.NONE,
@@ -4339,10 +4316,9 @@ export const kycSubmissions = [
 export const piSubmissions = [
   {
     id: 'pi1',
-    userId: 'u3',
+    userId: 'u35',
     name: '陈美琪',
     email: 'chen.meiqi@example.com',
-    phone: '+852 6111 2233',
     status: PI_STATUS.PENDING_REVIEW,
     piType: 'asset',
     piProof: 'images/demo-pi-proof.jpg',
@@ -4356,7 +4332,6 @@ export const piSubmissions = [
     userId: 'u6',
     name: '吴世昌',
     email: 'wu.shichang@example.com',
-    phone: '+852 6777 8899',
     status: PI_STATUS.PENDING_REVIEW,
     piType: 'professional',
     piProof: null,
@@ -4370,7 +4345,6 @@ export const piSubmissions = [
     userId: 'u13',
     name: '郑国豪',
     email: 'cheng.kokho@example.com',
-    phone: '+852 6222 3344',
     status: PI_STATUS.APPROVED,
     piType: 'asset',
     piProof: 'images/demo-pi-proof.jpg',
@@ -4388,7 +4362,6 @@ export const piSubmissions = [
     userId: 'u21',
     name: '赵明轩',
     email: 'zhao.mingxuan@example.com',
-    phone: '+852 6555 8899',
     status: PI_STATUS.REJECTED,
     piType: 'asset',
     piProof: 'images/demo-pi-proof.jpg',
@@ -4404,9 +4377,11 @@ export const piSubmissions = [
 
 // PI 认证到期派生：APPROVED 且 expiresAt 已过 → EXPIRED（激活死状态，重认证走重新提交）
 export function getPiStatusForUser(userId) {
-  // 预置 approved 账号（张三）直接读 currentUser.pi（已认证，expiresAt 2027 未到期）
-  if (currentUser.id === userId && currentUser.isPI && currentUser.pi?.status === 'verified') {
-    const expiresAt = currentUser.pi.expiresAt;
+  // 预置 approved 账号（张三/王五）直接读 testAccounts.pi（已认证，含到期派生）
+  // 不再依赖 currentUser 单例——后台/跨账号查询时也能得到正确状态
+  const seed = Object.values(testAccounts).find(u => u.id === userId);
+  if (seed?.isPI && seed.pi?.status === 'verified') {
+    const expiresAt = seed.pi.expiresAt;
     if (expiresAt && new Date(expiresAt).getTime() < Date.now()) return PI_STATUS.EXPIRED;
     return PI_STATUS.APPROVED;
   }
@@ -4427,7 +4402,6 @@ export function submitPiCertification({ piType, piProof, piCertified, piLicenseN
     userId: currentUser.id,
     name: currentUser.name,
     email: currentUser.email,
-    phone: currentUser.phone,
     status: PI_STATUS.PENDING_REVIEW,
     piType, piProof, piCertified,
     // 持牌信息（2026-09-20：professional 类型凭 CE No. 在 SFC 公开记录核验；asset 类型为 null）
@@ -4544,11 +4518,11 @@ export function getInvestorUsers() {
   // 1. 注册账户（testAccounts：最完整的账户档案）
   Object.values(testAccounts).forEach(a => {
     put({
-      userId: a.id, name: a.name, email: a.email, phone: a.phone,
+      userId: a.id, name: a.name, email: a.email,
       investorNo: a.pi?.investorNo || getInvestorNo(a.id),
       kycStatus: a.kyc_status,
       // 2026-08-14：PI 独立审核流——预置 approved 账号读 pi.status（已认证），其余按 piSubmissions 派生
-      piStatus: a.id === currentUser.id && a.pi?.status === 'verified' ? PI_STATUS.APPROVED : (piStatusByUser.get(a.id) || PI_STATUS.NOT_SUBMITTED),
+      piStatus: (a.pi?.status === 'verified' ? PI_STATUS.APPROVED : null) || (piStatusByUser.get(a.id) || PI_STATUS.NOT_SUBMITTED),
       piExpiry: a.pi?.expiresAt || '',
       registeredAt: '2026-01-15 10:00:00',
       account: { hkd: a.account?.hkd ?? 0, frozen: a.account?.frozen ?? 0 },
@@ -4560,7 +4534,7 @@ export function getInvestorUsers() {
   // 2026-08-14：piStatus 不再由 KYC 状态派生（独立审核流），改按 piSubmissions 派生
   kycSubmissions.forEach(k => {
     put({
-      userId: k.userId, name: k.name, email: k.email, phone: k.phone,
+      userId: k.userId, name: k.name, email: k.email,
       investorNo: getInvestorNo(k.userId),
       kycStatus: k.status,
       rejectReason: k.status === KYC_STATUS.REJECTED ? k.rejectReason : null,
@@ -4584,7 +4558,7 @@ export function getInvestorUsers() {
       userId: uid,
       regCount: regs.length,
       // 仅当该用户无账户档案时才用报名信息兜底身份（如仅报名的游客）
-      ...(exist ? {} : { name: regs[0].name, phone: regs[0].phone, email: regs[0].email, investorNo: regs[0].investorNo || getInvestorNo(uid), kycStatus: KYC_STATUS.NOT_STARTED, piStatus: PI_STATUS.NOT_SUBMITTED }),
+      ...(exist ? {} : { name: regs[0].name, email: regs[0].email, investorNo: regs[0].investorNo || getInvestorNo(uid), kycStatus: KYC_STATUS.NOT_STARTED, piStatus: PI_STATUS.NOT_SUBMITTED }),
       sources: ['registration'],
     });
   });
@@ -6596,7 +6570,6 @@ export function submitKyc() {
     userId: currentUser.id,
     name: currentUser.name,
     email: currentUser.email,
-    phone: currentUser.phone,
     status: KYC_STATUS.PENDING_REVIEW,
     submittedAt: currentUser.kyc_profile.submittedAt,
     rejectReason: null,
@@ -6623,7 +6596,6 @@ export function submitKyc() {
       addressProofType: p.addressProofType,
       addressProof: p.addressProof,
       addressLine: p.addressLine,
-      phone: p.phone,
       // 2026-10-16 C 组：财务信息 + 逐地税务随快照入队，后台审核抽屉可见
       employmentStatus: p.employmentStatus,
       incomeSources: p.incomeSources,
@@ -6673,11 +6645,8 @@ export function createFreshUser({ id, email, name } = {}) {
   base.id = id || `user-${Date.now()}`;
   base.email = email || '';
   base.name = name || (email ? String(email).split('@')[0] : '新用户');
-  base.phone = '';                                   // 新用户未绑手机（不继承模板里的演示号）
   base.account = { hkd: 0, usd: 0, frozen: 0 };      // 新用户零余额
   base.kyc_status = KYC_STATUS.NOT_STARTED;
-  base.kyc_profile.phone = '';
-  base.kyc_profile.phoneVerified = false;
   base.kyc_profile.submittedAt = null;
   base.kyc_profile.rejectReason = null;
   return base;
@@ -6687,22 +6656,6 @@ export function rejectKyc(reason) {
   currentUser.kyc_status = KYC_STATUS.REJECTED;
   currentUser.kyc_profile.rejectReason = reason;
   return true;
-}
-
-export function sendPhoneVerifyCode() {
-  // Mock 演示：固定验证码 123456（与 UI 提示文案「演示模式：验证码为 123456」对齐）
-  const code = '123456';
-  currentUser.kyc_profile.phoneVerifyCode = code;
-  console.log(`[Mock] 手机验证码: ${code}`);
-  return code;
-}
-
-export function verifyPhoneCode(code) {
-  if (currentUser.kyc_profile.phoneVerifyCode === code) {
-    currentUser.kyc_profile.phoneVerified = true;
-    return true;
-  }
-  return false;
 }
 
 export function sendEmailVerifyCode() {
@@ -6761,7 +6714,7 @@ function sendSceneCode(store, account) {
     dayStart: existing?.dayStart || now,
     dayCount: (existing?.dayCount || 0) + 1,
   };
-  // Mock 模式直接返回验证码（正式环境不返回，仅通过短信/邮件发送）
+  // Mock 模式直接返回验证码（正式环境不返回，仅通过邮件发送）
   return { success: true, message: '验证码已发送', code };
 }
 
@@ -6811,23 +6764,8 @@ function verifySceneCode(store, account, code) {
 }
 
 /**
- * 判断输入是邮箱还是手机号
- * @param {string} value - 用户输入
- * @returns {'email' | 'phone'}
- */
-export function isEmailOrPhone(value) {
-  const v = value.trim();
-  // 邮箱正则
-  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return 'email';
-  // 手机号正则（支持+852、+86等国际格式）
-  if (/^[\+]?[\d\s\-\(\)]{7,15}$/.test(v)) return 'phone';
-  // 默认尝试手机号
-  return 'phone';
-}
-
-/**
  * 发送密码重置验证码
- * @param {string} account - 手机号或邮箱
+ * @param {string} account - 登录邮箱
  * @returns {{ success: boolean, message: string, code?: string }}
  */
 export function sendResetCode(account) {
@@ -6838,7 +6776,7 @@ export function sendResetCode(account) {
 
 /**
  * 验证密码重置验证码
- * @param {string} account - 手机号或邮箱
+ * @param {string} account - 登录邮箱
  * @param {string} code - 用户输入的验证码
  * @returns {{ success: boolean, message: string }}
  */
@@ -6848,7 +6786,7 @@ export function verifyResetCode(account, code) {
 
 /**
  * 重置密码
- * @param {string} account - 手机号或邮箱
+ * @param {string} account - 登录邮箱
  * @param {string} newPassword - 新密码
  * @returns {{ success: boolean, message: string }}
  */
@@ -6869,8 +6807,17 @@ export function resetPassword(account, newPassword) {
     return { success: false, message: '密码需同时包含字母和数字' };
   }
 
-  // Mock 模式：更新 testAccounts 中的密码（实际环境更新数据库）
-  // 这里仅模拟成功，不实际存储密码
+  // 真实落库（mock 持久化）：demo/test 账号走全局密码覆盖；本轮注册账号更新内存账号表
+  const demoLike = key === 'demo@example.com'
+    || Object.values(testAccounts).some(u => String(u.email || '').toLowerCase() === key);
+  if (demoLike) {
+    try {
+      localStorage.setItem(USER_PWD_KEY, JSON.stringify({ password: newPassword }));
+    } catch (e) {
+      return { success: false, message: '保存失败，请稍后重试' };
+    }
+  }
+  if (key in registeredAccounts) registeredAccounts[key] = newPassword;
   console.log(`[Mock] 密码重置成功: ${account}`);
 
   // 清理验证码存储
@@ -6911,22 +6858,19 @@ export function findRegisteredAccount(account) {
 
 /**
  * 全局判重（UC §9.2/R3）：集团维度唯一；本轮已注册的 mock 账号同样计为已注册。
- * 手机号归一化：去空白/连字符、去 +852/852 前缀后比较 8 位本地号。
+ * 账号为邮箱，统一小写比较；demo@example.com 为演示别名，保留不可注册。
  */
 export function isAccountRegistered(account) {
   if (findRegisteredAccount(account)) return true;
-  const isEmailLike = account.includes('@');
-  const norm = account.trim().toLowerCase().replace(/[\s-]/g, '');
-  const bare = (v) => String(v || '').toLowerCase().replace(/[\s-]/g, '').replace(/^(\+?852)?/, '');
+  const norm = account.trim().toLowerCase();
+  if (norm === 'demo@example.com') return true;
   return Object.values(testAccounts).some(u =>
-    isEmailLike
-      ? String(u.email || '').toLowerCase() === norm
-      : bare(u.phone) === bare(norm)
+    String(u.email || '').toLowerCase() === norm
   );
 }
 
 export function advanceKycStep(step) {
-  const validSteps = ['basic-info', 'id-upload', 'address-proof', 'phone', 'submitted'];
+  const validSteps = ['basic-info', 'id-upload', 'address-proof', 'submitted'];
   if (!validSteps.includes(step)) return false;
   if (currentUser.kyc_status === KYC_STATUS.NOT_STARTED) {
     currentUser.kyc_status = KYC_STATUS.IN_PROGRESS;
@@ -6936,15 +6880,16 @@ export function advanceKycStep(step) {
 
 // ========== 2FA 双重验证体系（2026-09-22 · 复刻交易所 2FA 实践规格） ==========
 // 规格：验证矩阵（INV-9 KYC 分层）+ 降级链（INV-3）+ 验证会话 S-1~S-5 + 凡动必冻（INV-5）
-// 原型语义：真 TOTP（RFC6238）+ mock SMS/Passkey/人脸；规则状态机严格按规格，后端可直接照抄。
-// 演示约定（非规格）：快捷登录 __loginWithTestAccount 豁免 2FA；SMS 演示码固定 123456。
+// 原型语义：真 TOTP（RFC6238）+ mock 邮箱验证码/Passkey/人脸；规则状态机严格按规格，后端可直接照抄。
+// 演示约定（非规格）：快捷登录 __loginWithTestAccount 豁免 2FA；邮箱验证码固定 123456。
 
 // ---- 演示环境开关（紧急登录动态冻结：默认常用环境 24h；置 true 模拟异地 48h）----
 export let __emergencyEnvUnfamiliar = false;
 export function setEmergencyEnvUnfamiliar(v) { __emergencyEnvUnfamiliar = !!v; }
 
 // ---- 用户安全档案（按 userId 覆盖层：store 持久化 > testAccounts 预设）----
-const SECURITY_STORE_KEY = 'zhifu-user-security';
+// v2：剥离短信后的存储键，避免旧档案中的「短信验证」历史随刷新复活
+const SECURITY_STORE_KEY = 'zhifu-user-security-v2';
 let userSecurityStore = {}; // { [userId]: { ga, passkeys, freezeUntil, history, gaResetLog, emergency, lockedUntil } }
 
 function loadSecurityStore() {
@@ -6957,7 +6902,7 @@ function persistSecurityStore() {
   try { localStorage.setItem(SECURITY_STORE_KEY, JSON.stringify(userSecurityStore)); } catch (e) { /* 隐私模式静默 */ }
 }
 
-// 演示种子（内存预设，store 未覆盖时生效）：u1 有 GA+Passkey（KYC1 强因子态）、u3 仅手机（KYC1 降级态）、u2 无强因子（走注册手机号验证码兜底）
+// 演示种子（内存预设，store 未覆盖时生效）：u1 有 GA+Passkey（KYC1 强因子态）、u3 仅邮箱（KYC1 降级态）、u2 无强因子（走注册邮箱验证码兜底）
 const SECURITY_SEEDS = {
   u1: {
     ga: { bound: true, secret: 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP', boundAt: '2026-06-01 10:00:00' },
@@ -7003,11 +6948,10 @@ function saveUserSecurity(userId, sec) {
 // 是否有任一 2FA 因子（决定登录是否强制 2FA / 资金流是否放行）
 export function hasAnyFactor(userId) {
   const sec = getUserSecurity(userId);
-  const phoneOk = !!(currentUser && currentUser.phone);
-  return sec.ga.bound || sec.passkeys.length > 0 || phoneOk;
+  return sec.ga.bound || sec.passkeys.length > 0 || !!currentUser.email;
 }
 
-// ---- KYC 分层（INV-9）：KYC1 = 已完成 KYC；KYC0 降级仅 SMS ----
+// ---- KYC 分层（INV-9）：KYC1 = 已完成 KYC；KYC0 降级仅邮箱验证码 ----
 export function isKyc1(userId) {
   const u = userId ? null : currentUser;
   return !!u && u.kyc_status === KYC_STATUS.APPROVED;
@@ -7093,10 +7037,10 @@ async function totpAt(secretBase32, counter) {
   return String(bin % 1000000).padStart(6, '0');
 }
 
-// 演示便利模式（2026-09-23）：GA 验证码降级为固定演示码，与 SMS 对齐——演示免装 App/免算码。
+// 演示便利模式（2026-09-23）：GA 验证码降级为固定演示码，与邮箱验证码对齐——演示免装 App/免算码。
 // 切回真 TOTP：置 false 即恢复 RFC 6238 真码校验（totp.mjs 工具可算码），代码零改动。
 export const GA_DEMO_MODE = true; // UI 按此切换 GA 提示文案
-const DEMO_OTP = '123456'; // 全因子统一演示码（SMS/GA），与 UI 提示文案对齐 // 全因子统一演示码（SMS/GA），与 UI 提示文案对齐
+const DEMO_OTP = '123456'; // 全因子统一演示码（邮箱/GA），与 UI 提示文案对齐
 
 export async function verifyTotp(secretBase32, code) {
   if (!secretBase32 || !/^\d{6}$/.test(code || '')) return false;
@@ -7150,7 +7094,7 @@ export async function submitVerifyItem(sessionId, type, code) {
   if (!item) return { ok: false, reason: 'invalid_item' };
 
   let passed = false;
-  if (type === 'sms' || type === 'email') {
+  if (type === 'email') {
     passed = code === DEMO_OTP; // 演示码（全因子统一，见 verifyTotp 上方常量）
   } else if (type === 'ga') {
     passed = sec.ga.bound ? await verifyTotp(sec.ga.secret, code) : false;
@@ -7165,7 +7109,7 @@ export async function submitVerifyItem(sessionId, type, code) {
     saveUserSecurity(currentUser.id, sec);
     return { ok: false, reason: 'too_many_failures' };
   }
-  return { ok: false, reason: type === 'ga' ? 'ga_code_error' : 'sms_code_error', remain: 5 - s.failures };
+  return { ok: false, reason: type === 'ga' ? 'ga_code_error' : 'code_error', remain: 5 - s.failures };
 }
 
 // passkey / 人脸模拟因子：动画完成即通过（原型语义，无真实生物特征）
@@ -7202,8 +7146,8 @@ export function consumeAuthToken(token) {
 }
 
 // ---- 登录选路矩阵（2026-10-15 UC §9.4 对齐：注册通道即强制因子，不存在免验证登录）----
-// GA/Passkey 延迟绑定（可后补），但登录验证不可免：无强因子时走注册手机号/邮箱验证码兜底；
-// KYC1 叠加人脸（INV-9）。空数组 = 无任何可达通道（异常态），LoginPage 阻断引导绑定。
+// GA/Passkey 延迟绑定（可后补），但登录验证不可免：无强因子时走注册邮箱验证码兜底；
+// KYC1 叠加人脸（INV-9）。空数组 = 无任何可达通道（异常态），LoginPage 阻断并联系客服。
 export function resolveLoginFactors() {
   const sec = getUserSecurity();
   const kyc1 = isKyc1();
@@ -7214,11 +7158,9 @@ export function resolveLoginFactors() {
     items.push('ga');
   }
   if (items.length === 0) {
-    if (currentUser.phone) {
-      items.push('sms');
-      if (kyc1) items.push('face');
-    } else if (currentUser.email) {
+    if (currentUser.email) {
       items.push('email');
+      if (kyc1) items.push('face');
     }
   }
   return items;
@@ -7227,11 +7169,10 @@ export function resolveLoginFactors() {
 // ---- 敏感操作验证矩阵（规格 5.2）----
 export function resolveSensitiveFactors() {
   const sec = getUserSecurity();
-  const phoneOk = !!currentUser.phone;
   if (sec.passkeys.length > 0) return ['passkey']; // Passkey 单验，豁免其余
-  if (sec.ga.bound) return ['ga', 'sms'];          // GA + SMS 双验
-  if (phoneOk) return isKyc1() ? ['sms', 'face'] : ['sms']; // 降级
-  return []; // 无因子 → 调用方阻断并引导绑手机
+  if (sec.ga.bound) return ['ga', 'email'];        // GA + 邮箱验证码双验
+  if (currentUser.email) return isKyc1() ? ['email', 'face'] : ['email']; // 降级
+  return []; // 无任何可达通道 → 调用方阻断并联系客服
 }
 
 // ---- 凡动必冻（INV-5 / X-1）：KYC1 冻结出金 24h，KYC0 不实际生效 ----
@@ -7262,7 +7203,7 @@ export function pushSecurityHistory(type, method) {
   logAudit({ operator: currentUser.name || '投资人', category: 'security', action: type, target: currentUser.name, targetId: currentUser.id, note: `${type}（验证方式：${method}）` });
 }
 
-// 安全项变更全渠道警报：站内通知双条（模拟「原手机+原邮箱」双通道）+ console 邮件
+// 安全项变更全渠道警报：站内通知 + console 邮件
 export function pushSecurityAlert(what) {
   pushNotification({ type: 'security', title: `安全提醒：${what}`, body: `您的${what}。若非本人操作，请立即冻结账户并联系客服。` });
   console.log(`[Mock 邮件→${currentUser.email}] 安全警报：您的${what}。若非本人操作，请立即冻结账户。`);
@@ -7339,7 +7280,7 @@ export function removePasskey(pkId) {
   pushSecurityAlert(`通行密钥（${pk.name}）已删除`);
   triggerSecurityFreeze(24, '删除安全项');
   const lastOne = sec.passkeys.length === 0 && !sec.ga.bound;
-  return { ok: true, lastFactorRemoved: lastOne, hint: lastOne ? '删除后将使用短信验证码登录' : null };
+  return { ok: true, lastFactorRemoved: lastOne, hint: lastOne ? '删除后将使用邮箱验证码登录' : null };
 }
 
 // ---- 紧急登录（规格 5.5：Passkey+GA 双失效）----
@@ -7409,6 +7350,18 @@ export function resetUserSecurityDemo(userId) {
   persistSecurityStore();
   Storage.save(); // 双通道同步：只清独立 key 时，主快照里的旧 userSecurityStore 会在刷新后复活
   return { ok: true };
+}
+
+// ---- 账号删除（2026-10-21 上架合规：Apple 5.1.1(v) 支持注册即须支持 app 内删除）----
+// 数据层校验：有进行中申购/未到期份额（非 rejected/cancelled）→ 拒绝，须客服处理。
+// 演示边界：内置演示账号（u1–u3）为登录矩阵锚点，不真删——demo:true 由 UI 以「演示模式」文案收尾；
+// 本轮注册账号的删除与持久化语义由研发正式 build 承接。
+export function deleteUserAccount(userId) {
+  const uid = userId || currentUser.id;
+  const holding = subscriptions.find(s =>
+    s.investorNo === getInvestorNo(uid) && s.status !== 'rejected' && s.status !== 'cancelled');
+  if (holding) return { ok: false, message: '您有进行中的申购或未到期份额，暂无法删除账户，请联系客服处理' };
+  return { ok: true, demo: /^u\d+$/.test(uid) };
 }
 
 // ========== 申购提交（含 waitlist 自动入队） ==========
@@ -7552,7 +7505,19 @@ export function submitSubscription({ project, amount, currency = 'HKD' }) {
 //     ——数据内容变更）——旧快照（31）持久化层带「财富/Wealth Capital」旧品牌，重置后以 HKBTC mock 为权威初始态
 // 33：2026-10-19 帮助 FAQ 三语化 + 后台可配置（faqItems 结构升级为 AG 三语对象——数据结构变更）——旧快照（32）FAQ 为纯字符串，重置后用新结构
 // 34：2026-10-19 清理配置走查期间的 FAQ 测试条目（走查新增数据经 Storage 落盘后，reset 钩子按设计不还原配置类数据，以版本递进恢复出厂）
-const STATE_VERSION = 34;
+// 35：2026-10-21 首期上架命名定版：APP 名称 HighBlock（platformBrand/基金名/研究院/账号邮箱/附件名/ics 全量替换；上架主体 HighBlock Securities Limited
+//     ——数据内容变更）——旧快照（34）持久化层带 HKBTC 品牌，重置后以 HighBlock mock 为权威初始态
+// 36：2026-10-21 牌照号回填真实值 (F)256390（platformBrand.licenseNo，BLA1234 为 mock 假号）——数据内容变更。
+//     ⚠ 教训：platformBrand 属快照恢复范围，改其任何字段必须同步升 STATE_VERSION——35 升版先于牌照号修改，
+//     老会话 v35 快照的旧 licenseNo 复活，About 页显示回 BLA1234（用户实测发现）
+// 37：2026-10-21 剥离短信通道（登录/注册/找回/2FA/敏感操作改邮箱；账户级手机移除；活动报名手机保留
+//     ——数据内容与结构变更）——旧快照（36）含手机号与短信文案，重置后以邮箱单通道 mock 为权威初始态
+// 38：2026-10-21 上架/持牌主体全称定稿 HighBlock Securities Limited（platformBrand.nameFullZh/nameEn +
+//     上架材料/会议材料全量替换）——platformBrand 属快照恢复范围，必须升版，避免旧主体名复活
+// 39：2026-10-21 修复 PI 队列错挂（pi1 陈美琪不再挂 u3）+ PI 状态派生不再依赖 currentUser 单例
+// 40：2026-10-21 陈美琪 KYC k1 + PI pi1 统一到独立账号 u35（避免与 u8 赵明轩重复 userId）
+// 41：2026-10-21 补 u2/u3 专属顾问映射（testAccounts.accountManager 与后台投资人视图对齐）
+const STATE_VERSION = 41;
 const STORAGE_KEY = 'zhifu-app-state';
 
 /**
@@ -7857,8 +7822,22 @@ export const Storage = {
  * 返回是否成功加载了持久化数据
  */
 export function initState(resetTarget) {
+  migrateContactKeys(); // 旧手机/短信持久化键清理（一次性）
   loadSecurityStore(); // 2FA 安全档案独立 key，先于快照恢复（2026-09-22）
   return Storage.load(resetTarget);
+}
+
+// 一次性迁移：清理短信时代遗留的独立 localStorage 键（快照版本升级不会清它们）
+const CONTACT_MIGRATION_KEY = 'zhifu-contact-migration-v37';
+function migrateContactKeys() {
+  try {
+    if (localStorage.getItem(CONTACT_MIGRATION_KEY)) return;
+    localStorage.removeItem('zhifu-user-security');
+    localStorage.removeItem('zhifu-admin-users');
+    const remembered = localStorage.getItem('zhifu-remember-email');
+    if (remembered && !remembered.includes('@')) localStorage.removeItem('zhifu-remember-email');
+    localStorage.setItem(CONTACT_MIGRATION_KEY, '1');
+  } catch (e) { /* 隐私模式静默 */ }
 }
 
 // ========== 审计日志（2026-08-13 · 后台 P0：全局统一留痕） ==========

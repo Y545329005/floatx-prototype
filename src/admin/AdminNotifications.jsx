@@ -124,12 +124,11 @@ export default function AdminNotifications({ admin }) {
   const safePage = Math.min(page, totalPages);
   const rows = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
-  // 定向选人：按姓名 / 手机 / 投资人编号过滤
+  // 定向选人：按姓名 / 邮箱 / 投资人编号过滤
   const kwUser = userKeyword.trim().toLowerCase();
   const filteredUsers = investorUsers.filter(u => {
     if (!kwUser) return true;
     return (u.name || '').toLowerCase().includes(kwUser)
-      || (u.phone || '').toLowerCase().includes(kwUser)
       || (u.investorNo || '').toLowerCase().includes(kwUser);
   });
   const toggleUser = (uid) => {
@@ -280,8 +279,8 @@ export default function AdminNotifications({ admin }) {
                   <Search size={14} className="admin-search-icon" />
                   <input
                     className="admin-search-input"
-                    aria-label="按姓名 / 手机 / 投资人编号搜索客户"
-                    placeholder="按姓名 / 手机 / 投资人编号搜索客户"
+                    aria-label="按姓名 / 邮箱 / 投资人编号搜索客户"
+                    placeholder="按姓名 / 邮箱 / 投资人编号搜索客户"
                     value={userKeyword}
                     onChange={e => setUserKeyword(e.target.value)}
                   />
@@ -307,7 +306,6 @@ export default function AdminNotifications({ admin }) {
                         />
                         <span className="broadcast-user-name">{u.name}</span>
                         <span className="text-muted text-sm">{u.investorNo || ''}</span>
-                        <span className="text-muted text-sm">{u.phone || ''}</span>
                       </label>
                     );
                   })}

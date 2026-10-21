@@ -110,7 +110,7 @@ export default function AdminSidebar({ current, onNavigate, admin, onLogout }) {
   return (
     <aside className="admin-sidebar">
       <div className="admin-sidebar-header">
-        <h2 className="admin-sidebar-brand" onClick={() => onNavigate('#admin/home')} title="回到首页">HKBTC 后台</h2>
+        <h2 className="admin-sidebar-brand" onClick={() => onNavigate('#admin/home')} title="回到首页">HighBlock 后台</h2>
       </div>
       <nav className="admin-sidebar-nav">
         {visible.map((item, idx) => {

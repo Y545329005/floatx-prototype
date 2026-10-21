@@ -112,7 +112,7 @@ export default function PISubmitted({ navigate, goBack }) {
         <div className="kyc-success-desc">
           {t('您的专业投资者认证申请已成功提交，我们将在 1-3 个工作日内完成审核。')}
           <br /><br />
-          {t('审核结果将通过短信及站内通知发送，请保持手机畅通。')}
+          {t('审核结果将通过站内通知及邮件发送，请注意查收。')}
         </div>
         <div style={{ textAlign: 'left', marginTop: 'var(--space-4)', padding: 'var(--space-4)', background: 'var(--bg)', borderRadius: 'var(--radius-md)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { clickable } from '../lib';
 import { ArrowLeft, Calendar, Monitor, MapPin, TrendingUp, ChevronRight, X, Link2, Copy, Navigation, Users } from 'lucide-react';
-import { events, projects, currentUser, getProjectHeroGradient, getProjectHeroEmoji, projectStageColors, projectStatusLabels, registerEvent, unregisterEvent, isEventRegistered, getEventRegistration, getCheckInCode, formatCurrency, formatDateCN, getProjectStageSlug, isEventLive, getCurrencySymbol } from '../mock/data';
+import { events, projects, currentUser, getProjectHeroGradient, getProjectHeroEmoji, projectStageColors, projectStatusLabels, registerEvent, unregisterEvent, isEventRegistered, getEventRegistration, getCheckInCode, getLastContactPhone, formatCurrency, formatDateCN, getProjectStageSlug, isEventLive, getCurrencySymbol } from '../mock/data';
 import { useLang } from '../i18n';
 
 export default function EventDetail({ id, navigate, goBack, setToast }) {
@@ -11,7 +11,7 @@ export default function EventDetail({ id, navigate, goBack, setToast }) {
   const [showForm, setShowForm] = useState(false);
   const [regForm, setRegForm] = useState({
     name: currentUser.name,
-    phone: currentUser.phone,
+    phone: getLastContactPhone(),
     email: currentUser.email,
     consent: false,
     accompanying: 0, // 0-3 陪同人数
@@ -41,16 +41,21 @@ export default function EventDetail({ id, navigate, goBack, setToast }) {
   const shownRegistered = event.registered;
   const full = hasCapacity && shownRegistered >= event.capacity;
   const capPct = hasCapacity ? Math.min(100, Math.round((shownRegistered / event.capacity) * 100)) : 0;
-  const canSubmit = regForm.name.trim() && regForm.phone.trim() && regForm.consent;
-  const checkInCode = getCheckInCode(event.id, regForm.phone, regForm.accompanying);
+  const phoneTrim = regForm.phone.trim();
+  const phoneValid = !phoneTrim || (/^\+?[\d\s\-()]{7,20}$/.test(phoneTrim) && (phoneTrim.match(/\d/g) || []).length >= 7);
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(regForm.email.trim());
+  // 线下必填联系电话，线上选填；邮箱始终必填
+  const canSubmit = !!regForm.name.trim() && emailValid && phoneValid && (isOffline ? !!phoneTrim : true) && regForm.consent;
+  const checkInCode = (myReg && myReg.checkInCode) || getCheckInCode(event.id, currentUser.id, regForm.accompanying);
 
   const openForm = () => {
-    setRegForm({ name: currentUser.name, phone: currentUser.phone, email: currentUser.email, consent: false, accompanying: 0 });
+    setRegForm({ name: currentUser.name, phone: getLastContactPhone(), email: currentUser.email, consent: false, accompanying: 0 });
     setShowForm(true);
   };
 
   const confirmRegister = () => {
-    registerEvent(event.id, regForm.accompanying, regForm.phone, regForm.email); // 联系方式与表单一致（客户线索）
+    const ok = registerEvent(event.id, regForm.accompanying, regForm.phone, regForm.email); // 联系方式与表单一致（客户线索）
+    if (!ok) { setToast(t('请填写有效的联系电话与邮箱')); return; }
     setIsRegistered(true);
     setShowForm(false);
     setToast(isOffline && regForm.accompanying > 0
@@ -67,7 +72,7 @@ export default function EventDetail({ id, navigate, goBack, setToast }) {
   const copyJoinLink = async () => {
     try {
       await navigator.clipboard.writeText(event.joinUrl);
-      setToast(t('会议链接已复制，活动前 24 小时亦会短信提醒'));
+      setToast(t('会议链接已复制，活动前 24 小时将通过站内通知及邮件提醒'));
     } catch {
       setToast(t('复制失败，请长按链接手动复制'));
     }
@@ -330,12 +335,16 @@ export default function EventDetail({ id, navigate, goBack, setToast }) {
             />
           </div>
           <div className="form-group">
-            <label>{t('手机')}</label>
+            <label>{t('联系电话')}{isOffline ? t('（必填）') : t('（选填）')}</label>
             <input
               className="form-input"
               value={regForm.phone}
               onChange={e => setRegForm({ ...regForm, phone: e.target.value })}
+              placeholder={t('请输入联系电话')}
+              inputMode="tel"
             />
+            <p className="text-muted text-xs">{t('仅用于活动通知与现场联络，平台暂不发送短信')}</p>
+            {phoneTrim && !phoneValid && <span className="error-text">{t('请输入有效的联系电话')}</span>}
           </div>
           <div className="form-group">
             <label>{t('邮箱')}</label>
@@ -369,7 +378,7 @@ export default function EventDetail({ id, navigate, goBack, setToast }) {
               checked={regForm.consent}
               onChange={e => setRegForm({ ...regForm, consent: e.target.checked })}
             />
-            <span>{t('我同意接收活动通知及会议链接')}</span>
+            <span>{t('我同意主办方通过所填电话或邮件联系我，用于活动通知与现场安排')}</span>
           </label>
           <button className="btn btn-primary btn-full sheet-submit" disabled={!canSubmit} onClick={confirmRegister}>
             {t('确认报名')}

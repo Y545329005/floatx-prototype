@@ -24,7 +24,6 @@ const Settings = lazy(() => import('../pages/Settings'));
 const SecurityCenter = lazy(() => import('../pages/SecurityCenter'));
 const Help = lazy(() => import('../pages/Help'));
 const About = lazy(() => import('../pages/About'));
-const BindPhone = lazy(() => import('../pages/BindPhone'));
 const ChangeEmail = lazy(() => import('../pages/ChangeEmail'));
 const KYCStart = lazy(() => import('../pages/KYCStart'));
 const KYCIdUpload = lazy(() => import('../pages/KYCIdUpload'));
@@ -71,8 +70,6 @@ export function renderAppPage(path, param, ctx) {
       return <Settings navigate={navigate} goBack={goBack} />;
     case 'security-center':
       return <SecurityCenter navigate={navigate} goBack={goBack} setToast={setToast} setIsLoggedIn={setIsLoggedIn} />;
-    case 'bind-phone':
-      return <BindPhone navigate={navigate} goBack={goBack} setToast={setToast} />;
     case 'change-email':
       return <ChangeEmail navigate={navigate} goBack={goBack} setToast={setToast} />;
     case 'help':

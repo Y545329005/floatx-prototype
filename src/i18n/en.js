@@ -187,7 +187,6 @@ export const en = {
   // Settings
   '语言设置': 'Language',
   '姓名': 'Name',
-  '手机': 'Phone',
   '已认证': 'Certified',
   '有效': 'Valid',
   '认证编号': 'Certification No.',
@@ -350,7 +349,6 @@ export const en = {
   '确认报名': 'Confirm registration',
   '报名成功，届时请准时参加': 'Registration successful. Please attend on time',
   '已取消报名': 'Registration cancelled',
-  '会议链接已复制，活动前 24 小时亦会短信提醒': 'Meeting link copied. You will also receive an SMS reminder 24 hours before the event',
   '复制失败，请长按链接手动复制': 'Copy failed. Please long-press the link to copy it manually',
 
   // Content domain additions (Search)
@@ -454,7 +452,6 @@ export const en = {
   // ===== 2026-08-07 2nd-round leak fix: AuthPages + ErrorBoundary + misc =====
 
   // Error messages (shared by LoginPage / RegisterPage / ForgotPasswordPage / ResetPasswordPage)
-  '请输入有效的邮箱或手机号': 'Enter a valid email or phone number',
   '密码至少需要 6 个字符': 'Password must be at least 6 characters',
   '两次输入的密码不一致': 'The two passwords do not match',
   '请输入姓名': 'Please enter your name',
@@ -489,10 +486,7 @@ export const en = {
   '我们已向 {} 发送验证信息': 'We have sent verification to {}',
   '验证信息已发送，请查收': 'Verification sent. Please check.',
   '忘记密码': 'Forgot password',
-  '输入您的邮箱或手机号，我们将发送验证信息': 'Enter your email or phone and we will send verification',
   '发送重置链接': 'Send reset link',
-  '邮箱 / 手机号': 'Email / Phone',
-  '请输入邮箱或手机号': 'Enter email or phone number',
 
   // Reset password
   '密码重置成功，请重新登录': 'Password reset successful. Please log in again.',
@@ -607,7 +601,6 @@ export const en = {
   '预计完成时间：1-2 分钟': 'Estimated time: 1-2 minutes',
   '身份证件': 'ID Document',
   '地址证明': 'Address Proof',
-  '手机号码': 'Phone Number',
   '资产证明': 'Asset Proof',
   '专业投资者资格声明': 'Professional Investor Declaration',
   '根据香港证监会规定，专业投资者需满足以下条件之一：': 'Under SFC regulations, Professional Investors must meet one of the following:',
@@ -699,15 +692,9 @@ export const en = {
   '文件须显示姓名及地址，且发出日期在三个月内': 'Document must show name and address, issued within 3 months',
 
   // Bind Phone (account security feature, separated from KYC)
-  '绑定手机': 'Bind Phone',
   '已验证': 'Verified',
   '未验证': 'Not Verified',
-  '更换手机号': 'Change Phone',
   '取消更换': 'Cancel Change',
-  '手机号换绑成功': 'Phone rebind successful',
-  '手机号绑定成功': 'Phone bound successfully',
-  '当前已绑定手机号，可点击下方按钮更换新手机号。': 'Your phone is currently bound. Click the button below to change to a new phone number.',
-  '请输入您的新香港手机号码，我们将发送验证码短信。': 'Please enter your new Hong Kong phone number. We will send a verification code via SMS.',
 
   // Change Email
   '登录邮箱': 'Login Email',
@@ -722,18 +709,13 @@ export const en = {
   '确认更换': 'Confirm Change',
   '请输入有效的邮箱地址': 'Please enter a valid email address',
   '新邮箱不能与当前邮箱相同': 'New email must be different from current email',
-  '请验证您本人名下的香港手机号码，我们将发送验证码短信': 'Please verify your Hong Kong mobile number, we will send an SMS code',
-  '香港手机号码': 'Hong Kong Mobile Number',
   '例如：51234567': 'e.g. 51234567',
   '获取验证码': 'Get Code',
   '验证码': 'Verification Code',
   '请输入6位验证码': 'Enter 6-digit code',
   '验证码将在 5 分钟内有效': 'Code valid for 5 minutes',
   '演示模式：验证码为 123456': 'Demo mode: code is 123456',
-  '验证手机号': 'Verify Phone Number',
-  '请输入有效的香港手机号码': 'Please enter a valid HK mobile number',
   '验证码错误，请重试': 'Incorrect code, please try again',
-  '手机号绑定成功': 'Phone bound successfully',
 
   // Submit Verification (button label)
   '提交认证': 'Submit Verification',
@@ -742,7 +724,6 @@ export const en = {
   '认证完成': 'Verification Complete',
   '认证资料已提交': 'Documents Submitted',
   '您的实名认证资料已成功提交，我们将在 1-3 个工作日内完成审核。': 'Your identity verification documents have been submitted. We will complete review within 1-3 business days.',
-  '审核结果将通过短信及站内通知发送，请保持手机畅通。': 'You will receive the result via SMS and in-app notification. Please keep your phone accessible.',
   '审核周期': 'Review Timeline',
   '一般情况下审核将在 1-3 个工作日内完成。如需补充材料，我们的客服团队将提前与您联系。': 'Review typically completes within 1-3 business days. Our team will contact you if additional documents are needed.',
   '如有疑问，请联系您的专属客户经理或拨打客服热线': 'Questions? Contact your dedicated account manager or our support hotline',
@@ -1033,7 +1014,7 @@ export const en = {
   '生效日期': 'Effective',
   '关闭': 'Close',
 
-  // 品牌名 HKBTC 三语同文，t() 回退返回 key，无需字典条目
+  // 品牌名 HighBlock 三语同文，t() 回退返回 key，无需字典条目
   '内部演示环境': 'Internal Demo Environment',
   '私募股权信息平台原型 · 凭口令访问': 'Private equity platform prototype · Access by invite code',
   '请输入访问口令': 'Enter access code',
@@ -1057,7 +1038,6 @@ export const en = {
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
   '为保护账户安全，请先完成安全项绑定': 'For account security, please set up a security method first',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
-  '为保护账户安全，请先绑定手机号后再进行安全项变更': 'For account security, please bind a phone number before changing security settings',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
   '使用面容 ID / 指纹验证': 'Verify with Face ID / Touch ID',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
@@ -1114,6 +1094,14 @@ export const en = {
   '无法获取验证码？': 'Can\'t get a code?',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
   '暂无安全项变动记录': 'No security changes recorded',
+  // —— 删除账户（2026-10-21 上架合规：Apple 5.1.1(v)）——
+  '删除账户': 'Delete Account',
+  '申请删除账户': 'Request Account Deletion',
+  '注销后您的身份认证资料与平台数据将被永久删除，且不可恢复': 'Your identity data and platform data will be permanently deleted. This cannot be undone.',
+  '注销后，您的账户信息、身份认证资料与平台数据将被永久删除且不可恢复。进行中的申购与未到期份额需先行处理。': 'Your account information, identity documents and platform data will be permanently deleted and cannot be recovered. Ongoing subscriptions and unexpired fund interests must be settled first.',
+  '验证通过后可删除账户': 'Verify to delete your account',
+  '您有进行中的申购或未到期份额，暂无法删除账户，请联系客服处理': 'You have an ongoing subscription or unexpired fund interest. Account deletion is unavailable at the moment. Please contact client services.',
+  '账户删除申请已提交。演示模式下内置演示账号未真实删除；正式环境将永久删除您的全部数据。': 'Your account deletion request has been submitted. In demo mode the built-in demo account is not actually deleted; in production all of your data will be permanently removed.',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
   '未绑定': 'Not bound',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
@@ -1147,9 +1135,7 @@ export const en = {
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
   '登录密码': 'Login Password',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
-  '短信验证': 'SMS Verification',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
-  '短信验证码不正确，请重新输入': 'Incorrect SMS code, please try again',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
   '确认修改': 'Confirm',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
@@ -1167,9 +1153,7 @@ export const en = {
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
   '绑定成功，请重新登录': 'Bound successfully. Please sign in again',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
-  '绑定手机号': 'Bind Phone Number',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
-  '绑定手机号后启用': 'Available after binding a phone number',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
   '绑定新 Passkey': 'Bind New Passkey',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
@@ -1189,11 +1173,9 @@ export const en = {
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
   '输入 GA App 中的 6 位验证码': 'Enter the 6-digit code from your Authenticator app',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
-  '输入您的邮箱或手机号，我们将发送验证码': 'Enter your email or phone number and we will send a code',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
   '输入验证码': 'Enter Code',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
-  '这是您最后一个通行密钥，删除后将使用短信验证码登录': 'This is your last passkey. SMS codes will be used for sign-in after deletion',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
   '通行密钥已删除': 'Passkey deleted',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
@@ -1227,7 +1209,6 @@ export const en = {
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
   '验证码错误，请检查设备时间同步后重试': 'Incorrect code. Check your device time sync and try again',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
-  '验证通过后可更换手机号': 'Verify to change your phone number',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
   '验证通过后可更换邮箱': 'Verify to change your email',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
@@ -1273,7 +1254,6 @@ export const en = {
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
   '请在 App Store / Google Play 下载「Google Authenticator」': 'Download "Google Authenticator" from the App Store / Google Play',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
-  '请验证您本人名下的香港手机号码，我们将发送验证码短信。': 'Verify your Hong Kong mobile number and we will send an SMS code',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
   '线下转账 + 登记核销：请先向平台收款账户完成转账，再登记转账金额并上传凭证，财务核对到账后上账': 'Offline transfer + registration: transfer to the platform account first, then register the amount and upload the receipt for reconciliation',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
@@ -1306,9 +1286,6 @@ export const en = {
   '{}秒后可重发': 'Resend in {}s',
   '已授权 eDDA：': 'eDDA authorized: ',
   '可直接发起入金': 'Ready for quick deposits',
-  '账号 C：PEP（仅短信验证）': 'Account C: PEP (SMS only)',
-  '短信验证码': 'SMS Code',
-  '验证码将发送至您的手机': 'The code will be sent to your phone',
   '谷歌验证器': 'Google Authenticator',
   '通行密钥': 'Passkey',
   '人脸识别': 'Face Verification',
@@ -1335,13 +1312,11 @@ export const en = {
   '周六': 'Sat',
 
   // UC 对齐（2026-10-15）：注册/登录/全端失效（§9.2/§9.4/§9.8）
-  '该邮箱/手机号已注册': 'This email/phone is already registered',
   '今日验证码发送次数已达上限，请24小时后重试': 'Daily verification code limit reached. Please try again in 24 hours',
   '注册成功，账号已激活': 'Registration successful, account activated',
   '验证码校验通过，账号已创建并激活': 'Verification passed. Your account has been created and activated',
   '开始身份认证': 'Start Identity Verification',
   '去登录': 'Sign In',
-  '账户未绑定可验证通道，请先绑定手机号': 'No verification channel found. Please bind a phone number first',
   '密码修改成功。为保障账户安全，所有设备已退出登录，请使用新密码重新登录。': 'Password changed. For your security, all devices have been signed out. Please sign in with your new password.',
   '安全项已变更。为保障账户安全，所有设备已退出登录，请重新登录。': 'Security settings changed. For your security, all devices have been signed out. Please sign in again.',
   '安全提示': 'Security Notice',
@@ -1417,4 +1392,25 @@ export const en = {
   '每个税务居民地需填写税务编号或选择无编号原因': 'Each tax residency needs a TIN or a reason for having none',
   '其他带姓名及地址的文件': 'Other document showing your name and address',
 
+
+  // 2026-10-21 邮箱单通道 + 活动联系电话
+  '请输入邮箱': 'Enter your email',
+  '该邮箱已注册': 'This email is already registered',
+  '输入您的注册邮箱，我们将发送验证码': 'Enter your registered email and we will send a code',
+  '账号 C：PEP（邮箱+人脸）': 'Account C: PEP (email + face)',
+  '管理 GA / 通行密钥 / 邮箱验证': 'Manage GA / passkeys / email verification',
+  '审核结果将通过站内通知及邮件发送，请注意查收。': 'The result will be sent via in-app notification and email. Please check your inbox.',
+  '会议链接已复制，活动前 24 小时将通过站内通知及邮件提醒': 'Meeting link copied. We will remind you via in-app notification and email 24 hours before the event.',
+  '账户未绑定可验证通道，请联系客服': 'No verification channel is available. Please contact support.',
+  '账户状态异常，请联系客服': 'Your account status is abnormal. Please contact support.',
+  '请填写有效的联系电话与邮箱': 'Please enter a valid contact phone and email',
+  '联系电话': 'Contact phone',
+  '（必填）': ' (required)',
+  '（选填）': ' (optional)',
+  '请输入联系电话': 'Enter a contact phone number',
+  '请输入有效的联系电话': 'Enter a valid contact phone number',
+  '仅用于活动通知与现场联络，平台暂不发送短信': 'Used only for event notices and on-site coordination. The platform does not send SMS at this time.',
+  '我同意主办方通过所填电话或邮件联系我，用于活动通知与现场安排': 'I agree that the organizer may contact me via the phone or email provided for event notices and on-site arrangements.',
+  '绑定后作为高强度第二因子，防验证码转发与钓鱼': 'Acts as a strong second factor, protecting against code forwarding and phishing',
+  '这是您最后一个通行密钥，删除后将使用邮箱验证码登录': 'This is your last passkey. Email verification codes will be used for sign-in after deletion',
 };

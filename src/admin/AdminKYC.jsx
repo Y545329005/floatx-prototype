@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { CheckCircle, XCircle, ImageIcon, MapPin, Phone, X, History, Search, Eye, ClipboardCheck, RotateCcw, ShieldCheck } from 'lucide-react';
+import { CheckCircle, XCircle, ImageIcon, MapPin, X, History, Search, Eye, ClipboardCheck, RotateCcw, ShieldCheck } from 'lucide-react';
 import {
   kycSubmissions, approveKycSubmission, rejectKycSubmission, requireKycAction, KYC_STATUS,
-  maskName, maskPhone,
+  maskName,
 } from '../mock/data';
 const statusMeta = {
   [KYC_STATUS.PENDING_REVIEW]: { label: '待审核', cls: 'admin-status-pending' },
@@ -67,12 +67,11 @@ export default function AdminKYC({ navigate, detailId, admin }) {
     return acc;
   }, {});
 
-  // 跨状态搜索（主要功能：用户来电查认证进度，姓名/手机/邮箱原文匹配，脱敏不影响搜索）
+  // 跨状态搜索（姓名/邮箱原文匹配，脱敏不影响搜索）
   const kw = keyword.trim().toLowerCase();
   const isSearching = kw.length > 0;
   const matches = (k) =>
     (k.name || '').toLowerCase().includes(kw)
-    || (k.phone || '').toLowerCase().includes(kw)
     || (k.email || '').toLowerCase().includes(kw)
     || (k.profile?.fullNameEn || '').toLowerCase().includes(kw);
   // 有搜索词 → 跨全部状态；否则当前筛选状态列表
@@ -158,8 +157,8 @@ export default function AdminKYC({ navigate, detailId, admin }) {
           <Search size={16} className="admin-search-icon" />
           <input
             className="admin-search-input"
-            aria-label="搜索姓名 / 手机 / 邮箱"
-            placeholder="搜索姓名 / 手机 / 邮箱"
+            aria-label="搜索姓名 / 邮箱"
+            placeholder="搜索姓名 / 邮箱"
             value={keyword}
             onChange={e => onSearchChange(e.target.value)}
           />
@@ -174,7 +173,6 @@ export default function AdminKYC({ navigate, detailId, admin }) {
         <div className="admin-table-header">
           <span className="col-name">申请人</span>
           <span className="col-doc">证件类型</span>
-          <span className="col-phone">联系方式</span>
           <span className="col-date">提交时间</span>
           <span className="col-status">状态</span>
           <span className="col-actions">操作</span>
@@ -196,7 +194,6 @@ export default function AdminKYC({ navigate, detailId, admin }) {
                 <strong>{maskName(k.name)}</strong>
               </span>
               <span className="col-doc">{docLabel}</span>
-              <span className="col-phone">{maskPhone(k.phone)}</span>
               <span className="col-date">{k.submittedAt}</span>
               <span className="col-status">
                 <span className={`status-badge ${meta.cls}`}>{meta.label}</span>
@@ -320,7 +317,6 @@ export default function AdminKYC({ navigate, detailId, admin }) {
               </div>
               <div className="card kyc-review-block">
                 <h4 className="card-title">联系与提交</h4>
-                <div className="kyc-review-row"><span><Phone size={14} /></span><strong>{sel.phone}</strong></div>
                 <div className="kyc-review-row"><span>邮箱</span><strong>{sel.email}</strong></div>
                 <div className="kyc-review-row"><span>提交时间</span><strong>{sel.submittedAt}</strong></div>
                 {sel.status === KYC_STATUS.REJECTED && (

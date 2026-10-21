@@ -136,7 +136,7 @@ export default function ChangeEmail({ goBack, setToast }) {
                   <Mail size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
                   {t('新邮箱地址')}
                 </label>
-                <div className="kyc-phone-input-group">
+                <div className="code-input-group">
                   <input
                     type="email"
                     className={`kyc-form-input ${errors.email ? 'error' : ''}`}
@@ -146,7 +146,7 @@ export default function ChangeEmail({ goBack, setToast }) {
                   />
                   <button
                     type="button"
-                    className="kyc-phone-code-btn"
+                    className="code-send-btn"
                     onClick={handleSendCode}
                     disabled={countdown > 0}
                   >

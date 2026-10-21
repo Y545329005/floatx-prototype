@@ -14,7 +14,7 @@ const typeOptions = [
 
 // 参与方式说明 = 跟随类型的默认模板（运营可在默认基础上自定义；type 切换时同步替换）
 const DEFAULT_JOIN_NOTE = {
-  online: '线上会议 · 报名成功后，会议链接将在活动前 24 小时通过短信发送至您预留的手机。',
+  online: '线上会议 · 报名成功后，会议链接将在活动前 24 小时通过站内通知及邮件发送。',
   offline: '线下 · 请于活动开始前 15 分钟凭报名手机号签到，凭预约名单入场。',
 };
 
@@ -316,7 +316,7 @@ export default function AdminEvents({ admin = null }) {
                         <div key={r.id} className="admin-signin-row">
                           <div className="admin-signin-info">
                             <strong>{r.name}</strong>
-                            <span className="text-muted text-sm">{r.investorNo} · {1 + (r.accompanying || 0)} 人 · {r.phone}</span>
+                            <span className="text-muted text-sm">{r.investorNo} · {1 + (r.accompanying || 0)} 人 · {r.phone || '未填电话'}</span>
                             {r.checkInCode && <span className="admin-signin-code date-iso">凭证码 {r.checkInCode}</span>}
                             {r.status === 'checked-in' && r.checkedInAt && (
                               <span className="admin-signin-stamp">于 {formatISODateTime(r.checkedInAt)} 由 {r.checkedInBy} 签到</span>

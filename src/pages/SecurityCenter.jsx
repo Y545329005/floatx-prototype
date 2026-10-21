@@ -1,22 +1,17 @@
 import { useState } from 'react';
-import { ArrowLeft, Shield, KeyRound, Fingerprint, Smartphone, Trash2, Plus, AlertTriangle, History, Lock, Mail } from 'lucide-react';
+import { ArrowLeft, Shield, KeyRound, Fingerprint, Trash2, Plus, AlertTriangle, History, Lock, Mail } from 'lucide-react';
 import { useLang } from '../i18n';
 import SecurityVerifySheet from '../components/SecurityVerifySheet';
 import GaSetupFlow from '../components/GaSetupFlow';
 import {
   currentUser, getUserSecurity, listPasskeys, addPasskey, removePasskey,
   resolveSensitiveFactors, consumeAuthToken, isKyc1, getFreezeState,
-  requestGaReset, changeUserPassword,
+  requestGaReset, changeUserPassword, deleteUserAccount,
 } from '../mock/data';
 
 // 安全中心（2026-09-22 · 复刻规格 5.2/5.3：安全项生命周期管理）
 // 敏感操作前置验证（INV-4）：点操作入口立即弹安全验证，验证通过前操作内容不可见。
-// 验证矩阵（规格 5.2）：有 Passkey 单验 / GA+SMS 双验 / 仅 SMS（KYC1 叠加人脸）；无因子 → 阻断引导绑手机。
-const maskPhone = (p) => {
-  if (!p) return '';
-  const digits = p.replace(/\s/g, '');
-  return digits.length > 5 ? `${digits.slice(0, 3)}****${digits.slice(-4)}` : digits;
-};
+// 验证矩阵（规格 5.2）：有 Passkey 单验 / GA+邮箱双验 / 仅邮箱（KYC1 叠加人脸）；无因子 → 阻断并联系客服。
 
 export default function SecurityCenter({ navigate, goBack, setToast, setIsLoggedIn }) {
   const { t } = useLang();
@@ -29,6 +24,7 @@ export default function SecurityCenter({ navigate, goBack, setToast, setIsLogged
   const [pwdForm, setPwdForm] = useState({ p1: '', p2: '' });
   const [gaResetRisk, setGaResetRisk] = useState(false);
   const [pkRemoveRisk, setPkRemoveRisk] = useState(null);
+  const [deleteRisk, setDeleteRisk] = useState(false);
   // （2026-10-15）tick/refresh 已随「操作后 toast 留原页」模式一并移除：
   // 改密/MFA 变更现全部改道强制重登页（UC 事件④⑤），无「留原页读新状态」场景
 
@@ -39,7 +35,7 @@ export default function SecurityCenter({ navigate, goBack, setToast, setIsLogged
   // 2026-10-15 对齐：原「toast 后留在原页」为 mock 简化，与 UC 全端失效口径冲突，已废除
   const forceRelogin = (message) => setFlow({ kind: 'relogin', message });
 
-  // 敏感操作统一入口：先前置验证（空因子 → 阻断引导绑手机，对应「未绑 GA 阻断提币」同构逻辑）
+  // 敏感操作统一入口：先前置验证（空因子 → 阻断并联系客服）
   const startSensitive = (kind) => {
     // Passkey 绑定前置 KYC（UC §4.4 V1.2 定稿）——入口 UI gate（数据层 addPasskey 另有兜底）
     if (kind === 'pk-add' && !kyc1) {
@@ -49,8 +45,7 @@ export default function SecurityCenter({ navigate, goBack, setToast, setIsLogged
     }
     const factors = resolveSensitiveFactors();
     if (factors.length === 0) {
-      setToast(t('为保护账户安全，请先绑定手机号后再进行安全项变更'));
-      navigate('bind-phone');
+      setToast(t('账户状态异常，请联系客服'));
       return;
     }
     setFlow({ kind, factors });
@@ -64,6 +59,7 @@ export default function SecurityCenter({ navigate, goBack, setToast, setIsLogged
     else if (kind === 'ga-reset') { setFlow(null); setGaResetRisk(true); }
     else if (kind === 'pk-add') { doAddPasskey(); }
     else if (kind === 'pk-remove') { doRemovePasskey(flow.passkey); } // 风险确认后的身份验证放行
+    else if (kind === 'delete-account') doDeleteAccount();
     else if (kind === 'pwd') setFlow({ kind: 'pwd-form' });
     else setFlow(null);
   };
@@ -99,8 +95,7 @@ export default function SecurityCenter({ navigate, goBack, setToast, setIsLogged
     setPkRemoveRisk(null);
     const factors = resolveSensitiveFactors();
     if (factors.length === 0) {
-      setToast(t('为保护账户安全，请先绑定手机号后再进行安全项变更'));
-      navigate('bind-phone');
+      setToast(t('账户状态异常，请联系客服'));
       return;
     }
     setFlow({ kind: 'pk-remove', factors, passkey: pk });
@@ -124,6 +119,24 @@ export default function SecurityCenter({ navigate, goBack, setToast, setIsLogged
     setGaResetRisk(false);
     setFlow({ kind: 'ga-reset-flow' });
     return true;
+  };
+
+  // 删除账户（Apple 5.1.1(v)）：风险确认 → 身份验证 → 数据层校验 → 执行/拒绝
+  const confirmDeleteAccount = () => {
+    setDeleteRisk(false);
+    const factors = resolveSensitiveFactors();
+    if (factors.length === 0) {
+      setToast(t('账户状态异常，请联系客服'));
+      return;
+    }
+    setFlow({ kind: 'delete-account', factors });
+  };
+
+  const doDeleteAccount = () => {
+    const res = deleteUserAccount(currentUser.id);
+    setFlow(null);
+    if (!res.ok) { setToast(t(res.message)); return; }
+    forceRelogin(t('账户删除申请已提交。演示模式下内置演示账号未真实删除；正式环境将永久删除您的全部数据。'));
   };
 
   return (
@@ -151,7 +164,7 @@ export default function SecurityCenter({ navigate, goBack, setToast, setIsLogged
           </div>
           <div className="settings-status-body">
             <strong>{gaBound ? t('已绑定') : t('未绑定')}</strong>
-            <span className="text-muted text-sm">{gaBound ? `${t('绑定时间')} ${sec.ga.boundAt}` : t('绑定后作为高强度第二因子，防验证码转发与 SIM 劫持')}</span>
+            <span className="text-muted text-sm">{gaBound ? `${t('绑定时间')} ${sec.ga.boundAt}` : t('绑定后作为高强度第二因子，防验证码转发与钓鱼')}</span>
           </div>
         </div>
         <button className="btn btn-primary btn-sm settings-pi-action" onClick={() => startSensitive(gaBound ? 'ga-reset' : 'ga-bind')}>
@@ -176,21 +189,6 @@ export default function SecurityCenter({ navigate, goBack, setToast, setIsLogged
         ))}
         <button className="btn btn-primary btn-sm settings-pi-action" disabled={passkeys.length >= 3} onClick={() => startSensitive('pk-add')}>
           <Plus size={14} /> {t('添加通行密钥')}
-        </button>
-      </div>
-
-      {/* 短信验证 */}
-      <div className="card card-secondary">
-        <h3 className="card-title">{t('短信验证')}</h3>
-        <div className="settings-status-row">
-          <div className="settings-status-icon verified"><Smartphone size={18} /></div>
-          <div className="settings-status-body">
-            <strong>{maskPhone(currentUser.phone) || t('未绑定')}</strong>
-            <span className="text-muted text-sm">{currentUser.phone ? t('用于登录兜底与安全项重置（KYC 用户叠加人脸）') : t('绑定手机号后启用')}</span>
-          </div>
-        </div>
-        <button className="btn btn-secondary btn-sm settings-pi-action" onClick={() => navigate('bind-phone')}>
-          {currentUser.phone ? t('更换手机号') : t('绑定手机号')}
         </button>
       </div>
 
@@ -241,6 +239,21 @@ export default function SecurityCenter({ navigate, goBack, setToast, setIsLogged
         <Shield size={13} /> {t('双重验证不可关闭（合规要求），仅允许更改验证方式')}
       </p>
 
+      {/* 删除账户（Apple 5.1.1(v)：支持注册即须支持 app 内删除；危险区置底） */}
+      <div className="card card-secondary">
+        <h3 className="card-title">{t('删除账户')}</h3>
+        <div className="settings-status-row">
+          <div className="settings-status-icon"><Trash2 size={18} /></div>
+          <div className="settings-status-body">
+            <strong>{t('申请删除账户')}</strong>
+            <span className="text-muted text-sm">{t('注销后您的身份认证资料与平台数据将被永久删除，且不可恢复')}</span>
+          </div>
+        </div>
+        <button className="btn btn-danger btn-sm settings-pi-action" onClick={() => setDeleteRisk(true)}>
+          {t('删除账户')}
+        </button>
+      </div>
+
       {/* ===== 弹窗层 ===== */}
 
       {/* 通用前置安全验证（验证后阶段不重复显示 Sheet） */}
@@ -250,7 +263,7 @@ export default function SecurityCenter({ navigate, goBack, setToast, setIsLogged
           factors={flow.factors}
           onVerified={onVerified}
           onClose={() => setFlow(null)}
-          subtitle={t('验证通过后可进行安全项变更')}
+          subtitle={t(flow.kind === 'delete-account' ? '验证通过后可删除账户' : '验证通过后可进行安全项变更')}
         />
       )}
 
@@ -328,7 +341,7 @@ export default function SecurityCenter({ navigate, goBack, setToast, setIsLogged
               <p>{kyc1
                 ? t('删除后不可恢复，您需要重新添加。为了保护您的账户安全，删除后 24 小时内无法使用提现功能。')
                 : t('删除后不可恢复，您需要重新添加。')}</p>
-              <p className="text-muted text-sm">{sec.passkeys.length === 1 && !gaBound ? t('这是您最后一个通行密钥，删除后将使用短信验证码登录') : ''}</p>
+              <p className="text-muted text-sm">{sec.passkeys.length === 1 && !gaBound ? t('这是您最后一个通行密钥，删除后将使用邮箱验证码登录') : ''}</p>
             </div>
             <div className="emergency-risk-actions">
               <button className="btn btn-secondary" onClick={() => setPkRemoveRisk(null)}>{t('取消')}</button>
@@ -357,6 +370,26 @@ export default function SecurityCenter({ navigate, goBack, setToast, setIsLogged
             <div className="emergency-risk-actions">
               <button className="btn btn-secondary" onClick={() => setFlow(null)}>{t('取消')}</button>
               <button className="btn btn-primary" onClick={doChangePassword}>{t('确认修改')}</button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* 删除账户风险确认（5.3.1 同序：风险提示 → 身份验证 → 执行） */}
+      {deleteRisk && (
+        <>
+          <div className="sheet-mask" />
+          <div className="sheet">
+            <div className="sheet-header">
+              <h3>{t('删除账户')}</h3>
+            </div>
+            <div className="emergency-risk">
+              <AlertTriangle size={26} />
+              <p>{t('注销后，您的账户信息、身份认证资料与平台数据将被永久删除且不可恢复。进行中的申购与未到期份额需先行处理。')}</p>
+            </div>
+            <div className="emergency-risk-actions">
+              <button className="btn btn-secondary" onClick={() => setDeleteRisk(false)}>{t('取消')}</button>
+              <button className="btn btn-danger" onClick={confirmDeleteAccount}>{t('我已了解，继续')}</button>
             </div>
           </div>
         </>

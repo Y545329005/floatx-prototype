@@ -11,8 +11,8 @@ import './embed.css';
 // ── 身份注入（模拟宿主 SSO）───────────────────────────────────────────
 // 嵌入形态下登录由集团 APP 承担，本模块通过 ?uid= 接收宿主注入的身份：
 //   ?uid=u1（默认）= approved · KYC 已通过  → 全功能体验
-//   ?uid=u2          = pending  · 手机 KYC0  → 未提交，触发 KYC 流程门控
-//   ?uid=u3          = pep      · 手机 KYC1  → 已提交待审核（REQUIRES_ACTION 桶）
+//   ?uid=u2          = pending  · 邮箱 KYC0  → 未提交，触发 KYC 流程门控
+//   ?uid=u3          = pep      · 邮箱+人脸 KYC1  → 已提交待审核（REQUIRES_ACTION 桶）
 // 真实接入时此函数替换为宿主 token → 会话接口（见 docs/嵌入集团APP集成方案.md §身份契约）
 function getUidAccount() {
   const uid = new URLSearchParams(window.location.search).get('uid');
@@ -31,7 +31,7 @@ const MINE_TAB_PATHS = new Set([
   'profile',
   'kyc-start', 'kyc-id-upload', 'kyc-address-proof', 'kyc-submitted', 'kyc-pi', 'pi-submitted',
   'security-center', 'notifications', 'support', 'settings', 'help', 'about',
-  'bind-phone', 'change-email',
+  'change-email',
 ]);
 
 export default function EmbedApp() {

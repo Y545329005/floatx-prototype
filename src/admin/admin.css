@@ -307,7 +307,7 @@
 }
 .admin-page-header-actions .text-muted { margin-right: var(--space-2); }
 
-/* 页头搜索框（主要功能入口：跨状态用户查询，姓名/手机/邮箱匹配） */
+/* 页头搜索框（主要功能入口：跨状态用户查询，姓名/邮箱/编号匹配） */
 .admin-search-wrap {
   display: flex;
   align-items: center;
@@ -941,10 +941,9 @@
 /* 列宽贴合内容（min = 内容最宽 + 边距）+ fr 弹性（fr ∝ min → 宽屏等比放大填满，2026-08-12 列宽原则） */
 .admin-table--kyc .admin-table-header,
 .admin-table--kyc .admin-table-row {
-  grid-template-columns: minmax(90px, 9fr) minmax(96px, 10fr) minmax(116px, 12fr) minmax(170px, 17fr) minmax(88px, 9fr) minmax(64px, 7fr);
+  grid-template-columns: minmax(90px, 9fr) minmax(96px, 10fr) minmax(170px, 17fr) minmax(88px, 9fr) minmax(64px, 7fr);
 }
-.admin-table--kyc .col-doc,
-.admin-table--kyc .col-phone {
+.admin-table--kyc .col-doc {
   display: flex;
   align-items: center;
   color: var(--text-secondary);
@@ -956,10 +955,9 @@
 /* PI 认证审核（2026-08-14 独立 PI 审核流）：申请人/资格类型/联系方式/提交时间/状态/操作 6 列 */
 .admin-table--pi .admin-table-header,
 .admin-table--pi .admin-table-row {
-  grid-template-columns: minmax(90px, 9fr) minmax(100px, 10fr) minmax(116px, 12fr) minmax(170px, 17fr) minmax(88px, 9fr) minmax(64px, 7fr);
+  grid-template-columns: minmax(90px, 9fr) minmax(100px, 10fr) minmax(170px, 17fr) minmax(88px, 9fr) minmax(64px, 7fr);
 }
-.admin-table--pi .col-type,
-.admin-table--pi .col-phone {
+.admin-table--pi .col-type {
   display: flex;
   align-items: center;
   color: var(--text-secondary);
@@ -2269,7 +2267,7 @@
 /* 列模板：minmax(贴合, fr) 弹性（fr ∝ min 等比放大填满容器，2026-08-12 列宽原则） */
 .admin-table--users .admin-table-header,
 .admin-table--users .admin-table-row {
-  grid-template-columns: minmax(150px, 15fr) minmax(112px, 11fr) minmax(80px, 8fr) minmax(80px, 8fr) minmax(82px, 8fr) minmax(104px, 10fr) minmax(70px, 7fr) minmax(64px, 6fr);
+  grid-template-columns: minmax(150px, 15fr) minmax(112px, 11fr) minmax(80px, 8fr) minmax(82px, 8fr) minmax(104px, 10fr) minmax(70px, 7fr) minmax(64px, 6fr);
   gap: 16px;
 }
 .admin-table--users .col-name strong { font-size: var(--text-lg); font-weight: 700; }
@@ -2280,7 +2278,6 @@
   font-weight: 400;
   margin-top: 2px;
 }
-.admin-table--users .col-phone,
 .admin-table--users .col-mgr,
 .admin-table--users .col-biz { color: var(--text-secondary); }
 .admin-table--users .col-kyc,
@@ -2483,7 +2480,7 @@
 /* 列模板：minmax(贴合, fr) 弹性（fr ∝ min 等比放大填满容器，2026-08-12 列宽原则）
    单容器 header（header 容器即网格行，直接放 span，与 .admin-table-row 同构——2026-08-14 对齐修复：
    此前双容器结构（header→header-row→span）导致 header-row 被塞进容器第 1 列、列退回 min 值且起点右移 18px）
-   2026-08-14 方案 A：账号绑定邮箱（必填，找回/通知/审计唯一化）+ 手机（选填，2FA 预留）→ 5 列加"绑定邮箱"列变 6 列 */
+   2026-08-14 方案 A：账号绑定邮箱（必填，找回/通知/审计唯一化）→ 5 列加"绑定邮箱"列变 6 列 */
 .admin-table--admins .admin-table-header,
 .admin-table--admins .admin-table-row {
   grid-template-columns: minmax(110px, 11fr) minmax(110px, 11fr) minmax(170px, 17fr) minmax(110px, 11fr) minmax(72px, 7fr) minmax(64px, 6fr);
