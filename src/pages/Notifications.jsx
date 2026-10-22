@@ -6,14 +6,14 @@ import { useLang } from '../i18n';
 // 2026-10-16 口径修订：资金与 SPV 签署全线下——wallet（资金）分类随钱包账本摘除，
 // 通知只保留 申购/活动/服务 三类
 const typeMeta = {
-  subscription: { labelKey: '申购', icon: ClipboardList, cls: 'sub' },
+  subscription: { labelKey: '问卷', icon: ClipboardList, cls: 'sub' },
   event: { labelKey: '活动', icon: Calendar, cls: 'event' },
   service: { labelKey: '服务', icon: Headphones, cls: 'service' },
 };
 
 const tabs = [
   { key: 'all', labelKey: '全部' },
-  { key: 'subscription', labelKey: '申购' },
+  { key: 'subscription', labelKey: '问卷' },
   { key: 'event', labelKey: '活动' },
   { key: 'service', labelKey: '服务' },
 ];

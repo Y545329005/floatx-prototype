@@ -385,7 +385,7 @@ export default function SecurityCenter({ navigate, goBack, setToast, setIsLogged
             </div>
             <div className="emergency-risk">
               <AlertTriangle size={26} />
-              <p>{t('注销后，您的账户信息、身份认证资料与平台数据将被永久删除且不可恢复。进行中的申购与未到期份额需先行处理。')}</p>
+              <p>{t('注销后，您的账户信息、身份认证资料与平台数据将被永久删除且不可恢复。进行中的问卷与未办结事项需先行处理。')}</p>
             </div>
             <div className="emergency-risk-actions">
               <button className="btn btn-secondary" onClick={() => setDeleteRisk(false)}>{t('取消')}</button>

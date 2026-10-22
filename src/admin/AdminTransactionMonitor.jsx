@@ -12,7 +12,7 @@ const AML_FLAG_LABELS = {
   frequent_exit: { label: '频繁退出', className: 'aml-flag-danger' },
 };
 
-const typeLabels = { deposit: '充值', withdraw: '提现', subscription: '申购', exchange: '换汇', exit: '退出' };
+const typeLabels = { deposit: '充值', withdraw: '提现', subscription: '问卷', exchange: '换汇', exit: '退出' };
 
 // 大额交易阈值（HKD）
 const LARGE_AMOUNT_THRESHOLD = 500000;
@@ -30,7 +30,7 @@ const TX_FILTERS = [
   { key: 'all', label: '全部' },
   { key: 'deposit', label: '充值' },
   { key: 'withdraw', label: '提现' },
-  { key: 'subscription', label: '申购' },
+  { key: 'subscription', label: '问卷' },
   { key: 'exchange', label: '换汇' },
   { key: 'exit', label: '退出' },
 ];

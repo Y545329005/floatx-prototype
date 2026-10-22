@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>旗艦私募股權資管 | HighBlock Securities Limited</title>
+<meta name="description" content="HighBlock Securities Limited 提供私募股權資訊與諮詢服務。香港證監會第 1、4、9 類持牌機構 · SFC NO: BWW124。僅供專業投資者。">
+<meta name="robots" content="index,follow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23165DFF'/%3E%3Ctext x='16' y='23' font-family='Arial' font-size='19' font-weight='700' fill='%23fff' text-anchor='middle'%3EH%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<script src="https://cdn.tailwindcss.com/3.4.16"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        ink: '#0a0e17',
+        ink2: '#0f1524',
+        ink3: '#151d30',
+        cold: '#165DFF',
+        coldlt: '#4d8bff',
+        gold: '#c9a87c',
+        goldlt: '#e0c9a3',
+        grey: '#8b93a3',
+        greydk: '#5b6474'
+      },
+      fontFamily: {
+        sans: ['Manrope', '-apple-system', 'BlinkMacSystemFont', 'PingFang HK', 'PingFang TC', 'Microsoft JhengHei', 'Segoe UI', 'sans-serif']
+      }
+    }
+  }
+}
+</script>
+<style>
+  html { scroll-behavior: smooth; }
+  body { background: #0a0e17; }
+  ::selection { background: #165DFF; color: #fff; }
+  .nav-glass { background: transparent; border-bottom-color: transparent; }
+  .nav-solid { background: rgba(10,14,23,.82); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom-color: rgba(255,255,255,.07); }
+  .faq-body { max-height: 0; overflow: hidden; transition: max-height .35s cubic-bezier(.4,0,.2,1); }
+  .faq-item.open .faq-body { max-height: 400px; }
+  .faq-item.open .faq-icon { transform: rotate(45deg); color: #c9a87c; }
+  .img-mask { position: relative; overflow: hidden; }
+  .img-mask::after { content: ""; position: absolute; inset: 0; background: linear-gradient(160deg, rgba(22,93,255,.20) 0%, rgba(10,14,23,.55) 60%, rgba(10,14,23,.85) 100%); pointer-events: none; }
+  .img-mask img { transition: transform .6s cubic-bezier(.4,0,.2,1); }
+  .img-mask:hover img { transform: scale(1.06); }
+  .card-edge { position: relative; }
+  .card-edge::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; background: linear-gradient(150deg, rgba(201,168,124,.45), rgba(22,93,255,.28) 45%, transparent 70%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; opacity: 0; transition: opacity .35s; }
+  .card-edge:hover::before { opacity: 1; }
+  .num-glow { text-shadow: 0 0 60px rgba(22,93,255,.35); }
+  .gold-rule { background: linear-gradient(90deg, transparent, #c9a87c, transparent); }
+  .hero-glow-a { background: radial-gradient(circle, rgba(22,93,255,.30) 0%, transparent 62%); }
+  .hero-glow-b { background: radial-gradient(circle, rgba(201,168,124,.16) 0%, transparent 65%); }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+  .fade-up { animation: fadeUp .8s cubic-bezier(.22,.61,.36,1) both; }
+</style>
+</head>
+<body class="bg-ink font-sans text-white antialiased overflow-x-hidden">
+
+<header id="nav" class="nav-glass fixed top-0 inset-x-0 z-50 border-b transition-all duration-300">
+  <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
+    <div class="flex h-[68px] lg:h-20 items-center justify-between">
+      <a href="#top" class="flex items-center gap-3">
+        <span class="grid h-10 w-10 place-items-center rounded-[10px] bg-gradient-to-br from-cold to-[#0b2f9e] text-white font-extrabold text-[17px] shadow-lg shadow-cold/25">H</span>
+        <span class="leading-none">
+          <span class="block text-[15px] font-extrabold tracking-tight text-white">HighBlock</span>
+          <span class="mt-1 block text-[9px] font-bold tracking-[0.2em] text-grey/70">SECURITIES LIMITED</span>
+        </span>
+      </a>
+
+      <nav class="hidden lg:flex items-center gap-9">
+        <a href="#advantages" class="text-[13.5px] font-semibold text-grey hover:text-white transition-colors">核心優勢</a>
+        <a href="#solution" class="text-[13.5px] font-semibold text-grey hover:text-white transition-colors">產品方案</a>
+        <a href="#compliance" class="text-[13.5px] font-semibold text-grey hover:text-white transition-colors">合規安全</a>
+        <a href="#faq" class="text-[13.5px] font-semibold text-grey hover:text-white transition-colors">常見問題</a>
+      </nav>
+
+      <div class="hidden lg:flex items-center gap-3">
+        <a href="#contact" class="rounded-lg px-4 py-2.5 text-[13.5px] font-bold text-white/85 hover:text-white transition-colors">登錄</a>
+        <a href="#contact" class="rounded-lg bg-gradient-to-r from-cold to-[#0f45d6] px-5 py-2.5 text-[13.5px] font-bold text-white shadow-lg shadow-cold/30 hover:shadow-cold/50 hover:-translate-y-0.5 transition-all">申請體驗</a>
+      </div>
+
+      <button id="menuBtn" onclick="toggleMenu()" class="lg:hidden grid h-11 w-11 place-items-center rounded-lg border border-white/10 bg-white/5 text-white" aria-label="選單">
+        <i class="fa-solid fa-bars text-[17px]"></i>
+      </button>
+    </div>
+  </div>
+
+  <div id="mobileMenu" class="lg:hidden hidden border-t border-white/8 bg-ink/95 backdrop-blur-xl">
+    <div class="px-5 py-5 space-y-1">
+      <a href="#advantages" onclick="closeMenu()" class="block rounded-lg px-4 py-3 text-[15px] font-semibold text-grey hover:bg-white/5 hover:text-white transition-colors">核心優勢</a>
+      <a href="#solution" onclick="closeMenu()" class="block rounded-lg px-4 py-3 text-[15px] font-semibold text-grey hover:bg-white/5 hover:text-white transition-colors">產品方案</a>
+      <a href="#compliance" onclick="closeMenu()" class="block rounded-lg px-4 py-3 text-[15px] font-semibold text-grey hover:bg-white/5 hover:text-white transition-colors">合規安全</a>
+      <a href="#faq" onclick="closeMenu()" class="block rounded-lg px-4 py-3 text-[15px] font-semibold text-grey hover:bg-white/5 hover:text-white transition-colors">常見問題</a>
+      <div class="pt-3 flex gap-3">
+        <a href="#contact" onclick="closeMenu()" class="flex-1 rounded-lg border border-white/12 px-4 py-3 text-center text-[14px] font-bold text-white/85">登錄</a>
+        <a href="#contact" onclick="closeMenu()" class="flex-1 rounded-lg bg-cold px-4 py-3 text-center text-[14px] font-bold text-white shadow-lg shadow-cold/30">申請體驗</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="top" class="relative min-h-[100svh] flex items-center overflow-hidden pt-24 pb-16">
+  <canvas id="particles" class="absolute inset-0 h-full w-full"></canvas>
+  <div class="hero-glow-a pointer-events-none absolute -top-[18%] -left-[12%] h-[560px] w-[560px] rounded-full blur-[90px]"></div>
+  <div class="hero-glow-b pointer-events-none absolute top-[22%] right-[6%] h-[460px] w-[460px] rounded-full blur-[100px]"></div>
+  <div class="pointer-events-none absolute inset-x-0 top-[38%] h-px gold-rule opacity-40"></div>
+
+  <div class="relative z-10 mx-auto max-w-7xl px-5 sm:px-8 lg:px-12 w-full">
+    <div class="max-w-3xl">
+      <div class="fade-up inline-flex items-center gap-2.5 rounded-full border border-gold/30 bg-gold/8 px-4 py-2">
+        <span class="h-1.5 w-1.5 rounded-full bg-gold"></span>
+        <span class="text-[11.5px] font-bold tracking-[0.16em] text-goldlt">香港證券及期貨條例 · 專業投資者專屬</span>
+      </div>
+
+      <h1 class="fade-up mt-8 text-[38px] leading-[1.08] font-extrabold tracking-[-0.03em] text-white sm:text-5xl lg:text-[68px]" style="animation-delay:.08s">
+        旗艦私募股權<br><span class="bg-gradient-to-r from-white via-white to-grey bg-clip-text text-transparent">資管</span>
+      </h1>
+
+      <p class="fade-up mt-7 max-w-xl text-[16px] leading-[1.75] text-grey sm:text-[17px]" style="animation-delay:.16s">
+        專注大中華區成長期科技企業的股權資訊平台。以持牌資管能力、透明的盡職流程與長週期資本，為專業投資者提供私募股權的資訊與諮詢服務。
+      </p>
+
+      <div class="fade-up mt-10 flex flex-col gap-3.5 sm:flex-row sm:items-center" style="animation-delay:.24s">
+        <a href="#solution" class="group inline-flex items-center justify-center gap-2.5 rounded-xl bg-white px-7 py-4 text-[15px] font-extrabold text-ink shadow-2xl shadow-black/40 hover:-translate-y-0.5 hover:shadow-cold/30 transition-all">
+          立即了解
+          <i class="fa-solid fa-arrow-right text-[13px] text-cold transition-transform group-hover:translate-x-1"></i>
+        </a>
+        <a href="#contact" class="inline-flex items-center justify-center gap-2.5 rounded-xl border border-white/15 bg-white/5 px-7 py-4 text-[15px] font-bold text-white backdrop-blur-sm hover:border-gold/45 hover:bg-gold/10 hover:-translate-y-0.5 transition-all">
+          <i class="fa-regular fa-calendar text-[13px] text-gold"></i>
+          預約演示
+        </a>
+      </div>
+
+      <div class="fade-up mt-14 grid max-w-lg grid-cols-1 gap-6 border-t border-white/8 pt-8 sm:grid-cols-3" style="animation-delay:.32s">
+        <div>
+          <div class="text-[11px] font-bold tracking-[0.14em] text-greydk">營運主體</div>
+          <div class="mt-1.5 text-[13px] font-bold text-white/90">HighBlock Securities Limited</div>
+        </div>
+        <div>
+          <div class="text-[11px] font-bold tracking-[0.14em] text-greydk">持牌範圍</div>
+          <div class="mt-1.5 text-[13px] font-bold text-white/90">證監會第 1、4、9 類牌照</div>
+        </div>
+        <div>
+          <div class="text-[11px] font-bold tracking-[0.14em] text-greydk">牌照編號</div>
+          <div class="mt-1.5 text-[13px] font-bold text-white/90">SFC NO: BWW124</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="advantages" class="relative border-t border-white/6 bg-ink py-20 lg:py-28">
+  <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <div class="flex items-center gap-3">
+          <span class="h-px w-8 bg-gold"></span>
+          <span class="text-[11px] font-bold tracking-[0.2em] text-gold">核心優勢</span>
+        </div>
+        <h2 class="mt-5 text-[30px] font-extrabold tracking-[-0.02em] text-white lg:text-[44px]">為專業投資者而設</h2>
+      </div>
+      <p class="max-w-md text-[14.5px] leading-[1.75] text-grey lg:text-right">四項能力構成私募股權配置的基礎設施：持牌主體、策略專注、期限對位與投資者適格性。</p>
+    </div>
+
+    <div class="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="card-edge group flex flex-col overflow-hidden rounded-2xl border border-white/8 bg-ink2 shadow-xl shadow-black/30 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-cold/20">
+        <div class="img-mask h-40">
+          <img src="https://picsum.photos/id/1059/800/500" alt="持牌監管框架" class="h-full w-full object-cover" loading="lazy" onerror="this.style.display='none'">
+        </div>
+        <div class="flex flex-1 flex-col p-6">
+          <span class="grid h-11 w-11 place-items-center rounded-xl bg-cold/12 text-cold transition-colors group-hover:bg-cold group-hover:text-white"><i class="fa-solid fa-shield-halved text-[16px]"></i></span>
+          <h3 class="mt-5 text-[17px] font-extrabold tracking-tight text-white">持牌監管框架</h3>
+          <p class="mt-3 text-[13.5px] leading-[1.7] text-grey">香港證監會第 1、4、9 類持牌機構營運，覆蓋證券交易、投資意見與資產管理。</p>
+        </div>
+      </div>
+
+      <div class="card-edge group flex flex-col overflow-hidden rounded-2xl border border-white/8 bg-ink2 shadow-xl shadow-black/30 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-cold/20">
+        <div class="img-mask h-40">
+          <img src="https://picsum.photos/id/180/800/500" alt="專注成長期股權" class="h-full w-full object-cover" loading="lazy" onerror="this.style.display='none'">
+        </div>
+        <div class="flex flex-1 flex-col p-6">
+          <span class="grid h-11 w-11 place-items-center rounded-xl bg-cold/12 text-cold transition-colors group-hover:bg-cold group-hover:text-white"><i class="fa-solid fa-chart-line text-[16px]"></i></span>
+          <h3 class="mt-5 text-[17px] font-extrabold tracking-tight text-white">專注成長期股權</h3>
+          <p class="mt-3 text-[13.5px] leading-[1.7] text-grey">聚焦 Pre-A 至 C 輪的成長期企業，以股權及類股權工具直接持有，不做槓桿。</p>
+        </div>
+      </div>
+
+      <div class="card-edge group flex flex-col overflow-hidden rounded-2xl border border-white/8 bg-ink2 shadow-xl shadow-black/30 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-cold/20">
+        <div class="img-mask h-40">
+          <img src="https://picsum.photos/id/11/800/500" alt="長週期資本對位" class="h-full w-full object-cover" loading="lazy" onerror="this.style.display='none'">
+        </div>
+        <div class="flex flex-1 flex-col p-6">
+          <span class="grid h-11 w-11 place-items-center rounded-xl bg-cold/12 text-cold transition-colors group-hover:bg-cold group-hover:text-white"><i class="fa-solid fa-hourglass-half text-[16px]"></i></span>
+          <h3 class="mt-5 text-[17px] font-extrabold tracking-tight text-white">長週期資本對位</h3>
+          <p class="mt-3 text-[13.5px] leading-[1.7] text-grey">不設公開交易市場與短期贖回機制，資金期限與項目退出週期對接。</p>
+        </div>
+      </div>
+
+      <div class="card-edge group flex flex-col overflow-hidden rounded-2xl border border-white/8 bg-ink2 shadow-xl shadow-black/30 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-cold/20">
+        <div class="img-mask h-40">
+          <img src="https://picsum.photos/id/1005/800/500" alt="專業投資者專屬" class="h-full w-full object-cover" loading="lazy" onerror="this.style.display='none'">
+        </div>
+        <div class="flex flex-1 flex-col p-6">
+          <span class="grid h-11 w-11 place-items-center rounded-xl bg-cold/12 text-cold transition-colors group-hover:bg-cold group-hover:text-white"><i class="fa-solid fa-user-tie text-[16px]"></i></span>
+          <h3 class="mt-5 text-[17px] font-extrabold tracking-tight text-white">專業投資者專屬</h3>
+          <p class="mt-3 text-[13.5px] leading-[1.7] text-grey">依《證券及期貨條例》附表 1 第 1 條定義，個人須持有不少於 HK$8,000,000 投資組合。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="relative overflow-hidden border-y border-white/6 bg-gradient-to-b from-cold/8 via-ink2 to-ink py-16 lg:py-20">
+  <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
+    <div class="grid grid-cols-2 gap-x-6 gap-y-10 lg:grid-cols-4">
+      <div class="text-center lg:text-left">
+        <div class="num-glow text-[36px] font-extrabold leading-none tracking-[-0.03em] text-white lg:text-[52px]">1/4/9</div>
+        <div class="mt-3 text-[11px] font-bold tracking-[0.14em] text-gold">證監會持牌類別</div>
+        <p class="mt-2 text-[12.5px] leading-relaxed text-grey">證券交易 · 就證券提供意見 · 資產管理</p>
+      </div>
+      <div class="text-center lg:text-left">
+        <div class="num-glow text-[36px] font-extrabold leading-none tracking-[-0.03em] text-white lg:text-[52px]">HK$8M</div>
+        <div class="mt-3 text-[11px] font-bold tracking-[0.14em] text-gold">個人投資者門檻</div>
+        <p class="mt-2 text-[12.5px] leading-relaxed text-grey">專業投資者資格認定標準</p>
+      </div>
+      <div class="text-center lg:text-left">
+        <div class="num-glow text-[36px] font-extrabold leading-none tracking-[-0.03em] text-white lg:text-[52px]">Pre-A–C</div>
+        <div class="mt-3 text-[11px] font-bold tracking-[0.14em] text-gold">覆蓋投資階段</div>
+        <p class="mt-2 text-[12.5px] leading-relaxed text-grey">成長期股權專注策略</p>
+      </div>
+      <div class="text-center lg:text-left">
+        <div class="num-glow text-[36px] font-extrabold leading-none tracking-[-0.03em] text-white lg:text-[52px]">5</div>
+        <div class="mt-3 text-[11px] font-bold tracking-[0.14em] text-gold">風險披露條目</div>
+        <p class="mt-2 text-[12.5px] leading-relaxed text-grey">投資前完整風險提示</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="solution" class="relative bg-ink py-20 lg:py-28">
+  <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
+    <div class="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+      <div>
+        <div class="flex items-center gap-3">
+          <span class="h-px w-8 bg-gold"></span>
+          <span class="text-[11px] font-bold tracking-[0.2em] text-gold">產品方案</span>
+        </div>
+        <h2 class="mt-5 text-[30px] font-extrabold leading-[1.15] tracking-[-0.02em] text-white lg:text-[42px]">以項目級持有架構<br>打造的成長期股權策略</h2>
+
+        <div class="mt-8 rounded-2xl border border-white/8 bg-gradient-to-br from-ink2 to-ink3 p-7 shadow-2xl shadow-black/40">
+          <div class="flex flex-wrap items-center gap-3">
+            <h3 class="text-[20px] font-extrabold tracking-tight text-white">旗艦私募股權方案</h3>
+            <span class="rounded-md border border-gold/35 bg-gold/10 px-2.5 py-1 text-[11px] font-bold text-goldlt">專業投資者專屬</span>
+            <span class="rounded-md border border-cold/35 bg-cold/10 px-2.5 py-1 text-[11px] font-bold text-coldlt">有限認購期</span>
+          </div>
+          <p class="mt-4 text-[14px] leading-[1.8] text-grey">以大中華科技與消費賽道為主軸的成長期股權策略，透過項目級持有架構持有項目股權，存續期內按項目退出進度分派。不設公開交易市場與短期贖回機制，資金期限與項目退出週期對接。</p>
+
+          <div class="mt-7 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-white/8 bg-white/8">
+            <div class="bg-ink2 p-4">
+              <div class="text-[10.5px] font-bold tracking-[0.12em] text-greydk">投資階段</div>
+              <div class="mt-1.5 text-[14px] font-bold text-white">Pre-A 至 C 輪</div>
+            </div>
+            <div class="bg-ink2 p-4">
+              <div class="text-[10.5px] font-bold tracking-[0.12em] text-greydk">投資主軸</div>
+              <div class="mt-1.5 text-[14px] font-bold text-white">科技 · 消費</div>
+            </div>
+            <div class="bg-ink2 p-4">
+              <div class="text-[10.5px] font-bold tracking-[0.12em] text-greydk">持有架構</div>
+              <div class="mt-1.5 text-[14px] font-bold text-white">項目級別離安排</div>
+            </div>
+            <div class="bg-ink2 p-4">
+              <div class="text-[10.5px] font-bold tracking-[0.12em] text-greydk">存續期</div>
+              <div class="mt-1.5 text-[14px] font-bold text-white">另行通知 <span class="text-[11.5px] font-medium text-greydk">· 見發售文件</span></div>
+            </div>
+          </div>
+
+          <a href="mailto:partners@highblockgroup.com?subject=%E6%97%97%E8%BC%BF%E7%A7%81%E5%8B%9F%E8%82%A1%E6%AC%8A%E6%96%B9%E6%A1%88%E5%AF%A9%E8%AB%A2" class="mt-7 inline-flex items-center gap-2.5 rounded-xl bg-gradient-to-r from-cold to-[#0f45d6] px-6 py-3.5 text-[14.5px] font-bold text-white shadow-lg shadow-cold/30 hover:shadow-cold/50 hover:-translate-y-0.5 transition-all">
+          預約諮詢
+          <i class="fa-solid fa-arrow-right text-[12px]"></i>
+        </a>
+      </div>
+
+      <div class="rounded-2xl border border-white/8 bg-ink2 p-6 shadow-2xl shadow-black/40">
+        <div class="flex items-center gap-2.5 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 w-fit">
+          <span class="h-1.5 w-1.5 rounded-full bg-coldlt"></span>
+          <span class="text-[10.5px] font-bold tracking-[0.14em] text-grey">APP 界面</span>
+        </div>
+        <div class="mx-auto mt-5 w-full max-w-[290px] overflow-hidden rounded-[30px] border border-white/10 bg-white shadow-2xl shadow-cold/20">
+          <img src="assets/app-projects.jpg" alt="HighBlock APP 項目市場頁" class="block w-full" loading="lazy" onerror="this.style.display='none'">
+        </div>
+        <div class="mt-6 space-y-2.5">
+          <a href="https://apps.apple.com/hk/search?term=HighBlock" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3.5 rounded-xl border border-white/10 bg-white/4 px-4 py-3.5 transition-all hover:border-cold/45 hover:bg-cold/10">
+            <i class="fa-brands fa-apple w-5 text-center text-[19px] text-white"></i>
+            <span>
+              <span class="block text-[13.5px] font-bold text-white">App Store 下載</span>
+              <span class="block text-[11px] text-greydk">iPhone · iOS 16 以上</span>
+            </span>
+          </a>
+          <a href="https://play.google.com/store/search?q=HighBlock&amp;c=apps" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3.5 rounded-xl border border-white/10 bg-white/4 px-4 py-3.5 transition-all hover:border-cold/45 hover:bg-cold/10">
+            <i class="fa-brands fa-google-play w-5 text-center text-[17px] text-white"></i>
+            <span>
+              <span class="block text-[13.5px] font-bold text-white">Google Play 下載</span>
+              <span class="block text-[11px] text-greydk">Android · 8.0 以上</span>
+            </span>
+          </a>
+          <div class="flex items-center gap-4 rounded-xl border border-white/10 bg-white/4 p-4">
+            <span class="grid h-[62px] w-[62px] shrink-0 place-items-center overflow-hidden rounded-lg bg-white">
+              <img src="assets/qr-appstore.svg" alt="掃碼下載 HighBlock APP" class="h-full w-full" onerror="this.style.display='none'">
+            </span>
+            <span>
+              <span class="block text-[13px] font-bold text-white">掃碼下載 HighBlock APP</span>
+              <span class="mt-1 block text-[11.5px] leading-relaxed text-grey">開啟相機掃碼，或於商店搜尋「HighBlock」。僅香港地區提供。</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="compliance" class="relative border-t border-white/6 bg-ink2 py-20 lg:py-28">
+  <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <div class="flex items-center gap-3">
+          <span class="h-px w-8 bg-gold"></span>
+          <span class="text-[11px] font-bold tracking-[0.2em] text-gold">合規安全</span>
+        </div>
+        <h2 class="mt-5 text-[30px] font-extrabold tracking-[-0.02em] text-white lg:text-[44px]">信任建立在監管之上</h2>
+      </div>
+      <p class="max-w-md text-[14.5px] leading-[1.75] text-grey lg:text-right">從牌照到資金，四道保障貫穿投資全程。</p>
+    </div>
+
+    <div class="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="card-edge rounded-2xl border border-white/8 bg-ink p-6 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-cold/15">
+        <i class="fa-solid fa-award text-[20px] text-gold"></i>
+        <h3 class="mt-4 text-[15.5px] font-extrabold text-white">牌照信任</h3>
+        <p class="mt-2.5 text-[13px] leading-[1.7] text-grey">香港證監會第 1、4、9 類持牌機構，牌照資訊可於 SFC 公眾紀錄冊核驗。</p>
+      </div>
+      <div class="card-edge rounded-2xl border border-white/8 bg-ink p-6 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-cold/15">
+        <i class="fa-solid fa-magnifying-glass-chart text-[20px] text-gold"></i>
+        <h3 class="mt-4 text-[15.5px] font-extrabold text-white">風控體系</h3>
+        <p class="mt-2.5 text-[13px] leading-[1.7] text-grey">項目盡職調查、投資決策審批與投後管理全流程覆蓋，留痕可審計。</p>
+      </div>
+      <div class="card-edge rounded-2xl border border-white/8 bg-ink p-6 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-cold/15">
+        <i class="fa-solid fa-id-card text-[20px] text-gold"></i>
+        <h3 class="mt-4 text-[15.5px] font-extrabold text-white">KYC 與 PI 合規</h3>
+        <p class="mt-2.5 text-[13px] leading-[1.7] text-grey">實名核驗、專業投資者資格審核與反洗錢篩查，參與前必須完成。</p>
+      </div>
+      <div class="card-edge rounded-2xl border border-white/8 bg-ink p-6 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-cold/15">
+        <i class="fa-solid fa-vault text-[20px] text-gold"></i>
+        <h3 class="mt-4 text-[15.5px] font-extrabold text-white">資金安全</h3>
+        <p class="mt-2.5 text-[13px] leading-[1.7] text-grey">資金往來透過持牌機構獨立管理，與平台自有資金分離核算。</p>
+      </div>
+    </div>
+
+    <div class="mt-12 overflow-hidden rounded-2xl border border-gold/20 bg-ink">
+      <div class="flex items-center gap-3 border-b border-gold/20 bg-gold/8 px-6 py-4">
+        <i class="fa-solid fa-triangle-exclamation text-[15px] text-gold"></i>
+        <h3 class="text-[15px] font-extrabold text-goldlt">風險披露與重要提示</h3>
+      </div>
+      <div class="divide-y divide-white/6">
+        <div class="grid gap-2 px-6 py-5 sm:grid-cols-[200px_1fr] sm:gap-6">
+          <div class="text-[13.5px] font-bold text-white">本金損失風險 <span class="ml-1.5 rounded border border-gold/40 bg-gold/12 px-1.5 py-0.5 text-[10px] font-bold text-gold">必讀</span></div>
+          <p class="text-[13px] leading-[1.8] text-grey">私募股權投資可能因項目經營失敗、市場環境變化或退出通道受限，導致部分或全部本金損失。過往業績不代表未來表現。</p>
+        </div>
+        <div class="grid gap-2 px-6 py-5 sm:grid-cols-[200px_1fr] sm:gap-6">
+          <div class="text-[13.5px] font-bold text-white">流動性與期限風險</div>
+          <p class="text-[13px] leading-[1.8] text-grey">私募基金份額無公開交易市場，投資期限通常為數年，可能無法在需要時提前退出或轉讓份額。</p>
+        </div>
+        <div class="grid gap-2 px-6 py-5 sm:grid-cols-[200px_1fr] sm:gap-6">
+          <div class="text-[13.5px] font-bold text-white">稀釋與分配風險</div>
+          <p class="text-[13px] leading-[1.8] text-grey">後續輪次融資可能稀釋投資者的權益；分紅取決於項目實際盈利與相關決策，不構成任何收益承諾。</p>
+        </div>
+        <div class="grid gap-2 px-6 py-5 sm:grid-cols-[200px_1fr] sm:gap-6">
+          <div class="text-[13.5px] font-bold text-white">監管保護差異</div>
+          <p class="text-[13px] leading-[1.8] text-grey">獲認定為專業投資者後，部分適用於零售投資者的監管保障（部分產品審慎性審查、披露要求及冷靜期安排）將不再適用。</p>
+        </div>
+        <div class="grid gap-2 px-6 py-5 sm:grid-cols-[200px_1fr] sm:gap-6">
+          <div class="text-[13.5px] font-bold text-white">不提供虛擬資產交易</div>
+          <p class="text-[13px] leading-[1.8] text-grey">本平台僅提供私募股權資訊及諮詢服務，不涉及任何虛擬資產交易或相關產品推介。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="faq" class="relative border-t border-white/6 bg-ink py-20 lg:py-28">
+  <div class="mx-auto max-w-4xl px-5 sm:px-8">
+    <div class="text-center">
+      <div class="inline-flex items-center gap-3">
+        <span class="h-px w-8 bg-gold"></span>
+        <span class="text-[11px] font-bold tracking-[0.2em] text-gold">常見問題</span>
+        <span class="h-px w-8 bg-gold"></span>
+      </div>
+      <h2 class="mt-5 text-[30px] font-extrabold tracking-[-0.02em] text-white lg:text-[44px]">投資者常問</h2>
+    </div>
+
+    <div class="mt-12 space-y-3">
+      <div class="faq-item overflow-hidden rounded-xl border border-white/8 bg-ink2 transition-colors hover:border-white/14">
+        <button onclick="toggleFaq(this)" class="flex w-full items-center justify-between gap-6 px-6 py-5 text-left">
+          <span class="text-[15px] font-bold text-white">提交申購意向會凍結資金嗎？</span>
+          <i class="fa-solid fa-plus faq-icon shrink-0 text-[14px] text-grey transition-transform duration-300"></i>
+        </button>
+        <div class="faq-body"><p class="px-6 pb-5 text-[13.5px] leading-[1.8] text-grey">不會。申購意向僅為興趣表達，不凍結任何資金。實際出資產生在與項目方協商並簽署相關文件之後。</p></div>
+      </div>
+
+      <div class="faq-item overflow-hidden rounded-xl border border-white/8 bg-ink2 transition-colors hover:border-white/14">
+        <button onclick="toggleFaq(this)" class="flex w-full items-center justify-between gap-6 px-6 py-5 text-left">
+          <span class="text-[15px] font-bold text-white">如何保證我的信息與資金安全？</span>
+          <i class="fa-solid fa-plus faq-icon shrink-0 text-[14px] text-grey transition-transform duration-300"></i>
+        </button>
+        <div class="faq-body"><p class="px-6 pb-5 text-[13.5px] leading-[1.8] text-grey">平台採用金融級數據加密，賬戶已開啟雙重驗證（2FA），資金託管於持牌機構，交易全程合規留痕。</p></div>
+      </div>
+
+      <div class="faq-item overflow-hidden rounded-xl border border-white/8 bg-ink2 transition-colors hover:border-white/14">
+        <button onclick="toggleFaq(this)" class="flex w-full items-center justify-between gap-6 px-6 py-5 text-left">
+          <span class="text-[15px] font-bold text-white">私募基金份額能否隨時退出？</span>
+          <i class="fa-solid fa-plus faq-icon shrink-0 text-[14px] text-grey transition-transform duration-300"></i>
+        </button>
+        <div class="faq-body"><p class="px-6 pb-5 text-[13.5px] leading-[1.8] text-grey">不能。私募基金份額無公開交易市場，投資期限通常為數年，可能無法在需要時提前退出或轉讓份額。</p></div>
+      </div>
+
+      <div class="faq-item overflow-hidden rounded-xl border border-white/8 bg-ink2 transition-colors hover:border-white/14">
+        <button onclick="toggleFaq(this)" class="flex w-full items-center justify-between gap-6 px-6 py-5 text-left">
+          <span class="text-[15px] font-bold text-white">如何聯繫我的專屬客戶經理？</span>
+          <i class="fa-solid fa-plus faq-icon shrink-0 text-[14px] text-grey transition-transform duration-300"></i>
+        </button>
+        <div class="faq-body"><p class="px-6 pb-5 text-[13.5px] leading-[1.8] text-grey">賬戶開通後，客戶經理的聯繫方式將顯示於 APP「我的」頁面，包括電話、郵箱與即時通訊。經理未回應時可轉在線客服。</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer id="contact" class="relative border-t border-white/8 bg-ink2 pt-16 pb-10">
+  <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
+    <div class="grid gap-10 lg:grid-cols-[1.4fr_1fr_1fr]">
+      <div>
+        <div class="flex items-center gap-3">
+          <span class="grid h-10 w-10 place-items-center rounded-[10px] bg-gradient-to-br from-cold to-[#0b2f9e] text-white font-extrabold text-[17px]">H</span>
+          <span class="text-[15px] font-extrabold tracking-tight text-white">HighBlock Securities Limited</span>
+        </div>
+        <p class="mt-5 max-w-sm text-[13px] leading-[1.8] text-grey">專注大中華區成長期科技企業的股權資訊平台，為專業投資者提供私募股權的資訊與諮詢服務。</p>
+        <div class="mt-6 space-y-2 text-[13px] text-grey">
+          <div class="flex items-center gap-3"><i class="fa-regular fa-envelope w-4 text-center text-gold"></i>partners@highblockgroup.com</div>
+          <div class="flex items-center gap-3"><i class="fa-solid fa-phone w-4 text-center text-gold"></i>+852 3568 8888</div>
+        </div>
+      </div>
+
+      <div>
+        <h4 class="text-[12px] font-bold tracking-[0.16em] text-gold">網站地圖</h4>
+        <ul class="mt-5 space-y-3 text-[13.5px]">
+          <li><a href="#advantages" class="text-grey hover:text-white transition-colors">核心優勢</a></li>
+          <li><a href="#solution" class="text-grey hover:text-white transition-colors">產品方案</a></li>
+          <li><a href="#compliance" class="text-grey hover:text-white transition-colors">合規安全</a></li>
+          <li><a href="#faq" class="text-grey hover:text-white transition-colors">常見問題</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="text-[12px] font-bold tracking-[0.16em] text-gold">政策與條款</h4>
+        <ul class="mt-5 space-y-3 text-[13.5px]">
+          <li><a href="#compliance" class="text-grey hover:text-white transition-colors">風險披露聲明</a></li>
+          <li><a href="#compliance" class="text-grey hover:text-white transition-colors">隱私政策</a></li>
+          <li><a href="#compliance" class="text-grey hover:text-white transition-colors">用戶協議</a></li>
+          <li><span class="text-greydk text-[12.5px]">完整文件請於 APP「我的 → 關於」內查閱</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="mt-12 h-px gold-rule opacity-40"></div>
+
+    <div class="mt-8 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+      <div class="text-[12px] leading-relaxed text-greydk">
+        香港證監會第 1、4、9 類牌照（證券交易 · 就證券提供意見 · 資產管理）· SFC NO: BWW124<br>
+        © 2026 HighBlock Securities Limited. All rights reserved.
+      </div>
+      <div class="text-[12px] leading-relaxed text-greydk lg:text-right">
+        本頁僅供專業投資者參考，不構成任何投資要約、招攬或收益承諾。
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const nav = document.getElementById('nav');
+  const onScroll = () => {
+    if (window.scrollY > 40) { nav.classList.remove('nav-glass'); nav.classList.add('nav-solid'); }
+    else { nav.classList.add('nav-glass'); nav.classList.remove('nav-solid'); }
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  function toggleMenu() {
+    const m = document.getElementById('mobileMenu');
+    m.classList.toggle('hidden');
+  }
+  function closeMenu() {
+    document.getElementById('mobileMenu').classList.add('hidden');
+  }
+
+  function toggleFaq(btn) {
+    const item = btn.parentElement;
+    const wasOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item').forEach(el => el.classList.remove('open'));
+    if (!wasOpen) item.classList.add('open');
+  }
+
+  const canvas = document.getElementById('particles');
+  const ctx = canvas.getContext('2d');
+  let dots = [];
+  function initParticles() {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = canvas.offsetWidth * dpr;
+    canvas.height = canvas.offsetHeight * dpr;
+    ctx.scale(dpr, dpr);
+    const count = Math.min(38, Math.floor(canvas.offsetWidth / 34));
+    dots = Array.from({ length: count }, () => ({
+      x: Math.random() * canvas.offsetWidth,
+      y: Math.random() * canvas.offsetHeight,
+      r: Math.random() * 1.6 + .4,
+      vx: (Math.random() - .5) * .18,
+      vy: (Math.random() - .5) * .18,
+      a: Math.random() * .12 + .04
+    }));
+  }
+  function drawParticles() {
+    ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
+    dots.forEach(d => {
+      d.x += d.vx; d.y += d.vy;
+      if (d.x < 0 || d.x > canvas.offsetWidth) d.vx *= -1;
+      if (d.y < 0 || d.y > canvas.offsetHeight) d.vy *= -1;
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(22,93,255,' + d.a + ')';
+      ctx.fill();
+    });
+    requestAnimationFrame(drawParticles);
+  }
+  initParticles();
+  drawParticles();
+  window.addEventListener('resize', initParticles);
+</script>
+</body>
+</html>

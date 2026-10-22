@@ -25,7 +25,7 @@ export default function PISubmitted({ navigate, goBack }) {
           </div>
           <div className="kyc-success-title">{t('PI 认证已通过')}</div>
           <div className="kyc-success-desc">
-            {t('您已获得专业投资者资格，可参与平台的稀缺份额申购。')}
+            {t('您已获得专业投资者资格，可使用平台的项目资讯与咨询服务。')}
           </div>
           {pi.expiresAt && (
             <div className="kyc-reject-reason" style={{ background: 'var(--bg)', borderColor: 'var(--border-light)' }}>
@@ -35,7 +35,7 @@ export default function PISubmitted({ navigate, goBack }) {
           )}
           <div className="kyc-actions-inline">
             <button className="kyc-btn kyc-btn-primary" onClick={() => navigate('projects')}>
-              {t('去申购项目')}
+              {t('去看项目')}
             </button>
             <button
               className="kyc-btn kyc-btn-secondary"

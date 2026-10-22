@@ -47,7 +47,7 @@ const ASSET_CHECKLIST = [
 // professional 类型核验清单（持牌资质，同上判定语义）
 const PROF_CHECKLIST = [
   '申请人身份为香港证监会持牌人士或注册机构',
-  '持牌/注册资格在有效期内（CE No. 可查询）',
+  '持牌/注册资格在有效期内（SFC NO 可查询）',
 ];
 
 // 图片源：base64 对象或字符串路径
@@ -270,10 +270,10 @@ export default function AdminPI({ navigate, detailId, admin }) {
                 <div className="kyc-review-row"><span>声明版本</span><strong className="date-iso">{sel.piAgreementVersion || '—'}</strong></div>
                 <div className="kyc-review-row"><span>签署文件</span><strong>《专业投资者业务条款及风险披露声明书》 · 《私隐政策》 · 《专业投资者声明》</strong></div>
                 <div className="kyc-review-row"><span>提交时间</span><strong>{sel.submittedAt}</strong></div>
-                {/* 持牌信息（2026-09-20：professional 类型凭 CE No. 核验，审核员需见编号与机构；旧数据无此字段兜底 —） */}
+                {/* 持牌信息（2026-09-20：professional 类型凭 SFC 牌照编号核验，审核员需见编号与机构；旧数据无此字段兜底 —） */}
                 {sel.piType === 'professional' && (
                   <>
-                    <div className="kyc-review-row"><span>持牌编号（CE No.）</span><strong>{sel.piLicenseNo || '—'}</strong></div>
+                    <div className="kyc-review-row"><span>持牌编号（SFC NO）</span><strong>{sel.piLicenseNo || '—'}</strong></div>
                     <div className="kyc-review-row"><span>持牌机构</span><strong>{sel.piLicenseOrg || '—'}</strong></div>
                   </>
                 )}

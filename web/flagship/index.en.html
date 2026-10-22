@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flagship Private Equity | HighBlock Securities Limited</title>
+<meta name="description" content="Private equity information and advisory services by HighBlock Securities Limited. SFC Type 1/4/9 licensed · SFC NO: BWW124. For Professional Investors only.">
+<meta name="robots" content="index,follow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23165DFF'/%3E%3Ctext x='16' y='23' font-family='Arial' font-size='19' font-weight='700' fill='%23fff' text-anchor='middle'%3EH%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<script src="https://cdn.tailwindcss.com/3.4.16"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        ink: '#0a0e17',
+        ink2: '#0f1524',
+        ink3: '#151d30',
+        cold: '#165DFF',
+        coldlt: '#4d8bff',
+        gold: '#c9a87c',
+        goldlt: '#e0c9a3',
+        grey: '#8b93a3',
+        greydk: '#5b6474'
+      },
+      fontFamily: {
+        sans: ['Manrope', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif']
+      }
+    }
+  }
+}
+</script>
+<style>
+  html { scroll-behavior: smooth; }
+  body { background: #0a0e17; }
+  ::selection { background: #165DFF; color: #fff; }
+  .nav-glass { background: transparent; border-bottom-color: transparent; }
+  .nav-solid { background: rgba(10,14,23,.82); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom-color: rgba(255,255,255,.07); }
+  .faq-body { max-height: 0; overflow: hidden; transition: max-height .35s cubic-bezier(.4,0,.2,1); }
+  .faq-item.open .faq-body { max-height: 400px; }
+  .faq-item.open .faq-icon { transform: rotate(45deg); color: #c9a87c; }
+  .img-mask { position: relative; overflow: hidden; }
+  .img-mask::after { content: ""; position: absolute; inset: 0; background: linear-gradient(160deg, rgba(22,93,255,.20) 0%, rgba(10,14,23,.55) 60%, rgba(10,14,23,.85) 100%); pointer-events: none; }
+  .img-mask img { transition: transform .6s cubic-bezier(.4,0,.2,1); }
+  .img-mask:hover img { transform: scale(1.06); }
+  .card-edge { position: relative; }
+  .card-edge::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; background: linear-gradient(150deg, rgba(201,168,124,.45), rgba(22,93,255,.28) 45%, transparent 70%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; opacity: 0; transition: opacity .35s; }
+  .card-edge:hover::before { opacity: 1; }
+  .num-glow { text-shadow: 0 0 60px rgba(22,93,255,.35); }
+  .gold-rule { background: linear-gradient(90deg, transparent, #c9a87c, transparent); }
+  .hero-glow-a { background: radial-gradient(circle, rgba(22,93,255,.30) 0%, transparent 62%); }
+  .hero-glow-b { background: radial-gradient(circle, rgba(201,168,124,.16) 0%, transparent 65%); }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+  .fade-up { animation: fadeUp .8s cubic-bezier(.22,.61,.36,1) both; }
+</style>
+</head>
+<body class="bg-ink font-sans text-white antialiased overflow-x-hidden">
+
+<header id="nav" class="nav-glass fixed top-0 inset-x-0 z-50 border-b transition-all duration-300">
+  <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
+    <div class="flex h-[68px] lg:h-20 items-center justify-between">
+      <a href="#top" class="flex items-center gap-3">
+        <span class="grid h-10 w-10 place-items-center rounded-[10px] bg-gradient-to-br from-cold to-[#0b2f9e] text-white font-extrabold text-[17px] shadow-lg shadow-cold/25">H</span>
+        <span class="leading-none">
+          <span class="block text-[15px] font-extrabold tracking-tight text-white">HighBlock</span>
+          <span class="mt-1 block text-[9px] font-bold tracking-[0.2em] text-grey/70">SECURITIES LIMITED</span>
+        </span>
+      </a>
+
+      <nav class="hidden lg:flex items-center gap-9">
+        <a href="#advantages" class="text-[13.5px] font-semibold text-grey hover:text-white transition-colors">Advantages</a>
+        <a href="#solution" class="text-[13.5px] font-semibold text-grey hover:text-white transition-colors">Programme</a>
+        <a href="#compliance" class="text-[13.5px] font-semibold text-grey hover:text-white transition-colors">Compliance</a>
+        <a href="#faq" class="text-[13.5px] font-semibold text-grey hover:text-white transition-colors">FAQ</a>
+      </nav>
+
+      <div class="hidden lg:flex items-center gap-3">
+        <a href="#contact" class="rounded-lg px-4 py-2.5 text-[13.5px] font-bold text-white/85 hover:text-white transition-colors">Sign in</a>
+        <a href="#contact" class="rounded-lg bg-gradient-to-r from-cold to-[#0f45d6] px-5 py-2.5 text-[13.5px] font-bold text-white shadow-lg shadow-cold/30 hover:shadow-cold/50 hover:-translate-y-0.5 transition-all">Request access</a>
+      </div>
+
+      <button id="menuBtn" onclick="toggleMenu()" class="lg:hidden grid h-11 w-11 place-items-center rounded-lg border border-white/10 bg-white/5 text-white" aria-label="Menu">
+        <i class="fa-solid fa-bars text-[17px]"></i>
+      </button>
+    </div>
+  </div>
+
+  <div id="mobileMenu" class="lg:hidden hidden border-t border-white/8 bg-ink/95 backdrop-blur-xl">
+    <div class="px-5 py-5 space-y-1">
+      <a href="#advantages" onclick="closeMenu()" class="block rounded-lg px-4 py-3 text-[15px] font-semibold text-grey hover:bg-white/5 hover:text-white transition-colors">Advantages</a>
+      <a href="#solution" onclick="closeMenu()" class="block rounded-lg px-4 py-3 text-[15px] font-semibold text-grey hover:bg-white/5 hover:text-white transition-colors">Programme</a>
+      <a href="#compliance" onclick="closeMenu()" class="block rounded-lg px-4 py-3 text-[15px] font-semibold text-grey hover:bg-white/5 hover:text-white transition-colors">Compliance</a>
+      <a href="#faq" onclick="closeMenu()" class="block rounded-lg px-4 py-3 text-[15px] font-semibold text-grey hover:bg-white/5 hover:text-white transition-colors">FAQ</a>
+      <div class="pt-3 flex gap-3">
+        <a href="#contact" onclick="closeMenu()" class="flex-1 rounded-lg border border-white/12 px-4 py-3 text-center text-[14px] font-bold text-white/85">Sign in</a>
+        <a href="#contact" onclick="closeMenu()" class="flex-1 rounded-lg bg-cold px-4 py-3 text-center text-[14px] font-bold text-white shadow-lg shadow-cold/30">Request access</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="top" class="relative min-h-[100svh] flex items-center overflow-hidden pt-24 pb-16">
+  <canvas id="particles" class="absolute inset-0 h-full w-full"></canvas>
+  <div class="hero-glow-a pointer-events-none absolute -top-[18%] -left-[12%] h-[560px] w-[560px] rounded-full blur-[90px]"></div>
+  <div class="hero-glow-b pointer-events-none absolute top-[22%] right-[6%] h-[460px] w-[460px] rounded-full blur-[100px]"></div>
+  <div class="pointer-events-none absolute inset-x-0 top-[38%] h-px gold-rule opacity-40"></div>
+
+  <div class="relative z-10 mx-auto max-w-7xl px-5 sm:px-8 lg:px-12 w-full">
+    <div class="max-w-3xl">
+      <div class="fade-up inline-flex items-center gap-2.5 rounded-full border border-gold/30 bg-gold/8 px-4 py-2">
+        <span class="h-1.5 w-1.5 rounded-full bg-gold"></span>
+        <span class="text-[11.5px] font-bold tracking-[0.16em] text-goldlt">SFO Professional Investors only</span>
+      </div>
+
+      <h1 class="fade-up mt-8 text-[38px] leading-[1.08] font-extrabold tracking-[-0.03em] text-white sm:text-5xl lg:text-[68px]" style="animation-delay:.08s">
+        Flagship Private<br><span class="bg-gradient-to-r from-white via-white to-grey bg-clip-text text-transparent">Equity</span>
+      </h1>
+
+      <p class="fade-up mt-7 max-w-xl text-[16px] leading-[1.75] text-grey sm:text-[17px]" style="animation-delay:.16s">
+        An equity information platform focused on growth-stage technology companies in Greater China. Licensed asset management, a transparent due diligence process and long-term capital, providing professional investors with private equity information and advisory services.
+      </p>
+
+      <div class="fade-up mt-10 flex flex-col gap-3.5 sm:flex-row sm:items-center" style="animation-delay:.24s">
+        <a href="#solution" class="group inline-flex items-center justify-center gap-2.5 rounded-xl bg-white px-7 py-4 text-[15px] font-extrabold text-ink shadow-2xl shadow-black/40 hover:-translate-y-0.5 hover:shadow-cold/30 transition-all">
+          Learn more
+          <i class="fa-solid fa-arrow-right text-[13px] text-cold transition-transform group-hover:translate-x-1"></i>
+        </a>
+        <a href="#contact" class="inline-flex items-center justify-center gap-2.5 rounded-xl border border-white/15 bg-white/5 px-7 py-4 text-[15px] font-bold text-white backdrop-blur-sm hover:border-gold/45 hover:bg-gold/10 hover:-translate-y-0.5 transition-all">
+          <i class="fa-regular fa-calendar text-[13px] text-gold"></i>
+          Book a demo
+        </a>
+      </div>
+
+      <div class="fade-up mt-14 grid max-w-lg grid-cols-1 gap-6 border-t border-white/8 pt-8 sm:grid-cols-3" style="animation-delay:.32s">
+        <div>
+          <div class="text-[11px] font-bold tracking-[0.14em] text-greydk">OPERATING ENTITY</div>
+          <div class="mt-1.5 text-[13px] font-bold text-white/90">HighBlock Securities Limited</div>
+        </div>
+        <div>
+          <div class="text-[11px] font-bold tracking-[0.14em] text-greydk">LICENCE</div>
+          <div class="mt-1.5 text-[13px] font-bold text-white/90">SFC Type 1/4/9</div>
+        </div>
+        <div>
+          <div class="text-[11px] font-bold tracking-[0.14em] text-greydk">LICENCE NO.</div>
+          <div class="mt-1.5 text-[13px] font-bold text-white/90">SFC NO: BWW124</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="advantages" class="relative border-t border-white/6 bg-ink py-20 lg:py-28">
+  <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <div class="flex items-center gap-3">
+          <span class="h-px w-8 bg-gold"></span>
+          <span class="text-[11px] font-bold tracking-[0.2em] text-gold">ADVANTAGES</span>
+        </div>
+        <h2 class="mt-5 text-[30px] font-extrabold tracking-[-0.02em] text-white lg:text-[44px]">Built for professional investors</h2>
+      </div>
+      <p class="max-w-md text-[14.5px] leading-[1.75] text-grey lg:text-right">Four capabilities form the infrastructure for private equity allocation: a licensed entity, a focused strategy, matched horizons and investor eligibility.</p>
+    </div>
+
+    <div class="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="card-edge group flex flex-col overflow-hidden rounded-2xl border border-white/8 bg-ink2 shadow-xl shadow-black/30 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-cold/20">
+        <div class="img-mask h-40">
+          <img src="https://picsum.photos/id/1059/800/500" alt="Licensed and regulated" class="h-full w-full object-cover" loading="lazy" onerror="this.style.display='none'">
+        </div>
+        <div class="flex flex-1 flex-col p-6">
+          <span class="grid h-11 w-11 place-items-center rounded-xl bg-cold/12 text-cold transition-colors group-hover:bg-cold group-hover:text-white"><i class="fa-solid fa-shield-halved text-[16px]"></i></span>
+          <h3 class="mt-5 text-[17px] font-extrabold tracking-tight text-white">Licensed and regulated</h3>
+          <p class="mt-3 text-[13.5px] leading-[1.7] text-grey">Operated by an SFC Type 1/4/9 licensed corporation covering securities dealing, advising on securities and asset management.</p>
+        </div>
+      </div>
+
+      <div class="card-edge group flex flex-col overflow-hidden rounded-2xl border border-white/8 bg-ink2 shadow-xl shadow-black/30 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-cold/20">
+        <div class="img-mask h-40">
+          <img src="https://picsum.photos/id/180/800/500" alt="Growth-stage equity focus" class="h-full w-full object-cover" loading="lazy" onerror="this.style.display='none'">
+        </div>
+        <div class="flex flex-1 flex-col p-6">
+          <span class="grid h-11 w-11 place-items-center rounded-xl bg-cold/12 text-cold transition-colors group-hover:bg-cold group-hover:text-white"><i class="fa-solid fa-chart-line text-[16px]"></i></span>
+          <h3 class="mt-5 text-[17px] font-extrabold tracking-tight text-white">Growth-stage equity only</h3>
+          <p class="mt-3 text-[13.5px] leading-[1.7] text-grey">Focused on growth-stage companies from Pre-A to Series C, held directly through equity and equity-like instruments, with no leverage.</p>
+        </div>
+      </div>
+
+      <div class="card-edge group flex flex-col overflow-hidden rounded-2xl border border-white/8 bg-ink2 shadow-xl shadow-black/30 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-cold/20">
+        <div class="img-mask h-40">
+          <img src="https://picsum.photos/id/11/800/500" alt="Long-term capital" class="h-full w-full object-cover" loading="lazy" onerror="this.style.display='none'">
+        </div>
+        <div class="flex flex-1 flex-col p-6">
+          <span class="grid h-11 w-11 place-items-center rounded-xl bg-cold/12 text-cold transition-colors group-hover:bg-cold group-hover:text-white"><i class="fa-solid fa-hourglass-half text-[16px]"></i></span>
+          <h3 class="mt-5 text-[17px] font-extrabold tracking-tight text-white">Long-term capital</h3>
+          <p class="mt-3 text-[13.5px] leading-[1.7] text-grey">No public market and no short-term redemption mechanism, so the capital horizon is matched to project exit cycles.</p>
+        </div>
+      </div>
+
+      <div class="card-edge group flex flex-col overflow-hidden rounded-2xl border border-white/8 bg-ink2 shadow-xl shadow-black/30 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-cold/20">
+        <div class="img-mask h-40">
+          <img src="https://picsum.photos/id/1005/800/500" alt="Professional investors only" class="h-full w-full object-cover" loading="lazy" onerror="this.style.display='none'">
+        </div>
+        <div class="flex flex-1 flex-col p-6">
+          <span class="grid h-11 w-11 place-items-center rounded-xl bg-cold/12 text-cold transition-colors group-hover:bg-cold group-hover:text-white"><i class="fa-solid fa-user-tie text-[16px]"></i></span>
+          <h3 class="mt-5 text-[17px] font-extrabold tracking-tight text-white">Professional investors only</h3>
+          <p class="mt-3 text-[13.5px] leading-[1.7] text-grey">As defined in section 1 of Schedule 1 to the SFO; individuals must hold a portfolio of not less than HK$8,000,000.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="relative overflow-hidden border-y border-white/6 bg-gradient-to-b from-cold/8 via-ink2 to-ink py-16 lg:py-20">
+  <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
+    <div class="grid grid-cols-2 gap-x-6 gap-y-10 lg:grid-cols-4">
+      <div class="text-center lg:text-left">
+        <div class="num-glow text-[36px] font-extrabold leading-none tracking-[-0.03em] text-white lg:text-[52px]">1/4/9</div>
+        <div class="mt-3 text-[11px] font-bold tracking-[0.14em] text-gold">SFC LICENCE TYPES</div>
+        <p class="mt-2 text-[12.5px] leading-relaxed text-grey">Securities dealing · Advising · Asset management</p>
+      </div>
+      <div class="text-center lg:text-left">
+        <div class="num-glow text-[36px] font-extrabold leading-none tracking-[-0.03em] text-white lg:text-[52px]">HK$8M</div>
+        <div class="mt-3 text-[11px] font-bold tracking-[0.14em] text-gold">INDIVIDUAL THRESHOLD</div>
+        <p class="mt-2 text-[12.5px] leading-relaxed text-grey">Professional Investor qualification</p>
+      </div>
+      <div class="text-center lg:text-left">
+        <div class="num-glow text-[36px] font-extrabold leading-none tracking-[-0.03em] text-white lg:text-[52px]">Pre-A–C</div>
+        <div class="mt-3 text-[11px] font-bold tracking-[0.14em] text-gold">STAGE COVERAGE</div>
+        <p class="mt-2 text-[12.5px] leading-relaxed text-grey">Growth-stage equity focus</p>
+      </div>
+      <div class="text-center lg:text-left">
+        <div class="num-glow text-[36px] font-extrabold leading-none tracking-[-0.03em] text-white lg:text-[52px]">5</div>
+        <div class="mt-3 text-[11px] font-bold tracking-[0.14em] text-gold">RISK DISCLOSURES</div>
+        <p class="mt-2 text-[12.5px] leading-relaxed text-grey">Full risk notices before investing</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="solution" class="relative bg-ink py-20 lg:py-28">
+  <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
+    <div class="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+      <div>
+        <div class="flex items-center gap-3">
+          <span class="h-px w-8 bg-gold"></span>
+          <span class="text-[11px] font-bold tracking-[0.2em] text-gold">PROGRAMME</span>
+        </div>
+        <h2 class="mt-5 text-[30px] font-extrabold leading-[1.15] tracking-[-0.02em] text-white lg:text-[42px]">A growth-stage equity strategy<br>held through project-level structures</h2>
+
+        <div class="mt-8 rounded-2xl border border-white/8 bg-gradient-to-br from-ink2 to-ink3 p-7 shadow-2xl shadow-black/40">
+          <div class="flex flex-wrap items-center gap-3">
+            <h3 class="text-[20px] font-extrabold tracking-tight text-white">Flagship Private Equity Programme</h3>
+            <span class="rounded-md border border-gold/35 bg-gold/10 px-2.5 py-1 text-[11px] font-bold text-goldlt">Professional Investors only</span>
+            <span class="rounded-md border border-cold/35 bg-cold/10 px-2.5 py-1 text-[11px] font-bold text-coldlt">Limited subscription</span>
+          </div>
+          <p class="mt-4 text-[14px] leading-[1.8] text-grey">A growth-stage equity strategy centred on technology and consumer companies in Greater China, held through project-level segregated arrangements and distributed in line with project exit progress. There is no public market and no short-term redemption mechanism; the investment horizon is matched to the project exit cycle.</p>
+
+          <div class="mt-7 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-white/8 bg-white/8">
+            <div class="bg-ink2 p-4">
+              <div class="text-[10.5px] font-bold tracking-[0.12em] text-greydk">INVESTMENT STAGE</div>
+              <div class="mt-1.5 text-[14px] font-bold text-white">Pre-A to Series C</div>
+            </div>
+            <div class="bg-ink2 p-4">
+              <div class="text-[10.5px] font-bold tracking-[0.12em] text-greydk">SECTORS</div>
+              <div class="mt-1.5 text-[14px] font-bold text-white">Technology · Consumer</div>
+            </div>
+            <div class="bg-ink2 p-4">
+              <div class="text-[10.5px] font-bold tracking-[0.12em] text-greydk">STRUCTURE</div>
+              <div class="mt-1.5 text-[14px] font-bold text-white">Project-level segregated</div>
+            </div>
+            <div class="bg-ink2 p-4">
+              <div class="text-[10.5px] font-bold tracking-[0.12em] text-greydk">HORIZON</div>
+              <div class="mt-1.5 text-[14px] font-bold text-white">To be notified <span class="text-[11.5px] font-medium text-greydk">· per offering docs</span></div>
+            </div>
+          </div>
+
+          <a href="mailto:partners@highblockgroup.com?subject=Flagship%20Private%20Equity%20Enquiry&amp;body=I%20would%20like%20to%20learn%20more%20about%20the%20Flagship%20Private%20Equity%20Programme.%0A%0APlease%20contact%20me%20to%20discuss%20the%20materials.%0A%0AName%3A%0A%0AContact%3A%0A%0ARegion%3A%0A%0AOrganisation%3A%0A%0APreferred%20contact%20method%3A%0A%0AMy%20call%20back%20time%3A%0A" class="mt-7 inline-flex items-center gap-2.5 rounded-xl bg-gradient-to-r from-cold to-[#0f45d6] px-6 py-3.5 text-[14.5px] font-bold text-white shadow-lg shadow-cold/30 hover:shadow-cold/50 hover:-translate-y-0.5 transition-all">
+          Request a consultation
+          <i class="fa-solid fa-arrow-right text-[12px]"></i>
+        </a>
+      </div>
+
+      <div class="rounded-2xl border border-white/8 bg-ink2 p-6 shadow-2xl shadow-black/40">
+        <div class="flex items-center gap-2.5 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 w-fit">
+          <span class="h-1.5 w-1.5 rounded-full bg-coldlt"></span>
+          <span class="text-[10.5px] font-bold tracking-[0.14em] text-grey">APP INTERFACE</span>
+        </div>
+        <div class="mx-auto mt-5 w-full max-w-[290px] overflow-hidden rounded-[30px] border border-white/10 bg-white shadow-2xl shadow-cold/20">
+          <img src="assets/app-projects.jpg" alt="HighBlock app project market screen" class="block w-full" loading="lazy" onerror="this.style.display='none'">
+        </div>
+        <div class="mt-6 space-y-2.5">
+          <a href="https://apps.apple.com/hk/search?term=HighBlock" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3.5 rounded-xl border border-white/10 bg-white/4 px-4 py-3.5 transition-all hover:border-cold/45 hover:bg-cold/10">
+            <i class="fa-brands fa-apple w-5 text-center text-[19px] text-white"></i>
+            <span>
+              <span class="block text-[13.5px] font-bold text-white">Download on the App Store</span>
+              <span class="block text-[11px] text-greydk">iPhone · iOS 16 or later</span>
+            </span>
+          </a>
+          <a href="https://play.google.com/store/search?q=HighBlock&amp;c=apps" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3.5 rounded-xl border border-white/10 bg-white/4 px-4 py-3.5 transition-all hover:border-cold/45 hover:bg-cold/10">
+            <i class="fa-brands fa-google-play w-5 text-center text-[17px] text-white"></i>
+            <span>
+              <span class="block text-[13.5px] font-bold text-white">Get it on Google Play</span>
+              <span class="block text-[11px] text-greydk">Android · 8.0 or later</span>
+            </span>
+          </a>
+          <div class="flex items-center gap-4 rounded-xl border border-white/10 bg-white/4 p-4">
+            <span class="grid h-[62px] w-[62px] shrink-0 place-items-center overflow-hidden rounded-lg bg-white">
+              <img src="assets/qr-appstore.svg" alt="Scan to download the HighBlock app" class="h-full w-full" onerror="this.style.display='none'">
+            </span>
+            <span>
+              <span class="block text-[13px] font-bold text-white">Scan to download</span>
+              <span class="mt-1 block text-[11.5px] leading-relaxed text-grey">Open your camera to scan, or search “HighBlock” in the store. Hong Kong only.</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="compliance" class="relative border-t border-white/6 bg-ink2 py-20 lg:py-28">
+  <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <div class="flex items-center gap-3">
+          <span class="h-px w-8 bg-gold"></span>
+          <span class="text-[11px] font-bold tracking-[0.2em] text-gold">COMPLIANCE</span>
+        </div>
+        <h2 class="mt-5 text-[30px] font-extrabold tracking-[-0.02em] text-white lg:text-[44px]">Trust built on regulation</h2>
+      </div>
+      <p class="max-w-md text-[14.5px] leading-[1.75] text-grey lg:text-right">From licence to capital, four safeguards run through the entire investment.</p>
+    </div>
+
+    <div class="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="card-edge rounded-2xl border border-white/8 bg-ink p-6 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-cold/15">
+        <i class="fa-solid fa-award text-[20px] text-gold"></i>
+        <h3 class="mt-4 text-[15.5px] font-extrabold text-white">Licensed entity</h3>
+        <p class="mt-2.5 text-[13px] leading-[1.7] text-grey">SFC Type 1/4/9 licensed corporation; licence details are verifiable on the public SFC register.</p>
+      </div>
+      <div class="card-edge rounded-2xl border border-white/8 bg-ink p-6 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-cold/15">
+        <i class="fa-solid fa-magnifying-glass-chart text-[20px] text-gold"></i>
+        <h3 class="mt-4 text-[15.5px] font-extrabold text-white">Risk controls</h3>
+        <p class="mt-2.5 text-[13px] leading-[1.7] text-grey">Due diligence, investment approval and post-investment management are covered end to end, with a full audit trail.</p>
+      </div>
+      <div class="card-edge rounded-2xl border border-white/8 bg-ink p-6 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-cold/15">
+        <i class="fa-solid fa-id-card text-[20px] text-gold"></i>
+        <h3 class="mt-4 text-[15.5px] font-extrabold text-white">KYC and PI review</h3>
+        <p class="mt-2.5 text-[13px] leading-[1.7] text-grey">Identity verification, Professional Investor qualification and AML screening are required before you participate.</p>
+      </div>
+      <div class="card-edge rounded-2xl border border-white/8 bg-ink p-6 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-cold/15">
+        <i class="fa-solid fa-vault text-[20px] text-gold"></i>
+        <h3 class="mt-4 text-[15.5px] font-extrabold text-white">Capital safety</h3>
+        <p class="mt-2.5 text-[13px] leading-[1.7] text-grey">Client funds are handled independently by the licensed entity and accounted for separately from platform capital.</p>
+      </div>
+    </div>
+
+    <div class="mt-12 overflow-hidden rounded-2xl border border-gold/20 bg-ink">
+      <div class="flex items-center gap-3 border-b border-gold/20 bg-gold/8 px-6 py-4">
+        <i class="fa-solid fa-triangle-exclamation text-[15px] text-gold"></i>
+        <h3 class="text-[15px] font-extrabold text-goldlt">Risk disclosure and important notices</h3>
+      </div>
+      <div class="divide-y divide-white/6">
+        <div class="grid gap-2 px-6 py-5 sm:grid-cols-[200px_1fr] sm:gap-6">
+          <div class="text-[13.5px] font-bold text-white">Risk of loss <span class="ml-1.5 rounded border border-gold/40 bg-gold/12 px-1.5 py-0.5 text-[10px] font-bold text-gold">ESSENTIAL</span></div>
+          <p class="text-[13px] leading-[1.8] text-grey">Private equity investments may result in partial or total loss of capital due to business failure, market changes or constrained exit routes. Past performance is not indicative of future results.</p>
+        </div>
+        <div class="grid gap-2 px-6 py-5 sm:grid-cols-[200px_1fr] sm:gap-6">
+          <div class="text-[13.5px] font-bold text-white">Liquidity and tenor</div>
+          <p class="text-[13px] leading-[1.8] text-grey">Interests in private funds have no liquid market and are typically locked up for several years; early exit may not be possible.</p>
+        </div>
+        <div class="grid gap-2 px-6 py-5 sm:grid-cols-[200px_1fr] sm:gap-6">
+          <div class="text-[13.5px] font-bold text-white">Dilution and distribution</div>
+          <p class="text-[13px] leading-[1.8] text-grey">Subsequent financings may dilute your interests; distributions depend on actual performance and related decisions and are not guaranteed.</p>
+        </div>
+        <div class="grid gap-2 px-6 py-5 sm:grid-cols-[200px_1fr] sm:gap-6">
+          <div class="text-[13.5px] font-bold text-white">Reduced regulatory protections</div>
+          <p class="text-[13px] leading-[1.8] text-grey">Once treated as a Professional Investor, certain regulatory protections applicable to retail investors will not apply, including some suitability assessments, disclosure requirements and cooling-off arrangements.</p>
+        </div>
+        <div class="grid gap-2 px-6 py-5 sm:grid-cols-[200px_1fr] sm:gap-6">
+          <div class="text-[13.5px] font-bold text-white">No virtual asset trading</div>
+          <p class="text-[13px] leading-[1.8] text-grey">The Platform provides private equity information and advisory services only and does not involve any virtual asset trading or the promotion of any related product.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="faq" class="relative border-t border-white/6 bg-ink py-20 lg:py-28">
+  <div class="mx-auto max-w-4xl px-5 sm:px-8">
+    <div class="text-center">
+      <div class="inline-flex items-center gap-3">
+        <span class="h-px w-8 bg-gold"></span>
+        <span class="text-[11px] font-bold tracking-[0.2em] text-gold">FAQ</span>
+        <span class="h-px w-8 bg-gold"></span>
+      </div>
+      <h2 class="mt-5 text-[30px] font-extrabold tracking-[-0.02em] text-white lg:text-[44px]">Investor questions</h2>
+    </div>
+
+    <div class="mt-12 space-y-3">
+      <div class="faq-item overflow-hidden rounded-xl border border-white/8 bg-ink2 transition-colors hover:border-white/14">
+        <button onclick="toggleFaq(this)" class="flex w-full items-center justify-between gap-6 px-6 py-5 text-left">
+          <span class="text-[15px] font-bold text-white">Does expressing an interest freeze my funds?</span>
+          <i class="fa-solid fa-plus faq-icon shrink-0 text-[14px] text-grey transition-transform duration-300"></i>
+        </button>
+        <div class="faq-body"><p class="px-6 pb-5 text-[13.5px] leading-[1.8] text-grey">No. An expression of interest is simply an indication of interest and does not freeze any funds. Capital is only committed after negotiation with the project team and signing of the relevant documents.</p></div>
+      </div>
+
+      <div class="faq-item overflow-hidden rounded-xl border border-white/8 bg-ink2 transition-colors hover:border-white/14">
+        <button onclick="toggleFaq(this)" class="flex w-full items-center justify-between gap-6 px-6 py-5 text-left">
+          <span class="text-[15px] font-bold text-white">How are my information and funds protected?</span>
+          <i class="fa-solid fa-plus faq-icon shrink-0 text-[14px] text-grey transition-transform duration-300"></i>
+        </button>
+        <div class="faq-body"><p class="px-6 pb-5 text-[13.5px] leading-[1.8] text-grey">The platform uses financial-grade encryption, accounts have two-factor authentication (2FA) enabled, funds are held with licensed institutions and every transaction leaves a full compliance audit trail.</p></div>
+      </div>
+
+      <div class="faq-item overflow-hidden rounded-xl border border-white/8 bg-ink2 transition-colors hover:border-white/14">
+        <button onclick="toggleFaq(this)" class="flex w-full items-center justify-between gap-6 px-6 py-5 text-left">
+          <span class="text-[15px] font-bold text-white">Can I exit a private fund interest at any time?</span>
+          <i class="fa-solid fa-plus faq-icon shrink-0 text-[14px] text-grey transition-transform duration-300"></i>
+        </button>
+        <div class="faq-body"><p class="px-6 pb-5 text-[13.5px] leading-[1.8] text-grey">No. Interests in private funds have no public market and are typically locked up for several years; early exit or transfer may not be possible.</p></div>
+      </div>
+
+      <div class="faq-item overflow-hidden rounded-xl border border-white/8 bg-ink2 transition-colors hover:border-white/14">
+        <button onclick="toggleFaq(this)" class="flex w-full items-center justify-between gap-6 px-6 py-5 text-left">
+          <span class="text-[15px] font-bold text-white">How do I contact my dedicated relationship manager?</span>
+          <i class="fa-solid fa-plus faq-icon shrink-0 text-[14px] text-grey transition-transform duration-300"></i>
+        </button>
+        <div class="faq-body"><p class="px-6 pb-5 text-[13.5px] leading-[1.8] text-grey">Once your account is opened, your relationship manager's contact details appear in the app under “My”, including phone, email and instant messaging. You can escalate to online support if the manager does not respond.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer id="contact" class="relative border-t border-white/8 bg-ink2 pt-16 pb-10">
+  <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
+    <div class="grid gap-10 lg:grid-cols-[1.4fr_1fr_1fr]">
+      <div>
+        <div class="flex items-center gap-3">
+          <span class="grid h-10 w-10 place-items-center rounded-[10px] bg-gradient-to-br from-cold to-[#0b2f9e] text-white font-extrabold text-[17px]">H</span>
+          <span class="text-[15px] font-extrabold tracking-tight text-white">HighBlock Securities Limited</span>
+        </div>
+        <p class="mt-5 max-w-sm text-[13px] leading-[1.8] text-grey">An equity information platform focused on growth-stage technology companies in Greater China, providing professional investors with private equity information and advisory services.</p>
+        <div class="mt-6 space-y-2 text-[13px] text-grey">
+          <div class="flex items-center gap-3"><i class="fa-regular fa-envelope w-4 text-center text-gold"></i>partners@highblockgroup.com</div>
+          <div class="flex items-center gap-3"><i class="fa-solid fa-phone w-4 text-center text-gold"></i>+852 3568 8888</div>
+        </div>
+      </div>
+
+      <div>
+        <h4 class="text-[12px] font-bold tracking-[0.16em] text-gold">SITEMAP</h4>
+        <ul class="mt-5 space-y-3 text-[13.5px]">
+          <li><a href="#advantages" class="text-grey hover:text-white transition-colors">Advantages</a></li>
+          <li><a href="#solution" class="text-grey hover:text-white transition-colors">Programme</a></li>
+          <li><a href="#compliance" class="text-grey hover:text-white transition-colors">Compliance</a></li>
+          <li><a href="#faq" class="text-grey hover:text-white transition-colors">FAQ</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="text-[12px] font-bold tracking-[0.16em] text-gold">POLICIES</h4>
+        <ul class="mt-5 space-y-3 text-[13.5px]">
+          <li><a href="#compliance" class="text-grey hover:text-white transition-colors">Risk Disclosure</a></li>
+          <li><a href="#compliance" class="text-grey hover:text-white transition-colors">Privacy Policy</a></li>
+          <li><a href="#compliance" class="text-grey hover:text-white transition-colors">User Agreement</a></li>
+          <li><span class="text-greydk text-[12.5px]">Full documents are available in the app under “My → About”</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="mt-12 h-px gold-rule opacity-40"></div>
+
+    <div class="mt-8 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+      <div class="text-[12px] leading-relaxed text-greydk">
+        SFC Type 1/4/9 licences (securities dealing · advising on securities · asset management) · SFC NO: BWW124<br>
+        © 2026 HighBlock Securities Limited. All rights reserved.
+      </div>
+      <div class="text-[12px] leading-relaxed text-greydk lg:text-right">
+        This page is for Professional Investors only and does not constitute an offer, solicitation or promise of any return.
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const nav = document.getElementById('nav');
+  const onScroll = () => {
+    if (window.scrollY > 40) { nav.classList.remove('nav-glass'); nav.classList.add('nav-solid'); }
+    else { nav.classList.add('nav-glass'); nav.classList.remove('nav-solid'); }
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  function toggleMenu() {
+    const m = document.getElementById('mobileMenu');
+    m.classList.toggle('hidden');
+  }
+  function closeMenu() {
+    document.getElementById('mobileMenu').classList.add('hidden');
+  }
+
+  function toggleFaq(btn) {
+    const item = btn.parentElement;
+    const wasOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item').forEach(el => el.classList.remove('open'));
+    if (!wasOpen) item.classList.add('open');
+  }
+
+  const canvas = document.getElementById('particles');
+  const ctx = canvas.getContext('2d');
+  let dots = [];
+  function initParticles() {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = canvas.offsetWidth * dpr;
+    canvas.height = canvas.offsetHeight * dpr;
+    ctx.scale(dpr, dpr);
+    const count = Math.min(38, Math.floor(canvas.offsetWidth / 34));
+    dots = Array.from({ length: count }, () => ({
+      x: Math.random() * canvas.offsetWidth,
+      y: Math.random() * canvas.offsetHeight,
+      r: Math.random() * 1.6 + .4,
+      vx: (Math.random() - .5) * .18,
+      vy: (Math.random() - .5) * .18,
+      a: Math.random() * .12 + .04
+    }));
+  }
+  function drawParticles() {
+    ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
+    dots.forEach(d => {
+      d.x += d.vx; d.y += d.vy;
+      if (d.x < 0 || d.x > canvas.offsetWidth) d.vx *= -1;
+      if (d.y < 0 || d.y > canvas.offsetHeight) d.vy *= -1;
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(22,93,255,' + d.a + ')';
+      ctx.fill();
+    });
+    requestAnimationFrame(drawParticles);
+  }
+  initParticles();
+  drawParticles();
+  window.addEventListener('resize', initParticles);
+</script>
+</body>
+</html>

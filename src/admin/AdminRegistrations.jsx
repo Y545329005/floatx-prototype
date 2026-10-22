@@ -13,7 +13,7 @@ import {
  * 数据模型：**客户是实体，报名是事件**——线索 = 客户（按账户 userId 聚合去重），
  *           每个客户一份跟进状态 + N 条报名明细；列表一行一个客户，抽屉看全部报名。
  * 长远设计：可扩展（活动下拉）/ 双主体（报名人 + 账户人）/ 专属顾问派生 / PDPO 全脱敏 /
- *           陪同人结构化（仅后台维护）/ 跟进 5 态（converted = 已提交申购意向）。
+ *           陪同人结构化（仅后台维护）/ 跟进 5 态（converted = 已提交问卷）。
  */
 export default function AdminRegistrations({ admin }) {
   const [regs, setRegs] = useState(eventRegistrationsList); // 本地刷新（驱动 getLeadClients 重新派生）
@@ -328,7 +328,7 @@ export default function AdminRegistrations({ admin }) {
                           </button>
                         ))}
                       </div>
-                      <p className="admin-form-hint">已转化 = 客户已提交申购意向（与「申购记录」联动）。</p>
+                      <p className="admin-form-hint">已转化 = 客户已提交问卷（与「问卷记录」联动）。</p>
                     </div>
                   </div>
 

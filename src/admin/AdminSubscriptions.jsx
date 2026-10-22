@@ -1,39 +1,34 @@
 import { useState, useEffect } from 'react';
-import { X, FileText, ClipboardCheck, Building2, PenLine } from 'lucide-react';
+import { X, ClipboardCheck } from 'lucide-react';
 import {
   projects,
   subscriptions,
-  spvs,
   getProjectById,
   getProjectStageSlug,
   formatCurrency,
   formatListDateTime,
   getCurrencySymbol,
   markSubscriptionAllocated,
-  markSubscriptionSigned,
+  markSubscriptionCompleted,
   markSubscriptionUnallocated,
   markSubscriptionForfeit,
   maskName,
   getManagerForUser,
-  spvStatusLabels,
-  getSigningEvidenceBySub,
 } from '../mock/data';
 import { useDrawerFocus } from './useDrawerFocus';
 
-// 申购状态 → 后台状态徽章修饰类（token 语义色）
+// 问卷状态 → 后台状态徽章修饰类（token 语义色）
 const byTime = (a, b) => (a.createdAt || '').localeCompare(b.createdAt || '');
 
+// 2026-10-22 RO 整改：后台「申购记录」→「问卷记录」——
+//  · 去 SPV 概念（列、状态块、签署证据台账、SPV 档案跳转全部下线）
+//  · 去卖方语义（获配/削额/冻结/待签/份额 → 转跟进/暂不推进/标记完成）
+//  · 金额仅作客户经理沟通参考，不做额度分配
 export default function AdminSubscriptions({ navigate, detailId, admin }) {
   const [items, setItems] = useState(subscriptions);
   const [confirm, setConfirm] = useState(null); // { projectId, subId?, action }
   const [filter, setFilter] = useState('all'); // all | pending | done
-  const [errorMsg, setErrorMsg] = useState(''); // 操作错误提示（签 SPV 校验失败等）
-  // 线下签署登记表单（2026-09-15 · APP 内签署上线后：线下纸质签署场景由运营登记编号+时间；APP 内签署自动留痕无需登记）
-  const [evForm, setEvForm] = useState({ signedRef: '', signedAt: '', signerName: '' });
-  // 查看签署证据（signed 行：APP 内签名大图 / 线下登记信息）
-  const [evidenceView, setEvidenceView] = useState(null); // subId
-  // 获配实际配额（2026-08-21）：默认预填意向全额，超募时可削减；冻结/宽限期/签署扣款均按此金额执行
-  const [allocQuota, setAllocQuota] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
   const operator = admin?.name || '运营后台';
   const refresh = () => setItems([...subscriptions]);
   const goList = () => { if (navigate) navigate('#admin/subscriptions'); };
@@ -61,17 +56,16 @@ export default function AdminSubscriptions({ navigate, detailId, admin }) {
   const exitLayer = () => { if (confirmMode) setConfirm(null); else goList(); };
   const drawerRef = useDrawerFocus(drawerOpen, exitLayer);
 
-  // ---- 项目维度列表统计（钱以项目汇总） ----
-  // 待处理 = 待协调（submitted）+ 待签（allocated）——运营执行台核心：还有多少笔要我处理
+  // ---- 项目维度列表统计 ----
+  // 待处理 = 待跟进（submitted）+ 跟进中（allocated）——运营执行台核心：还有多少笔要我处理
   const projectRows = projects
     .filter(p => subscriptions.some(s => s.projectId === p.id))
     .map(p => {
       const subs = subscriptions.filter(s => s.projectId === p.id);
       const total = subs.reduce((s, x) => s + (x.amount || 0), 0);
-      const pendingAlloc = subs.filter(s => s.status === 'submitted').length;
-      const pendingSign = subs.filter(s => s.status === 'allocated').length;
-      const spv = spvs.find(s => s.projectId === p.id);
-      return { project: p, subs, total, pendingAlloc, pendingSign, pendingTotal: pendingAlloc + pendingSign, spv };
+      const pendingFollow = subs.filter(s => s.status === 'submitted').length;
+      const following = subs.filter(s => s.status === 'allocated').length;
+      return { project: p, subs, total, pendingFollow, following, pendingTotal: pendingFollow + following };
     });
   const visibleRows = filter === 'pending'
     ? projectRows.filter(r => r.pendingTotal > 0)
@@ -80,45 +74,39 @@ export default function AdminSubscriptions({ navigate, detailId, admin }) {
       : projectRows;
 
   // 页头统计（全平台口径）
-  const pendingAllocCount = subscriptions.filter(s => s.status === 'submitted').length;
-  const pendingSignCount = subscriptions.filter(s => s.status === 'allocated').length;
-  const frozenTotal = subscriptions
-    .filter(s => s.status === 'allocated')
-    .reduce((s, x) => s + (x.frozenAmount || 0), 0);
+  const pendingFollowCount = subscriptions.filter(s => s.status === 'submitted').length;
+  const followingCount = subscriptions.filter(s => s.status === 'allocated').length;
 
   // ---- 操作执行（确认态 → 执行 → 退出确认 + 刷新） ----
-  // 签 SPV 校验失败时不下推 confirm（保持抽屉打开显示错误）
   const handleConfirm = () => {
     if (!confirm) return;
     const { subId, action } = confirm;
     let res = null;
-    if (action === 'allocate') res = markSubscriptionAllocated(subId, operator, allocQuota);
-    else if (action === 'unallocate') res = markSubscriptionUnallocated(subId, '本轮份额稀缺，未获配额', operator);
-    else if (action === 'sign') res = markSubscriptionSigned(subId, null, operator, { signedRef: evForm.signedRef, signedAt: evForm.signedAt, signerName: evForm.signerName, source: 'offline' });
+    if (action === 'allocate') res = markSubscriptionAllocated(subId, operator);
+    else if (action === 'unallocate') res = markSubscriptionUnallocated(subId, '本次提交暂无进一步安排', operator);
+    else if (action === 'complete') res = markSubscriptionCompleted(subId, null, operator);
     else if (action === 'forfeit') res = markSubscriptionForfeit(subId, undefined, operator);
-    // 签 SPV 返回 { ok, error }，校验失败停留在确认视图 + 显示错误
+    // 部分操作返回 { ok, error }，校验失败停留在确认视图 + 显示错误
     if (res && res.ok === false) {
       setErrorMsg(res.error);
       return;
     }
     setErrorMsg('');
     setConfirm(null);
-    setEvForm({ signedRef: '', signedAt: '', signerName: '' });
-    setAllocQuota('');
     refresh();
   };
 
-  // 确认视图文案（资金动作全加确认，2026-08-13）
+  // 确认视图文案（2026-10-22 RO 整改：去配额/签署/冻结语义）
   const confirmText = confirm ? (() => {
     switch (confirm.action) {
       case 'allocate':
-        return { title: '标记已获配额', desc: `将标记 ${maskName(confirmSub?.investorName)} 已获配额，线下打款与 SPV 签署由客户经理跟进。默认按意向全额获配；超募时可在下方削减实际配额。确认执行？` };
+        return { title: '转客户经理跟进', desc: `将 ${maskName(confirmSub?.investorName)} 的问卷转交客户经理跟进，意向金额仅作沟通参考，不做额度分配。确认执行？` };
       case 'unallocate':
-        return { title: '标记未获配额', desc: `将标记 ${maskName(confirmSub?.investorName)} 本轮未获配额（客户可关注后续轮次重新提交）。确认执行？` };
-      case 'sign':
-        return { title: '线下签署登记', desc: `${maskName(confirmSub?.investorName)} 已通过线下纸质方式完成 SPV 签署。请录入签署编号与实际签署时间完成登记，确认后登记份额（资金交割以线下凭证为准）。确认执行？` };
+        return { title: '标记暂无需推进', desc: `将标记 ${maskName(confirmSub?.investorName)} 本次提交暂无进一步安排（如后续有进一步意向可重新填写问卷）。确认执行？` };
+      case 'complete':
+        return { title: '标记完成', desc: `${maskName(confirmSub?.investorName)} 的相关事项已线下办结，标记为已完成。确认执行？` };
       case 'forfeit':
-        return { title: '标记未签 · 手动顺延', desc: `将解冻 ${maskName(confirmSub?.investorName)} 的冻结金额并标记未获配额，waitlist 下一位自动上位。确认执行？` };
+        return { title: '暂缓跟进', desc: `将 ${maskName(confirmSub?.investorName)} 的跟进暂缓，后续队列自动上位。确认执行？` };
       default: return { title: '确认操作', desc: '' };
     }
   })() : null;
@@ -126,27 +114,26 @@ export default function AdminSubscriptions({ navigate, detailId, admin }) {
   return (
     <div className="admin-page">
       <div className="admin-page-header">
-        <h1>申购记录</h1>
+        <h1>问卷记录</h1>
         <span className="text-muted admin-header-summary">
-          共 {projectRows.length} 个项目 · 待协调 {pendingAllocCount} 笔 · 待签 {pendingSignCount} 笔 · 待交割 HK$ {formatCurrency(frozenTotal)}
+          共 {projectRows.length} 个项目 · 待跟进 {pendingFollowCount} 笔 · 跟进中 {followingCount} 笔
         </span>
       </div>
 
-      {/* 筛选行：运营执行台 = 先看"今天要处理哪些项目"（筛的是待处理状态，label 与 Projects/Events 一致用"状态"） */}
+      {/* 筛选行：运营执行台 = 先看"今天要处理哪些项目" */}
       <div className="admin-filter-row">
         <button className={`admin-filter-btn ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>全部</button>
         <button className={`admin-filter-btn ${filter === 'pending' ? 'active' : ''}`} onClick={() => setFilter('pending')}>待处理</button>
         <button className={`admin-filter-btn ${filter === 'done' ? 'active' : ''}`} onClick={() => setFilter('done')}>已处理完</button>
       </div>
 
-      {/* 项目维度全宽列表（点击行/操作"处理" → 抽屉查看该项目全部申购） */}
+      {/* 项目维度全宽列表（点击行/操作"处理" → 抽屉查看该项目全部问卷） */}
       <div className="admin-table admin-table--subs">
         <div className="admin-table-header">
           <span className="col-name">项目</span>
-          <span className="col-amount">累计意向金额</span>
-          <span className="col-count">申购笔数</span>
+          <span className="col-amount">累计意向档位</span>
+          <span className="col-count">问卷笔数</span>
           <span className="col-pending">待处理</span>
-          <span className="col-spv">SPV</span>
           <span className="col-date">意向截止</span>
           <span className="col-actions">操作</span>
         </div>
@@ -170,35 +157,21 @@ export default function AdminSubscriptions({ navigate, detailId, admin }) {
               <span className="col-pending">
                 {r.pendingTotal > 0 ? (
                   <span className="admin-pending-badge">
-                    {r.pendingAlloc > 0 && `待协调 ${r.pendingAlloc}`}
-                    {r.pendingAlloc > 0 && r.pendingSign > 0 && ' · '}
-                    {r.pendingSign > 0 && `待签 ${r.pendingSign}`}
+                    {r.pendingFollow > 0 && `待跟进 ${r.pendingFollow}`}
+                    {r.pendingFollow > 0 && r.following > 0 && ' · '}
+                    {r.following > 0 && `跟进中 ${r.following}`}
                   </span>
-                ) : (
-                  <span className="text-muted">—</span>
-                )}
-              </span>
-              <span className="col-spv">
-                {r.spv ? (
-                  <span className={`admin-status-spv ${r.spv.status === 'operating' ? 'ok' : r.spv.status === 'establishing' ? 'pending' : 'closed'}`}>
-                    {spvStatusLabels[r.spv.status] || r.spv.status}
-                  </span>
-                ) : r.pendingAlloc > 0 ? (
-                  <span className="admin-status-spv pending">待设立</span>
                 ) : (
                   <span className="text-muted">—</span>
                 )}
               </span>
               <span className="col-date">{r.project.intentDeadline || '—'}</span>
               <span className="col-actions">
-                {/* 操作列统一 btn-icon + tooltip（规范 §四 4.3） */}
                 <button
                   className="btn-icon"
-                  title={r.spv ? `关联 SPV · ${r.spv.spvName}` : '进入该项目处理申购'}
+                  title="进入该项目处理问卷"
                   onClick={(e) => {
                     e.stopPropagation();
-                    // 2026-10-16 口径修订：SPV 管理保持摘除（签署全线下）——原「查看 SPV 档案」
-                    // 跳转 #admin/spvs 摘除，统一进入申购处理详情
                     if (navigate) navigate(`#admin/subscriptions/${r.project.id}`);
                   }}
                 >
@@ -213,191 +186,93 @@ export default function AdminSubscriptions({ navigate, detailId, admin }) {
         )}
       </div>
 
-      {/* 右侧抽屉：项目申购详情（项目汇总 + 申购明细行内操作 + waitlist 队列） */}
+      {/* 右侧抽屉：项目问卷详情（项目汇总 + 问卷明细行内操作） */}
       {drawerOpen && <div className="admin-drawer-mask" onClick={exitLayer} />}
       {drawerOpen && selectedProject && (
-        <div className="admin-drawer" ref={drawerRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={`项目申购 #${selectedProject.id}`}>
+        <div className="admin-drawer" ref={drawerRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={`项目问卷 #${selectedProject.id}`}>
           <div className="admin-drawer-head">
-            <h3 className="admin-drawer-title">项目申购 #{selectedProject.id} · {selectedProject.title}</h3>
+            <h3 className="admin-drawer-title">项目问卷 #{selectedProject.id} · {selectedProject.title}</h3>
             <button className="btn-icon" title="关闭" onClick={goList}><X size={18} /></button>
           </div>
 
           <div className="admin-drawer-body">
             {confirmMode ? (
-              /* ---- 确认视图（资金动作二次确认） ---- */
+              /* ---- 确认视图 ---- */
               <div className="admin-confirm-view">
                 <div className="admin-confirm-title">{confirmText?.title}</div>
                 <p className="admin-confirm-desc">{confirmText?.desc}</p>
                 {confirmSub && (
                   <div className="admin-confirm-row">
-                    <span>意向金额</span>
-                    <strong>{getCurrencySymbol(selectedProject.currency)} {formatCurrency(confirmSub.amount || 0)}</strong>
-                  </div>
-                )}
-                {confirmSub && confirm.action === 'allocate' && (
-                  <div className="admin-ev-form">
-                    <div className="form-group">
-                      <label className="form-label">实际配额金额（HKD）</label>
-                      <input
-                        type="number"
-                        min="1"
-                        className="form-input"
-                        value={allocQuota}
-                        onChange={e => { setAllocQuota(e.target.value); setErrorMsg(''); }}
-                      />
-                      <p className="admin-form-hint">
-                        默认按意向全额获配；超募时可削减（不可高于意向金额）。线下交割金额与份额换算均按此金额执行。
-                      </p>
-                    </div>
-                    {Number(allocQuota) > 0 && Number(allocQuota) < (confirmSub.amount || 0) && (
-                      <div className="admin-confirm-row admin-confirm-delta">
-                        <span>超募削额</span>
-                        <strong>
-                          意向 HK$ {formatCurrency(confirmSub.amount || 0)} → 配额 HK$ {formatCurrency(Number(allocQuota))}
-                          （削额 {Math.round((1 - Number(allocQuota) / (confirmSub.amount || 0)) * 100)}%）
-                        </strong>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {confirmSub && confirm.action === 'forfeit' && (
-                  <div className="admin-confirm-row">
-                    <span>将解冻</span>
-                    <strong>{getCurrencySymbol(selectedProject.currency)} {formatCurrency(confirmSub.frozenAmount || 0)}</strong>
-                  </div>
-                )}
-                {confirmSub && confirm.action === 'sign' && (
-                  <div className="admin-ev-form">
-                    <div className="form-group">
-                      <label className="form-label">签署编号 <span className="required-mark">*</span></label>
-                      <input
-                        className="form-input"
-                        placeholder="如 OFFLINE-20260915-0001（线下纸质签署登记编号）"
-                        value={evForm.signedRef}
-                        onChange={e => setEvForm(f => ({ ...f, signedRef: e.target.value }))}
-                      />
-                    </div>
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label className="form-label">实际签署时间 <span className="required-mark">*</span></label>
-                        <input
-                          type="datetime-local"
-                          className="form-input"
-                          value={evForm.signedAt}
-                          onChange={e => setEvForm(f => ({ ...f, signedAt: e.target.value }))}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label className="form-label">签署人</label>
-                        <input
-                          className="form-input"
-                          value={evForm.signerName}
-                          onChange={e => setEvForm(f => ({ ...f, signerName: e.target.value }))}
-                        />
-                      </div>
-                    </div>
-                    <p className="admin-form-hint">协议版本/哈希由 SPV 档案锁定（签署时固化）；签署编号与时间构成线下签署证据链，监管质询可凭此调取。APP 内电子签署的客户已自动留痕（含签名图），无需线下登记。</p>
+                    <span>意向档位</span>
+                    <strong>{(confirmSub.amount || 0) > 0 ? `${getCurrencySymbol(selectedProject.currency)} ${formatCurrency(confirmSub.amount || 0)}` : '无意向'}</strong>
                   </div>
                 )}
                 {errorMsg && <p className="form-error">{errorMsg}</p>}
               </div>
             ) : (
               <>
-                {/* 项目汇总卡（待处理口径与列表一致，去完整状态分布） */}
+                {/* 项目汇总卡（待处理口径与列表一致） */}
                 <div className="card admin-sub-summary">
                   <div className="admin-sub-summary-main">
-                    <span className="text-muted text-sm">累计意向金额</span>
+                    <span className="text-muted text-sm">累计意向档位</span>
                     <strong className="admin-sub-summary-value">
                       {getCurrencySymbol(selectedProject.currency)} {formatCurrency(projSubs.reduce((s, x) => s + (x.amount || 0), 0) || 0)}
                     </strong>
                   </div>
                   <div className="admin-sub-summary-stats">
-                    <span>共 {projSubs.length} 笔 · 已签 {projSubs.filter(s => s.status === 'signed').length}</span>
+                    <span>共 {projSubs.length} 笔 · 已完成 {projSubs.filter(s => s.status === 'signed').length}</span>
                     <span>
                       待处理：
                       <strong className="admin-sub-summary-pending">
-                        {waiting.length > 0 && `待协调 ${waiting.length}`}
+                        {waiting.length > 0 && `待跟进 ${waiting.length}`}
                         {waiting.length > 0 && allocatedCount > 0 && ' · '}
-                        {allocatedCount > 0 && `待签 ${allocatedCount}`}
+                        {allocatedCount > 0 && `跟进中 ${allocatedCount}`}
                         {waiting.length === 0 && allocatedCount === 0 && '—'}
                       </strong>
                     </span>
-                  </div>
-                  {/* SPV 状态（2026-10-16 口径修订：SPV 管理保持摘除，签署全线下——原「查看 SPV 档案/
-                      前往设立」跳转改为纯展示，作为后台登记进度的参考信息） */}
-                  <div className="admin-sub-summary-spv">
-                    {(() => {
-                      const projectSpv = spvs.find(s => s.projectId === selectedProject.id);
-                      if (projectSpv) {
-                        return (
-                          <div className="admin-sub-spv-link" title="关联 SPV（线下设立与签署，此处仅展示）">
-                            <Building2 size={14} />
-                            <span>SPV：{projectSpv.spvName}</span>
-                            <span className={`admin-status-spv ${projectSpv.status === 'operating' ? 'ok' : projectSpv.status === 'establishing' ? 'pending' : 'closed'}`}>
-                              {spvStatusLabels[projectSpv.status]}
-                            </span>
-                          </div>
-                        );
-                      }
-                      if (allocatedCount > 0) {
-                        return (
-                          <div className="admin-sub-spv-link pending" title="SPV 在线下设立，完成后由运营在此登记">
-                            <Building2 size={14} />
-                            <span>该项目尚未设立 SPV（线下设立）</span>
-                            <span className="admin-status-spv pending">待设立</span>
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
                   </div>
                   {selectedProject.intentDeadline && (
                     <p className="text-muted text-sm admin-sub-deadline">意向截止 {selectedProject.intentDeadline}</p>
                   )}
                 </div>
 
-                {/* 申购明细（行内操作 + 确认态；submitted 行显示 FIFO 排队位次，替代独立 Waitlist 卡） */}
+                {/* 问卷明细（行内操作 + 确认态） */}
                 <div className="card admin-sub-detail-list">
                   <div className="admin-sub-detail-head">
-                    <span className="card-title no-margin admin-sub-detail-title">申购明细（{projSubs.length}）</span>
-                    {waiting.length > 0 && <span className="admin-sub-detail-note">排队 {waiting.length} 位</span>}
+                    <span className="card-title no-margin admin-sub-detail-title">问卷明细（{projSubs.length}）</span>
+                    {waiting.length > 0 && <span className="admin-sub-detail-note">待跟进 {waiting.length} 位</span>}
                   </div>
                   {projSubs.map(s => {
                     const cur = getCurrencySymbol(selectedProject.currency);
-                    const queuePos = waiting.findIndex(w => w.id === s.id);
                     return (
                       <div className="admin-sub-row" key={s.id}>
                         <div className="admin-sub-investor">
                           <strong>{maskName(s.investorName || s.investorNo)}</strong>
-                          <span className="admin-sub-meta">
-                            {s.investorNo}
-                            {queuePos >= 0 && <em className="admin-sub-queue-tag">排队 #{queuePos + 1}</em>}
-                          </span>
+                          <span className="admin-sub-meta">{s.investorNo}</span>
                           <span className="admin-sub-meta">单号 {s.orderNo}</span>
                           <span className="admin-sub-meta">顾问：{getManagerForUser(s.userId)?.name || '未分配'}</span>
                           <span className="admin-sub-meta">{formatListDateTime(s.createdAt)}</span>
                         </div>
-                        <span className="admin-sub-amount">{cur} {formatCurrency(s.amount || 0)}</span>
+                        <span className="admin-sub-amount">{(s.amount || 0) > 0 ? `${cur} ${formatCurrency(s.amount || 0)}` : '无意向'}</span>
                         <div className="admin-sub-actions">
                           {s.status === 'submitted' && (
                             <>
                               <button
                                 className="btn btn-sm btn-primary"
-                                title="标记已获配额（自动冻结，进入签署宽限期；可调整实际配额）"
+                                title="转客户经理跟进（意向金额仅作沟通参考，不做额度分配）"
                                 onClick={() => {
                                   setConfirm({ projectId: selectedProject.id, subId: s.id, action: 'allocate' });
-                                  setAllocQuota(String(s.amount || '')); // 预填意向全额，不想削额直接确认
                                   setErrorMsg('');
                                 }}
                               >
-                                获配
+                                转跟进
                               </button>
                               <button
                                 className="btn btn-sm btn-outline"
-                                title="标记未获配额"
+                                title="标记暂无需推进"
                                 onClick={() => setConfirm({ projectId: selectedProject.id, subId: s.id, action: 'unallocate' })}
                               >
-                                未获
+                                暂不推进
                               </button>
                             </>
                           )}
@@ -405,76 +280,39 @@ export default function AdminSubscriptions({ navigate, detailId, admin }) {
                             <>
                               <button
                                 className="btn btn-sm btn-primary"
-                                title="线下纸质签署登记（APP 内电子签署的客户会自动留痕，无需登记）"
+                                title="标记完成（线下事项已办结）"
                                 onClick={() => {
-                                  setConfirm({ projectId: selectedProject.id, subId: s.id, action: 'sign' });
-                                  setEvForm({ signedRef: '', signedAt: '', signerName: s.investorName || '' });
+                                  setConfirm({ projectId: selectedProject.id, subId: s.id, action: 'complete' });
                                   setErrorMsg('');
                                 }}
                               >
-                                线下登记签署
+                                标记完成
                               </button>
                               <button
                                 className="btn btn-sm btn-danger"
-                                title="标记未签 · 手动顺延（解冻 + waitlist 上位）"
+                                title="暂缓跟进（后续队列自动上位）"
                                 onClick={() => setConfirm({ projectId: selectedProject.id, subId: s.id, action: 'forfeit' })}
                               >
-                                顺延
+                                暂缓
                               </button>
                             </>
                           )}
                           {s.status === 'signed' && (
-                            <span className="admin-sub-shares">
-                              {s.shares ? `${s.shares} 份` : '已签'}
-                              {getSigningEvidenceBySub(s.id) && (
-                                <button
-                                  className="admin-sub-doc"
-                                  title="查看签署证据（签名图 / 登记信息）"
-                                  onClick={() => setEvidenceView(evidenceView === s.id ? null : s.id)}
-                                >
-                                  <PenLine size={13} />
-                                </button>
-                              )}
-                            </span>
+                            <span className="text-muted text-sm">已完成</span>
                           )}
                           {s.status === 'unallocated' && (
-                            <span className="text-muted text-sm">本轮未获配额</span>
+                            <span className="text-muted text-sm">暂无需推进</span>
                           )}
                         </div>
                       </div>
                     );
                   })}
-                  {/* 签署证据展开行（2026-09-15 · APP 内签署签名图 / 线下登记信息） */}
-                  {evidenceView && (() => {
-                    const evSub = projSubs.find(x => x.id === evidenceView);
-                    const ev = getSigningEvidenceBySub(evidenceView);
-                    if (!ev || !evSub) return null;
-                    return (
-                      <div className="admin-sub-evidence">
-                        <div className="admin-ev-head">
-                          <strong>{maskName(ev.signerName)}</strong>
-                          <span className="admin-ev-env date-iso">{ev.signedRef}</span>
-                        </div>
-                        <div className="admin-ev-meta">
-                          签署 {formatListDateTime(ev.signedAt)} · 协议 {ev.agreementVersion}{ev.agreementHash ? ' · 哈希已固化' : ''}
-                        </div>
-                        <div className="admin-ev-meta">
-                          {ev.source === 'app' ? 'APP 内电子签署（签名图已存档）' : '线下签署登记'}{ev.confirmedBy ? ` · 确认 ${ev.confirmedBy}` : ''}
-                        </div>
-                        {ev.signatureImage && (
-                          <div className="admin-sub-evidence-signature">
-                            <img src={ev.signatureImage} alt="电子签名" loading="lazy" decoding="async" />
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
                 </div>
               </>
             )}
           </div>
 
-          {/* 确认态底部操作区（资金动作全加二次确认） */}
+          {/* 确认态底部操作区 */}
           {confirmMode && (
             <div className="admin-drawer-actions">
               <button className="btn btn-md btn-outline" onClick={() => setConfirm(null)}>取消</button>

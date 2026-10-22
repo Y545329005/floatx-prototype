@@ -16,7 +16,7 @@ export default function ProjectMarket({ navigate, embed = false, goBack }) {
   const closed = projects.filter(p => p.status === 'closed' || p.status === 'sold');
 
   const renderCard = (p) => {
-    // 多用户化（2026-08-13）：按投资人过滤，"已申购"仅当前用户的记录
+    // 多用户化（2026-08-13）：按投资人过滤，"已提交问卷"仅当前用户的记录
     const mySub = subscriptions.find(s => s.projectId === p.id && s.investorNo === getInvestorNo(currentUser.id));
     return (
       <div key={p.id} className="card project-card" {...clickable(() => navigate(`#project/${p.id}`))}>
@@ -34,7 +34,7 @@ export default function ProjectMarket({ navigate, embed = false, goBack }) {
         <div className="project-card-body">
           <h3>{p.title}</h3>
           <div className="project-card-meta-line">
-            {mySub && <span className="sub-mark">{t('已申购')}</span>}
+            {mySub && <span className="sub-mark">{t('已提交问卷')}</span>}
             {mySub && ' · '}
             {t(p.sector)} · {p.location}
           </div>

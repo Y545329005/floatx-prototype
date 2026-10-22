@@ -825,10 +825,6 @@
 .status-badge.admin-status-live       { color: var(--success); }      /* 路演：进行中（时间派生，非手动状态） */
 .status-badge.admin-status-closed     { color: var(--text-secondary); }
 .status-badge.admin-status-sold       { color: var(--text-secondary); }
-.status-badge.admin-status-establishing { color: var(--warning); }     /* SPV：设立中（LPF 注册/文件准备，投资已确定） */
-.status-badge.admin-status-operating    { color: var(--success); }     /* SPV：运作中（已出资，投后管理） */
-.status-badge.admin-status-liquidating  { color: var(--primary); }     /* SPV：清算中（份额退出/资产处置） */
-.status-badge.admin-status-liquidated   { color: var(--text-secondary); } /* SPV：已清算（终态） */
 /* 通知类型语义色（2026-08-14 广播台账化）：对齐用户侧 Notifications.jsx typeMeta 语义——申购主色 / 活动金 / 资金绿 / 服务橙 */
 .status-badge.admin-status-notify-sub     { color: var(--primary); }
 .status-badge.admin-status-notify-event   { color: var(--accent-hover); }
@@ -1055,8 +1051,8 @@
 .admin-table--subs .admin-table-header,
 .admin-table--subs .admin-table-row {
   /* 列宽贴合内容（min = 内容最宽 + 边距）+ fr 弹性（fr ∝ min → 宽屏等比放大填满，2026-08-12 列宽原则） */
-  /* 7 列：项目 / 累计意向 / 笔数 / 待处理 / SPV / 截止 / 操作 */
-  grid-template-columns: minmax(170px, 17fr) minmax(100px, 10fr) minmax(72px, 7fr) minmax(122px, 12fr) minmax(96px, 9fr) minmax(96px, 10fr) minmax(78px, 8fr);
+  /* 6 列：项目 / 累计意向档位 / 问卷笔数 / 待处理 / 意向截止 / 操作（2026-10-22 RO 整改：SPV 列下线） */
+  grid-template-columns: minmax(170px, 17fr) minmax(100px, 10fr) minmax(72px, 7fr) minmax(122px, 12fr) minmax(96px, 10fr) minmax(78px, 8fr);
 }
 .admin-table--subs .col-name strong {
   white-space: nowrap;
@@ -1099,64 +1095,11 @@
 .admin-table--withdraws .col-handler {
   color: var(--text-secondary);
 }
-.admin-table--dividends .admin-table-header,
-.admin-table--dividends .admin-table-row {
-  /* 投后分红 7 列（2026-08-14）：单号/SPV/分红总额/每份金额/发起时间/状态/操作
-     列宽贴合内容 + fr 弹性（单号/SPV/发起时间 三个 fr ∝ min 分担剩余，防单列过宽）；
-     min 总和 ≤ 容器 - padding36 - gap96（1280 视口内容区 976 → 列可用 844，防溢出）；
-     每份金额右对齐、发起时间居中（与金额右对齐相邻不紧贴）；gap 16px */
-  grid-template-columns: minmax(130px, 14fr) minmax(200px, 21fr) 124px 100px minmax(130px, 14fr) 88px 64px;
-  gap: 16px;
-  cursor: pointer;
-}
-.admin-table--dividends .col-date {
-  text-align: center;
-}
-.admin-table--dividends .col-per {
-  text-align: right;
-}
-.admin-table--spvs .admin-table-header,
-.admin-table--spvs .admin-table-row {
-  /* SPV 管理 7 列（2026-08-14）：SPV/注册号/状态/募资总额/持有人/管理费率/操作
-     列宽贴合内容（min = 内容最宽 + 边距，全固定无 fr 弹性——内容少的表 fr 会把名称列放大到 350+px）；
-     剩余空间 justify-content: space-between 均匀分配到列间空隙（既填满容器无右侧空白、
-     又让空隙均匀 ~80-120px，优于 max 上限导致的右侧留白——2026-08-14 复查修正"贴合 vs 填满"矛盾）；
-     持有人/管理费率 = 短内容数值列固定宽 + 右对齐（与募资总额右对齐相邻不紧贴） */
-  grid-template-columns: 220px 130px 64px 120px 56px 70px 96px;
-  gap: 16px;
-  justify-content: space-between;
-  cursor: pointer;
-}
-.admin-table--spvs .col-name strong {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.admin-table--spvs .col-amount { text-align: right; }
-.admin-table--spvs .col-holders,
-.admin-table--spvs .col-fee {
-  text-align: right;
-  color: var(--text-secondary);
-}
-.admin-table--spvs .admin-table-header .col-holders,
-.admin-table--spvs .admin-table-header .col-fee {
-  text-align: right; /* header 跟随数据右对齐（AntD 惯例，2026-08-12） */
-}
-.admin-table--spvs .col-reg { font-size: var(--text-sm); color: var(--text-secondary); }
-.admin-table--spvs .col-actions { gap: 8px; }
-.admin-confirm-delta { margin-top: 6px; }
-.admin-table--kyc .admin-table-row,
-.admin-table--exits .admin-table-row,
-.admin-table--subs .admin-table-row {
-  cursor: pointer;
-}
 /* 可点行键盘可达（2026-08-24 a11y 整改）：--users/--tickets 等行有 onClick 却无 pointer，补齐 */
 .admin-table--users .admin-table-row,
 .admin-table--tickets .admin-table-row,
 .admin-table--admins .admin-table-row,
 .admin-table--leads .admin-table-row,
-.admin-table--spvs .admin-table-row,
-.admin-table--dividends .admin-table-row,
 .admin-table--deposits .admin-table-row,
 .admin-table--withdraws .admin-table-row,
 .admin-table--exchanges .admin-table-row,
@@ -2122,50 +2065,12 @@
   margin-left: auto;
 }
 .admin-sub-actions .btn-sm { padding: 0 10px; height: 32px; font-size: var(--text-sm); }
-.admin-sub-shares {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--success);
-}
 .admin-sub-doc {
   display: inline-flex;
   color: var(--primary);
 }
 .admin-sub-doc:hover { color: var(--primary-strong); }
 
-/* SPV 签署证据（2026-08-15 方案 B · 香港私募合规留痕审计：协议内容权威源 = 第三方平台，Admin 维护签署结果证据链） */
-.admin-ev-form {
-  margin-top: var(--space-3);
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--border-light);
-}
-.admin-ev-item {
-  padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--border-light);
-}
-.admin-ev-item:last-child { border-bottom: none; }
-.admin-ev-head {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-height: var(--min-touch-target);
-}
-.admin-ev-head strong {
-  font-size: var(--text-md);
-  font-weight: 600;
-}
-.admin-ev-env {
-  color: var(--primary);
-  font-weight: 600;
-}
-.admin-ev-meta {
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
-  line-height: 1.5;
-}
 /* 文档哈希截断（详情档案卡：sha256 长串，title 承载全量） */
 .admin-hash {
   max-width: 320px;
@@ -2176,13 +2081,6 @@
 }
 
 /* 排队位次标记（submitted 行，FIFO——替代独立 Waitlist 卡，2026-08-13） */
-.admin-sub-queue-tag {
-  color: var(--primary);
-  font-weight: 600;
-  font-style: normal;
-  margin-left: 6px;
-}
-
 /* 申购明细标题行（标题 + 上位下一位按钮） */
 .admin-sub-detail-head {
   display: flex;
@@ -2591,33 +2489,6 @@
 .admin-fund-card .kyc-review-row strong.date-iso {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
-/* ---- SPV 认缴进度（2026-08-21：锚点 = 设立时 planAmount；超募 over 态警示红） ---- */
-.admin-spv-progress { margin-bottom: var(--space-3); }
-.admin-spv-progress-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: var(--space-1);
-}
-.admin-spv-progress-pct { font-size: var(--text-md); font-weight: 700; color: var(--primary); }
-.admin-spv-progress-pct.over { color: var(--danger); }
-.admin-spv-progress-bar {
-  height: var(--space-2);
-  border-radius: var(--radius-sm);
-  background: var(--bg);
-  overflow: hidden;
-}
-.admin-spv-progress-fill {
-  width: 100%;
-  height: 100%;
-  border-radius: var(--radius-sm);
-  background: var(--primary);
-  transform: scaleX(var(--fill, 0));
-  transform-origin: left center;
-  transition: transform 0.3s ease;
-}
-.admin-spv-progress-fill.over { background: var(--danger); }
-.admin-spv-progress-meta { margin-top: var(--space-1); line-height: 1.4; }
 /* 换汇列表金额列两行（2026-08-20 方案：同行+防换行为主，换汇"币种对 + 实际金额"复合信息改两行） */
 .admin-table .col-amount--stack {
   display: flex;
@@ -2681,44 +2552,6 @@
   width: 130px;
   flex-shrink: 0;
 }
-
-/* SPV 状态列（项目卡 "SPV" 状态：已运作绿 / 待设立橙 / 清算后灰） */
-.admin-table--subs .col-spv {
-  display: flex;
-  align-items: center;
-  font-size: var(--text-sm);
-}
-.admin-status-spv {
-  padding: 2px 8px;
-  border-radius: var(--radius-sm);
-  font-weight: 600;
-  font-size: var(--text-sm);
-}
-.admin-status-spv.ok { color: var(--success); background: var(--success-light); }
-.admin-status-spv.pending { color: var(--warning); background: var(--warning-light); }
-.admin-status-spv.closed { color: var(--text-secondary); background: var(--border-light); }
-
-/* 项目汇总 SPV 链接（业务时序：先建档后签 SPV） */
-.admin-sub-summary-spv {
-  margin-top: var(--space-2);
-}
-.admin-sub-spv-link {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 6px 10px;
-  background: var(--primary-light);
-  border-radius: var(--radius-sm);
-  color: var(--primary);
-  font-size: var(--text-sm);
-  font-weight: 500;
-  cursor: pointer;
-  border: none;
-  transition: background 0.15s;
-}
-.admin-sub-spv-link:hover { background: rgba(0, 94, 184, 0.12); }
-.admin-sub-spv-link.pending { background: var(--warning-light); color: var(--warning); }
-.admin-sub-spv-link.pending:hover { background: rgba(230, 81, 0, 0.14); }
 
 /* ---- 角色权限（2026-08-24 · 预置角色可配置：左角色列表 + 右权限面板） ---- */
 .admin-roles-layout {

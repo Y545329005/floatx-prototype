@@ -72,7 +72,7 @@ export default function SearchPage({ navigate, goBack }) {
         <div className="project-card-body">
           <h3>{p.title}</h3>
           <div className="project-card-meta-line">
-            {mySub && <span className="sub-mark">{t('已申购')}</span>}
+            {mySub && <span className="sub-mark">{t('已提交问卷')}</span>}
             {mySub && ' · '}
             {t(p.sector)} · {p.location}
           </div>

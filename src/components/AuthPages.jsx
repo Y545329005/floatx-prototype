@@ -59,7 +59,7 @@ function AuthHero({ title, subtitle, compact }) {
       <AuthBrand compact={compact} />
       <div className="auth-license">
         <ShieldCheck size={14} />
-        <span>{t('香港证监会持牌机构')} · CE No. {platformBrand.licenseNo}</span>
+        <span>{t('香港证监会持牌机构')} · SFC NO: {platformBrand.licenseNo}</span>
       </div>
       <div className="auth-hero-text">
         <h1>{title}</h1>
@@ -289,7 +289,7 @@ export function LoginPage({ navigate, setIsLoggedIn, setUser, setToast }) {
   return (
     <div className="auth-page">
       <AuthHero
-        title={t('登录您的账户')}
+        title={t('登录专属账户')}
       />
 
       <div className="auth-body">

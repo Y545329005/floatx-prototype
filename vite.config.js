@@ -15,6 +15,12 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
         embed: resolve(__dirname, 'embed.html'),
       },
+      output: {
+        // 正式法务文本（约 76KB）单独成块：不挤占 router 主块（2026-10-22）
+        manualChunks(id) {
+          if (id.includes('mock/legalTexts')) return 'legal';
+        },
+      },
     },
   },
 });

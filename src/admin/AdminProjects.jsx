@@ -144,7 +144,7 @@ export default function AdminProjects({ admin = null }) {
   };
   const removeEvent = (id) => setForm(f => ({ ...f, events: (f.events || []).filter(x => x !== id) }));
 
-  /* 意向截止已过（raising 且日期已过期）：后台列表/表单黄色提示，辅助运营决策关闭申购（不自动切换） */
+  /* 意向截止已过（raising 且日期已过期）：后台列表/表单黄色提示，辅助运营决策关闭意向收集（不自动切换） */
   const deadlinePassed = form.status === 'raising' && !!form.intentDeadline && new Date(form.intentDeadline) < new Date();
 
   const handleSave = () => {
@@ -199,7 +199,7 @@ export default function AdminProjects({ admin = null }) {
     <div className="admin-page">
       <div className="admin-page-header">
         <h1>项目管理</h1>
-        <span className="text-muted admin-header-summary">共 {items.length} 条 · 申购开放 {items.filter(p => p.status === 'raising').length}</span>
+        <span className="text-muted admin-header-summary">共 {items.length} 条 · 进行中 {items.filter(p => p.status === 'raising').length}</span>
         <button className="btn btn-md btn-primary" onClick={openNew}>
           <Plus size={16} /> 新建项目
         </button>
@@ -263,7 +263,7 @@ export default function AdminProjects({ admin = null }) {
                 <div className="admin-form-section-title">估值与状态</div>
                 <div className="admin-form-section-body">
                   {deadlinePassed && (
-                    <div className="admin-form-hint admin-form-hint-warning">已过意向截止日期，建议关闭申购（状态不自动切换，由运营确认后人工流转）</div>
+                    <div className="admin-form-hint admin-form-hint-warning">已过意向截止日期，建议关闭意向收集（状态不自动切换，由运营确认后人工流转）</div>
                   )}
                   <div className="form-row">
                     <div className="form-group">

@@ -1,3 +1,6 @@
+// 正式法务文本（2026-10-22 · 公司提供 docx 原文）
+import { termsOfUseSections, privacyPolicySections, riskDisclosureSections } from './legalTexts';
+
 // ========== KYC 状态定义 ==========
 export const KYC_STATUS = {
   NOT_STARTED: 'NOT_STARTED',       // 未开始
@@ -904,7 +907,7 @@ export const events = [
   },
 ];
 
-// 后台申购记录（2026-08-13 多用户化）：以项目为核心维度，每条记录带投资人身份（userId/investorNo/investorName）
+// 后台问卷记录（2026-08-13 多用户化）：以项目为核心维度，每条记录带投资人身份（userId/investorNo/investorName）
 // 用户侧消费时必须按 investorNo === getInvestorNo(currentUser.id) 过滤（ProjectDetail/ProjectMarket/Search/ProjectHeat/Subscriptions）
 export const subscriptions = [
   // ── 当前用户（u1 张三 INV-0001）—— 用户侧演示数据 ──
@@ -920,10 +923,9 @@ export const subscriptions = [
     updatedAt: '2026-07-18 14:22:40',
     allocatedAt: '2026-07-12 11:00:00',
     freezeDeadline: '2026-07-13 11:00:00',
-    notes: '已签署 SPV 认购文件',
+    notes: '已完成',
     shares: 375,
     frozenAmount: 3000000,
-    spvDocumentUrl: 'https://example.com/spv/p4-agreement.html',
     // AML合规字段（2026-08-26 新增）
     amlFlags: [],                  // 无合规标记
     riskAcknowledgement: {         // 风险确认
@@ -932,13 +934,13 @@ export const subscriptions = [
       ipAddress: '192.168.1.100',
     },
     documentViewLogs: [            // 文件查看日志
-      { documentType: 'spv_agreement', viewedAt: '2026-07-18 14:18:00', duration: 120 },
+      { documentType: 'agreement', viewedAt: '2026-07-18 14:18:00', duration: 120 },
     ],
     history: [
-      { type: 'settled', timestamp: '2026-07-18 14:22:40', actor: 'system', note: '扣款完成 · 已生成持仓 · 375 份', amount: -3000000 },
-      { type: 'signed', timestamp: '2026-07-18 14:18:22', actor: 'platform', note: 'SPV 文件已签署' },
-      { type: 'allocated', timestamp: '2026-07-12 11:00:00', actor: 'platform', note: '已获配额 · 待线下打款与签署' },
-      { type: 'submitted', timestamp: '2026-07-10 09:30:15', actor: 'user', note: '提交意向 · 金额 HK$ 300 万' },
+      { type: 'settled', timestamp: '2026-07-18 14:22:40', actor: 'system', note: '已标记完成', amount: -3000000 },
+      { type: 'signed', timestamp: '2026-07-18 14:18:22', actor: 'platform', note: '已标记完成' },
+      { type: 'allocated', timestamp: '2026-07-12 11:00:00', actor: 'platform', note: '已转客户经理跟进' },
+      { type: 'submitted', timestamp: '2026-07-10 09:30:15', actor: 'user', note: '提交问卷 · 意向金额 HK$ 300 万' },
     ],
   },
   {
@@ -953,10 +955,9 @@ export const subscriptions = [
     updatedAt: '2026-07-28 10:12:47',
     allocatedAt: '2026-07-28 10:12:47',
     freezeDeadline: null,
-    notes: '已获配额，待签署 SPV 认购文件',
+    notes: '客户经理跟进中',
     shares: null,
     frozenAmount: 1000000,
-    spvDocumentUrl: 'https://example.com/spv/p3-agreement.html',
     // AML合规字段（2026-08-26 新增）
     amlFlags: [],                  // 无合规标记
     riskAcknowledgement: {         // 风险确认
@@ -966,8 +967,8 @@ export const subscriptions = [
     },
     documentViewLogs: [],          // 暂无文件查看记录
     history: [
-      { type: 'allocated', timestamp: '2026-07-28 10:12:47', actor: 'platform', note: '已获配额 · 待线下打款与签署' },
-      { type: 'submitted', timestamp: '2026-07-25 16:40:02', actor: 'user', note: '提交意向 · 金额 HK$ 100 万' },
+      { type: 'allocated', timestamp: '2026-07-28 10:12:47', actor: 'platform', note: '已转客户经理跟进' },
+      { type: 'submitted', timestamp: '2026-07-25 16:40:02', actor: 'user', note: '提交问卷 · 意向金额 HK$ 100 万' },
     ],
   },
   {
@@ -1002,7 +1003,7 @@ export const subscriptions = [
     },
     documentViewLogs: [],          // 暂无文件查看记录
     history: [
-      { type: 'submitted', timestamp: '2026-07-29 11:05:48', actor: 'user', note: '提交意向 · 金额 HK$ 300 万' },
+      { type: 'submitted', timestamp: '2026-07-29 11:05:48', actor: 'user', note: '提交问卷 · 意向金额 HK$ 300 万' },
     ],
   },
   {
@@ -1017,7 +1018,7 @@ export const subscriptions = [
     updatedAt: '2026-07-05 09:08:31',
     allocatedAt: null,
     freezeDeadline: null,
-    notes: '本轮份额稀缺，未获配额，可关注后续轮次',
+    notes: '本轮已结束，如有进一步意向可继续提交问卷',
     shares: null,
     frozenAmount: 0,
     // AML合规字段（2026-08-26 新增）
@@ -1029,8 +1030,8 @@ export const subscriptions = [
     },
     documentViewLogs: [],          // 暂无文件查看记录
     history: [
-      { type: 'unallocated', timestamp: '2026-07-05 09:08:31', actor: 'platform', note: '本轮份额稀缺，未获配额' },
-      { type: 'submitted', timestamp: '2026-06-20 14:22:10', actor: 'user', note: '提交意向 · 金额 HK$ 50 万' },
+      { type: 'unallocated', timestamp: '2026-07-05 09:08:31', actor: 'platform', note: '本次提交暂无进一步安排' },
+      { type: 'submitted', timestamp: '2026-06-20 14:22:10', actor: 'user', note: '提交问卷 · 意向金额 HK$ 50 万' },
     ],
   },
 
@@ -1067,7 +1068,7 @@ export const subscriptions = [
     },
     documentViewLogs: [],          // 暂无文件查看记录
     history: [
-      { type: 'submitted', timestamp: '2026-08-01 10:20:00', actor: 'user', note: '提交意向 · 金额 HK$ 500 万' },
+      { type: 'submitted', timestamp: '2026-08-01 10:20:00', actor: 'user', note: '提交问卷 · 意向金额 HK$ 500 万' },
     ],
   },
   {
@@ -1102,7 +1103,7 @@ export const subscriptions = [
     },
     documentViewLogs: [],          // 暂无文件查看记录
     history: [
-      { type: 'submitted', timestamp: '2026-08-02 14:05:00', actor: 'user', note: '提交意向 · 金额 HK$ 300 万' },
+      { type: 'submitted', timestamp: '2026-08-02 14:05:00', actor: 'user', note: '提交问卷 · 意向金额 HK$ 300 万' },
     ],
   },
   {
@@ -1137,7 +1138,7 @@ export const subscriptions = [
     },
     documentViewLogs: [],          // 暂无文件查看记录
     history: [
-      { type: 'submitted', timestamp: '2026-08-03 09:45:00', actor: 'user', note: '提交意向 · 金额 HK$ 1000 万' },
+      { type: 'submitted', timestamp: '2026-08-03 09:45:00', actor: 'user', note: '提交问卷 · 意向金额 HK$ 1000 万' },
     ],
   },
 
@@ -1166,7 +1167,7 @@ export const subscriptions = [
     },
     documentViewLogs: [],          // 暂无文件查看记录
     history: [
-      { type: 'submitted', timestamp: '2026-08-05 16:30:00', actor: 'user', note: '提交意向 · 金额 HK$ 100 万' },
+      { type: 'submitted', timestamp: '2026-08-05 16:30:00', actor: 'user', note: '提交问卷 · 意向金额 HK$ 100 万' },
     ],
   },
 
@@ -1183,10 +1184,9 @@ export const subscriptions = [
     updatedAt: '2026-08-10 10:00:00',
     allocatedAt: '2026-08-10 10:00:00',
     freezeDeadline: '2026-08-11 10:00:00',
-    notes: '已获配额，待签署 SPV 认购文件',
+    notes: '客户经理跟进中',
     shares: null,
     frozenAmount: 2000000,
-    spvDocumentUrl: 'https://example.com/spv/p3-agreement.html',
     // AML合规字段（2026-08-26 新增）
     amlFlags: [],                  // 无合规标记
     riskAcknowledgement: {         // 风险确认
@@ -1196,8 +1196,8 @@ export const subscriptions = [
     },
     documentViewLogs: [],          // 暂无文件查看记录
     history: [
-      { type: 'allocated', timestamp: '2026-08-10 10:00:00', actor: 'platform', note: '已获配额 · 待线下打款与签署' },
-      { type: 'submitted', timestamp: '2026-08-08 11:00:00', actor: 'user', note: '提交意向 · 金额 HK$ 200 万' },
+      { type: 'allocated', timestamp: '2026-08-10 10:00:00', actor: 'platform', note: '已转客户经理跟进' },
+      { type: 'submitted', timestamp: '2026-08-08 11:00:00', actor: 'user', note: '提交问卷 · 意向金额 HK$ 200 万' },
     ],
   },
   {
@@ -1212,10 +1212,9 @@ export const subscriptions = [
     updatedAt: '2026-07-26 09:40:00',
     allocatedAt: '2026-07-22 11:00:00',
     freezeDeadline: '2026-07-23 11:00:00',
-    notes: '已签署 SPV 认购文件',
+    notes: '已完成',
     shares: 187,
     frozenAmount: 1500000,
-    spvDocumentUrl: 'https://example.com/spv/p3-agreement.html',
     // AML合规字段（2026-08-26 新增）
     amlFlags: [],                  // 无合规标记
     riskAcknowledgement: {         // 风险确认
@@ -1224,13 +1223,13 @@ export const subscriptions = [
       ipAddress: '10.0.0.55',
     },
     documentViewLogs: [            // 文件查看日志
-      { documentType: 'spv_agreement', viewedAt: '2026-07-26 09:35:00', duration: 90 },
+      { documentType: 'agreement', viewedAt: '2026-07-26 09:35:00', duration: 90 },
     ],
     history: [
-      { type: 'settled', timestamp: '2026-07-26 09:40:00', actor: 'system', note: '扣款完成 · 已生成持仓 · 187 份', amount: -1500000 },
-      { type: 'signed', timestamp: '2026-07-26 09:35:00', actor: 'platform', note: 'SPV 文件已签署' },
-      { type: 'allocated', timestamp: '2026-07-22 11:00:00', actor: 'platform', note: '已获配额 · 待线下打款与签署' },
-      { type: 'submitted', timestamp: '2026-07-20 15:10:00', actor: 'user', note: '提交意向 · 金额 HK$ 150 万' },
+      { type: 'settled', timestamp: '2026-07-26 09:40:00', actor: 'system', note: '已标记完成', amount: -1500000 },
+      { type: 'signed', timestamp: '2026-07-26 09:35:00', actor: 'platform', note: '已标记完成' },
+      { type: 'allocated', timestamp: '2026-07-22 11:00:00', actor: 'platform', note: '已转客户经理跟进' },
+      { type: 'submitted', timestamp: '2026-07-20 15:10:00', actor: 'user', note: '提交问卷 · 意向金额 HK$ 150 万' },
     ],
   },
   {
@@ -1265,7 +1264,7 @@ export const subscriptions = [
     },
     documentViewLogs: [],          // 暂无文件查看记录
     history: [
-      { type: 'submitted', timestamp: '2026-08-06 09:15:00', actor: 'user', note: '提交意向 · 金额 HK$ 1000 万' },
+      { type: 'submitted', timestamp: '2026-08-06 09:15:00', actor: 'user', note: '提交问卷 · 意向金额 HK$ 1000 万' },
     ],
   },
 
@@ -1298,7 +1297,7 @@ export const subscriptions = [
     riskAcknowledgement: { confirmed: true, confirmedAt: '2026-08-04 13:40:00', ipAddress: '10.0.0.57' },
     documentViewLogs: [],
     history: [
-      { type: 'submitted', timestamp: '2026-08-04 13:40:00', actor: 'user', note: '提交意向 · 金额 HK$ 800 万' },
+      { type: 'submitted', timestamp: '2026-08-04 13:40:00', actor: 'user', note: '提交问卷 · 意向金额 HK$ 800 万' },
     ],
   },
   {
@@ -1320,7 +1319,7 @@ export const subscriptions = [
     riskAcknowledgement: { confirmed: true, confirmedAt: '2026-08-05 10:05:00', ipAddress: '10.0.0.58' },
     documentViewLogs: [],
     history: [
-      { type: 'submitted', timestamp: '2026-08-05 10:05:00', actor: 'user', note: '提交意向 · 金额 HK$ 200 万' },
+      { type: 'submitted', timestamp: '2026-08-05 10:05:00', actor: 'user', note: '提交问卷 · 意向金额 HK$ 200 万' },
     ],
   },
   {
@@ -1344,7 +1343,7 @@ export const subscriptions = [
     riskAcknowledgement: { confirmed: true, confirmedAt: '2026-08-07 09:30:00', ipAddress: '10.0.0.59' },
     documentViewLogs: [],
     history: [
-      { type: 'submitted', timestamp: '2026-08-07 09:30:00', actor: 'user', note: '提交意向 · 金额 HK$ 400 万' },
+      { type: 'submitted', timestamp: '2026-08-07 09:30:00', actor: 'user', note: '提交问卷 · 意向金额 HK$ 400 万' },
     ],
   },
   {
@@ -1359,18 +1358,17 @@ export const subscriptions = [
     updatedAt: '2026-08-10 14:00:00',
     allocatedAt: '2026-08-10 14:00:00',
     freezeDeadline: '2026-08-11 14:00:00',
-    notes: '已获配额，待签署 SPV 认购文件',
+    notes: '客户经理跟进中',
     shares: null,
     frozenAmount: 3000000,
-    spvDocumentUrl: 'https://example.com/spv/p2-agreement.html',
     amlFlags: [
       { type: 'large_transaction', status: 'approved', riskLevel: 'medium', reviewId: 'ltx9', createdAt: '2026-08-06 15:20:00' },
     ],
     riskAcknowledgement: { confirmed: true, confirmedAt: '2026-08-06 15:20:00', ipAddress: '10.0.0.60' },
     documentViewLogs: [],
     history: [
-      { type: 'allocated', timestamp: '2026-08-10 14:00:00', actor: 'platform', note: '已获配额 · 待线下打款与签署' },
-      { type: 'submitted', timestamp: '2026-08-06 15:20:00', actor: 'user', note: '提交意向 · 金额 HK$ 300 万' },
+      { type: 'allocated', timestamp: '2026-08-10 14:00:00', actor: 'platform', note: '已转客户经理跟进' },
+      { type: 'submitted', timestamp: '2026-08-06 15:20:00', actor: 'user', note: '提交问卷 · 意向金额 HK$ 300 万' },
     ],
   },
   {
@@ -1385,15 +1383,14 @@ export const subscriptions = [
     updatedAt: '2026-07-20 10:00:00',
     allocatedAt: '2026-07-17 09:00:00',
     freezeDeadline: '2026-07-18 09:00:00',
-    notes: '已签署 SPV 认购文件',
+    notes: '已完成',
     shares: 375,
     frozenAmount: 3000000,
-    spvDocumentUrl: 'https://example.com/spv/p3-agreement.html',
     history: [
-      { type: 'settled', timestamp: '2026-07-20 10:00:00', actor: 'system', note: '扣款完成 · 已生成持仓 · 375 份', amount: -3000000 },
-      { type: 'signed', timestamp: '2026-07-20 09:55:00', actor: 'platform', note: 'SPV 文件已签署' },
-      { type: 'allocated', timestamp: '2026-07-17 09:00:00', actor: 'platform', note: '已获配额 · 待线下打款与签署' },
-      { type: 'submitted', timestamp: '2026-07-15 11:00:00', actor: 'user', note: '提交意向 · 金额 HK$ 300 万' },
+      { type: 'settled', timestamp: '2026-07-20 10:00:00', actor: 'system', note: '已标记完成', amount: -3000000 },
+      { type: 'signed', timestamp: '2026-07-20 09:55:00', actor: 'platform', note: '已标记完成' },
+      { type: 'allocated', timestamp: '2026-07-17 09:00:00', actor: 'platform', note: '已转客户经理跟进' },
+      { type: 'submitted', timestamp: '2026-07-15 11:00:00', actor: 'user', note: '提交问卷 · 意向金额 HK$ 300 万' },
     ],
   },
   {
@@ -1408,15 +1405,15 @@ export const subscriptions = [
     updatedAt: '2026-07-28 16:00:00',
     allocatedAt: null,
     freezeDeadline: null,
-    notes: '本轮份额稀缺，未获配额，可关注后续轮次',
+    notes: '本轮已结束，如有进一步意向可继续提交问卷',
     shares: null,
     frozenAmount: 0,
     amlFlags: [],
     riskAcknowledgement: { confirmed: true, confirmedAt: '2026-07-22 10:00:00', ipAddress: '10.0.0.62' },
     documentViewLogs: [],
     history: [
-      { type: 'unallocated', timestamp: '2026-07-28 16:00:00', actor: 'platform', note: '本轮份额稀缺，未获配额' },
-      { type: 'submitted', timestamp: '2026-07-22 10:00:00', actor: 'user', note: '提交意向 · 金额 HK$ 100 万' },
+      { type: 'unallocated', timestamp: '2026-07-28 16:00:00', actor: 'platform', note: '本次提交暂无进一步安排' },
+      { type: 'submitted', timestamp: '2026-07-22 10:00:00', actor: 'user', note: '提交问卷 · 意向金额 HK$ 100 万' },
     ],
   },
   {
@@ -1431,20 +1428,19 @@ export const subscriptions = [
     updatedAt: '2026-07-15 10:30:00',
     allocatedAt: '2026-07-10 10:00:00',
     freezeDeadline: '2026-07-11 10:00:00',
-    notes: '已签署 SPV 认购文件',
+    notes: '已完成',
     shares: 250,
     frozenAmount: 2000000,
-    spvDocumentUrl: 'https://example.com/spv/p4-agreement.html',
     amlFlags: [],
     riskAcknowledgement: { confirmed: true, confirmedAt: '2026-07-08 14:00:00', ipAddress: '10.0.0.63' },
     documentViewLogs: [
-      { documentType: 'spv_agreement', viewedAt: '2026-07-15 10:25:00', duration: 80 },
+      { documentType: 'agreement', viewedAt: '2026-07-15 10:25:00', duration: 80 },
     ],
     history: [
-      { type: 'settled', timestamp: '2026-07-15 10:30:00', actor: 'system', note: '扣款完成 · 已生成持仓 · 250 份', amount: -2000000 },
-      { type: 'signed', timestamp: '2026-07-15 10:25:00', actor: 'platform', note: 'SPV 文件已签署' },
-      { type: 'allocated', timestamp: '2026-07-10 10:00:00', actor: 'platform', note: '已获配额 · 待线下打款与签署' },
-      { type: 'submitted', timestamp: '2026-07-08 14:00:00', actor: 'user', note: '提交意向 · 金额 HK$ 200 万' },
+      { type: 'settled', timestamp: '2026-07-15 10:30:00', actor: 'system', note: '已标记完成', amount: -2000000 },
+      { type: 'signed', timestamp: '2026-07-15 10:25:00', actor: 'platform', note: '已标记完成' },
+      { type: 'allocated', timestamp: '2026-07-10 10:00:00', actor: 'platform', note: '已转客户经理跟进' },
+      { type: 'submitted', timestamp: '2026-07-08 14:00:00', actor: 'user', note: '提交问卷 · 意向金额 HK$ 200 万' },
     ],
   },
   {
@@ -1459,12 +1455,12 @@ export const subscriptions = [
     updatedAt: '2026-07-08 15:00:00',
     allocatedAt: null,
     freezeDeadline: null,
-    notes: '本轮份额稀缺，未获配额，可关注后续轮次',
+    notes: '本轮已结束，如有进一步意向可继续提交问卷',
     shares: null,
     frozenAmount: 0,
     history: [
-      { type: 'unallocated', timestamp: '2026-07-08 15:00:00', actor: 'platform', note: '本轮份额稀缺，未获配额' },
-      { type: 'submitted', timestamp: '2026-06-25 09:30:00', actor: 'user', note: '提交意向 · 金额 HK$ 30 万' },
+      { type: 'unallocated', timestamp: '2026-07-08 15:00:00', actor: 'platform', note: '本次提交暂无进一步安排' },
+      { type: 'submitted', timestamp: '2026-06-25 09:30:00', actor: 'user', note: '提交问卷 · 意向金额 HK$ 30 万' },
     ],
   },
 ];
@@ -1531,10 +1527,8 @@ normalizeSubscriptionAmlFlags();
 export const holdings = [
   {
     id: 'h1',
-    spvId: 'spv1',  // SPV 关联（业务时序：先建档后签 SPV）
     projectId: 'p4',
     projectName: 'GreenCell Energy',
-    spvName: 'GreenCell Energy 一期 SPV',
     shares: 375,
     costBasis: 3000000,
     currentValue: 3600000,
@@ -1593,7 +1587,7 @@ export const transactions = [
     reference: 'T2-202607100930',
     // 合规标记（2026-08-26 新增）
     amlFlags: ['large_amount'],
-    amlNote: '大额申购，已完成风险评估',
+    amlNote: '大额意向，已完成风险评估',
   },
   {
     id: 't3',
@@ -1850,20 +1844,21 @@ export function getProjectSubscriptions(projectId) {
 }
 
 export const subscriptionStatusLabels = {
-  submitted: '意向已提交',
-  allocated: '已获配额',
-  signed: '已签 SPV',
-  unallocated: '未获配额',
+  // 2026-10-22 RO 整改：申购链路整体改为问卷口径（文件已提交 → 客户经理跟进 → 已完成）
+  submitted: '文件已提交',
+  allocated: '客户经理跟进中',
+  signed: '已完成',
+  unallocated: '暂无需推进',
 };
 
 export const historyTypeLabels = {
-  submitted: '提交意向',
-  allocated: '已获配额',
+  submitted: '提交问卷',
+  allocated: '转客户经理跟进',
   frozen: '资金冻结',
   unfrozen: '资金释放',
-  signed: '签署 SPV',
+  signed: '标记完成',
   settled: '份额确认',
-  unallocated: '未获配额',
+  unallocated: '暂无需推进',
 };
 
 export const actorLabels = {
@@ -1912,10 +1907,12 @@ export function getProjectHeroEmoji(sector) {
 }
 
 export const projectStatusLabels = {
-  raising: '申购开放',
+  // 2026-10-22 RO 整改：raising 不再表达「开放申购」（募资语义），改为中性引导词；
+  // closed/sold 同步中性化（分配/售罄同属卖方语义）
+  raising: '了解详情',
   upcoming: '即将上线',
-  closed: '分配完成',
-  sold: '已分配',
+  closed: '已结束',
+  sold: '已结束',
 };
 
 export const eventStatusLabels = {
@@ -2314,7 +2311,7 @@ export function removeCompanion(regId, index) {
   return true;
 }
 
-// 申购意向提交 → 当前用户报名线索自动"已转化"（报名客户进入申购漏斗，与申购记录语义联动）
+// 问卷提交 → 当前用户报名线索自动"已转化"（报名客户进入跟进漏斗，与问卷记录语义联动）
 export function convertLeadsToSubscribed() {
   let changed = false;
   eventRegistrationsList.forEach(r => {
@@ -2330,9 +2327,9 @@ export function convertLeadsToSubscribed() {
 // 报名线索跟进状态机（客户发掘 · 销售漏斗，2026-08-12 与业务对齐重定义）：
 //   new 新线索（报名后待首联）→ contacted 已联系（客户经理已破冰）
 //   → invited 已邀约（已邀进一步沟通：一对一尽调/下场活动）
-//   → converted 已转化（【= 已提交申购意向】报名客户进入项目申购漏斗，与申购记录语义联动）
+//   → converted 已转化（【= 已提交问卷】报名客户进入项目跟进漏斗，与问卷记录语义联动）
 //   ↘ paused 暂缓（客户婉拒/暂不参与）
-// 待跟进 = new/contacted/invited（未转化未暂缓）；已转化后客户到「申购记录」跟进
+// 待跟进 = new/contacted/invited（未转化未暂缓）；已转化后客户到「问卷记录」跟进
 export const regLeadStatusLabels = {
   new: '新线索',
   contacted: '已联系',
@@ -2348,7 +2345,7 @@ export const leadFollowups = [
   // 吴世昌（u9 · INV-9021，converted）——完整转化链
   { id: 'f1', userId: 'u9', at: '2026-08-01 11:20:00', operator: '王慧敏', from: 'new', to: 'contacted', note: '电话首联，客户对量子计算商业化路径感兴趣，约下期路演' },
   { id: 'f2', userId: 'u9', at: '2026-08-05 15:30:00', operator: '王慧敏', from: 'contacted', to: 'invited', note: '发送参观日邀请，客户确认出席并携带 1 人' },
-  { id: 'f3', userId: 'u9', at: '2026-09-05 17:40:00', operator: '王慧敏', from: 'invited', to: 'converted', note: '参观日现场跟进，客户提交申购意向（转化）' },
+  { id: 'f3', userId: 'u9', at: '2026-09-05 17:40:00', operator: '王慧敏', from: 'invited', to: 'converted', note: '参观日现场跟进，客户提交问卷（转化）' },
   // 刘倩（u17 · INV-5123，paused）——暂缓链
   { id: 'f4', userId: 'u17', at: '2026-08-02 14:45:00', operator: '陈志豪', from: 'new', to: 'contacted', note: '微信联系，对新能源方向有配置意愿' },
   { id: 'f5', userId: 'u17', at: '2026-08-06 10:00:00', operator: '陈志豪', from: 'contacted', to: 'paused', note: '客户近期资金安排变动，暂缓跟进，Q4 再联系' },
@@ -2596,8 +2593,8 @@ export const notifications = [
   {
     id: 'n1',
     type: 'subscription',
-    title: '申购进度更新',
-    body: '您在 SkyNet Robotics 的申购意向已获配额，请留意后续 SPV 签署安排。',
+    title: '问卷进度更新',
+    body: '您在 SkyNet Robotics 的问卷已转客户经理跟进，顾问会与您联系。',
     createdAt: '2026-07-28 18:00',
     read: false,
   },
@@ -2630,7 +2627,7 @@ export const notifications = [
 // 通知类型语义元数据（2026-08-14 广播台账化）：后台/用户侧统一语义
 // subscription 主色蓝 / event 金 / wallet 绿 / service 橙（对齐用户侧 Notifications.jsx typeMeta）
 export const NOTICE_TYPE_META = {
-  subscription: { label: '申购', cls: 'admin-status-notify-sub' },
+  subscription: { label: '问卷', cls: 'admin-status-notify-sub' },
   event: { label: '活动', cls: 'admin-status-notify-event' },
   wallet: { label: '资金', cls: 'admin-status-notify-wallet' },
   service: { label: '服务', cls: 'admin-status-notify-service' },
@@ -2658,8 +2655,8 @@ export const broadcastLogs = [
     id: 'b2',
     orderNo: genOrderNo('BR', '2026-08-12 10:30:00'),
     type: 'subscription',
-    title: '申购进度说明',
-    body: '近期项目申购意向已陆续完成配额协调，请留意「申购记录」页面的状态更新。',
+    title: '问卷进度说明',
+    body: '近期项目问卷已陆续转客户经理跟进，请留意「问卷记录」页面的状态更新。',
     target: '全部投资人',
     operator: '运营专员',
     createdAt: '2026-08-12 10:30:00',
@@ -2775,80 +2772,30 @@ export function getInvestorNo(userId) {
   return `INV-${String(n).padStart(4, '0')}`;
 }
 
-function buildInvestorRoster(project) {
-  const recent = [...(project.recentInvestors || [])];
-  const total = project.investorCount || 0;
-  const missing = Math.max(0, total - recent.length);
-  const roster = [];
-  const used = new Set(recent.map(r => r.investorNo));
-  const seed = (project.id.charCodeAt(1) || 0) * 31 + 1000;
-  for (let i = 0; i < missing; i++) {
-    let no;
-    do {
-      no = `INV-${String((seed + i * 73) % 8999 + 1000).padStart(4, '0')}`;
-    } while (used.has(no));
-    used.add(no);
-    const month = String((i % 6) + 2).padStart(2, '0');
-    const day = String((i % 20) + 1).padStart(2, '0');
-    const hh = String((seed + i * 17) % 24).padStart(2, '0');
-    const mm = String((seed + i * 31) % 60).padStart(2, '0');
-    const ss = String((seed + i * 7) % 60).padStart(2, '0');
-    roster.push({ id: `${project.id}-g${i}`, investorNo: no, createdAt: `2026-${month}-${day} ${hh}:${mm}:${ss}` });
-  }
-  roster.push(...recent);
-  // 注入当前用户对该项目的申购记录（预置 mock + 新提交）：名单必须含"我的行"，位次/人数才与个人一致
-  // 每用户只保留最新一条（当前轮次）：unallocated 重提后旧轮次记录不进本轮名单，避免同人重复高亮
-  const mySubs = subscriptions.filter(s => s.projectId === project.id);
-  const latestByUser = new Map();
-  for (const s of mySubs) {
-    const no = s.investorNo || getInvestorNo(currentUser.id);
-    const prev = latestByUser.get(no);
-    if (!prev || s.createdAt > prev.createdAt) latestByUser.set(no, s);
-  }
-  for (const s of latestByUser.values()) {
-    roster.push({
-      id: `sub-${s.id}`,
-      investorNo: s.investorNo || getInvestorNo(currentUser.id),
-      createdAt: s.createdAt,
-    });
-  }
-  roster.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-  return roster;
-}
-
-export function getInvestorRoster(project) {
-  if (!project) return [];
-  // 每次动态构建（无 _investorRoster 缓存）：当前用户提交新申购后，订阅注入自动生效，无需缓存失效处理
-  return buildInvestorRoster(project);
-}
-
 // 三语文本 helper（2026-10-19 上移至 faqItems 之前：FAQ 三语化直接引用，避免 const TDZ；
 // 原位于 agreements 区，此前 2026-09-20 也因同类引用上移过一次）
 const AG = (zhCN, zhHK, en) => ({ 'zh-CN': zhCN, 'zh-HK': zhHK, en });
+
 
 // 帮助中心 FAQ（2026-10-19 三语化：q/a 为 { 'zh-CN','zh-HK','en' } 结构，Help 页按当前语言直读，不再走 i18n 词条）。
 // 现有 6 条的繁/英译文自 i18n 词条表（zhHK.js/en.js）原样搬运，渲染结果与迁移前逐字一致。
 // 后台「系统配置」可增删改（addFaqItem/updateFaqItem/removeFaqItem），新增条目三语录入，繁/英留空回退简体。
 export const faqItems = [
   {
-    q: AG('申购意向提交后需要做什么？', '申購意向提交後需要做什麼？', 'What should I do after submitting a subscription intent?'),
-    a: AG('意向提交后，平台会记录您的意向次序并作为协调额度的参考。后续是否获配、签署 SPV 等由平台与项目方协调后线下联系您，期间无需额外操作。', '意向提交後，平台會記錄您的意向次序並作為協調額度的參考。後續是否獲配、簽署 SPV 等由平台與項目方協調後線下聯繫您，期間無需額外操作。', 'After submitting your intent, the platform will record your order of preference as a reference for allocation. Whether you receive an allocation and the signing of SPV will be coordinated offline by the platform and the project team, who will contact you directly. No additional action is required from you during this period.'),
+    q: AG('问卷提交后需要做什么？', '問卷提交後需要做什麼？', 'What should I do after submitting the questionnaire?'),
+    a: AG('问卷提交后，客户经理会与您联系，确认进一步需求，期间无需额外操作。', '問卷提交後，客戶經理會與您聯繫，確認進一步需求，期間無需額外操作。', 'After submitting the questionnaire, your account manager will contact you to confirm next steps. No additional action is required from you during this period.'),
   },
   {
-    q: AG('意向会冻结资金吗？', '意向會凍結資金嗎？', 'Will the intent freeze my funds?'),
-    a: AG('不会。申购意向仅为兴趣表达，不冻结任何资金。实际出资发生在与项目方协商并签署 SPV 文件之后。', '不會。申購意向僅為興趣表達，不凍結任何資金。實際出資產生在與項目方協商並簽署 SPV 文件之後。', 'No. A subscription intent is simply an expression of interest and does not freeze any funds. Actual capital contribution occurs only after negotiation with the project team and signing of the SPV document.'),
+    q: AG('问卷提交会冻结资金吗？', '問卷提交會凍結資金嗎？', 'Does submitting the questionnaire freeze any funds?'),
+    a: AG('不会。问卷仅为兴趣表达，不冻结任何资金，也不构成任何投资承诺。', '不會。問卷僅為興趣表達，不凍結任何資金，亦不構成任何投資承諾。', 'No. The questionnaire is simply an expression of interest. It does not freeze any funds and does not constitute any investment commitment.'),
   },
   {
-    q: AG('「未获配额」是什么意思？', '「未獲配額」是什麼意思？', 'What does "unallocated" mean?'),
-    a: AG('本轮份额有限，您本轮未获得分配额度。项目若仍开放，可关注后续轮次并重新提交意向。', '本輪份額有限，您本輪未獲得分配額度。項目若仍開放，可關注後續輪次並重新提交意向。', 'This round had limited availability and you did not receive an allocation. If the project remains open, you may watch for subsequent rounds and resubmit your intent.'),
+    q: AG('「暂无进一步安排」是什么意思？', '「暫無進一步安排」是什麼意思？', 'What does "no further action" mean?'),
+    a: AG('本轮已结束，本次提交暂无需进一步安排。如有进一步意向，可重新填写问卷。', '本輪已結束，本次提交暫無需進一步安排。如有進一步意向，可重新填寫問卷。', 'This round has ended and no further action is required for this submission. You may submit a new questionnaire if your interest changes.'),
   },
   {
     q: AG('如何联系我的专属客户经理？', '如何聯繫我的專屬客戶經理？', 'How do I contact my dedicated account manager?'),
     a: AG('在「我的」页面点击客户经理卡片即可查看其联系方式，包括电话、邮箱与 WhatsApp。经理未响应时可转在线客服。', '在「我的」頁面點擊客戶經理卡片即可查看其聯繫方式，包括電話、郵箱與 WhatsApp。經理未響應時可轉在線客服。', 'Click on your dedicated account manager card in the "My" section to view their contact information, including phone, email and WhatsApp. If your manager does not respond, you may escalate to online customer service.'),
-  },
-  {
-    q: AG('合规报告在哪里查看？', '合規報告在哪裡查看？', 'Where can I find compliance reports?'),
-    a: AG('在「我的」页面进入「合规报告」，可查看月度资产报告、季度投资组合报告及合规披露文件。', '在「我的」頁面進入「合規報告」，可查看月度資產報告、季度投資組合報告及合規披露文件。', 'Access the "Compliance Reports" section in the "My" page to view monthly asset reports, quarterly investment portfolio reports and compliance disclosure documents.'),
   },
   {
     q: AG('如何保证我的信息与资金安全？', '如何保證我的資訊與資金安全？', 'How is my information and funds security guaranteed?'),
@@ -2914,23 +2861,23 @@ export const companyPolicies = [
   {
     id: 'cp3',
     title: '隐私政策',
-    subtitle: '个人信息收集与保护说明',
+    subtitle: '隐私声明与个人资料收集声明',
     file: 'privacy-policy.pdf',
     date: '2026-06-30',
     size: '1.5 MB',
   },
   {
     id: 'cp4',
-    title: '用户协议',
-    subtitle: '平台服务条款与投资人声明',
+    title: '使用条款',
+    subtitle: '网站使用条款与免责声明',
     file: 'user-agreement.pdf',
     date: '2026-06-30',
     size: '2.1 MB',
   },
   {
     id: 'cp5',
-    title: '风险披露声明',
-    subtitle: '私募股权投资风险提示',
+    title: '风险披露声明及免责声明',
+    subtitle: '投资风险披露与复杂产品警告',
     file: 'risk-disclosure.pdf',
     date: '2026-06-30',
     size: '1.0 MB',
@@ -2961,89 +2908,27 @@ export const PI_CONFIRM_EXTRA_TEXT = AG(
 );
 
 export const agreements = [
+  // 2026-10-22：公司正式法务文本替换原型占位稿（正文见 mock/legalTexts.js，一段一条）
   {
     id: 'user-agreement',
     version: 'v1.2',
     effectiveAt: '2026-09-01',
-    title: AG('用户协议', '用戶協議', 'Terms of Use'),
-    sections: [
-      { h: AG('一、服务范围', '一、服務範圍', '1. Scope of Services'), p: AG(
-        '{{BRAND_FULL}}（下称"本平台"）依据{{LICENSE_TYPE}}，为专业投资者提供私募股权投资机会的信息展示、意向提交、申购协助及投后信息服务。本平台不提供公开募集、公开推介或任何形式的投资保证。',
-        '{{BRAND_FULL}}（下稱"本平台"）依據{{LICENSE_TYPE}}，為專業投資者提供私募股權投資機會的信息展示、意向提交、申購協助及投後信息服務。本平台不提供公開募集、公開推介或任何形式的投資保證。',
-        '{{BRAND_FULL}} (the "Platform"), licensed under {{LICENSE_TYPE}}, provides professional investors with information on private equity opportunities, subscription assistance and post-investment services. The Platform does not offer public offerings or any form of investment guarantee.'
-      ) },
-      { h: AG('二、账户与安全', '二、賬戶與安全', '2. Account and Security'), p: AG(
-        '您应妥善保管账户凭证，并对账户内的全部操作负责。平台有权对异常操作执行风控措施（含冻结、限制出入金），并依法履行反洗钱审查义务。',
-        '您應妥善保管賬戶憑證，並對賬戶內的全部操作負責。平台有權對異常操作執行風控措施（含凍結、限制出入金），並依法履行反洗錢審查義務。',
-        'You are responsible for safeguarding your credentials and all activities under your account. The Platform may apply risk controls (including freezing and restricting transfers) and is obliged to conduct AML reviews.'
-      ) },
-      { h: AG('三、专业投资者身份', '三、專業投資者身份', '3. Professional Investor Status'), p: AG(
-        '本平台服务仅面向香港《证券及期货条例》及其附表 1 定义的 professional investor / institutional investor。您确认本人符合专业投资者资格，并知悉专业投资者身份对应的监管保护差异。',
-        '本平台服務僅面向香港《證券及期貨條例》及其附表 1 定義的 professional investor / institutional investor。您確認本人符合專業投資者資格，並知悉專業投資者身份對應的監管保護差異。',
-        'The services are available only to professional investors as defined in the SFO and Schedule 1 thereof. You confirm that you qualify as a professional investor and understand the reduced regulatory protections that apply.'
-      ) },
-      { h: AG('四、免责与责任限制', '四、免責與責任限制', '4. Limitation of Liability'), p: AG(
-        '平台展示的项目信息由发行方/管理人提供，平台仅作合理核查，不对信息的完整性、准确性作出保证。投资决策由您独立作出，盈亏自负。',
-        '平台展示的項目信息由發行方/管理人提供，平台僅作合理核查，不對信息的完整性、準確性作出保證。投資決策由您獨立作出，盈虧自負。',
-        'Project information is provided by issuers/managers and reviewed by the Platform on a reasonable-efforts basis, without warranty of completeness or accuracy. Investment decisions are made solely by you.'
-      ) },
-      { h: AG('五、协议变更', '五、協議變更', '5. Amendments'), p: AG(
-        '本平台可不时修订本协议。修订后将在 APP 内通知您并要求重新确认；未确认前您将继续收到提醒。继续使用服务视为接受修订后的协议。',
-        '本平台可不時修訂本協議。修訂後將在 APP 內通知您並要求重新確認；未確認前您將繼續收到提醒。繼續使用服務視為接受修訂後的協議。',
-        'The Platform may amend these Terms from time to time and will notify you in-app for re-confirmation. Continued use of the services constitutes acceptance of the amended Terms.'
-      ) },
-    ],
+    title: AG('使用条款', '使用條款', 'Terms and Conditions'),
+    sections: termsOfUseSections,
   },
   {
     id: 'privacy-policy',
     version: 'v1.2',
     effectiveAt: '2026-09-01',
-    title: AG('隐私政策（个人信息收集声明 PICS）', '隱私政策（個人信息收集聲明 PICS）', 'Privacy Policy (PICS)'),
-    sections: [
-      { h: AG('一、收集目的', '一、收集目的', '1. Purposes of Collection'), p: AG(
-        '本平台收集您的个人信息用于：① 账户开立与身份识别（KYC/AML 审查）；② 专业投资者资格核验；③ 申购、出入金及签署流程处理；④ 监管申报与合规留痕；⑤ 经您单独同意后的产品资讯推送。',
-        '本平台收集您的個人信息用於：① 賬戶開立與身份識別（KYC/AML 審查）；② 專業投資者資格核驗；③ 申購、出入金及簽署流程處理；④ 監管申報與合規留痕；⑤ 經您單獨同意後的產品資訊推送。',
-        'Your personal data is collected for: (i) account opening and identity verification (KYC/AML); (ii) professional investor verification; (iii) processing subscriptions, transfers and signings; (iv) regulatory reporting; (v) marketing communications upon your separate consent.'
-      ) },
-      { h: AG('二、收集项目', '二、收集項目', '2. Categories of Data'), p: AG(
-        '姓名、证件号码及证件影像、联系方式、住址、税务居民身份、财务状况信息、风险承受能力评估结果、电子签名图片及操作日志。活动报名时提供的联系电话仅用于活动通知与现场联络。',
-        '姓名、證件號碼及證件影像、聯繫方式、住址、稅務居民身份、財務狀況信息、風險承受能力評估結果、電子簽名圖片及操作日誌。活動報名時提供的聯繫電話僅用於活動通知與現場聯絡。',
-        'Name, identity document data and images, contact details, residential address, tax residency, financial information, risk assessment results, e-signature images and operation logs. A contact phone number provided for event registration is used solely for event notices and on-site coordination.'
-      ) },
-      { h: AG('三、保留期限', '三、保留期限', '3. Retention'), p: AG(
-        '依照《个人资料（私隐）条例》（Cap. 486）及 AMLO (Cap. 615) 要求，账户相关记录于账户关闭后至少保留 7 年；营销同意记录保留至您撤回同意。',
-        '依照《個人資料（私隱）條例》（Cap. 486）及 AMLO (Cap. 615) 要求，賬戶相關記錄於賬戶關閉後至少保留 7 年；營銷同意記錄保留至您撤回同意。',
-        'Per the PDPO (Cap. 486) and AMLO (Cap. 615), account records are retained for at least 7 years after account closure; marketing consent records until consent is withdrawn.'
-      ) },
-      { h: AG('四、您的权利', '四、您的權利', '4. Your Rights'), p: AG(
-        '您有权查阅、更正您的个人信息，有权随时撤回营销同意。拒绝提供监管所要求的资料可能导致本平台无法为您提供相关服务。',
-        '您有權查閱、更正您的個人信息，有權隨時撤回營銷同意。拒絕提供監管所要求的資料可能導致本平台無法為您提供相關服務。',
-        'You may access and correct your personal data and withdraw marketing consent at any time. Failure to provide data required by regulation may prevent the Platform from providing relevant services.'
-      ) },
-    ],
+    title: AG('隐私政策', '隱私政策', 'Privacy Policy'),
+    sections: privacyPolicySections,
   },
   {
     id: 'risk-disclosure',
     version: 'v1.1',
     effectiveAt: '2026-06-30',
-    title: AG('风险披露声明', '風險披露聲明', 'Risk Disclosure Statement'),
-    sections: [
-      { h: AG('一、本金损失风险', '一、本金損失風險', '1. Risk of Loss'), p: AG(
-        '私募股权投资可能因项目经营失败、市场环境变化、退出通道受限等原因导致部分或全部本金损失。过往业绩不代表未来表现。',
-        '私募股權投資可能因項目經營失敗、市場環境變化、退出通道受限等原因導致部分或全部本金損失。過往業績不代表未來表現。',
-        'Private equity investments may result in partial or total loss of capital due to business failure, market changes or constrained exit routes. Past performance is not indicative of future results.'
-      ) },
-      { h: AG('二、流动性与期限风险', '二、流動性與期限風險', '2. Liquidity and Tenor'), p: AG(
-        '私募基金份额无公开交易市场，投资期限通常为数年，您可能无法在需要时提前退出或转让份额。',
-        '私募基金份額無公開交易市場，投資期限通常為數年，您可能無法在需要時提前退出或轉讓份額。',
-        'Interests in private funds have no liquid market and are typically locked up for several years; early exit may not be possible.'
-      ) },
-      { h: AG('三、稀释与分配风险', '三、稀釋與分配風險', '3. Dilution and Distribution'), p: AG(
-        '后续轮次融资可能稀释您的权益；分红取决于项目实际盈利与 SPV 决策，不构成任何收益承诺。',
-        '後續輪次融資可能稀釋您的權益；分紅取決於項目實際盈利與 SPV 決策，不構成任何收益承諾。',
-        'Subsequent financings may dilute your interests; distributions depend on actual performance and SPV decisions and are not guaranteed.'
-      ) },
-    ],
+    title: AG('风险披露声明及免责声明', '風險披露聲明及免責聲明', 'Risk Disclosure Statements and Disclaimers'),
+    sections: riskDisclosureSections,
   },
   {
     id: 'pi-terms',
@@ -3102,6 +2987,26 @@ export const agreements = [
       { h: AG('二、专业投资者附加确认', '二、專業投資者附加確認', '2. PI Additional Confirmation'), p: PI_CONFIRM_EXTRA_TEXT },
     ],
   },
+  // 2026-10-22 RO 整改：路演报名框「专业投资者定义」解释链接的正文——
+  // 采用与 pi-terms §1 同一法律表述，走 AgreementModal（与关于页政策文件、PI 声明同一交互），不新造口径
+  {
+    id: 'pi-definition',
+    version: 'v1.0',
+    effectiveAt: '2026-09-01',
+    title: AG('专业投资者定义', '專業投資者定義', 'Professional Investor Definition'),
+    sections: [
+      { h: AG('一、定义', '一、定義', '1. Definition'), p: AG(
+        '专业投资者指《证券及期货条例》附表 1 第 1 条所定义的专业投资者，含机构专业投资者及个人专业投资者（如持有不少于 HK$8,000,000 投资组合的个人）。',
+        '專業投資者指《證券及期貨條例》附表 1 第 1 條所定義的專業投資者，含機構專業投資者及個人專業投資者（如持有不少於 HK$8,000,000 投資組合的個人）。',
+        'Professional investors are as defined in section 1 of Schedule 1 to the SFO, including institutional and individual professional investors (e.g. individuals with a portfolio of not less than HK$8,000,000).'
+      ) },
+      { h: AG('二、资格核验', '二、資格核驗', '2. Verification'), p: AG(
+        '资格核验以香港证监会持牌人及注册机构登记册的公开记录为准，核验结果作为能否参与平台服务与活动的依据。',
+        '資格核驗以香港證監會持牌人及註冊機構登記冊的公開記錄為準，核驗結果作為能否參與平台服務與活動的依據。',
+        'Eligibility is verified against the public registers of the SFC, and the outcome determines whether you may use the platform services and attend its events.'
+      ) },
+    ],
+  },
   // 2026-10-19：About 公司政策 cp1/cp2 的抽屉化正文（消灭「文档预览即将开放」toast——应用市场审核
   // 要求主体与监管信息文档真实可访问）。⚠️ 正文为占位模板，发审核前须替换为公司真实备案内容。
   {
@@ -3111,9 +3016,9 @@ export const agreements = [
     title: AG('公司简介', '公司簡介', 'Company Profile'),
     sections: [
       { h: AG('一、公司概况', '一、公司概況', '1. Overview'), p: AG(
-        '{{BRAND_FULL}}（「本公司」）为根据香港《公司条例》注册成立的有限公司，持有{{LICENSE_TYPE}}，面向专业投资者提供私募股权投资信息服务。【占位模板：发审核前替换为公司真实备案简介，含注册编号、注册地址、董事信息等。】',
-        '{{BRAND_FULL}}（「本公司」）為根據香港《公司條例》註冊成立的有限公司，持有{{LICENSE_TYPE}}，面向專業投資者提供私募股權投資信息服務。【佔位模板：發審核前替換為公司真實備案簡介，含註冊編號、註冊地址、董事信息等。】',
-        '{{BRAND_FULL}} (the "Company") is a limited company incorporated in Hong Kong under the Companies Ordinance, licensed for {{LICENSE_TYPE}}, providing private equity investment information services to professional investors. [Placeholder: replace with the company\'s actual registered profile (registration no., registered address, directors) before app-store review.]'
+        '{{BRAND_FULL}}（「本公司」）为根据香港《公司条例》注册成立的有限公司，持有{{LICENSE_TYPE}}，是面向专业投资者的私募股权资讯及咨询平台，提供项目资讯展示、信息收集与顾问咨询服务。【占位模板：发审核前替换为公司真实备案简介，含注册编号、注册地址、董事信息等。】',
+        '{{BRAND_FULL}}（「本公司」）為根據香港《公司條例》註冊成立的有限公司，持有{{LICENSE_TYPE}}，是面向專業投資者的私募股權資訊及諮詢平台，提供項目資訊展示、資料收集與顧問諮詢服務。【佔位模板：發審核前替換為公司真實備案簡介，含註冊編號、註冊地址、董事信息等。】',
+        '{{BRAND_FULL}} (the "Company") is a limited company incorporated in Hong Kong under the Companies Ordinance, licensed for {{LICENSE_TYPE}}. It operates as a private equity information and advisory platform for professional investors, providing deal information, information collection and advisory services. [Placeholder: replace with the company\'s actual registered profile (registration no., registered address, directors) before app-store review.]'
       ) },
     ],
   },
@@ -3124,40 +3029,45 @@ export const agreements = [
     title: AG('牌照及监管信息', '牌照及監管信息', 'Licence & Regulatory Information'),
     sections: [
       { h: AG('一、监管牌照', '一、監管牌照', '1. Licence'), p: AG(
-        '本公司持有{{LICENSE_TYPE}}，中央编号（CE No.）{{LICENSE_NO}}。持牌信息可于香港证监会持牌人登记册公开查询（apps.sfc.hk）。',
-        '本公司持有{{LICENSE_TYPE}}，中央編號（CE No.）{{LICENSE_NO}}。持牌信息可於香港證監會持牌人登記冊公開查詢（apps.sfc.hk）。',
-        'The Company holds {{LICENSE_TYPE}} (Central Number / CE No. {{LICENSE_NO}}). The licence status is publicly verifiable via the SFC Register of Licensed Persons (apps.sfc.hk).'
+        '本公司持有{{LICENSE_TYPE}}，牌照编号（SFC NO）{{LICENSE_NO}}。持牌信息可于香港证监会持牌人登记册公开查询（apps.sfc.hk）。',
+        '本公司持有{{LICENSE_TYPE}}，牌照編號（SFC NO）{{LICENSE_NO}}。持牌信息可於香港證監會持牌人登記冊公開查詢（apps.sfc.hk）。',
+        'The Company holds {{LICENSE_TYPE}} (SFC NO. {{LICENSE_NO}}). The licence status is publicly verifiable via the SFC Register of Licensed Persons (apps.sfc.hk).'
       ) },
       { h: AG('二、受监管活动', '二、受監管活動', '2. Regulated Activities'), p: AG(
-        '本平台信息展示与申购协助服务在其牌照允许的范围内提供，不构成公开募集、公开推介或任何形式的投资保证。【占位模板：发审核前核对真实牌照的受规管活动描述。】',
-        '本平台信息展示與申購協助服務在其牌照允許的範圍內提供，不構成公開募集、公開推介或任何形式的投資保證。【佔位模板：發審核前核對真實牌照的受規管活動描述。】',
-        'The Platform\'s information display and subscription assistance services are provided within the scope permitted by its licence, and do not constitute a public offer, solicitation, or any form of investment guarantee. [Placeholder: verify against the actual licensed regulated activities before review.]'
+        '本平台资讯展示与咨询服务在其牌照允许的范围内提供，不构成公开募集、公开推介或任何形式的投资保证。【占位模板：发审核前核对真实牌照的受规管活动描述。】',
+        '本平台資訊展示與諮詢服務在其牌照允許的範圍內提供，不構成公開募集、公開推介或任何形式的投資保證。【佔位模板：發審核前核對真實牌照的受規管活動描述。】',
+        'The Platform\'s information display and advisory services are provided within the scope permitted by its licence, and do not constitute a public offer, solicitation, or any form of investment guarantee. [Placeholder: verify against the actual licensed regulated activities before review.]'
       ) },
     ],
   },
 ];
 
-export function getAgreementById(id) {
+export function getAgreementById(id, translate = (s) => s) {
   // 返回时做品牌插值（浅拷贝 sections）：协议 mock 源以 {{BRAND*}}/{{LICENSE_TYPE}} 占位，
   // 展示为 Admin 配置的真实主体名。version/effectiveAt 元数据原样保留（固化语义）。
   const found = agreements.find(a => a.id === id);
   if (!found) return null;
   return {
     ...found,
+    // 递归插值：h/p 可能是字符串、三语字典，或段落数组（正式法务文本一段一条）
     sections: (found.sections || []).map(s => ({
       ...s,
-      h: typeof s.h === 'string' ? resolveBrand(s.h) : brandResolveAg(s.h),
-      p: typeof s.p === 'string' ? resolveBrand(s.p) : brandResolveAg(s.p),
+      h: resolveNode(s.h, translate),
+      p: resolveNode(s.p, translate),
     })),
   };
 }
 
-// AG 结构（{ 'zh-CN', 'zh-HK', en }）三语字段插值
-function brandResolveAg(ag) {
-  if (!ag || typeof ag !== 'object') return ag;
-  const out = { ...ag };
-  Object.keys(out).forEach(k => { out[k] = resolveBrand(out[k]); });
-  return out;
+// 递归品牌插值：字符串 / 三语字典 / 段落数组
+function resolveNode(node, translate) {
+  if (typeof node === 'string') return resolveBrand(node, translate);
+  if (Array.isArray(node)) return node.map(x => resolveNode(x, translate));
+  if (node && typeof node === 'object') {
+    const out = {};
+    Object.keys(node).forEach(k => { out[k] = resolveNode(node[k], translate); });
+    return out;
+  }
+  return node;
 }
 
 // （2026-09-20：KYC_DECLARATION_TEXT / PI_CONFIRM_EXTRA_TEXT 上移至 agreements 数组之前——
@@ -3170,52 +3080,8 @@ export const E_SIGNATURE_NOTICE_TEXT = AG(
   'By providing my electronic signature above, I confirm and agree that such electronic signature constitutes a legal and binding representation of my handwritten signature. Electronically signed documents shall be valid and enforceable to the same effect as a contract executed by pen and paper. Before electronically signing, I have carefully reviewed the relevant terms and conditions of {{BRAND}} and fully understand and agree to be bound by the rights and obligations contained therein.'
 );
 
-// SPV 协议全文模板（APP 内签署页展示用；按 SPV 档案与申购单插值，接后端由发行方协议文本替换）
-export function buildSpvAgreementSections(spv, sub, lang = 'zh-CN') {
-  const L = (zhCN, zhHK, en) => (lang === 'zh-HK' ? zhHK : lang === 'en' ? en : zhCN);
-  const name = sub?.investorName || L('本协议投资人', '本協議投資人', 'the Investor');
-  const amount = sub?.amount ? `HK$ ${formatCurrency(sub.amount)}` : L('实际认缴金额', '實際認繳金額', 'the subscribed amount');
-  return [
-    { h: L('一、参与方', '一、參與方', '1. Parties'), p: L(
-      `本协议由 ${spv?.spvName || 'SPV'}（法律实体：${spv?.legalEntity || '—'}，注册号：${spv?.registrationNo || '—'}，下称"SPV"）与投资者 ${name}（下称"投资人"）就参与 ${spv?.projectName || '目标项目'} 私募股权投资事宜订立。`,
-      `本協議由 ${spv?.spvName || 'SPV'}（法律實體：${spv?.legalEntity || '—'}，註冊號：${spv?.registrationNo || '—'}，下稱"SPV"）與投資者 ${name}（下稱"投資人"）就參與 ${spv?.projectName || '目標項目'} 私募股權投資事宜訂立。`,
-      `This agreement is entered into between ${spv?.spvName || 'the SPV'} (legal entity: ${spv?.legalEntity || '—'}, registration no.: ${spv?.registrationNo || '—'}, the "SPV") and ${name} (the "Investor") in respect of the private equity investment in ${spv?.projectName || 'the target project'}.`
-    ) },
-    { h: L('二、认缴与出资', '二、認繳與出資', '2. Subscription and Payment'), p: L(
-      `投资人认缴出资额为 ${amount}，于签署本协议后完成实际出资（资金交割以线下凭证为准）。SPV 按出资额签发等额份额并登记投资人名册。`,
-      `投資人認繳出資額為 ${amount}，於簽署本協議後由凍結意向金額完成實際出資。SPV 按出資額簽發等額份額並登記投資人名冊。`,
-      `The Investor subscribes ${amount}, which shall be settled from the frozen intent amount upon execution. The SPV shall issue equivalent interests and register the Investor in its register of holders.`
-    ) },
-    { h: L('三、费用', '三、費用', '3. Fees'), p: L(
-      `SPV 按年收取管理费 ${spv?.managementFee || '2%'}，业绩报酬（Carry）为 ${spv?.carryRate || '20%'}，托管行为${spv?.custodianBank || '—'}。`,
-      `SPV 按年收取管理費 ${spv?.managementFee || '2%'}，業績報酬（Carry）為 ${spv?.carryRate || '20%'}，托管行為${spv?.custodianBank || '—'}。`,
-      `The SPV charges an annual management fee of ${spv?.managementFee || '2%'} and carried interest of ${spv?.carryRate || '20%'}; custodian: ${spv?.custodianBank || '—'}.`
-    ) },
-    { h: L('四、退出与分配', '四、退出與分配', '4. Exit and Distribution'), p: L(
-      'SPV 退出事件（项目出售/上市/回购）完成后，扣除费用及 Carry 后按持有人份额比例分配。分配以实际到账为准，不构成收益承诺。',
-      'SPV 退出事件（項目出售/上市/回購）完成後，扣除費用及 Carry 後按持有人份額比例分配。分配以實際到賬為準，不構成收益承諾。',
-      'Upon an exit event (sale/IPO/buyback), proceeds shall be distributed pro rata after fees and carry. Distributions are subject to actual receipts and are not guaranteed.'
-    ) },
-    { h: L('五、电子签署效力', '五、電子簽署效力', '5. Electronic Execution'), p: L(
-      '投资人在平台内以电子签名方式签署本协议，该电子签名与手写签名具有同等法律效力；签署时协议版本与文档哈希将被固化存档，作为签署内容不可篡改的依据。',
-      '投資人在平台內以電子簽名方式簽署本協議，該電子簽名與手寫簽名具有同等法律效力；簽署時協議版本與文檔哈希將被固化存檔，作為簽署內容不可篡改的依據。',
-      'The Investor executes this agreement by electronic signature within the Platform, which shall have the same legal effect as a handwritten signature; the agreement version and document hash shall be fixed at signing as tamper-evident evidence.'
-    ) },
-  ];
-}
-
-// ---- 电子签名占位图（SVG 手写风，用于预置数据演示；接后端由真实签名图片替换） ----
-export function makeSignatureSvg(name = '张三') {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="360" height="120" viewBox="0 0 360 120">`
-    + `<rect width="360" height="120" fill="#ffffff"/>`
-    + `<text x="30" y="74" font-family="'Snell Roundhand','Brush Script MT','Segoe Script',cursive" font-size="42" font-style="italic" fill="#1a2b5e">${name}</text>`
-    + `<path d="M28 94 C 80 106, 150 84, 210 96 S 320 102, 336 90" fill="none" stroke="#1a2b5e" stroke-width="2.5" stroke-linecap="round"/>`
-    + `</svg>`;
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-}
-
 // ---- 协议签署留痕（2026-09-15 · 全局统一台账） ----
-// type: register(注册) / pi(PI 声明) / bank-card(银行卡协议) / terms-update(条款更新重同意) / spv(SPV 协议，走 signingEvidence 专项台账)
+// type: register(注册) / pi(PI 声明) / bank-card(银行卡协议) / terms-update(条款更新重同意)
 // （2026-09-15 裁决：KYC 内声明/电子签署移除，KYC 不再产生签署留痕）
 export const agreementRecords = [
   // 预置：approved 账号已完成注册留痕
@@ -3366,9 +3232,9 @@ export const platformBrand = {
   nameZh: 'HighBlock',              // 简称（登录页品牌区）
   nameFullZh: 'HighBlock Securities Limited', // 全称（About 品牌卡 / 版权；上架·持牌主体）
   nameEn: 'HighBlock Securities Limited',
-  licenseNo: '(F)256390',           // 牌照编号（SFC CE No.）
-  licenseType: '香港证监会第 9 类牌照（资产管理）', // 牌照类型（About 合规卡 / 公司政策列表）
-  licenseDesc: '就资产管理提供意见',               // 牌照业务描述（About 合规卡副行）
+  licenseNo: 'BWW124',              // 牌照编号（SFC NO；2026-10-22 RO 整改：不用 CE No. 措辞）
+  licenseType: '香港证监会第 1、4、9 类牌照',    // 牌照类型（About 合规卡 / 公司政策列表）
+  licenseDesc: '证券交易 · 就证券提供意见 · 资产管理', // 受规管活动明细（2026-10-22 定版：以正式《风险披露声明》所载 1/4/9 类为准）
   appVersion: '2.0.0',             // 应用版本号（About 版本行；与应用市场注册版本保持一致）
 };
 
@@ -3376,12 +3242,15 @@ export const platformBrand = {
 // 渲染时替换为 Admin 配置的真实主体名——改真实主体只需后台改品牌信息，不动法务文案源。
 // 语义注记：替换发生在渲染时，协议文本随品牌配置变化；「版本固化」指 version/effectiveAt
 // 元数据，正文主体名以当前配置为准（原型阶段无签署时文本快照，真实接入时由后端固化）。
-export function resolveBrand(text) {
+export function resolveBrand(text, translate = (s) => s) {
   if (!text || text.indexOf('{{') === -1) return text;
+  // 2026-10-22：translate 供三语渲染传入 t()——牌照类型/业务描述本身是词条源文，
+  // 内联在法务文本里也要随界面语言切换（否则英文协议里夹中文牌照类型）
   return String(text)
     .split('{{BRAND_FULL}}').join(platformBrand.nameFullZh)
     .split('{{BRAND}}').join(platformBrand.nameZh)
-    .split('{{LICENSE_TYPE}}').join(platformBrand.licenseType)
+    .split('{{LICENSE_TYPE}}').join(translate(platformBrand.licenseType))
+    .split('{{LICENSE_DESC}}').join(translate(platformBrand.licenseDesc))
     .split('{{LICENSE_NO}}').join(platformBrand.licenseNo);
 }
 
@@ -3398,7 +3267,7 @@ export function updatePlatformBrand(fields, operator) {
   if (!clean.nameZh || !clean.nameFullZh || !clean.nameEn || !clean.licenseNo) return { ok: false, error: '请完整填写品牌信息（简称/全称/英文名/牌照编号）' };
   if (!clean.licenseType || !clean.appVersion) return { ok: false, error: '请完整填写牌照类型与应用版本号' };
   Object.assign(platformBrand, clean);
-  logAudit({ operator, category: 'config', action: 'update', target: '平台品牌信息', targetId: '', note: `更新平台品牌（${clean.nameZh} / CE No. ${clean.licenseNo} / ${clean.licenseType} / v${clean.appVersion}）` });
+  logAudit({ operator, category: 'config', action: 'update', target: '平台品牌信息', targetId: '', note: `更新平台品牌（${clean.nameZh} / SFC NO ${clean.licenseNo} / ${clean.licenseType} / v${clean.appVersion}）` });
   Storage.save();
   return { ok: true };
 }
@@ -3451,15 +3320,6 @@ export function updatePlatformAccounts(kind, account, operator) {
 }
 
 
-// ========== 合规报告（2026-08-07 从 Reports.jsx 迁入） ==========
-export const reports = [
-  { id: 'r1', name: '2026年7月资产报告', type: '月度报告', date: '2026-07-01', size: '2.3 MB' },
-  { id: 'r2', name: '2026年Q2投资组合报告', type: '季度报告', date: '2026-07-05', size: '4.1 MB' },
-  { id: 'r3', name: '持仓估值报告', type: '估值报告', date: '2026-07-29', size: '1.8 MB' },
-  { id: 'r4', name: '2026年度税务报告（上半年）', type: '税务报告', date: '2026-07-15', size: '3.5 MB' },
-  { id: 'r5', name: '合规披露声明', type: '合规文件', date: '2026-07-01', size: '0.5 MB' },
-];
-
 // ========== 项目行业分类（2026-08-07 从 Search.jsx 迁入） ==========
 export const sectors = ['量子计算', '生物医药', '机器人', '新能源', '金融科技', '医疗健康'];
 
@@ -3506,10 +3366,10 @@ export const ADMIN_MENUS = [
   { key: 'events', label: '路演管理', hash: '#admin/events', group: '路演' },
   { key: 'registrations', label: '报名管理', hash: '#admin/registrations', group: '路演' },
   { key: 'projects', label: '项目管理', hash: '#admin/projects', group: '项目' },
-  // 2026-10-16 口径修订：申购记录恢复（线上收集投资意向，后台审核 + 标记线下成交）；
+  // 2026-10-16 口径修订：问卷记录（线上收集投资意愿，后台跟进登记）；
   // 资金/交易监控/投后 10 模块保持摘除（funds/transactions/transaction-monitor/large-tx/
-  // anomaly/str/edd/spvs/dividends/exits）——资金承载与 SPV 签署全线下。页面文件与 mock 保留。
-  { key: 'subscriptions', label: '申购记录', hash: '#admin/subscriptions', group: '项目' },
+  // anomaly/str/edd/spvs/dividends/exits）——2026-10-22 RO 整改：SPV 概念整体移除。
+  { key: 'subscriptions', label: '问卷记录', hash: '#admin/subscriptions', group: '项目' },
   { key: 'broadcast', label: '通知触达', hash: '#admin/broadcast', group: '运营' },
   { key: 'messages', label: '客户消息', hash: '#admin/messages', group: '运营' }, // 客服工作台（2026-08-24）：响应式 1v1 咨询，与广播（主动触达）相邻成对；service+super
   { key: 'audit', label: '审计日志', hash: '#admin/audit', group: '系统' },
@@ -3523,12 +3383,12 @@ export const ADMIN_MENUS = [
 // audit：审计日志（合规审计角色；super 系统负责）
 export const roleMenuKeys = {
   // 超级管理员 = 最高权限：全部菜单（2026-08-15 用户确认"所有页面所有功能都有"——my-clients 原 advisor 专属，补上）；锁定不可编辑
-  // 2026-10-16 口径修订：申购记录恢复（意向收集链），其余资金/交易/投后 10 key 保持摘除
+  // 2026-10-16 口径修订：问卷记录恢复（意向收集链），其余资金/交易/投后 10 key 保持摘除
   super: ['kyc', 'pi', 'users', 'my-clients', 'projects', 'events', 'registrations', 'subscriptions', 'broadcast', 'messages', 'audit', 'roles', 'admins', 'config'],
   ops: ['projects', 'events', 'registrations', 'subscriptions', 'broadcast', 'users', 'config'],
-  // 合规角色：KYC审核 + PI认证 + 用户管理 + 申购记录 + 审计日志（交易监控类 7 key 随资金流下线摘除）
+  // 合规角色：KYC审核 + PI认证 + 用户管理 + 问卷记录 + 审计日志（交易监控类 7 key 随资金流下线摘除）
   compliance: ['kyc', 'pi', 'users', 'subscriptions', 'audit'],
-  // 客服：看申购 + 客户账户 + 通知触达（主动）+ 客户消息（响应式 1v1 咨询，2026-08-24）；不跟进线索（线索是顾问的职责）
+  // 客服：看问卷 + 客户账户 + 通知触达（主动）+ 客户消息（响应式 1v1 咨询，2026-08-24）；不跟进线索（线索是顾问的职责）
   service: ['subscriptions', 'users', 'broadcast', 'messages'],
   // 财务专员：资金审核/流水两模块已随首期裁剪下线——菜单置空，仅保留角色定义（登录落欢迎首页）
   finance: [],
@@ -3611,8 +3471,8 @@ export let supportTickets = [
     updatedAt: '2026-08-24 09:43:26',
     messages: [
       { from: 'bot', text: '您好，我是平台智能助手。常见问题可以直接问我；如需人工服务，请点击下方「转人工」。', time: '09:40' },
-      { from: 'user', text: '想咨询下一期 SPV 什么时候开放申购？需要提前准备什么材料？', time: '09:41' },
-      { from: 'bot', text: 'SPV 开放计划由投资团队统一安排，开放前会通过消息通知推送。涉及额度与时间安排的问题，建议转人工获取准确答复。', time: '09:42' },
+      { from: 'user', text: '想了解下一期项目研究什么时候发布？需要提前准备什么材料？', time: '09:41' },
+      { from: 'bot', text: '项目研究与路演安排由投研团队统一规划，发布前会通过消息通知推送。涉及具体档期的问题，建议转人工获取准确答复。', time: '09:42' },
       { from: 'user', text: '好的，帮我转人工客服吧。', time: '09:43' },
     ],
   },
@@ -3624,8 +3484,8 @@ export let supportTickets = [
     createdAt: '2026-08-22 14:02:11',
     updatedAt: '2026-08-22 14:20:47',
     messages: [
-      { from: 'user', text: 'SPV 签署完成后，份额什么时候能看到？', time: '14:02' },
-      { from: 'staff', text: '您好，签署确认后 T+1 工作日内完成份额登记，「我的资产」即可查看持仓明细。如有疑问欢迎随时联系。', time: '14:18' },
+      { from: 'user', text: '问卷提交后，我的资料谁会跟进？', time: '14:02' },
+      { from: 'staff', text: '您好，问卷提交后由您的专属客户经理接手跟进，会尽快与您联系确认进一步需求。如有疑问欢迎随时联系。', time: '14:18' },
       { from: 'user', text: '明白了，谢谢！', time: '14:20' },
     ],
   },
@@ -3765,7 +3625,7 @@ export function getMenuBadges(role, admin) {
   const pendingPi = piSubmissions.filter(s => s.status === PI_STATUS.PENDING_REVIEW).length;
 
   // 我的客户任务（advisor 专属，2026-08-15）：名下客户待办合计——顾问待办口径
-  // （待跟进 + 待签 SPV；冻结到期并入待签去重；资金/退出审批属运营/合规职责，非顾问任务不计）
+  // （待跟进 + 跟进中待办；资金/退出审批属运营/合规职责，非顾问任务不计）
   const myClientsBadge = (() => {
     if (role !== 'advisor' || !admin?.managerId) return 0;
     let n = 0;
@@ -3786,7 +3646,6 @@ export function getMenuBadges(role, admin) {
     messages: pendingTickets,
     registrations: leadPendingCount,
     'my-clients': myClientsBadge,
-    spvs: getSpvCandidates().length,
     // 合规工作台待办（T12：大额交易审查/异常检测/STR/EDD 待办徽章）
     'large-tx': largeTransactionReviews.filter(r => r.status === COMPLIANCE_STATUS.PENDING).length,
     anomaly: anomalyDetectionLogs.filter(r => r.status === COMPLIANCE_STATUS.PENDING).length,
@@ -4404,7 +4263,7 @@ export function submitPiCertification({ piType, piProof, piCertified, piLicenseN
     email: currentUser.email,
     status: PI_STATUS.PENDING_REVIEW,
     piType, piProof, piCertified,
-    // 持牌信息（2026-09-20：professional 类型凭 CE No. 在 SFC 公开记录核验；asset 类型为 null）
+    // 持牌信息（2026-09-20：professional 类型凭 SFC 牌照编号在 SFC 公开记录核验；asset 类型为 null）
     piLicenseNo, piLicenseOrg,
     // PI 声明签署留痕（2026-09-15 · 对齐协议签署实践）：声明全文版本随申请固化
     piAgreementVersion: getAgreementById('pi-terms')?.version || 'v1.0',
@@ -4431,7 +4290,7 @@ export function submitPiCertification({ piType, piProof, piCertified, piLicenseN
 // 全部判定 pass 才可调用通过；数据层防御：含 fail 或未判定项时拒绝通过，防前端绕过）
 const PI_CHECKLISTS = {
   asset: ['资产证明文件真实有效（银行月结单 / 投资组合账单）', '投资组合 ≥ HK$8,000,000（专业投资者门槛）', '文件日期为近 3 个月内（非过期账单）', '文件持有人姓名与申请人一致'],
-  professional: ['申请人身份为香港证监会持牌人士或注册机构', '持牌/注册资格在有效期内（CE No. 可查询）'],
+  professional: ['申请人身份为香港证监会持牌人士或注册机构', '持牌/注册资格在有效期内（SFC NO 可查询）'],
 };
 export function approvePiSubmission(pid, operator = '系统', checks = null) {
   const s = piSubmissions.find(x => x.id === pid);
@@ -4455,7 +4314,7 @@ export function approvePiSubmission(pid, operator = '系统', checks = null) {
     currentUser.pi.category = s.piType === 'asset' ? '专业投资者' : '专业投资者';
     currentUser.pi.basis = s.piType === 'asset' ? '持有至少 HK$8,000,000 的投资组合' : '持牌人士或注册机构';
   }
-  pushNotification({ type: 'service', title: 'PI 认证通过', body: `${s.name} 的专业投资者资格已核验通过，可参与稀缺份额申购。` });
+  pushNotification({ type: 'service', title: 'PI 认证通过', body: `${s.name} 的专业投资者资格已核验通过，可使用平台资讯与咨询服务。` });
   logAudit({ operator, category: 'pi', action: 'approve', target: s.name, targetId: pid, note: checkNote ? `PI 资格审核通过（核验：${checkNote}）` : 'PI 资格审核通过（专业投资者认证）' });
   Storage.save();
   return true;
@@ -4615,8 +4474,8 @@ export function getInvestorUsers() {
 // 申购/资金/投后阶段后，顾问看不到自己客户在干什么/有什么要催。本视图 = 顾问的客户工作台）
 export function getClientTasks(userId) {
   const subs = subscriptions.filter(s => s.userId === userId);
-  const pendingSign = subs.filter(s => s.status === 'allocated').length; // 待签 SPV（获配额后需催签）
-  // 退出分配（事件驱动）：事件为 SPV 级无 userId，按持仓项目关联（mock holdings 即当前客户视角，2026-08-21 重构）
+  const pendingSign = subs.filter(s => s.status === 'allocated').length; // 客户经理跟进中
+  // 退出分配（事件驱动）：事件为项目级无 userId，按持仓项目关联（mock holdings 即当前客户视角，2026-08-21 重构）
   const myProjectIds = new Set(holdings.map(h => h.projectId));
   const pendingFunds = [
     ...depositRequests.filter(r => r.userId === userId && r.status === 'pending'),
@@ -4680,7 +4539,7 @@ export function approveKycSubmission(kid, operator = '系统') {
   pushNotification({
     type: 'service',
     title: 'KYC 审核通过',
-    body: `${k.name} 的专业投资者认证已通过，可正常参与平台申购。`,
+    body: `${k.name} 的专业投资者认证已通过，可正常使用平台服务。`,
   });
   logAudit({ operator, category: 'kyc', action: 'approve', target: k.name, targetId: kid, note: 'KYC 审核通过（专业投资者认证）' });
   Storage.save();
@@ -5580,7 +5439,7 @@ export function rejectCardVerification(reqId, reason, operator = '') {
 // （并购 / IPO 减持 / 股权回购 / 清算分配），LP 从"申请方"变为"确认方"。
 // 状态机：announced(已公告·待投资人确认收款明细) → paying(打款中·LP已确认) → completed(已到账)
 // 定价：运营录入每份对价；每份成本恒为 8000（shares=floor(amount/8000) 的既定事实），
-//       收益 = max(0, 对价−8000)，Carry = 收益 × carryRate（SPV 档案，缺省 20%），净回款 = 对价 − Carry。
+//       收益 = max(0, 对价−8000)，Carry = 收益 × carryRate（缺省 20%），净回款 = 对价 − Carry。
 const EXIT_COST_PER_SHARE = 8000;
 
 export const EXIT_TYPE_META = {
@@ -5610,8 +5469,6 @@ export const exitEvents = [
     orderNo: genOrderNo('EXT', '2026-06-30 10:20:00'),
     projectId: 'p5',
     projectName: 'Aurora FinTech',
-    spvId: null,
-    spvName: 'Aurora FinTech 一期 SPV',
     exitType: 'ipo',
     pricePerShare: 9000,
     totalShares: 400,
@@ -5633,8 +5490,6 @@ export const exitEvents = [
     orderNo: genOrderNo('EXT', '2026-08-19 15:40:00'),
     projectId: 'p4',
     projectName: 'GreenCell Energy',
-    spvId: 'spv1',
-    spvName: 'GreenCell Energy 一期 SPV',
     exitType: 'trade_sale',
     pricePerShare: 9600,
     totalShares: 375,
@@ -5662,16 +5517,13 @@ export function createExitEvent({ projectId, exitType, pricePerShare }, operator
   if (!Number.isFinite(price) || price <= 0) return { ok: false, error: '请填写有效的每份退出对价' };
   if (!EXIT_TYPE_META[exitType]) return { ok: false, error: '请选择退出方式' };
   const totalShares = hlds.reduce((s, h) => s + h.shares, 0);
-  const spv = spvs.find(s => s.projectId === projectId && s.status !== 'liquidated');
-  const carryRate = (spv && spv.carryRate) || '20%';
+  const carryRate = '20%';
   const split = calcExitSplit(price, totalShares, carryRate);
   const ev = {
     id: `ee${Date.now()}`,
     orderNo: genOrderNo('EXT'),
     projectId,
     projectName: project.title,
-    spvId: spv ? spv.id : null,
-    spvName: spv ? spv.spvName : `${project.title} SPV`,
     exitType,
     pricePerShare: price,
     totalShares,
@@ -5689,8 +5541,6 @@ export function createExitEvent({ projectId, exitType, pricePerShare }, operator
     handledBy: operator || '运营后台',
   };
   exitEvents.unshift(ev);
-  // C2 清算联动（正向）：发起清算分配 → SPV 进入清算中
-  if (exitType === 'liquidation' && spv && spv.status === 'operating') spv.status = 'liquidating';
   pushNotification({
     type: 'wallet',
     title: '退出分配公告',
@@ -5728,7 +5578,7 @@ export function completeExitEvent(eventId, operator = '') {
   const w = wallet.hkd;
   let paidTotal = 0;
   hlds.forEach(h => {
-    // 按登记册逐户结算（mock 仅当前用户有持仓；真实后端按 SPV 登记册分发各 LP）
+    // 按登记册逐户结算（mock 仅当前用户有持仓；真实后端按项目登记册分发各持有人）
     const split = calcExitSplit(ev.pricePerShare, h.shares, ev.carryRate);
     w.balance += split.netAmount;
     paidTotal += split.netAmount;
@@ -5753,11 +5603,6 @@ export function completeExitEvent(eventId, operator = '') {
   ev.status = 'completed';
   ev.completedAt = formatNow();
   ev.handledBy = operator || '运营后台';
-  // C2 清算联动（收尾）：清算分配完成 → SPV 已清算
-  if (ev.exitType === 'liquidation') {
-    const spv = spvs.find(s => s.id === ev.spvId);
-    if (spv) spv.status = 'liquidated';
-  }
   pushNotification({
     type: 'wallet',
     title: '退出分配已完成',
@@ -5768,252 +5613,15 @@ export function completeExitEvent(eventId, operator = '') {
   return true;
 }
 
-// ========== SPV 管理（2026-08-14 · 投后资产档案：平台 9 号牌管理每项目独立 SPV（LPF/OFC），投资人持 SPV 份额，平台不代持） ==========
-// 建档时机 = 项目"确定投资"才存在 SPV：项目下有 allocated（获配额）/ signed（已出资）申购 → SPV 档案出现
-// 投资未定项目（纯 submitted / unallocated / upcoming）不建档——平台项目能否最终投资不确定，避免假档案（2026-08-14 用户第一性原理）
-// 生命周期：establishing 设立中 → operating 运作中 → liquidating 清算中 → liquidated 已清算（运营确认流转；有 signed 出资即自动进入运作中）
-export const spvs = [
-  {
-    id: 'spv1',
-    projectId: 'p4',
-    projectName: 'GreenCell Energy',
-    spvName: 'GreenCell Energy 一期 SPV',
-    legalEntity: 'GreenCell LPF',
-    planAmount: 6000000,               // 计划募集金额（设立时确定的本轮盘子；已认缴 500w → 83%）
-    registrationNo: 'LPF-2026-00041',
-    establishmentDate: '2026-06-12',
-    custodianBank: '汇丰银行',
-    managementFee: '2%',
-    carryRate: '20%',
-    // 协议引用（2026-09-15 · APP 内电子签署）：Admin 维护该 SPV 用哪份协议文档（平台存档）+ 版本 + 哈希，签署时固化
-    agreementDocUrl: 'https://example.com/spv/p4-agreement.html',
-    agreementVersion: 'v1.0',
-    agreementHash: 'sha256:3f4a91c2e8d5b74a6c0f3e9d2b8a51f7e6d4c3b2a19087f6e5d4c3b2a19087f0',
-    status: 'operating',   // 已出资（s1/s18 signed + 持仓 h1），运作中
-    createdAt: '2026-06-12 10:00:00',
-    // 公对公划款留痕（2026-08-19 会议纪要增量）：财务线下网银转账至 SPV 账户后上传流水单
-    transferEvidence: 'DBS 公对公划款流水单_20260615.pdf',
-    transferRef: 'FT20260615001',
-    transferAt: '2026-06-15 14:20:00',
-  },
-  {
-    id: 'spv2',
-    projectId: 'p3',
-    projectName: 'SkyNet Robotics',
-    spvName: 'SkyNet Robotics 一期 SPV',
-    legalEntity: 'SkyNet LPF',
-    planAmount: 8000000,               // 计划募集金额（已认缴 450w → 56%，在途 300w）
-    registrationNo: 'LPF-2026-00027',
-    establishmentDate: '2026-07-15',
-    custodianBank: '中银香港',
-    managementFee: '2%',
-    carryRate: '20%',
-    agreementDocUrl: 'https://example.com/spv/p3-agreement.html',
-    agreementVersion: 'v1.0',
-    agreementHash: 'sha256:9b1c47d2f0a63e8b5d4c1a09287f6e5d4c3b2a19087f6e5d4c3b2a19087f0e1',
-    status: 'operating',   // 有 signed（s10/s16），运作中
-    createdAt: '2026-07-15 09:30:00',
-    // 公对公划款留痕（2026-08-19 会议纪要增量）
-    transferEvidence: 'DBS 公对公划款流水单_20260720.pdf',
-    transferRef: 'FT20260720001',
-    transferAt: '2026-07-20 11:05:00',
-  },
-  // p2（仅 allocated s15，未 signed）作为"设立中"候选——运营经"设立 SPV"建档（演示建档流程）
-];
-
-export const spvStatusLabels = {
-  establishing: '设立中',
-  operating: '运作中',
-  liquidating: '清算中',
-  liquidated: '已清算',
-};
-
-// 建档候选：项目获配额（allocated）即可设立 SPV（业务时序：先建档后签 SPV）
-// 状态机：submitted → allocated → 设立 SPV（运营在 SPV 管理手动建档）→ 签 SPV → signed
-export function getSpvCandidates() {
-  const have = new Set(spvs.map(s => s.projectId));
-  const allocatedProjects = new Set(
-    subscriptions.filter(s => s.status === 'allocated').map(s => s.projectId)
-  );
-  return projects
-    .filter(p => allocatedProjects.has(p.id) && !have.has(p.id))
-    .map(p => {
-      const allocatedSubs = subscriptions.filter(s => s.projectId === p.id && s.status === 'allocated');
-      return {
-        projectId: p.id,
-        projectName: p.title,
-        spvName: `${p.title} 一期 SPV`,
-        allocatedCount: allocatedSubs.length,
-      };
-    });
-}
-
-export function createSpv({ projectId, projectName, spvName, legalEntity, planAmount, registrationNo, establishmentDate, custodianBank, managementFee, carryRate }, operator = '') {
-  if (!projectId || !projectName || !spvName) return { ok: false, error: '请选择项目并确认 SPV 名称' };
-  if (spvs.some(s => s.projectId === projectId)) return { ok: false, error: '该项目已设立 SPV' };
-  // 计划募集金额（2026-08-21）：设立时确定本轮盘子，作为认缴进度/超募判断的锚点（金额口径——意向/冻结/扣款全链路都是金额，份额要到签署才派生）
-  const plan = Number(planAmount);
-  if (!plan || plan <= 0) return { ok: false, error: '请填写计划募集金额（本轮盘子规模）' };
-  const spv = {
-    id: `spv${Date.now()}`,
-    projectId,
-    projectName,
-    spvName,
-    legalEntity: legalEntity || `${spvName} LPF`,
-    planAmount: plan,
-    registrationNo: registrationNo || '',
-    establishmentDate: establishmentDate || formatNow().slice(0, 10),
-    custodianBank: custodianBank || '',
-    managementFee: managementFee || '2%',
-    carryRate: carryRate || '20%',
-    status: 'establishing',   // 建档 = 设立中（LPF 注册/文件准备，投资已确定待出资）
-    createdAt: formatNow(),
-  };
-  spvs.unshift(spv);
-  logAudit({ operator: operator || '运营后台', category: 'fund', action: 'apply', target: spvName, targetId: spv.id, note: `设立 SPV（${spv.legalEntity} · ${spv.registrationNo || '注册中'}）` });
-  Storage.save();
-  return { ok: true, id: spv.id };
-}
-
-export function updateSpvStatus(spvId, status, opts = {}, operator = '') {
-  const spv = spvs.find(s => s.id === spvId);
-  if (!spv || spv.status === status) return { ok: false, error: '状态未变化' };
-  const prev = spv.status;
-  spv.status = status;
-  // 流转到「运作中」时可携带公对公划款留痕（2026-08-19 会议纪要增量：财务线下网银转账 → 上传流水单留痕）
-  if (status === 'operating' && opts && opts.transferEvidence) {
-    spv.transferEvidence = opts.transferEvidence;
-    spv.transferRef = opts.transferRef || `FT${Date.now()}`;
-    spv.transferAt = formatNow();
-  }
-  const transferNote = spv.transferEvidence ? `；公对公划款流水单留痕（${spv.transferEvidence}${spv.transferRef ? ` · ${spv.transferRef}` : ''}）` : '';
-  logAudit({ operator: operator || '运营后台', category: 'fund', action: 'update', target: spv.spvName, targetId: spvId, note: `SPV 状态：${spvStatusLabels[prev]} → ${spvStatusLabels[status]}${transferNote}` });
-  Storage.save();
-  return { ok: true };
-}
-
-export function updateSpvProfile(spvId, patch, operator = '') {
-  const spv = spvs.find(s => s.id === spvId);
-  if (!spv) return { ok: false, error: 'SPV 不存在' };
-  Object.assign(spv, patch);
-  logAudit({ operator: operator || '运营后台', category: 'fund', action: 'update', target: spv.spvName, targetId: spvId, note: '更新 SPV 档案' });
-  Storage.save();
-  return { ok: true };
-}
-
-// SPV 资金/份额聚合快照（复用 subscriptions/holdings/dividendRequests 派生，不新增重复数据源）
-export function getSpvSnapshot(spv) {
-  const signedSubs = subscriptions.filter(s => s.projectId === spv.projectId && s.status === 'signed');
-  const totalRaised = signedSubs.reduce((sum, s) => sum + (s.amount || 0), 0);   // 累计募资（已出资，托管中）
-  const holderCount = new Set(signedSubs.map(s => s.userId)).size;               // 持有人数（signed 去重）
-  const hlds = holdings.filter(h => h.projectId === spv.projectId);
-  const totalShares = hlds.reduce((sum, h) => sum + (h.shares || 0), 0);         // 总份额（持仓合计）
-  const totalDividends = dividendRequests
-    .filter(r => r.projectId === spv.projectId && r.status === 'approved')
-    .reduce((sum, r) => sum + getDividendTotal(r), 0);                           // 累计已发放分红
-  return { totalRaised, holderCount, holdingCount: hlds.length, totalShares, totalDividends };
-}
-
-// ========== SPV 签署证据台账（2026-09-15 · APP 内电子签署 · 香港私募合规留痕审计） ==========
-// 2026-09-15 用户裁决：推翻 08-15 方案 B（第三方签署平台），SPV 签署与公司实践案例一致——用户在 APP 内阅读协议 + Canvas 电子签名完成签署，
-// 签名图片、协议版本、文档哈希签署时固化存档（实践案例已在公司历史产品验证，直接复用）。
-// Admin 维护"签署结果证据链"（驱动资金状态机 + 全流程留痕审计）：
-//   协议维度（签署时从 SPV 档案锁定版本 + 哈希，版本固化）/ 签署维度（签署编号 signedRef / 实际签署时间 / 签署人 / 签名图片 / 来源 source）
-//   source: 'app'（用户 APP 内签署，含签名图）| 'offline'（线下纸质签署，运营代登记）
-export const signingEvidence = [
-  {
-    id: 'se1', spvId: 'spv1', subId: 's1',
-    agreementVersion: 'v1.0',
-    agreementHash: 'sha256:3f4a91c2e8d5b74a6c0f3e9d2b8a51f7e6d4c3b2a19087f6e5d4c3b2a19087f0',
-    evidenceUrl: 'https://example.com/spv/p4-agreement.html',
-    signedRef: 'SIGN-20260730-0001', signedAt: '2026-07-30 14:00:00',
-    signerName: '张三', signerEmail: 'demo@example.com',
-    signatureImage: makeSignatureSvg('张三'), source: 'offline',
-    status: 'signed', confirmedBy: '系统', confirmedAt: '2026-07-30 14:00:05',
-  },
-  {
-    id: 'se2', spvId: 'spv2', subId: 's10',
-    agreementVersion: 'v1.0',
-    agreementHash: 'sha256:9b1c47d2f0a63e8b5d4c1a09287f6e5d4c3b2a19087f6e5d4c3b2a19087f0e1',
-    evidenceUrl: 'https://example.com/spv/p3-agreement.html',
-    signedRef: 'SIGN-20260802-0015', signedAt: '2026-08-02 11:30:00',
-    signerName: '吴世昌', signerEmail: 'wu@example.com',
-    signatureImage: makeSignatureSvg('吴世昌'), source: 'offline',
-    status: 'signed', confirmedBy: '系统', confirmedAt: '2026-08-02 11:30:08',
-  },
-  {
-    id: 'se3', spvId: 'spv2', subId: 's16',
-    agreementVersion: 'v1.0',
-    agreementHash: 'sha256:9b1c47d2f0a63e8b5d4c1a09287f6e5d4c3b2a19087f0e1',
-    evidenceUrl: 'https://example.com/spv/p3-agreement.html',
-    signedRef: 'OFFLINE-20260807-0033', signedAt: '2026-08-07 16:20:00',
-    signerName: '罗天宇', signerEmail: 'luo@example.com',
-    signatureImage: null, source: 'offline',
-    status: 'signed', confirmedBy: '系统管理员', confirmedAt: '2026-08-07 16:24:00',
-  },
-];
-
-// 按 SPV 查全部签署证据（SPV 详情「签署证据」区块 / 合规按 SPV 出示证据集）
-export function getSigningEvidenceBySpv(spvId) {
-  return signingEvidence
-    .filter(e => e.spvId === spvId)
-    .sort((a, b) => (a.signedAt || '').localeCompare(b.signedAt || ''));
-}
-
-// 按申购查单笔证据（signed 行凭证链接 / 幂等校验）
-export function getSigningEvidenceBySub(subId) {
-  return signingEvidence.find(e => e.subId === subId) || null;
-}
-
-// 录入签署证据（合规留痕）：协议维度从 SPV 档案锁定（签署时版本固化）
-// signedRef（签署编号：APP 内签署自动生成 SIGN-xxx / 线下登记 OFFLINE-xxx）与 signedAt（实际签署时间）必填；同 subId 幂等（不可重复确认）
-export function recordSigningEvidence({ spvId, subId, signedRef, signedAt, signerName = '', signatureImage = null, source = 'app', operator = '' }, extra = {}) {
-  if (!spvId || !subId) return { ok: false, error: '缺少 SPV 或申购记录' };
-  if (!signedRef || !String(signedRef).trim()) return { ok: false, error: '请填写签署编号（合规留痕必需）' };
-  if (!signedAt) return { ok: false, error: '请填写实际签署时间（合规留痕必需）' };
-  if (signingEvidence.some(e => e.subId === subId)) return { ok: false, error: '该笔申购已有签署证据，不可重复确认' };
-  const spv = spvs.find(s => s.id === spvId);
-  const sub = subscriptions.find(s => s.id === subId);
-  // datetime-local 值（YYYY-MM-DDTHH:MM）→ 内部统一 "YYYY-MM-DD HH:MM"（formatListDateTime 按空格分割，T 分隔会解析 NaN）
-  const normSignedAt = String(signedAt || '').replace('T', ' ');
-  signingEvidence.push({
-    id: `se${Date.now()}`,
-    spvId, subId,
-    // 协议维度：签署时从 SPV 档案锁定（版本固化）
-    agreementVersion: spv?.agreementVersion || extra.agreementVersion || 'v1.0',
-    agreementHash: spv?.agreementHash || extra.agreementHash || '',
-    evidenceUrl: spv?.agreementDocUrl || extra.evidenceUrl || '',
-    // 签署维度
-    signedRef: String(signedRef).trim(),
-    signedAt: normSignedAt,
-    signerName: signerName || sub?.investorName || '',
-    signerEmail: extra.signerEmail || sub?.investorEmail || '',
-    signatureImage: signatureImage || null,
-    source,
-    // 确认维度
-    status: 'signed',
-    confirmedBy: operator || (source === 'app' ? '系统' : '运营后台'),
-    confirmedAt: formatNow(),
-  });
-  logAudit({
-    operator: operator || (source === 'app' ? '系统' : '运营后台'), category: 'subscription', action: 'sign',
-    target: sub?.projectName || spv?.spvName, targetId: subId,
-    note: `SPV 签署留痕（${source === 'app' ? 'APP 内电子签署' : '线下签署登记'}：${String(signedRef).trim()} · 签署 ${signedAt} · 协议 ${signingEvidence[signingEvidence.length - 1].agreementVersion}${signingEvidence[signingEvidence.length - 1].agreementHash ? ' · 哈希已固化' : ''}${signatureImage ? ' · 签名图已存档' : ''}）`,
-  });
-  Storage.save();
-  return { ok: true, id: signingEvidence[signingEvidence.length - 1].id };
-}
-
-// ========== 投后分红（2026-08-14 · 私募 SPV 盈利分配：平台发起 → 按份额分配 → 审批发放回流账户） ==========
-// 分红粒度 = SPV（项目盈利分给该 SPV 全部持有人）；现金分红（不承诺再投资，MVP）
-// mock 单用户简化：发放对象 = currentUser 在该 SPV 的持仓份额（接后端由真实账户体系按份额入账，对齐 promoteWaitlist 既有做法）
+// ========== 投后分红（2026-08-14 · 项目盈利分配：平台发起 → 按份额分配 → 审批发放回流账户） ==========
+// 2026-10-22 RO 整改：分红粒度由 SPV 改为项目（去 SPV 概念）
+// mock 单用户简化：发放对象 = currentUser 在该项目的持仓份额（接后端由真实账户体系按份额入账）
 export const dividendRequests = [
   {
     id: 'dv1',
     orderNo: genOrderNo('DIV', '2026-08-13 10:00:00'),
     projectId: 'p4',
     projectName: 'GreenCell Energy',
-    spvName: 'GreenCell Energy 一期 SPV',
     perShare: 1000,        // 每份分红金额（HKD）
     currency: 'HKD',
     status: 'pending',
@@ -6025,15 +5633,15 @@ export const dividendRequests = [
   },
 ];
 
-export function submitDividendRequest({ projectId, spvName, perShare, currency = 'HKD' }, operator = '') {
+export function submitDividendRequest({ projectId, perShare, currency = 'HKD' }, operator = '') {
   const per = Number(perShare);
-  if (!projectId || !spvName || !per || per <= 0) return false;
+  if (!projectId || !per || per <= 0) return false;
+  const projectName = holdings.find(h => h.projectId === projectId)?.projectName || projectId;
   const req = {
     id: `dv${Date.now()}`,
     orderNo: genOrderNo('DIV'),
     projectId,
-    projectName: holdings.find(h => h.projectId === projectId)?.projectName || spvName,
-    spvName,
+    projectName,
     perShare: per,
     currency,
     status: 'pending',
@@ -6044,12 +5652,12 @@ export function submitDividendRequest({ projectId, spvName, perShare, currency =
     bankRef: `BK${Date.now()}`,   // 外部单号：分红发放银行参考号（mock 演示值）
   };
   dividendRequests.unshift(req);
-  logAudit({ operator: operator || '运营后台', category: 'fund', action: 'apply', target: spvName, targetId: req.id, note: `发起分红（每份 HK$ ${per.toLocaleString()}）` });
+  logAudit({ operator: operator || '运营后台', category: 'fund', action: 'apply', target: projectName, targetId: req.id, note: `发起分红（每份 HK$ ${per.toLocaleString()}）` });
   Storage.save();
   return true;
 }
 
-// 该 SPV 当前可分配总额 = perShare × 该 SPV 全部持仓份额（发放对象 = 持该 SPV 份额的投资人）
+// 该项目当前可分配总额 = perShare × 该项目全部持仓份额
 export function getDividendTotal(req) {
   const shares = holdings.filter(h => h.projectId === req.projectId).reduce((s, h) => s + (h.shares || 0), 0);
   return (req.perShare || 0) * shares;
@@ -6058,7 +5666,7 @@ export function getDividendTotal(req) {
 export function approveDividendRequest(reqId, operator = '') {
   const req = dividendRequests.find(r => r.id === reqId);
   if (!req || req.status !== 'pending') return false;
-  // 发放 = 按份额回流投资人资金账户（mock 单用户：currentUser 在该 SPV 的持仓应得；接后端按真实账户体系逐投资人入账）
+  // 发放 = 按份额回流投资人资金账户（mock 单用户：currentUser 在该项目的持仓应得；接后端按真实账户体系逐投资人入账）
   const holders = holdings.filter(h => h.projectId === req.projectId);
   if (!holders.length) return false;
   const due = holders.reduce((s, h) => s + (h.shares || 0), 0) * req.perShare;
@@ -6079,15 +5687,15 @@ export function approveDividendRequest(reqId, operator = '') {
     status: 'completed',
     createdAt: formatNow(),
     projectName: req.projectName,
-    method: 'SPV 分红',
+    method: '项目分红',
     reference: `DIV${Date.now()}`,
   });
   pushNotification({
     type: 'wallet',
     title: '分红到账',
-    body: `${req.spvName} 分红 HK$${due.toLocaleString()} 已发放至资金账户。`,
+    body: `${req.projectName} 分红 HK$${due.toLocaleString()} 已发放至资金账户。`,
   });
-  logAudit({ operator: operator || '运营后台', category: 'fund', action: 'approve', target: req.spvName, targetId: reqId, note: `分红发放：每份 HK$ ${req.perShare.toLocaleString()} × ${holders.reduce((s, h) => s + (h.shares || 0), 0)} 份 = HK$ ${due.toLocaleString()}` });
+  logAudit({ operator: operator || '运营后台', category: 'fund', action: 'approve', target: req.projectName, targetId: reqId, note: `分红发放：每份 HK$ ${req.perShare.toLocaleString()} × ${holders.reduce((s, h) => s + (h.shares || 0), 0)} 份 = HK$ ${due.toLocaleString()}` });
   Storage.save();
   return true;
 }
@@ -6102,9 +5710,9 @@ export function rejectDividendRequest(reqId, reason, operator = '') {
   pushNotification({
     type: 'wallet',
     title: '分红发放未通过',
-    body: `${req.spvName} 分红发放未通过审核：${req.rejectReason}`,
+    body: `${req.projectName} 分红发放未通过审核：${req.rejectReason}`,
   });
-  logAudit({ operator: operator || '运营后台', category: 'fund', action: 'reject', target: req.spvName, targetId: reqId, note: `分红发放拒绝：${req.rejectReason}` });
+  logAudit({ operator: operator || '运营后台', category: 'fund', action: 'reject', target: req.projectName, targetId: reqId, note: `分红发放拒绝：${req.rejectReason}` });
   Storage.save();
   return true;
 }
@@ -6174,11 +5782,14 @@ export function formatDateCN(dateStr) {
 // 24h 宽限期 = mock 30s（演示用）；仅作为 freezeDeadline 字段写入基准，无到期自动顺延逻辑（2026-09-20 机制下线）
 export let FREEZE_GRACE_MS = 30000;
 
+// 问卷金额档位（2026-10-22 RO 整改：删 300 万档——档位越低越避免「挑额度」暗示；
+// 新增「无意向」固定项 value=0，不进后台增删池，提交时按「无投资意向」处理）
+export const NO_INTENT_VALUE = 0;
+export const noIntentOption = { value: NO_INTENT_VALUE, label: '无意向' };
+
 export const amountPresets = [
   { value: 1000000, label: '100万' },
-  { value: 3000000, label: '300万' },
   { value: 5000000, label: '500万' },
-  { value: 10000000, label: '1000万' },
 ];
 
 // 档位增删（后台系统配置页可配置——用户侧 SubscribeSheet 实时读取共享数组，配置即生效）
@@ -6190,7 +5801,7 @@ export function addAmountPreset(value, operator) {
   const label = `${v / 10000}万`;
   amountPresets.push({ value: v, label });
   amountPresets.sort((a, b) => a.value - b.value);
-  logAudit({ operator, category: 'config', action: 'update', target: '系统配置', targetId: '', note: `新增申购金额档位 ${label}（${v.toLocaleString()} HKD）` });
+  logAudit({ operator, category: 'config', action: 'update', target: '系统配置', targetId: '', note: `新增问卷金额档位 ${label}（${v.toLocaleString()} HKD）` });
   Storage.save();
   return { ok: true };
 }
@@ -6201,7 +5812,7 @@ export function removeAmountPreset(value, operator) {
   if (amountPresets.length <= 1) return { ok: false, error: '至少保留一个档位' };
   const removed = amountPresets[idx];
   amountPresets.splice(idx, 1);
-  logAudit({ operator, category: 'config', action: 'update', target: '系统配置', targetId: '', note: `删除申购金额档位 ${removed.label}（${removed.value.toLocaleString()} HKD）` });
+  logAudit({ operator, category: 'config', action: 'update', target: '系统配置', targetId: '', note: `删除问卷金额档位 ${removed.label}（${removed.value.toLocaleString()} HKD）` });
   Storage.save();
   return { ok: true };
 }
@@ -6212,13 +5823,9 @@ function addHistory(sub, entry) {
   sub.updatedAt = formatNow();
 }
 
-function syncFrozenAccount() {
-  currentUser.account.frozen = wallet.hkd.frozen || 0;
-}
-
 // waitlist 上位（手动顺延 + 自动超时共用）：从 subscriptions 派生"项目下最早 submitted 排队者"（FIFO）
 // 2026-08-17 修复：上位后停在 allocated（不再自动签署）——签署动作由客户在 APP 内电子签署完成（2026-09-15 对齐公司实践），
-// 线下纸质签署场景由运营在「申购记录」页登记（与签署证据台账一致，合规留痕必填签署编号）。
+// 2026-10-22 RO 整改：签署证据台账随 SPV 概念一并移除——线下事项完成情况由运营在「问卷记录」页登记。
 // 同时补启动冻结定时器：上位用户同样享有宽限期，逾期未签继续顺延下一位（否则会卡死无出口）。
 // 注：mock 单钱包简化，上位用户资金操作走当前演示钱包；接后端由真实账户体系驱动
 export function promoteWaitlist(project, operator = '') {
@@ -6235,124 +5842,13 @@ export function promoteWaitlist(project, operator = '') {
   addHistory(next, {
     type: 'allocated',
     actor: 'platform',
-    note: '已获配额 · 由 waitlist 上位（运营协调）',
+    note: '已转客户经理跟进（运营协调）',
   });
-  logAudit({ operator: operator || '系统', category: 'subscription', action: 'promote', target: project.title, targetId: project.id, note: `waitlist 上位：${next.investorName}（${next.investorNo}）获配额 · 线下打款与签署跟进中` });
+  logAudit({ operator: operator || '系统', category: 'subscription', action: 'promote', target: project.title, targetId: project.id, note: `跟进队列上位：${next.investorName}（${next.investorNo}）已转客户经理跟进` });
   return true;
 }
 
 // ========== 资金操作函数 ==========
-
-// 冻结：allocated 时调用，wallet.frozen += sub.frozenAmount
-export function freezeFunds(subscriptionId) {
-  const sub = subscriptions.find(s => s.id === subscriptionId);
-  if (!sub || sub.frozenAmount <= 0) return false;
-  wallet.hkd.frozen = (wallet.hkd.frozen || 0) + sub.frozenAmount;
-  syncFrozenAccount();
-  addHistory(sub, {
-    type: 'frozen',
-    actor: 'system',
-    note: `已冻结获配金额 HK$ ${formatCurrency(sub.frozenAmount)}`,
-    amount: 0,
-  });
-  pushNotification({
-    type: 'subscription',
-    title: '资金已冻结',
-    body: `${sub.projectName} 已获配额，获配金额 HK$ ${formatCurrency(sub.frozenAmount)} 已冻结。24 小时内完成补足即可签署 SPV。`,
-  });
-  Storage.save();
-  return true;
-}
-
-// 解冻：未签署时调用，wallet.frozen -= sub.frozenAmount，set status=unallocated
-export function unfreezeFunds(subscriptionId, reason) {
-  const sub = subscriptions.find(s => s.id === subscriptionId);
-  if (!sub) return false;
-  const amount = sub.frozenAmount || 0;
-  if (amount > 0) {
-    wallet.hkd.frozen = Math.max(0, (wallet.hkd.frozen || 0) - amount);
-    syncFrozenAccount();
-  }
-  sub.frozenAmount = 0;
-  sub.status = 'unallocated';
-  addHistory(sub, {
-    type: 'unallocated',
-    actor: 'system',
-    note: reason || '未在宽限期内签署 SPV，已顺延给 waitlist 下一位',
-    amount: amount > 0 ? -amount : 0,
-  });
-  pushNotification({
-    type: 'subscription',
-    title: '已顺延',
-    body: `${sub.projectName} 本轮未获配额，意向金额已释放。请关注后续轮次。`,
-  });
-  Storage.save();
-  return true;
-}
-
-// 扣款 + 生成持仓：signed 时调用
-export function settleFunds(subscriptionId) {
-  const sub = subscriptions.find(s => s.id === subscriptionId);
-  if (!sub || sub.frozenAmount <= 0) return false;
-  const amount = sub.frozenAmount;
-  const w = wallet.hkd;
-  if (w.balance < amount) {
-    pushNotification({
-      type: 'subscription',
-      title: '扣款失败',
-      body: `${sub.projectName} 扣款失败，可用余额不足 HK$ ${formatCurrency(amount)}。`,
-    });
-    return false;
-  }
-  w.balance -= amount;
-  w.frozen = Math.max(0, (w.frozen || 0) - amount);
-  currentUser.account.hkd = w.balance;
-  syncFrozenAccount();
-  updateLatestTotal(-amount);
-  // 交易记录
-  transactions.unshift({
-    id: `t${Date.now()}`,
-    orderNo: genOrderNo('TX'),
-    type: 'subscription',
-    amount,
-    status: 'completed',
-    createdAt: formatNow(),
-    projectName: sub.projectName,
-    method: 'SPV 出资',
-    reference: `SUB${Date.now()}`,
-  });
-  // 自动生成持仓（按 SPV 名）：从 spvs 档案查真实 SPV 名称 + spvId（业务时序：先建档后签 SPV）
-  const spv = spvs.find(s => s.projectId === sub.projectId);
-  const spvName = spv?.spvName || `${sub.projectName} 一期 SPV`;
-  const shares = Math.floor(amount / 8000); // mock：8000 HKD/份
-  holdings.unshift({
-    id: `h${Date.now()}`,
-    spvId: spv?.id || null,
-    projectId: sub.projectId,
-    projectName: sub.projectName,
-    spvName,
-    shares,
-    costBasis: amount,
-    currentValue: amount,
-    lastUpdated: formatNow().slice(0, 10),
-    return: 0,
-  });
-  // 写入历史
-  addHistory(sub, {
-    type: 'settled',
-    actor: 'system',
-    note: `扣款完成 · 已生成持仓 · ${shares} 份`,
-    amount: -amount,
-  });
-  sub.shares = shares;
-  pushNotification({
-    type: 'subscription',
-    title: '扣款成功',
-    body: `${sub.projectName} 出资完成 · HK$ ${formatCurrency(amount)} · ${shares} 份 SPV 份额已到账。`,
-  });
-  Storage.save();
-  return true;
-}
 
 // ========== 业务层包装：状态变更 ==========
 
@@ -6365,7 +5861,6 @@ export function resetSubscriptionForDemo(subscriptionId) {
   sub.allocatedAt = formatNow();
   // 2026-10-16 口径修订：线下交割——freezeDeadline（24h 签署宽限期）随冻结语义摘除
   sub.frozenAmount = sub.amount || 0;
-  sub.spvDocumentUrl = project?.spvDocumentUrl || 'https://example.com/spv/p3-agreement.html';
   // 清除 signed 相关历史，保留 allocated 历史
   sub.history = sub.history.filter(h => h.type !== 'signed');
   Storage.save();
@@ -6387,119 +5882,63 @@ export function getBlockingAmlFlags(sub) {
 // submitted → allocated：业务层包装（仅 mock 演示）
 // 实际配额（2026-08-21）：默认全额获配；超募时可削减（allocatedAmount < 意向金额，不可高于）——
 // 冻结/宽限期/签署扣款/份额换算全部跟随 frozenAmount（settleFunds 取 frozenAmount），下游零改动
-export function markSubscriptionAllocated(subscriptionId, operator = '', allocatedAmount = null) {
+// submitted → allocated：转客户经理跟进
+// 2026-10-22 RO 整改：去「配额/冻结/超募削额」卖方语义——咨询平台口径下平台不分配额度，
+// 运营动作 = 客户经理接手跟进；意向金额仅作客户经理沟通参考
+export function markSubscriptionAllocated(subscriptionId, operator = '') {
   const sub = subscriptions.find(s => s.id === subscriptionId);
   if (!sub || sub.status !== 'submitted') return false;
   const project = projects.find(p => p.id === sub.projectId);
   if (!project) return false;
-  // T8 amlFlags 拦截（PRD 04 §3.8 大额交易审查）：二级/三级大额标记未解除 → 拒绝配额分配
+  // T8 amlFlags 拦截（PRD 04 §3.8 大额交易审查）：二级/三级大额标记未解除 → 拒绝转跟进
   const blocking = getBlockingAmlFlags(sub);
   if (blocking.length > 0) {
-    return { ok: false, error: `大额交易审查未完成，无法进行配额分配（${blocking.map(f => f.level === 'three' ? '三级' : '二级').join('、')}标记待解除）` };
+    return { ok: false, error: `大额交易审查未完成，无法转客户经理跟进（${blocking.map(f => f.level === 'three' ? '三级' : '二级').join('、')}标记待解除）` };
   }
-  const requested = sub.amount || 0;
-  // 实际配额：null/空 = 按意向全额；否则须为正数且不高于意向金额（超募削额，不追加）
-  let quota = requested;
-  if (allocatedAmount !== null && allocatedAmount !== undefined && `${allocatedAmount}`.trim() !== '') {
-    const n = Number(allocatedAmount);
-    if (!n || n <= 0) return { ok: false, error: '实际配额金额需为正数' };
-    if (n > requested) return { ok: false, error: `实际配额（HK$ ${formatCurrency(n)}）不可高于意向金额（HK$ ${formatCurrency(requested)}）；超募请削减配额或顺延` };
-    quota = n;
-  }
-  const cutPct = requested > 0 ? Math.round((1 - quota / requested) * 100) : 0;
-  const quotaNote = cutPct > 0 ? `（意向 HK$ ${formatCurrency(requested)} · 削额 ${cutPct}%）` : '';
-  const allocatedAt = formatNow();
-  sub.allocatedAt = allocatedAt;
-  // 2026-10-16 口径修订：资金交割全线下——原「冻结前余额校验 + freezeFunds 钱包冻结 + 24h 宽限期」
-  // 摘除（钱包账本已下线），frozenAmount 保留为「实际配额金额」字段供确认弹窗与统计复用
-  sub.frozenAmount = quota;
+  sub.allocatedAt = formatNow();
   sub.status = 'allocated';
   addHistory(sub, {
     type: 'allocated',
     actor: 'platform',
-    note: `已获配额${quotaNote} · 待线下打款与签署`,
+    note: '已转客户经理跟进',
   });
-  logAudit({ operator: operator || '系统', category: 'subscription', action: 'allocate', target: sub.projectName, targetId: sub.id, note: `标记已获配额${quotaNote}（线下交割 HK$ ${formatCurrency(quota)}）` });
+  pushNotification({
+    type: 'subscription',
+    title: '客户经理已接手',
+    body: `${sub.projectName} 已由客户经理接手跟进，如需进一步了解可直接联系您的专属顾问。`,
+  });
+  logAudit({ operator: operator || '系统', category: 'subscription', action: 'allocate', target: sub.projectName, targetId: sub.id, note: '转客户经理跟进' });
   Storage.save();
   return true;
 }
 
-// allocated → signed：签署动作在 APP 内完成（用户阅读协议 + Canvas 电子签名，2026-09-15 对齐公司实践）或线下纸质签署（运营登记）
-// 业务时序校验：必须先在 SPV 管理设立档案才能签 SPV（先建档后签）
-// 合规留痕（2026-09-15 · APP 内电子签署）：APP 内签署必须含签名图片（signatureImage），签署编号/时间/签名图/协议版本哈希写入 signingEvidence 证据台账——
-//   协议维度从 SPV 档案锁定版本/哈希（版本固化），签名图 + 哈希构成签署内容不可篡改的证据链
-export function markSubscriptionSigned(subscriptionId, note, operator = '', evidence = null) {
+// allocated → signed（内部状态名保留 signed 以免大范围改数据；对外展示=已完成）
+// 2026-10-22 RO 整改：去 SPV 签署与份额语义——线上无签署动作，运营仅登记「线下事项已完成」
+export function markSubscriptionCompleted(subscriptionId, note, operator = '') {
   const sub = subscriptions.find(s => s.id === subscriptionId);
-  if (!sub || sub.status !== 'allocated') return { ok: false, error: '状态不符，仅已获配额的意向可签 SPV' };
-  // T8 amlFlags 拦截（PRD 04 §3.8）：二级/三级大额标记未解除 → 拒绝签署登记
+  if (!sub || sub.status !== 'allocated') return { ok: false, error: '状态不符，仅客户经理跟进中的记录可标记完成' };
+  // T8 amlFlags 拦截（PRD 04 §3.8）：二级/三级大额标记未解除 → 拒绝标记完成
   const blocking = getBlockingAmlFlags(sub);
   if (blocking.length > 0) {
-    return { ok: false, error: `大额交易审查未完成，无法完成签署登记（${blocking.map(f => f.level === 'three' ? '三级' : '二级').join('、')}标记待解除）` };
+    return { ok: false, error: `大额交易审查未完成，无法标记完成（${blocking.map(f => f.level === 'three' ? '三级' : '二级').join('、')}标记待解除）` };
   }
-  const spv = spvs.find(s => s.projectId === sub.projectId);
-  if (!spv) {
-    return { ok: false, error: `该项目（${sub.projectName}）尚未设立 SPV，请先登记 SPV 信息后再确认签署` };
-  }
-  if (!evidence?.signedRef || !evidence?.signedAt) {
-    return { ok: false, error: '请填写签署编号与签署时间（合规留痕必需）' };
-  }
-  const frozenAmt = sub.frozenAmount || sub.amount || 0;
-  // 写签署证据台账（幂等：同 subId 已有证据 → 拒绝，防重复登记）
-  const evRes = recordSigningEvidence({
-    spvId: spv.id,
-    subId: sub.id,
-    signedRef: evidence.signedRef,
-    signedAt: evidence.signedAt,
-    signerName: evidence.signerName,
-    signatureImage: evidence.signatureImage || null,
-    source: evidence.source || 'offline',
-    operator,
-  });
-  if (!evRes.ok) return evRes;
   sub.status = 'signed';
-  const normSignedAt = String(evidence.signedAt || '').replace('T', ' ');
-  const srcLabel = (evidence.source === 'app') ? 'APP 内电子签署' : '线下签署登记';
   addHistory(sub, {
     type: 'signed',
     actor: 'platform',
-    note: note || `SPV 文件已签署（${srcLabel} ${String(evidence.signedRef).trim()} · ${normSignedAt}）`,
+    note: note || '已完成（线下事项已办结）',
   });
-  // 2026-10-16 口径修订：资金交割与 SPV 签署全线下——原 settleFunds（钱包扣款 + 交易记录 + 持仓生成）
-  // 不再调用，份额换算保留（mock 8000 HKD/份，与原口径一致），交割以线下凭证为准
-  sub.shares = Math.floor(frozenAmt / 8000);
-  addHistory(sub, {
-    type: 'settled',
-    actor: 'system',
-    note: `份额已确认 · ${sub.shares} 份（资金交割线下完成）`,
-    amount: 0,
+  pushNotification({
+    type: 'subscription',
+    title: '已标记完成',
+    body: `${sub.projectName} 的相关事项已办结，如需进一步了解请联系您的专属客户经理。`,
   });
-  logAudit({ operator: operator || '系统', category: 'subscription', action: 'sign', target: sub.projectName, targetId: sub.id, note: `确认签署登记完成（${srcLabel}）· 份额已确认` });
+  logAudit({ operator: operator || '系统', category: 'subscription', action: 'complete', target: sub.projectName, targetId: sub.id, note: '标记完成' });
   Storage.save();
   return { ok: true };
 }
 
-// APP 内签署 SPV 协议（2026-09-15 · 对齐公司实践案例：用户阅读协议全文 + Canvas 电子签名 → 直接完成签署）
-// 与线下登记（markSubscriptionSigned source='offline'）共用资金状态机；签署编号自动生成 SIGN-YYYYMMDD-序号，签名图必存档
-export function signSpvInApp({ subId, signatureImage }) {
-  const sub = subscriptions.find(s => s.id === subId);
-  if (!sub) return { ok: false, error: '申购记录不存在' };
-  if (!signatureImage) return { ok: false, error: '请先在签名区完成签名' };
-  // 签署编号：SIGN-日期-当日序号（mock 简化为时间戳尾号，保证唯一）
-  const day = formatNow().slice(0, 10).replace(/-/g, '');
-  const seq = String(signingEvidence.length + 1).padStart(4, '0');
-  const signedRef = `SIGN-${day}-${seq}`;
-  const spv = spvs.find(s => s.projectId === sub.projectId);
-  return markSubscriptionSigned(subId, null, '系统', {
-    signedRef,
-    signedAt: formatNow(),
-    signerName: currentUser.name,
-    signatureImage,
-    source: 'app',
-    spvIdHint: spv?.id,
-  });
-}
-
-// submitted → unallocated（未获配额，手动标记）
+// submitted → unallocated（暂无需推进）
 export function markSubscriptionUnallocated(subscriptionId, note, operator = '') {
   const sub = subscriptions.find(s => s.id === subscriptionId);
   if (!sub || sub.status !== 'submitted') return false;
@@ -6507,26 +5946,25 @@ export function markSubscriptionUnallocated(subscriptionId, note, operator = '')
   addHistory(sub, {
     type: 'unallocated',
     actor: 'platform',
-    note: note || '本轮份额稀缺，未获配额',
+    note: note || '本次提交暂无进一步安排',
   });
   pushNotification({
     type: 'subscription',
-    title: '未获配额',
-    body: `${sub.projectName} 本轮未获配额，可关注后续轮次。`,
+    title: '本次提交暂无进一步安排',
+    body: `${sub.projectName} 本轮已结束，如后续有进一步意向可重新填写问卷。`,
   });
-  logAudit({ operator: operator || '系统', category: 'subscription', action: 'unallocate', target: sub.projectName, targetId: sub.id, note: '标记未获配额（本轮份额稀缺）' });
+  logAudit({ operator: operator || '系统', category: 'subscription', action: 'unallocate', target: sub.projectName, targetId: sub.id, note: '标记暂无需推进' });
   Storage.save();
   return true;
 }
 
-// allocated → unallocated（手动顺延）：客户确认不签 / 运营协调未成 → waitlist 上位
-// （2026-10-16 口径修订：线下交割——原「立即解冻」随钱包冻结摘除）
+// allocated → unallocated（暂缓跟进）：客户确认暂不推进 → 后续由客户经理重新联系
 export function markSubscriptionForfeit(subscriptionId, reason, operator = '') {
   const sub = subscriptions.find(s => s.id === subscriptionId);
   if (!sub || sub.status !== 'allocated') return false;
   const project = projects.find(p => p.id === sub.projectId);
   if (project) promoteWaitlist(project, operator);
-  logAudit({ operator: operator || '系统', category: 'subscription', action: 'forfeit', target: sub.projectName, targetId: sub.id, note: `手动顺延（waitlist 上位）：${reason || '运营确认未签署'}` });
+  logAudit({ operator: operator || '系统', category: 'subscription', action: 'forfeit', target: sub.projectName, targetId: sub.id, note: `暂缓跟进：${reason || '运营确认暂不推进'}` });
   Storage.save();
   return true;
 }
@@ -6534,7 +5972,7 @@ export function markSubscriptionForfeit(subscriptionId, reason, operator = '') {
 // 兼容旧版 updateStatus：内部路由到 markSubscription* 包装
 export function updateSubscriptionStatus(subscriptionId, status, note) {
   if (status === 'allocated') return markSubscriptionAllocated(subscriptionId);
-  if (status === 'signed') return markSubscriptionSigned(subscriptionId, note);
+  if (status === 'signed') return markSubscriptionCompleted(subscriptionId, note);
   if (status === 'unallocated') return markSubscriptionUnallocated(subscriptionId, note);
   return false;
 }
@@ -7353,32 +6791,32 @@ export function resetUserSecurityDemo(userId) {
 }
 
 // ---- 账号删除（2026-10-21 上架合规：Apple 5.1.1(v) 支持注册即须支持 app 内删除）----
-// 数据层校验：有进行中申购/未到期份额（非 rejected/cancelled）→ 拒绝，须客服处理。
+// 数据层校验：有进行中问卷/未办结事项（非 rejected/cancelled）→ 拒绝，须客服处理。
 // 演示边界：内置演示账号（u1–u3）为登录矩阵锚点，不真删——demo:true 由 UI 以「演示模式」文案收尾；
 // 本轮注册账号的删除与持久化语义由研发正式 build 承接。
 export function deleteUserAccount(userId) {
   const uid = userId || currentUser.id;
   const holding = subscriptions.find(s =>
     s.investorNo === getInvestorNo(uid) && s.status !== 'rejected' && s.status !== 'cancelled');
-  if (holding) return { ok: false, message: '您有进行中的申购或未到期份额，暂无法删除账户，请联系客服处理' };
+  if (holding) return { ok: false, message: '您有进行中的问卷或未办结事项，暂无法删除账户，请联系客服处理' };
   return { ok: true, demo: /^u\d+$/.test(uid) };
 }
 
-// ========== 申购提交（含 waitlist 自动入队） ==========
+// ========== 问卷提交（含 waitlist 自动入队） ==========
 
-// ========== 申购资格校验（2026-08-17 · 强制 PI/KYC 资格，香港 SFC 私募仅限专业投资者） ==========
-// 申购前必须：KYC 实名认证通过 + PI 专业投资者资格有效（未认证/审核中/被拒/过期均不可申购）。
+// ========== 问卷提交资格校验（2026-08-17 · 强制 PI/KYC 资格，香港 SFC 私募仅限专业投资者） ==========
+// 提交前必须：KYC 实名认证通过 + PI 专业投资者资格有效（未认证/审核中/被拒/过期均不可提交）。
 // 返回 { ok: true } 通过；{ ok: false, target, labelKey } 未通过——target=应跳转的认证页路径，
 // labelKey=引导文案（简体中文原文即 i18n key，ProjectDetail CTA / SubscribeSheet 防御校验共用）
 export function getSubscriptionGate(user) {
   const u = user || currentUser;
   if (u.kyc_status !== KYC_STATUS.APPROVED) {
-    return { ok: false, target: 'kyc-start', labelKey: '完成实名认证后再申购' };
+    return { ok: false, target: 'kyc-start', labelKey: '完成实名认证后再提交问卷' };
   }
   const pi = u.pi || {};
   const status = pi.status || 'none';
   if (status === 'pending') {
-    return { ok: false, target: 'pi-submitted', labelKey: 'PI 认证审核中，暂不可申购' };
+    return { ok: false, target: 'pi-submitted', labelKey: 'PI 认证审核中，暂不可提交问卷' };
   }
   if (status === 'verified' && pi.expiresAt) {
     const ts = new Date(String(pi.expiresAt).replace(' ', 'T')).getTime();
@@ -7388,7 +6826,7 @@ export function getSubscriptionGate(user) {
   }
   if (status !== 'verified') {
     // none（未申报）/ rejected（被拒）/ 其他未认证态
-    return { ok: false, target: 'kyc-pi', labelKey: '完成专业投资者认证后再申购' };
+    return { ok: false, target: 'kyc-pi', labelKey: '完成专业投资者认证后再提交问卷' };
   }
   return { ok: true };
 }
@@ -7418,11 +6856,11 @@ export function submitSubscription({ project, amount, currency = 'HKD' }) {
     documentViewLogs: [],
     amlFlags: [],
     history: [
-      { type: 'submitted', timestamp: now, actor: 'user', note: `提交意向 · 金额 HK$ ${formatCurrency(amount || 0)}` },
+      { type: 'submitted', timestamp: now, actor: 'user', note: (amount || 0) > 0 ? `提交问卷 · 意向金额 HK$ ${formatCurrency(amount || 0)}` : '提交问卷 · 无投资意向' },
     ],
   };
   subscriptions.unshift(newSub);
-  // T9 大额交易自动触发（PRD 04 §3.8）：申购金额 ≥300万 → 自动创建大额审查记录 + 打 amlFlags
+  // T9 大额交易自动触发（PRD 04 §3.8）：意向金额 ≥300万 → 自动创建大额审查记录 + 打 amlFlags
   // 三级阈值：300万=一级 / 500万=二级 / 800万=三级（与 REVIEW_LEVEL 对齐）
   if ((amount || 0) >= 3000000) {
     const review = createLargeTransactionReview({ subscriptionId: newSub.id, userId: currentUser.id, amount: amount || 0 });
@@ -7440,13 +6878,13 @@ export function submitSubscription({ project, amount, currency = 'HKD' }) {
       pushNotification({
         type: 'subscription',
         title: '大额交易审查',
-        body: `您的申购金额触发大额交易审查（${review.reviewLevel === REVIEW_LEVEL.LEVEL_3 ? '三级' : review.reviewLevel === REVIEW_LEVEL.LEVEL_2 ? '二级' : '一级'}），审查通过后方可进行配额分配。`,
+        body: `您填写的意向档位触发大额交易审查（${review.reviewLevel === REVIEW_LEVEL.LEVEL_3 ? '三级' : review.reviewLevel === REVIEW_LEVEL.LEVEL_2 ? '二级' : '一级'}），审查通过后方可转客户经理跟进。`,
         createdAt: now,
       });
     }
   }
-  // waitlist = 项目下 submitted 申购的派生视图（FIFO by createdAt），无需冗余入队
-  // 热度 roster 同步：getInvestorRoster 已动态注入订阅（含 newSub），无需手动 push
+  // waitlist = 项目下 submitted 问卷的派生视图（FIFO by createdAt），无需冗余入队
+  // 2026-10-22 RO 整改：申购热度（投资人名单/位次）随 SPV 口径一并移除
   // investorCount 语义 = mock 生成基数（其他投资人），新提交（当前用户）不改变它
   // T10 异常检测：申购事件触发规则扫描（R001 单笔大额 / R002 大额集中 / R003 频繁申购）
   runAnomalyDetection(currentUser.id, 'subscription', { amount: amount || 0, date: now });
@@ -7454,11 +6892,13 @@ export function submitSubscription({ project, amount, currency = 'HKD' }) {
   runPepMonitoring(currentUser.id, 'subscription', { amount: amount || 0, currency });
   pushNotification({
     type: 'subscription',
-    title: '申购意向已登记',
-    body: `您已成功提交 ${project.title} 申购意向（金额 HK$ ${formatCurrency(amount || 0)}），平台将与项目方协调额度。`,
+    title: '问卷已提交',
+    body: (amount || 0) > 0
+      ? `您已成功提交 ${project.title} 问卷（意向金额 HK$ ${formatCurrency(amount || 0)}），客户经理将与您联系。`
+      : `您已成功提交 ${project.title} 问卷（本次未表达投资意向），如需进一步了解，客户经理将与您联系。`,
     createdAt: now,
   });
-  logAudit({ operator: currentUser.name || '投资人', category: 'subscription', action: 'submit', target: project.title, targetId: project.id, note: `提交申购意向（HK$ ${formatCurrency(amount || 0)}）` });
+  logAudit({ operator: currentUser.name || '投资人', category: 'subscription', action: 'submit', target: project.title, targetId: project.id, note: (amount || 0) > 0 ? `提交问卷（HK$ ${formatCurrency(amount || 0)}）` : '提交问卷（无投资意向）' });
   Storage.save();
   return newSub;
 }
@@ -7517,7 +6957,16 @@ export function submitSubscription({ project, amount, currency = 'HKD' }) {
 // 39：2026-10-21 修复 PI 队列错挂（pi1 陈美琪不再挂 u3）+ PI 状态派生不再依赖 currentUser 单例
 // 40：2026-10-21 陈美琪 KYC k1 + PI pi1 统一到独立账号 u35（避免与 u8 赵明轩重复 userId）
 // 41：2026-10-21 补 u2/u3 专属顾问映射（testAccounts.accountManager 与后台投资人视图对齐）
-const STATE_VERSION = 41;
+// 42：2026-10-22 RO 合规整改 10 条一次性落地——① 牌照号 (F)256390 → BWW124 且全端统一 SFC NO 措辞（无 CE No.）；
+//     ② 登录页「登录您的账户」→「登录专属账户」，开户闸门去「基金服务」措辞；③ 申购热度（投资人名单 + 我的位次）
+//     与热度页整块移除；④ 申购链路改问卷口径（了解详情 / 问卷调查 / 文件已提交 / 新增「无意向」档位、删 300 万档）；
+//     ⑤ SPV 概念整体移除（spvs 档案 / 签署证据台账 / APP 内签署页 / 投后分红 SPV 粒度 / 冻结扣款残留一并下线）；
+//     ⑥ 合规报告（页面 + 数据 + FAQ）移除；⑦ 后台「申购记录」→「问卷记录」，状态展示改 文件已提交 / 客户经理跟进中 / 已完成
+//     ——数据结构与数据内容变更，旧快照（41）含 SPV 档案与旧牌照号，重置后以新口径 mock 为权威初始态
+// 44：2026-10-22 牌照范围 9 类 → 1/4/9 类（正式风险披露声明载明 Type 1/4/9，platformBrand 属快照范围须升版）
+// 43：2026-10-22 问卷档位定版（仅保留 无意向 / 100万 / 500万 / 自定义，删 1000 万档）
+//     ——amountPresets 属快照恢复范围，必须升版，否则老会话（42）恢复旧五档数组，界面仍显示 1000 万
+const STATE_VERSION = 44;
 const STORAGE_KEY = 'zhifu-app-state';
 
 /**
@@ -7548,8 +6997,6 @@ export const Storage = {
         eddaAuth: eddaAuth,                       // eDDA 快捷入金授权状态（2026-08-19）
         exitEvents: exitEvents,                   // 持仓退出·事件驱动分配（2026-08-21 重构，替代 exitRequests）
         dividendRequests: dividendRequests,   // 投后分红（2026-08-14）
-        spvs: spvs,                           // SPV 管理档案（2026-08-14）
-        signingEvidence: signingEvidence,     // SPV 签署证据台账（2026-09-15 · APP 内电子签署 · 合规留痕）
         agreementRecords: agreementRecords,   // 协议签署留痕（2026-09-15 · 注册/KYC/PI/银行卡/条款重同意）
         termsState: termsState,               // 条款版本与用户已同意版本（2026-09-15 · 条款更新重新同意）
         broadcastLogs: broadcastLogs,         // 广播台账（2026-08-14 通知触达广播台账化）
@@ -7563,7 +7010,7 @@ export const Storage = {
         sectors: sectors,
         exchangeRates: exchangeRates,
         businessContact: businessContact,
-        amountPresets: amountPresets,       // 申购金额档位可配置化（2026-08-14）
+        amountPresets: amountPresets,       // 问卷金额档位可配置化（2026-08-14）
         platformAccounts: platformAccounts, // 平台资金账户（2026-08-14）
         platformBrand: platformBrand,       // 平台品牌信息（2026-08-14 配置页清单化）
         // 用户管理 + 审计日志持久化（2026-08-13 P0）
@@ -7680,14 +7127,6 @@ export const Storage = {
       if (Array.isArray(data.dividendRequests)) {
         dividendRequests.length = 0;
         data.dividendRequests.forEach(r => dividendRequests.push(r));
-      }
-      if (Array.isArray(data.spvs)) {
-        spvs.length = 0;
-        data.spvs.forEach(s => spvs.push(s));
-      }
-      if (Array.isArray(data.signingEvidence)) {
-        signingEvidence.length = 0;
-        data.signingEvidence.forEach(e => signingEvidence.push(e));
       }
       // 协议签署留痕 + 条款版本（2026-09-15 · 协议签署实践对齐）
       if (Array.isArray(data.agreementRecords)) {
@@ -7855,7 +7294,7 @@ export const auditLogs = [
   { id: 'a1', at: '2026-08-12 09:15:22', operator: '王运营', category: 'kyc', action: 'approve', target: '陈美琪', targetId: 'k1', note: 'KYC 审核通过（专业投资者认证）' },
   { id: 'a2', at: '2026-08-12 10:05:47', operator: '李合规', category: 'fund', action: 'approve', target: '张三', targetId: 'dr1', note: '充值确认到账 HK$ 300万' },
   { id: 'a3', at: '2026-08-12 11:30:00', operator: '系统管理员', category: 'project', action: 'update', target: 'QuantumCore Technologies', targetId: 'p1', note: '编辑项目资料（估值/上市计划）' },
-  { id: 'a4', at: '2026-08-12 14:20:15', operator: '王运营', category: 'subscription', action: 'allocate', target: 'SkyNet Robotics', targetId: 's2', note: '标记已获配额（线下交割）' },
+  { id: 'a4', at: '2026-08-12 14:20:15', operator: '王运营', category: 'subscription', action: 'allocate', target: 'SkyNet Robotics', targetId: 's2', note: '转客户经理跟进（线下协调）' },
   { id: 'a5', at: '2026-08-12 16:45:00', operator: '张客服', category: 'lead', action: 'update', target: '吴世昌', targetId: 'u9', note: '客户跟进：新线索 → 已联系' },
   { id: 'a6', at: '2026-08-13 09:10:00', operator: '王运营', category: 'event', action: 'update', target: 'QuantumCore 线上路演', targetId: 'e1', note: '编辑路演资料（议程/看点）' },
   { id: 'a7', at: '2026-08-13 10:00:00', operator: '李合规', category: 'kyc', action: 'reject', target: '林大伟', targetId: 'k2', note: '拒绝原因：证件照片不清晰' },

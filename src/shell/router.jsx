@@ -12,7 +12,6 @@ import { lazy } from 'react';
 const ProjectMarket = lazy(() => import('../pages/ProjectMarket'));
 const Wealth = lazy(() => import('../pages/Wealth'));
 const ProjectDetail = lazy(() => import('../pages/ProjectDetail'));
-const ProjectHeat = lazy(() => import('../pages/ProjectHeat'));
 const SearchPage = lazy(() => import('../pages/Search'));
 const Events = lazy(() => import('../pages/Events'));
 const EventDetail = lazy(() => import('../pages/EventDetail'));
@@ -46,8 +45,6 @@ export function renderAppPage(path, param, ctx) {
       return <Wealth navigate={navigate} />;
     case 'project':
       return <ProjectDetail id={param} navigate={navigate} goBack={goBack} />;
-    case 'project-heat':
-      return <ProjectHeat id={param} navigate={navigate} goBack={goBack} />;
     case 'events':
       return <Events navigate={navigate} setToast={setToast} isLoggedIn={isLoggedIn} embed={embed} goBack={goBack} />;
     case 'event':
@@ -58,8 +55,9 @@ export function renderAppPage(path, param, ctx) {
     // fund-operation/holdings/assets/asset-trend/exchange/bank-cards/funds/reports/spv-sign）——
     // 命中即落 default 分支（资讯页）。
     // 2026-10-19：#subscriptions 汇总页摘除（双壳均无活入口的死页；深链直入后列表⇄详情
-    // 双返回键成死循环）。申购进度以项目为粒度：项目详情/热度页 CTA 直达 #my-subscription/:id；
-    // spv-sign 保持摘除：SPV 签署与资金全部线下，APP 只做意向收集与进度查看
+    // 双返回键成死循环）。问卷进度以项目为粒度：项目详情 CTA 直达 #my-subscription/:id。
+    // 2026-10-22 RO 整改：#project-heat（申购热度页）与 #reports（合规报告）随页面下线一并摘除；
+    // SPV 签署与资金全部线下，APP 只做问卷收集与进度查看
     case 'about':
       return <About navigate={navigate} goBack={goBack} setToast={setToast} />;
     case 'notifications':

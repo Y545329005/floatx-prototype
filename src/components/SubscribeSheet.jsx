@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import { amountPresets, submitSubscription, convertLeadsToSubscribed, currentUser, getInvestorNo, formatCurrency, getSubscriptionGate } from '../mock/data';
+import { amountPresets, noIntentOption, submitSubscription, convertLeadsToSubscribed, currentUser, getInvestorNo, formatCurrency, getSubscriptionGate } from '../mock/data';
 import { useLang } from '../i18n';
 
 export default function SubscribeSheet({ project, onClose, onSubmitted }) {
@@ -8,11 +8,21 @@ export default function SubscribeSheet({ project, onClose, onSubmitted }) {
   const [amount, setAmount] = useState(amountPresets[0].value);
   const [customMode, setCustomMode] = useState(false);
   const [customAmount, setCustomAmount] = useState('');
+  const [noIntent, setNoIntent] = useState(false); // 2026-10-22 RO 整改：新增「无意向」选项
   const [agree, setAgree] = useState(false);
   const [error, setError] = useState('');
 
   const handlePreset = (value) => {
     setAmount(value);
+    setNoIntent(false);
+    setCustomMode(false);
+    setCustomAmount('');
+    setError('');
+  };
+
+  const handleNoIntent = () => {
+    setNoIntent(true);
+    setAmount(noIntentOption.value);
     setCustomMode(false);
     setCustomAmount('');
     setError('');
@@ -22,20 +32,20 @@ export default function SubscribeSheet({ project, onClose, onSubmitted }) {
     setCustomAmount(value);
     const num = parseFloat(value);
     // 输入框以"万"为单位，换算为完整金额（与档位 value 同量级）
-    if (num > 0) setAmount(num * 10000);
+    if (num > 0) { setAmount(num * 10000); setNoIntent(false); }
     setError('');
   };
 
   const handleSubmit = () => {
-    // 2026-08-17 防御校验：申购入口强制 KYC + PI 资格（正常路径已被 ProjectDetail CTA 拦截，此处防绕过）
+    // 2026-08-17 防御校验：问卷入口强制 KYC + PI 资格（正常路径已被 ProjectDetail CTA 拦截，此处防绕过）
     const gate = getSubscriptionGate(currentUser);
     if (!gate.ok) {
       setError(t(gate.labelKey));
       return;
     }
     if (!agree) return;
-    const finalAmount = amount;
-    if (!finalAmount || finalAmount <= 0) {
+    const finalAmount = noIntent ? noIntentOption.value : amount;
+    if (!noIntent && (!finalAmount || finalAmount <= 0)) {
       setError(t('请选择或填写有效金额'));
       return;
     }
@@ -44,7 +54,7 @@ export default function SubscribeSheet({ project, onClose, onSubmitted }) {
       amount: finalAmount,
       currency: 'HKD',
     });
-    // 申购意向提交 = 报名线索"已转化"（报名客户进入申购漏斗，与申购记录语义联动）
+    // 问卷提交 = 报名线索"已转化"（报名客户进入跟进漏斗，与问卷记录语义联动）
     convertLeadsToSubscribed();
     onSubmitted(createdAt);
     onClose();
@@ -55,19 +65,27 @@ export default function SubscribeSheet({ project, onClose, onSubmitted }) {
       <div className="sheet-mask" onClick={onClose} />
       <div className="sheet">
         <div className="sheet-header">
-          <h3>{t('提交申购意向')}</h3>
+          <h3>{t('问卷调查')}</h3>
           <button className="btn-icon" onClick={onClose}><X size={18} /></button>
         </div>
         <p className="text-muted text-sm sheet-sub">{project.title} · {t(project.stage)}</p>
 
         <div className="form-group">
-          <label className="form-label">{t('意向金额（HKD）')}</label>
+          <label className="form-label">{t('意向档位（HKD）')}</label>
           <div className="amount-presets">
+            {/* 2026-10-22 定版档位：无意向 / 100万 / 500万 / 自定义（删 300 万与 1000 万档） */}
+            <button
+              type="button"
+              className={`amount-preset ${noIntent ? 'selected' : ''}`}
+              onClick={handleNoIntent}
+            >
+              {t('无意向')}
+            </button>
             {amountPresets.map(p => (
               <button
                 key={p.value}
                 type="button"
-                className={`amount-preset ${amount === p.value && !customMode ? 'selected' : ''}`}
+                className={`amount-preset ${!noIntent && amount === p.value && !customMode ? 'selected' : ''}`}
                 onClick={() => handlePreset(p.value)}
               >
                 {p.label}
@@ -76,14 +94,19 @@ export default function SubscribeSheet({ project, onClose, onSubmitted }) {
             <button
               type="button"
               className={`amount-preset ${customMode ? 'selected' : ''}`}
-              onClick={() => { setCustomMode(true); setAmount(0); }}
+              onClick={() => { setCustomMode(true); setNoIntent(false); setAmount(0); }}
             >
               {t('自定义')}
             </button>
           </div>
-          {(customMode || amount > 0) && (
+          {noIntent ? (
             <p className="amount-summary">
-              <span className="text-muted">{t('意向金额')}</span>
+              <span className="text-muted">{t('意向档位')}</span>
+              <strong className="date-iso">{t('无意向')}</strong>
+            </p>
+          ) : (customMode || amount > 0) && (
+            <p className="amount-summary">
+              <span className="text-muted">{t('意向档位')}</span>
               {customMode ? (
                 <span className="amount-summary-edit">
                   <input
@@ -106,8 +129,8 @@ export default function SubscribeSheet({ project, onClose, onSubmitted }) {
 
         <div className="subscription-notice">
           <ul>
-            <li>{t('意向金额非合同承诺，最终以 SPV 文件为准')}</li>
-            <li>{t('获配后请按客户经理指引完成线下打款与 SPV 签署')}</li>
+            <li>{t('问卷内容不构成投资建议或合同承诺')}</li>
+            <li>{t('如有进一步需要，客户经理将线下与您联系')}</li>
             <li>{t('您确认本人为香港《证券及期货条例》定义的专业投资者')}</li>
           </ul>
         </div>
@@ -119,7 +142,7 @@ export default function SubscribeSheet({ project, onClose, onSubmitted }) {
 
         {error && <p className="form-error">{error}</p>}
 
-        <button className="btn btn-primary btn-full sheet-submit" disabled={!agree || !amount} onClick={handleSubmit}>
+        <button className="btn btn-primary btn-full sheet-submit" disabled={!agree || (!noIntent && !amount)} onClick={handleSubmit}>
           {t('确认提交')}
         </button>
       </div>

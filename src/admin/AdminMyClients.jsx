@@ -12,9 +12,9 @@ import {
 /**
  * 我的客户（2026-08-15 · 专属顾问工作视图 · 方案 A）
  * 第一性原理：顾问的工作单元 = 客户（人），不是模块（数据）。
- *   - 客户从线索 → 申购 → 中标 → 签 SPV → 持仓 → 退出，分散在 6 个业务实体；
+ *   - 客户从线索 → 问卷 → 跟进 → 完成，分散在多个业务实体；
  *   - 此前顾问只能看「报名管理」（线索段），客户进入投前/投后阶段后顾问完全不可见 = 服务断点；
- *   - 本页 = 名下客户列表 + 顾问待办聚合（待跟进[待联系/跟进中] + 待签 SPV[含冻结到期提示]）+ 客户详情。
+ *   - 本页 = 名下客户列表 + 顾问待办聚合（待跟进[待联系/跟进中] + 跟进中待办）+ 客户详情。
  *   - 任务列语义 = 顾问待办（2026-08-15 方案 A）：只列顾问要做的动作；资金/退出审批由运营/合规处理，非顾问任务（记录 tab 中性展示）。
  * 权限边界：数据范围天然限定 managerId === admin.managerId（单一真源 userAccountManagers），零越权。
  * 职责边界：只读档案 + 顾问可操作（跟进状态/陪同人）；审核类（获配/顺延/审批/禁用）保持运营/合规职责。
@@ -100,11 +100,11 @@ export default function AdminMyClients({ navigate, detailId, admin }) {
     return (t.leadStatus || 'new') === statusFilter;
   });
   // 待办优先排序（2026-08-15 方案 A：顾问第一眼看到最紧急的）
-  //   一级：任务紧迫度（待签 SPV > 待联系 > 跟进中 > 无任务）
+  //   一级：任务紧迫度（跟进中 > 待联系 > 无任务）
   //   二级：最近报名时间降序（兴趣信号）
   const urgencyOf = (u) => {
     const t = tasksOf(u);
-    if (t.pendingSign > 0) return 0;                      // 待签 SPV
+    if (t.pendingSign > 0) return 0;                      // 跟进中待办
     if (t.pendingLead > 0) return t.leadStatus === 'new' ? 1 : 2; // 待联系 / 跟进中
     return 3;                                             // 无任务
   };
@@ -198,7 +198,7 @@ export default function AdminMyClients({ navigate, detailId, admin }) {
       <div className="admin-page-header">
         <h1>我的客户</h1>
         <span className="admin-header-summary">
-          {isAdvisor ? `共 ${totalClients} 位客户 · ` : `全部客户 ${totalClients} 位 · `}待跟进 {totalPending} · 待签 SPV {totalSign}
+          {isAdvisor ? `共 ${totalClients} 位客户 · ` : `全部客户 ${totalClients} 位 · `}待跟进 {totalPending} · 跟进中 {totalSign}
         </span>
       </div>
 
@@ -270,7 +270,7 @@ export default function AdminMyClients({ navigate, detailId, admin }) {
               </span>
               <span className="col-tasks">
                 {t.pendingLead > 0 && <TaskBadge kind="lead" text={t.leadStatus === 'new' ? '待联系' : '跟进中'} />}
-                {t.pendingSign > 0 && <TaskBadge kind="sign" text={`待签 SPV ${t.pendingSign}`} />}
+                {t.pendingSign > 0 && <TaskBadge kind="sign" text={`跟进中 ${t.pendingSign}`} />}
               </span>
               <span className="col-contact">
                 <span className="admin-lead-phone">{u.phone || '未填电话'}</span>
@@ -370,16 +370,16 @@ export default function AdminMyClients({ navigate, detailId, admin }) {
             {tab === 'records' && (
               <>
                 <div className="card kyc-review-block">
-                  <h4 className="card-title">申购记录（{selSubs.length}）{selSubs.length > 0 && <span className="card-title-sub">累计 HK$ {formatCurrency(sel.subTotal)}</span>}</h4>
+                  <h4 className="card-title">问卷记录（{selSubs.length}）{selSubs.length > 0 && <span className="card-title-sub">累计 HK$ {formatCurrency(sel.subTotal)}</span>}</h4>
                   {selSubs.length > 0 ? selSubs.map(s => (
                     <div className="admin-user-rec" key={s.id}>
                       <div className="admin-user-rec-head">
                         <strong>{s.projectName}</strong>
-                        <span className={`status-badge admin-status-${s.status}`}>{s.status === 'submitted' ? '意向已提交' : s.status === 'allocated' ? '已获配额' : s.status === 'signed' ? '已签 SPV' : '未获配额'}</span>
+                        <span className={`status-badge admin-status-${s.status}`}>{s.status === 'submitted' ? '文件已提交' : s.status === 'allocated' ? '客户经理跟进中' : s.status === 'signed' ? '已完成' : '暂无需推进'}</span>
                       </div>
                       <div className="admin-user-rec-meta">HK$ {formatCurrency(s.amount || 0)} · {s.createdAt}</div>
                     </div>
-                  )) : <div className="text-muted text-sm">暂无申购记录</div>}
+                  )) : <div className="text-muted text-sm">暂无问卷记录</div>}
                 </div>
                 <div className="card kyc-review-block">
                   <h4 className="card-title">报名记录（{selRegs.length}）</h4>
@@ -405,9 +405,9 @@ export default function AdminMyClients({ navigate, detailId, admin }) {
                     <h4 className="card-title">顾问待办</h4>
                     <div className="admin-client-task-list">
                       {selTasks.pendingLead > 0 && <div className="kyc-review-row"><span>客户跟进</span><strong><TaskBadge kind="lead" text={selTasks.leadStatus === 'new' ? '待联系' : '跟进中'} /></strong></div>}
-                      {selTasks.pendingSign > 0 && <div className="kyc-review-row"><span>SPV 签署</span><strong><TaskBadge kind="sign" text={`${selTasks.pendingSign} 笔待签`} /></strong></div>}
+                      {selTasks.pendingSign > 0 && <div className="kyc-review-row"><span>跟进中待办</span><strong><TaskBadge kind="sign" text={`${selTasks.pendingSign} 笔待跟进`} /></strong></div>}
                     </div>
-                    <p className="admin-form-hint">资金/SPV 签署已转为线下，顾问负责联系客户协助安排线下交割与签署。</p>
+                    <p className="admin-form-hint">后续安排已转为线下，顾问负责联系客户协助安排。</p>
                   </div>
                 )}
 
@@ -427,7 +427,7 @@ export default function AdminMyClients({ navigate, detailId, admin }) {
                             </button>
                           ))}
                         </div>
-                        <p className="admin-form-hint">已转化 = 客户已提交申购意向（与「申购记录」联动）。</p>
+                        <p className="admin-form-hint">已转化 = 客户已提交问卷（与「问卷记录」联动）。</p>
                       </div>
                     </div>
 

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { clickable } from '../lib';
 import { ArrowLeft, Calendar, TrendingUp, FileText, Headphones, X, ChevronRight, Check } from 'lucide-react';
-import { getProjectById, getEventsByProject, projectStatusLabels, getProjectHeroGradient, getProjectHeroEmoji, subscriptions, getInvestorRoster, currentUser, getInvestorNo, formatCurrency, formatListDateTime, getProjectStageSlug, getCurrencySymbol, getSubscriptionGate } from '../mock/data';
+import { getProjectById, getEventsByProject, projectStatusLabels, getProjectHeroGradient, getProjectHeroEmoji, subscriptions, currentUser, getInvestorNo, formatCurrency, getProjectStageSlug, getCurrencySymbol, getSubscriptionGate } from '../mock/data';
 import AccountManager from '../components/AccountManager';
 import SubscribeSheet from '../components/SubscribeSheet';
 import { useLang } from '../i18n';
@@ -28,9 +28,7 @@ export default function ProjectDetail({ id, navigate, goBack }) {
   const myInvestorNo = getInvestorNo(currentUser.id);
   // 多用户化（2026-08-13）：必须按投资人过滤，避免命中其他客户在该项目的申购
   const mySub = subscriptions.find(s => s.projectId === id && s.investorNo === myInvestorNo);
-  const investorRoster = getInvestorRoster(project);
-  const myIndex = investorRoster.findIndex(r => r.investorNo === myInvestorNo);
-  const myRank = myIndex >= 0 ? myIndex + 1 : investorRoster.length;
+  // 2026-10-22 RO 整改：申购热度（投资人名单 + 我的位次）整块移除——公开他人意向与排位属竞争性招揽红线
 
   if (!project) {
     return (
@@ -125,48 +123,6 @@ export default function ProjectDetail({ id, navigate, goBack }) {
         </div>
       </div>
 
-      {investorRoster.length > 0 && (
-        <div className="card card-secondary">
-          <div className="section-header">
-            <div className="card-title">{t('申购热度')}</div>
-            <span className="heat-count">
-              {project.status === 'closed' || project.status === 'sold'
-                ? t('本轮共 {} 位投资人参与').replace('{}', investorRoster.length)
-                : t('{} 位投资人已提交意向').replace('{}', investorRoster.length)}
-            </span>
-          </div>
-          <div className="heat-list">
-            {mySub && mySub.status !== 'unallocated' && (
-              <div className="heat-me-rank" {...clickable(() => navigate(`#project-heat/${project.id}`))}>
-                <span className="heat-me-rank-label">{t('我的当前位次')}</span>
-                <span className="heat-me-rank-value">{t('第 {} 位').replace('{}', myRank)}</span>
-                <span className="heat-me-rank-meta">
-                  {t('共 {} 位投资人 · 您之前 {} 位').replace('{}', investorRoster.length).replace('{}', Math.max(0, myRank - 1))}
-                </span>
-                <ChevronRight size={15} />
-              </div>
-            )}
-            <div className="heat-row heat-head-row">
-              <span className="heat-head-label">{t('投资人')}</span>
-              <span className="heat-head-label">{t('提交时间')}</span>
-            </div>
-            {investorRoster.slice(-5).reverse().map(r => (
-              <div key={r.id} className={`heat-row ${r.investorNo === myInvestorNo ? 'is-me' : ''}`}>
-                <span className="heat-investor">
-                  {r.investorNo}
-                  {r.investorNo === myInvestorNo && <em className="heat-me-tag">{t('我')}</em>}
-                </span>
-                <span className="text-muted text-sm date-iso">{formatListDateTime(r.createdAt)}</span>
-              </div>
-            ))}
-          </div>
-          <button className="heat-view-all" onClick={() => navigate(`#project-heat/${project.id}`)}>
-            <span>{t('查看全部 {} 位提交').replace('{}', investorRoster.length)}</span>
-            <ChevronRight size={15} />
-          </button>
-        </div>
-      )}
-
       <div className="card card-secondary">
         <div className="card-title">{t('项目亮点')}</div>
         <ul className="highlight-list">
@@ -244,13 +200,12 @@ export default function ProjectDetail({ id, navigate, goBack }) {
         <ChevronRight size={15} />
       </button>
 
-      {/* 申购意向 CTA（2026-10-16 口径修订恢复：线上只收集投资意愿，资金与 SPV 签署全线下——
-          状态卡是后台登记进度的镜像，用户侧无签署/支付动作入口；signed 卡原「查看持仓」
-          随资产树摘除改指我的申购） */}
+      {/* 问卷 CTA（2026-10-22 RO 整改：CTA 改「了解详情」，弹框为「问卷调查」——
+          线上只收集投资意愿，线下与项目方协调；状态卡是后台登记进度的镜像，用户侧无签署/支付动作入口） */}
       <div className="detail-actions">
         {!mySub && isOpen && gate.ok && (
           <button className="btn btn-primary btn-full" onClick={() => setShowSubscribe(true)}>
-            {t('提交申购意向')}
+            {t('了解详情')}
           </button>
         )}
         {!mySub && isOpen && !gate.ok && (
@@ -260,7 +215,7 @@ export default function ProjectDetail({ id, navigate, goBack }) {
         )}
         {!mySub && !isOpen && (
           <button className="btn btn-full" disabled>
-            {t('本轮份额已分配完毕')}
+            {t('本轮已结束')}
           </button>
         )}
         {mySub && mySub.status === 'signed' && (
@@ -268,19 +223,15 @@ export default function ProjectDetail({ id, navigate, goBack }) {
             <div className="cta-status-card signed">
               <div className="cta-status-head">
                 <Check size={16} />
-                <strong>{t('已签 SPV')}</strong>
+                <strong>{t('已完成')}</strong>
               </div>
               <div className="cta-status-meta">
-                <span>{t('意向金额')}</span>
-                <strong className="date-iso">HK$ {formatCurrency(mySub.amount || 0)}</strong>
-              </div>
-              <div className="cta-status-meta">
-                <span>{t('获得份额')}</span>
-                <strong>{mySub.shares} {t('份')}</strong>
+                <span>{t('意向档位')}</span>
+                <strong className="date-iso">{(mySub.amount || 0) > 0 ? `HK$ ${formatCurrency(mySub.amount || 0)}` : t('无意向')}</strong>
               </div>
             </div>
             <button className="text-btn-cta" onClick={() => navigate(`#my-subscription/${mySub.id}`)}>
-              {t('查看我的申购 ›')}
+              {t('查看我的问卷 ›')}
             </button>
           </>
         )}
@@ -288,12 +239,12 @@ export default function ProjectDetail({ id, navigate, goBack }) {
           <>
             <div className="cta-status-card unallocated">
               <div className="cta-status-head">
-                <strong>{t('本轮未获配额')}</strong>
+                <strong>{t('本次提交暂无进一步安排')}</strong>
               </div>
-              <p className="text-muted text-sm">{t('项目仍开放，可重新提交意向')}</p>
+              <p className="text-muted text-sm">{t('如有进一步意向，可重新填写问卷')}</p>
             </div>
             <button className="btn btn-primary btn-full" onClick={() => setShowSubscribe(true)}>
-              {t('重新提交意向')}
+              {t('重新填写问卷')}
             </button>
           </>
         )}
@@ -301,9 +252,9 @@ export default function ProjectDetail({ id, navigate, goBack }) {
           <>
             <div className="cta-status-card unallocated">
               <div className="cta-status-head">
-                <strong>{t('本轮未获配额')}</strong>
+                <strong>{t('本次提交暂无进一步安排')}</strong>
               </div>
-              <p className="text-muted text-sm">{t('项目仍开放，可重新提交意向')}</p>
+              <p className="text-muted text-sm">{t('如有进一步意向，可重新填写问卷')}</p>
             </div>
             <button className="btn btn-primary btn-full" onClick={() => navigate(`#${gate.target}`)}>
               {t(gate.labelKey)}
@@ -316,21 +267,21 @@ export default function ProjectDetail({ id, navigate, goBack }) {
               <div className="cta-status-head">
                 <Check size={16} />
                 <strong>
-                  {mySub.status === 'allocated' ? t('已获配额') : t('已提交意向')}
+                  {mySub.status === 'allocated' ? t('客户经理跟进中') : t('文件已提交')}
                 </strong>
               </div>
               <div className="cta-status-meta">
-                <span>{t('意向金额')}</span>
-                <strong className="date-iso">HK$ {formatCurrency(mySub.amount || 0)}</strong>
+                <span>{t('意向档位')}</span>
+                <strong className="date-iso">{(mySub.amount || 0) > 0 ? `HK$ ${formatCurrency(mySub.amount || 0)}` : t('无意向')}</strong>
               </div>
               <div className="cta-status-meta">
                 <span>
-                  {mySub.status === 'allocated' ? t('已获配额 · 待线下打款与签署') : t('等待线下协调额度')}
+                  {mySub.status === 'allocated' ? t('客户经理将线下与您联系') : t('等待客户经理跟进')}
                 </span>
               </div>
             </div>
             <button className="text-btn-cta" onClick={() => navigate(`#my-subscription/${mySub.id}`)}>
-              {t('查看我的申购 ›')}
+              {t('查看我的问卷 ›')}
             </button>
           </>
         )}

@@ -42,9 +42,10 @@ export default function KYCPI({ navigate, goBack }) {
     const newErrors = {};
     if (!formData.pi_type) newErrors.pi_type = t("请选择专业投资者资格类型");
     if (formData.pi_type === 'asset' && !piFile) newErrors.pi_file = t("请上传资产证明文件");
-    // 2026-09-20：持牌类型凭 CE No. 走 SFC 公开记录核验，编号与机构名称必填
+    // 2026-09-20：持牌类型凭 SFC 牌照编号走 SFC 公开记录核验，编号与机构名称必填
+    // 2026-10-22：RO 整改——全端统一「SFC NO」措辞，不用 CE No.
     if (formData.pi_type === 'professional') {
-      if (!formData.pi_license_no.trim()) newErrors.pi_license_no = t("请填写持牌编号（CE No.）");
+      if (!formData.pi_license_no.trim()) newErrors.pi_license_no = t("请填写持牌编号（SFC NO）");
       if (!formData.pi_license_org.trim()) newErrors.pi_license_org = t("请填写持牌机构名称");
     }
     if (!formData.pi_certified) newErrors.pi_certified = t("请阅读并同意签署专业投资者声明");
@@ -155,14 +156,14 @@ export default function KYCPI({ navigate, goBack }) {
             </div>
           )}
 
-          {/* 持牌信息（2026-09-20：professional 类型凭 CE No. 走 SFC 公开记录核验，无需上传文件） */}
+          {/* 持牌信息（2026-09-20：professional 类型凭 SFC 牌照编号走 SFC 公开记录核验，无需上传文件） */}
           {formData.pi_type === 'professional' && (
             <div className="kyc-form-group">
               <label className="kyc-form-label">{t('持牌信息')}</label>
               <input
                 type="text"
                 className={`kyc-form-input ${errors.pi_license_no ? 'error' : ''}`}
-                placeholder={t('请输入 SFC 中央编号（如：ABC123）')}
+                placeholder={t('请输入 SFC NO（如：ABC123）')}
                 value={formData.pi_license_no}
                 onChange={(e) => update('pi_license_no', e.target.value)}
               />
@@ -177,7 +178,7 @@ export default function KYCPI({ navigate, goBack }) {
               />
               {errors.pi_license_org && <span className="kyc-form-error">{errors.pi_license_org}</span>}
               <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: 'var(--space-2)', lineHeight: 1.5 }}>
-                {t('后台将凭中央编号在香港证监会公开记录核验您的持牌资格，无需上传文件')}
+                {t('后台将凭牌照编号在香港证监会公开记录核验您的持牌资格，无需上传文件')}
               </div>
             </div>
           )}
@@ -216,14 +217,14 @@ export default function KYCPI({ navigate, goBack }) {
           </div>
           {errors.pi_certified && <span className="kyc-form-error" style={{ marginTop: 4 }}>{errors.pi_certified}</span>}
 
-          {/* 法规提示按所选类型聚焦（2026-09-20：持牌类型收 CE No. 后，避免误导其去准备资产证明） */}
+          {/* 法规提示按所选类型聚焦（2026-09-20：持牌类型收 SFC 牌照编号后，避免误导其去准备资产证明；2026-10-22 全端统一 SFC NO 措辞） */}
           <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-start', marginTop: 'var(--space-3)', padding: 'var(--space-3)', background: 'var(--warning-light)', borderRadius: 'var(--radius-md)' }}>
             <AlertCircle size={14} style={{ color: 'var(--warning)', flexShrink: 0, marginTop: 2 }} />
             <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
               {formData.pi_type === 'asset'
                 ? t('《证券及期货条例》附表1定义的专业投资者，您需持有至少 HK$8,000,000 的投资组合')
                 : formData.pi_type === 'professional'
-                  ? t('《证券及期货条例》附表1定义的专业投资者，持牌资格将凭 SFC 中央编号在证监会公开记录核验')
+                  ? t('《证券及期货条例》附表1定义的专业投资者，持牌资格将凭 SFC NO 在证监会公开记录核验')
                   : t('《证券及期货条例》附表1定义的专业投资者，您需持有至少 HK$8,000,000 的投资组合或为持牌人士')}
             </span>
           </div>

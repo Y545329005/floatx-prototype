@@ -80,7 +80,7 @@ export default function Wealth({ navigate }) {
           <span className="wealth-row-name">{p.title}</span>
           <span className="wealth-row-sub">
             {/* 「已申购」前置：副行 ellipsis 截断时优先保住这个关键状态，损失地区尾字 */}
-            {mySub && <span className="sub-mark">{t('已申购')} · </span>}
+            {mySub && <span className="sub-mark">{t('已提交问卷')} · </span>}
             {p.stage} · {t(p.sector)} · {p.location}
           </span>
         </span>

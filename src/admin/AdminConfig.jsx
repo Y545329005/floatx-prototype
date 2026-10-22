@@ -455,18 +455,18 @@ export default function AdminConfig({ admin }) {
                 <input className="form-input" value={brand.nameEn} placeholder="如：HighBlock Securities Limited" onChange={e => setBrand({ ...brand, nameEn: e.target.value })} />
               </div>
               <div className="form-group">
-                <label className="form-label">牌照编号（CE No.）</label>
-                <input className="form-input" value={brand.licenseNo} placeholder="如：(F)256390" onChange={e => setBrand({ ...brand, licenseNo: e.target.value })} />
+                <label className="form-label">牌照编号（SFC NO）</label>
+                <input className="form-input" value={brand.licenseNo} placeholder="如：BWW124" onChange={e => setBrand({ ...brand, licenseNo: e.target.value })} />
               </div>
             </div>
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">牌照类型</label>
-                <input className="form-input" value={brand.licenseType} placeholder="如：香港证监会第 9 类牌照（资产管理）" onChange={e => setBrand({ ...brand, licenseType: e.target.value })} />
+                <input className="form-input" value={brand.licenseType} placeholder="如：香港证监会第 1、4、9 类牌照" onChange={e => setBrand({ ...brand, licenseType: e.target.value })} />
               </div>
               <div className="form-group">
-                <label className="form-label">牌照业务描述</label>
-                <input className="form-input" value={brand.licenseDesc} placeholder="如：就资产管理提供意见" onChange={e => setBrand({ ...brand, licenseDesc: e.target.value })} />
+                <label className="form-label">受规管活动</label>
+                <input className="form-input" value={brand.licenseDesc} placeholder="如：证券交易 · 就证券提供意见 · 资产管理" onChange={e => setBrand({ ...brand, licenseDesc: e.target.value })} />
               </div>
             </div>
             <div className="form-row">

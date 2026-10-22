@@ -262,7 +262,7 @@ export default function AdminLargeTx({ navigate, detailId, admin }) {
                   <>
                     <div className="detail-row"><span className="detail-label">投资人</span><span className="detail-value">{sub?.investorName || '—'}</span></div>
                     <div className="detail-row"><span className="detail-label">关联项目</span><span className="detail-value">{sub?.projectName || '—'}</span></div>
-                    <div className="detail-row"><span className="detail-label">申购状态</span><span className="detail-value">{sub ? ({ submitted: '意向已登记', allocated: '已获配额', signed: '已签署', settled: '已完成' })[sub.status] || sub.status : '—'}</span></div>
+                    <div className="detail-row"><span className="detail-label">问卷状态</span><span className="detail-value">{sub ? ({ submitted: '文件已提交', allocated: '客户经理跟进中', signed: '已完成', settled: '已完成' })[sub.status] || sub.status : '—'}</span></div>
                   </>
                 ); })()}
                 <div className="detail-row"><span className="detail-label">交易金额</span><span className="detail-value"><strong>HK$ {formatExactAmount(sel.amount)}</strong></span></div>

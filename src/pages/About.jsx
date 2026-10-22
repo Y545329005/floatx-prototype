@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, FileText, Building2, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, FileText, Building2, ShieldCheck, ChevronRight } from 'lucide-react';
 import { companyPolicies, platformBrand, resolveBrand } from '../mock/data';
 import { useLang } from '../i18n';
 import AgreementModal from '../components/AgreementModal';
@@ -31,7 +31,7 @@ export default function About({ navigate, goBack, setToast }) {
           <Building2 size={22} />
         </div>
         <div className="about-brand-info">
-          <strong>{platformBrand.nameFullZh}</strong>
+          <strong>{platformBrand.nameZh}</strong>
           <span className="text-muted text-sm">{platformBrand.nameEn}</span>
         </div>
       </div>
@@ -54,9 +54,10 @@ export default function About({ navigate, goBack, setToast }) {
               <FileText size={16} />
               <div className="doc-item-body">
                 <span>{t(p.title)}</span>
-                <span className="text-muted text-sm">{resolveBrand(t(p.subtitle))}</span>
+                <span className="text-muted text-sm">{t(resolveBrand(p.subtitle, t))}</span>
               </div>
-              <span className="text-muted text-sm">{p.date}</span>
+              {/* 2026-10-22：日期为占位值（正式文档未载明），改为箭头保留可点提示 */}
+              <ChevronRight size={16} className="text-muted" />
             </a>
           );
         })}
@@ -66,14 +67,15 @@ export default function About({ navigate, goBack, setToast }) {
         <div className="about-compliance-row">
           <ShieldCheck size={16} className="about-compliance-icon" />
           <div>
-            <strong>{platformBrand.licenseType}</strong>
-            <span className="text-muted text-sm">{platformBrand.licenseDesc} · 牌照编号 CE No. {platformBrand.licenseNo}</span>
+            <strong>{t(platformBrand.licenseType)}</strong>
+            <span className="text-muted text-sm">{t(platformBrand.licenseDesc)}</span>
+            <span className="text-muted text-sm">SFC NO: {platformBrand.licenseNo}</span>
           </div>
         </div>
       </div>
 
       <div className="about-version">
-        <span className="text-muted text-sm">版本 {platformBrand.appVersion}</span>
+        <span className="text-muted text-sm">{t('版本')} {platformBrand.appVersion}</span>
         <span className="text-muted text-sm">© {new Date().getFullYear()} {platformBrand.nameFullZh}</span>
       </div>
 

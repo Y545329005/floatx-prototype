@@ -15,9 +15,9 @@ function TermsUpdateGate({ onAgreed }) {
 
   const UPDATED_IDS = ['user-agreement', 'privacy-policy', 'risk-disclosure'];
   const LABELS = {
-    'user-agreement': t('用户协议'),
+    'user-agreement': t('使用条款'),
     'privacy-policy': t('隐私条款'),
-    'risk-disclosure': t('风险披露声明'),
+    'risk-disclosure': t('风险披露声明及免责声明'),
   };
 
   const handleConfirm = () => {

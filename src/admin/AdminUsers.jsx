@@ -10,7 +10,7 @@ import { useDrawerFocus } from './useDrawerFocus';
 
 // 用户管理（2026-08-13 · 后台 P0）：投资人账户统一视图（账户全貌视角）
 // 与现有模块分工：用户管理 = 账户视图（人的全生命周期）；KYC 审核 = 认证动作；
-// 报名管理 = 获客视图（客户线索）；申购记录 = 项目视图。四者互补不重叠。
+// 报名管理 = 获客视图（客户线索）；问卷记录 = 项目视图。四者互补不重叠。
 
 const kycMeta = {
   [KYC_STATUS.APPROVED]: { label: '已通过', cls: 'admin-status-approved' },
@@ -266,7 +266,7 @@ export default function AdminUsers({ navigate, detailId, admin }) {
                 <span className={`status-badge ${pm.cls}`}>{pm.label}</span>
               </span>
               <span className="col-mgr">{u.managerName}</span>
-              <span className="col-biz">报名 {u.regCount} · 申购 {u.subCount}</span>
+              <span className="col-biz">报名 {u.regCount} · 问卷 {u.subCount}</span>
               <span className="col-state">
                 <span className={u.disabled ? 'text-danger' : 'text-muted'}>{u.disabled ? '已禁用' : '正常'}</span>
               </span>
@@ -434,16 +434,16 @@ export default function AdminUsers({ navigate, detailId, admin }) {
 
             {/* 业务记录：申购明细（2026-08-15：纯展示，去跳转 + 去 chevron；档案 = 看，业务处理去独立菜单） */}
             <div className="card kyc-review-block">
-              <h4 className="card-title">申购记录（{selSubs.length}）{selSubs.length > 0 && <span className="card-title-sub">累计 HK$ {formatCurrency(sel.subTotal)}</span>}</h4>
+              <h4 className="card-title">问卷记录（{selSubs.length}）{selSubs.length > 0 && <span className="card-title-sub">累计 HK$ {formatCurrency(sel.subTotal)}</span>}</h4>
               {selSubs.length > 0 ? selSubs.map(s => (
                 <div className="admin-user-rec" key={s.id}>
                   <div className="admin-user-rec-head">
                     <strong>{s.projectName}</strong>
-                    <span className={`status-badge admin-status-${s.status}`}>{s.status === 'submitted' ? '意向已提交' : s.status === 'allocated' ? '已获配额' : s.status === 'signed' ? '已签 SPV' : '未获配额'}</span>
+                    <span className={`status-badge admin-status-${s.status}`}>{s.status === 'submitted' ? '文件已提交' : s.status === 'allocated' ? '客户经理跟进中' : s.status === 'signed' ? '已完成' : '暂无需推进'}</span>
                   </div>
                   <div className="admin-user-rec-meta">HK$ {formatCurrency(s.amount || 0)} · {s.createdAt}</div>
                 </div>
-              )) : <div className="text-muted text-sm">暂无申购记录</div>}
+              )) : <div className="text-muted text-sm">暂无问卷记录</div>}
             </div>
 
             {/* 业务记录：报名明细（2026-08-15：纯展示，去跳转 + 去 chevron） */}
@@ -477,7 +477,7 @@ export default function AdminUsers({ navigate, detailId, admin }) {
                   <div className="admin-action-block">
                     <h5 className="admin-action-block-title">专属顾问</h5>
                     <div className="form-group">
-                      <label className="form-label">归属顾问（报名/申购记录自动跟随）</label>
+                      <label className="form-label">归属顾问（报名/问卷记录自动跟随）</label>
                       <select
                         className="form-input"
                         value={mgrSelect || sel.managerId || ''}
@@ -497,7 +497,7 @@ export default function AdminUsers({ navigate, detailId, admin }) {
                         <p className="text-muted text-sm">
                           {sel.disabled
                             ? `确认恢复启用「${sel.name}」的账户？恢复后可正常登录与操作。`
-                            : `确认禁用「${sel.name}」的账户？禁用后该投资人将无法登录与参与申购（风控冻结）。`}
+                            : `确认禁用「${sel.name}」的账户？禁用后该投资人将无法登录与使用本平台服务（风控冻结）。`}
                         </p>
                         <div className="admin-drawer-actions-inline">
                           <button className="btn btn-md btn-secondary" onClick={() => setConfirmDisable(false)}>取消</button>

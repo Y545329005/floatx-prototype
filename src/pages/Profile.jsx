@@ -10,7 +10,7 @@ export default function Profile({ navigate, setIsLoggedIn }) {
   const unreadCount = notifications.filter(n => !n.toUserId || n.toUserId === currentUser.id).filter(n => !n.read).length;
   // 2026-10-16 首期裁剪：合规报告入口摘除（#reports 随资产树下线）；消息通知副标题去申购/资金口径
   const menuItems = [
-    { icon: Bell, label: t('消息通知'), sub: t('申购 · 路演动态'), hash: '#notifications', badge: unreadCount },
+    { icon: Bell, label: t('消息通知'), sub: t('问卷 · 路演动态'), hash: '#notifications', badge: unreadCount },
     { icon: Settings, label: t('账户设置'), sub: t('个人信息 · 认证 · 安全'), hash: '#settings' },
     { icon: HelpCircle, label: t('帮助中心'), sub: t('常见问题 · 客服支持'), hash: '#help' },
     { icon: Info, label: t('关于'), sub: t('公司信息 · 政策文件'), hash: '#about' },

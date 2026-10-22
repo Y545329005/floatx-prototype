@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Search, X } from 'lucide-react';
 import { transactions, formatExactAmount } from '../mock/data';
 
-const typeLabels = { deposit: '充值', withdraw: '提现', subscription: '申购', exchange: '换汇', exit: '退出' };
+const typeLabels = { deposit: '充值', withdraw: '提现', subscription: '问卷', exchange: '换汇', exit: '退出' };
 
 // 资金流水查询（2026-08-14 用户拍板 A，同日拆独立菜单 C）：类型筛选 + 时间范围 + 搜索 + 分页——流水未来很长需快速定位
 // （对账按期间 / 审计按条件 / 客服按单号查单）
@@ -10,7 +10,7 @@ const TX_FILTERS = [
   { key: 'all', label: '全部' },
   { key: 'deposit', label: '充值' },
   { key: 'withdraw', label: '提现' },
-  { key: 'subscription', label: '申购' },
+  { key: 'subscription', label: '问卷' },
   { key: 'exchange', label: '换汇' },
   { key: 'exit', label: '退出' },
 ];

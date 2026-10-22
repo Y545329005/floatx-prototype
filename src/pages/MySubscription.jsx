@@ -1,6 +1,5 @@
-import { useState } from 'react';
-import { ArrowLeft, User, Building2, Zap, PenLine, RefreshCcw } from 'lucide-react';
-import { getProjectById, getInvestorRoster, currentUser, getInvestorNo, formatCurrency, formatISODateTime, historyTypeLabels, actorLabels, subscriptionStatusLabels, subscriptions, getSigningEvidenceBySub, formatListDateTime, resetSubscriptionForDemo } from '../mock/data';
+import { ArrowLeft, User, Building2, Zap } from 'lucide-react';
+import { getProjectById, formatCurrency, formatISODateTime, historyTypeLabels, actorLabels, subscriptionStatusLabels, subscriptions } from '../mock/data';
 import SubscriptionMilestone from '../components/SubscriptionMilestone';
 import { useLang } from '../i18n';
 
@@ -19,7 +18,6 @@ function StatusBadge({ status }) {
 
 export default function MySubscription({ id, navigate, goBack }) {
   const { t } = useLang();
-  const [, setRefresh] = useState(0);
   const subRecord = subscriptions.find(s => s.id === id);
 
   if (!subRecord) {
@@ -28,19 +26,16 @@ export default function MySubscription({ id, navigate, goBack }) {
         <div className="subpage-sticky">
           <div className="page-header">
             <button className="back-btn" onClick={() => goBack('#projects')}><ArrowLeft size={20} /></button>
-            <h1>{t('我的申购')}</h1>
+            <h1>{t('我的问卷')}</h1>
           </div>
         </div>
-        <div className="empty-state">{t('未找到该申购记录')}</div>
+        <div className="empty-state">{t('未找到该问卷记录')}</div>
       </div>
     );
   }
 
   const project = getProjectById(subRecord.projectId);
-  const investorRoster = getInvestorRoster(project);
-  const myInvestorNo = getInvestorNo(currentUser.id);
-  const myIndex = investorRoster.findIndex(r => r.investorNo === myInvestorNo);
-  const myRank = myIndex >= 0 ? myIndex + 1 : investorRoster.length;
+  // 2026-10-22 RO 整改：移除「我的位次」（排位属竞争性招揽语义，与热度页同批下线）
 
   return (
     <div className="page my-subscription-page">
@@ -52,18 +47,12 @@ export default function MySubscription({ id, navigate, goBack }) {
         </div>
       </div>
 
-      {/* 资金状态卡 */}
+      {/* 问卷状态卡 */}
       <div className="card my-sub-status-card">
         <div className="subscription-info-row">
-          <span>{t('意向金额')}</span>
-          <strong className="date-iso">HK$ {formatCurrency(subRecord.amount || 0)}</strong>
+          <span>{t('意向档位')}</span>
+          <strong className="date-iso">{(subRecord.amount || 0) > 0 ? `HK$ ${formatCurrency(subRecord.amount || 0)}` : t('无意向')}</strong>
         </div>
-        {subRecord.shares && (
-          <div className="subscription-info-row">
-            <span>{t('获得份额')}</span>
-            <strong>{subRecord.shares} {t('份')}</strong>
-          </div>
-        )}
         <div className="subscription-info-row">
           <span>{t('提交时间')}</span>
           <span className="date-iso">{formatISODateTime(subRecord.createdAt)}</span>
@@ -71,65 +60,12 @@ export default function MySubscription({ id, navigate, goBack }) {
         <SubscriptionMilestone status={subRecord.status} />
       </div>
 
-      {/* 线下打款与签署指引（仅 allocated 显示）。2026-10-16 口径修订：原「APP 内电子签署」
-          指引卡（含 #spv-sign 跳转）摘除——大额资金交易签署全线下，APP 只做意向收集与进度查看 */}
+      {/* 后续安排（2026-10-22 RO 整改：去 SPV 措辞——平台不设立/签署任何特殊目的载体，
+          后续安排由客户经理线下与投资人协调） */}
       {subRecord.status === 'allocated' && (
         <div className="card card-secondary sign-guide-card">
-          <div className="card-title">{t('线下打款与签署')}</div>
-          <p className="sign-guide-desc">{t('本基金为线下认购：获配后请按客户经理指引完成线下资金交割，SPV 协议将在线下完成签署，专属客户经理将全程协助安排。')}</p>
-        </div>
-      )}
-
-      {/* 签署凭证（signed 后展示：APP 内电子签署 / 线下登记的证据摘要，2026-09-15） */}
-      {subRecord.status === 'signed' && (() => {
-        const ev = getSigningEvidenceBySub(subRecord.id);
-        if (!ev) return null;
-        return (
-          <div className="card card-secondary sign-evidence-card">
-            <div className="card-title"><PenLine size={14} className="inline-icon" /> {t('签署凭证')}</div>
-            <div className="subscription-info-row"><span>{t('签署编号')}</span><strong className="date-iso">{ev.signedRef}</strong></div>
-            <div className="subscription-info-row"><span>{t('协议版本')}</span><strong className="date-iso">{ev.agreementVersion}{ev.agreementHash ? ` · ${t('哈希已固化')}` : ''}</strong></div>
-            <div className="subscription-info-row"><span>{t('签署方式')}</span><strong>{ev.source === 'app' ? t('APP 内电子签署') : t('线下签署登记')}</strong></div>
-            <div className="subscription-info-row"><span>{t('签署时间')}</span><strong className="date-iso">{formatListDateTime(ev.signedAt)}</strong></div>
-            {ev.signatureImage && (
-              <div className="sign-evidence-signature">
-                <img src={ev.signatureImage} alt={t('电子签名')} loading="lazy" decoding="async" />
-              </div>
-            )}
-          </div>
-        );
-      })()}
-
-      {/* 重新演示签署流程（仅 signed 状态显示，重置为 allocated 后可重新体验） */}
-      {subRecord.status === 'signed' && (
-        <button
-          className="btn btn-secondary"
-          style={{ width: '100%' }}
-          onClick={() => {
-            resetSubscriptionForDemo(subRecord.id);
-            setRefresh(v => v + 1);
-          }}
-        >
-          <RefreshCcw size={13} /> {t('重新演示签署流程')}
-        </button>
-      )}
-
-      {/* 我的位次 */}
-      {project && (
-        <div className="card card-secondary">
-          <div className="card-title">{t('我的位次')}</div>
-          {subRecord.status !== 'unallocated' && (
-            <div className="heat-my-rank">
-              <div className="heat-my-rank-left">
-                <strong>{t('我的意向提交次序')}</strong>
-                <span className="text-muted text-sm">{t('提交于 {}').replace('{}', formatISODateTime(subRecord.createdAt))}</span>
-              </div>
-              <div className="heat-my-rank-right">
-                <span className="heat-my-rank-label">{t('当前排位')}</span>
-                <strong>{t('第 {} 位').replace('{}', myRank)}</strong>
-              </div>
-            </div>
-          )}
+          <div className="card-title">{t('后续安排')}</div>
+          <p className="sign-guide-desc">{t('如需进一步了解或推进后续安排，专属客户经理将全程协助并线下与您联系。')}</p>
         </div>
       )}
 

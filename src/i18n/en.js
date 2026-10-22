@@ -27,27 +27,15 @@ export const en = {
   '关于': 'About',
   '银行卡管理': 'Bank Accounts',
   '换汇': 'Currency Exchange',
-  '申购热度': 'Subscription Demand',
   '资产走势': 'Asset Trend',
   '持仓概览': 'Holdings Overview',
   '总资产（折合 HKD）': 'Total Assets (HKD eq.)',
 
   // Status labels
-  '申购开放': 'Open for subscription',
   '即将上线': 'Coming soon',
-  '分配完成': 'Allocated',
-  '已分配': 'Allocated',
-  '意向已提交': 'Intention submitted',
-  '已获配额': 'Quota allocated',
-  '已签 SPV': 'SPV signed',
-  '未获配额': 'No quota allocated',
-  'SPV 认购协议': 'SPV Subscription Agreement',
 
   // Subscription eligibility (2026-08-17 · mandatory KYC + PI check)
-  '完成实名认证后再申购': 'Complete identity verification before subscribing',
-  'PI 认证审核中，暂不可申购': 'PI certification under review',
   'PI 认证已过期，请重新认证': 'PI certification expired — please re-certify',
-  '完成专业投资者认证后再申购': 'Complete professional investor certification to subscribe',
 
   // Project detail
   '总部': 'HQ',
@@ -65,13 +53,6 @@ export const en = {
   '相关路演': 'Related Events',
   '尽调材料': 'Due Diligence',
   '有疑问？联系您的专属顾问': 'Questions? Contact your advisor',
-  '已提交申购意向': 'Intention submitted',
-  '本轮份额已分配完毕': 'This round is fully allocated',
-  '提交申购意向': 'Submit intention',
-  '重新提交申购意向': 'Resubmit intention',
-  '我的意向提交次序': 'My queue position',
-  '当前排位': 'Position',
-  '投资人': 'Investor',
   '提交时间': 'Submitted',
 
   // Events
@@ -116,16 +97,8 @@ export const en = {
   '服务热线': 'Hotline',
 
   // FAQ (Help page)
-  '申购意向提交后需要做什么？': 'What should I do after submitting a subscription intent?',
-  '意向提交后，平台会记录您的意向次序并作为协调额度的参考。后续是否获配、签署 SPV 等由平台与项目方协调后线下联系您，期间无需额外操作。': 'After submitting your intent, the platform will record your order of preference as a reference for allocation. Whether you receive an allocation and the signing of SPV will be coordinated offline by the platform and the project team, who will contact you directly. No additional action is required from you during this period.',
-  '意向会冻结资金吗？': 'Will the intent freeze my funds?',
-  '不会。申购意向仅为兴趣表达，不冻结任何资金。实际出资发生在与项目方协商并签署 SPV 文件之后。': 'No. A subscription intent is simply an expression of interest and does not freeze any funds. Actual capital contribution occurs only after negotiation with the project team and signing of the SPV document.',
-  '「未获配额」是什么意思？': 'What does "unallocated" mean?',
-  '本轮份额有限，您本轮未获得分配额度。项目若仍开放，可关注后续轮次并重新提交意向。': 'This round had limited availability and you did not receive an allocation. If the project remains open, you may watch for subsequent rounds and resubmit your intent.',
   '如何联系我的专属客户经理？': 'How do I contact my dedicated account manager?',
   '在「我的」页面点击客户经理卡片即可查看其联系方式，包括电话、邮箱与 WhatsApp。经理未响应时可转在线客服。': 'Click on your dedicated account manager card in the "My" section to view their contact information, including phone, email and WhatsApp. If your manager does not respond, you may escalate to online customer service.',
-  '合规报告在哪里查看？': 'Where can I find compliance reports?',
-  '在「我的」页面进入「合规报告」，可查看月度资产报告、季度投资组合报告及合规披露文件。': 'Access the "Compliance Reports" section in the "My" page to view monthly asset reports, quarterly investment portfolio reports and compliance disclosure documents.',
   '如何保证我的信息与资金安全？': 'How is my information and funds security guaranteed?',
   '平台采用金融级数据加密，账户已开启双重验证（2FA），资金托管于持牌托管机构，交易全程合规留痕。': 'The platform uses financial-grade data encryption, your account has two-factor authentication (2FA) enabled, funds are custodied with licensed custodians, and all transactions leave a full compliance audit trail.',
 
@@ -142,7 +115,6 @@ export const en = {
 
   // Subscription
   '意向收集': 'Intention',
-  '申购意向即将开放': 'Subscription opening soon',
 
   // Funds
   '基金申购即将开放，敬请期待': 'Fund subscription will open soon',
@@ -157,8 +129,6 @@ export const en = {
   '文档预览即将开放': 'Document preview coming soon',
   '公司政策文件': 'Company Policies',
   '隐私政策': 'Privacy Policy',
-  '用户协议': 'User Agreement',
-  '风险披露声明': 'Risk Disclosure',
   '公司简介': 'Company Profile',
   '牌照及监管信息': 'License & Regulatory Info',
 
@@ -221,7 +191,6 @@ export const en = {
   '服务热线 400-888-0000': 'Hotline 400-888-0000',
 
   // Compliance Reports
-  '根据香港证监会（SFC）相关规定，持牌机构需定期向专业投资者提供资产报告及合规披露文件。': 'Under SFC regulations, licensed institutions must periodically provide asset reports and compliance disclosures to professional investors.',
 
   // Bank Cards
   '用于充值入金与提现出金的收款账户，账户信息仅用于资金往来登记。': 'Receiving account for deposits and withdrawals; details used only for fund transfer records.',
@@ -253,7 +222,6 @@ export const en = {
   '持有份额': 'Units held',
   '份': 'units',
   '持有标的': 'Holding vehicle',
-  '该 SPV 持有目标公司股份，本持仓为投资者持有的 SPV 份额。': 'This SPV holds shares of the target company; this holding represents the SPV units held by the investor.',
   '成本价': 'Cost Basis',
   '当前估值': 'Current Value',
   '最近更新': 'Latest update',
@@ -264,7 +232,6 @@ export const en = {
   '将回到可用余额。': 'will return to your available balance.',
   '确认申请退出': 'Confirm Exit Request',
   '退出需经平台审批，最终成交价格以实际退出日为准。预计 5-10 个工作日完成。': 'Exit is subject to platform approval. The final price is based on the actual exit date. Estimated 5-10 business days.',
-  '获得份额': 'Shares Allocated',
   '查看项目详情': 'View Project Details',
   '资金闲置期间的选择，低门槛灵活配置': 'A choice for idle funds — low barrier, flexible allocation',
   '可申购': 'Open',
@@ -288,37 +255,20 @@ export const en = {
   '搜索': 'Search',
   '进行中': 'Ongoing',
   '到底了': 'End of list',
-  '已申购': 'Subscribed',
 
   // Content domain additions (Project detail)
   '项目未找到': 'Project not found',
-  '我的申购': 'My Subscription',
   '本轮分配完成': 'Allocation date',
   '意向开放时间': 'Intention opens',
   '待项目方确认': 'TBD by project',
   '以平台沟通为准': 'Subject to platform coordination',
-  '本轮共 {} 位投资人参与': '{} investors participated this round',
-  '{} 位投资人已提交意向': '{} investors submitted intention',
   '提交于 {}': 'Submitted at {}',
-  '第 {} 位': 'Rank #{}',
-  '我': 'Me',
-  '查看全部 {} 位提交': 'View all {} submissions',
   '尚未产生收入': 'No revenue yet',
   '关于本项目的任何疑问，可直接联系您的客户经理': 'For any questions about this project, please contact your account manager directly',
   '状态': 'Status',
-  '您之前 {} 位（共 {} 位）': '{} ahead of you ({} total)',
-  '我的当前位次': 'My current position',
-  '共 {} 位投资人 · 您之前 {} 位': '{} investors · {} ahead of you',
-  '本轮共 {} 位投资人参与，您的提交记录已登记。': '{} investors participated this round; your submission has been recorded.',
   '已提交意向': 'Intention submitted',
-  '{} 位投资人': '{} investors',
-  '份额有限 · 先提交先协调': 'Limited shares · First come, first served',
-  '本项目份额有限，将按意向提交的先后次序作为协调额度的参考，最终以平台与项目方协调结果为准。': 'Shares are limited. Submission order serves as a reference for quota coordination; final allocation is subject to platform and project coordination.',
   '本轮份额已分配完毕，以下为本轮意向提交记录。': 'This round is fully allocated. Below are this round\'s intention records.',
-  '位次': 'Rank',
   '列表仅展示脱敏信息，投资人身份信息已加密保护': 'The list shows anonymized info only; investor identities are encrypted',
-  '上一轮未获配额，新一轮已开放，可再次提交': 'No quota last round. A new round is open; you may submit again',
-  '提交后即可查看您的位次': 'Submit to see your rank',
 
   // Content domain additions (Events)
   '即将开始': 'Upcoming',
@@ -380,7 +330,6 @@ export const en = {
   // ===== 2026-08-07 Design system audit: component i18n coverage =====
 
   // SubscribeSheet intent submission sheet
-  '本意向仅为兴趣表达，不构成法律约束力的投资承诺；正式认购时另行安排': 'This intent is an expression of interest only and does not constitute a legally binding investment commitment; the actual subscription will be arranged separately.',
   '您确认本人为香港《证券及期货条例》定义的专业投资者': 'You confirm that you are a Professional Investor as defined under the Hong Kong Securities and Futures Ordinance.',
   '我已阅读并确认以上事项': 'I have read and confirm the above',
   '确认提交': 'Confirm Submission',
@@ -391,7 +340,6 @@ export const en = {
   '全程为您服务': 'At your service',
 
   // SubscriptionMilestone progress steps
-  '本轮份额稀缺，未获配额，可关注后续轮次': 'This round of allocations is full; please follow future rounds',
 
   // Notifications category tabs
 
@@ -400,7 +348,6 @@ export const en = {
   '您的专属客户经理暂时未能及时响应，在线客服已接入为您跟进': 'Your relationship manager is temporarily unavailable. Live chat has been engaged to follow up on your behalf.',
   '请输入您的问题…': 'Please enter your question…',
   '您好，我是平台在线客服，已收到您的问题，并已为您转达相关团队跟进。': 'Hello, I am the platform live chat assistant. I have received your question and forwarded it to the relevant team for follow-up.',
-  '收到。涉及额度与 SPV 签署安排的事项，我们会与您的专属客户经理同步，有结果第一时间通知您。': 'Got it. For matters involving allocation and SPV signing, we will coordinate with your relationship manager and notify you as soon as there is progress.',
   '如情况紧急，您也可以直接拨打客服热线 400-888-0000，或稍后在「消息通知」中查看跟进进度。': 'If urgent, you can also call our hotline at 400-888-0000, or check follow-up progress later in Notifications.',
   '您好，我是平台在线客服。您的专属客户经理暂时未能及时响应，我将为您跟进。请问有什么可以帮您？': 'Hello, I am the platform live chat assistant. Your relationship manager is temporarily unavailable, and I will follow up on your behalf. How can I help you?',
 
@@ -446,8 +393,6 @@ export const en = {
   // Toast common
 
   // Notifications body
-  '申购意向已登记': 'Subscription intent registered',
-  '您已成功提交 {} 申购意向，平台将与项目方协调额度。': 'Your subscription intent for {} has been submitted. We will coordinate allocation with the project team.',
 
   // ===== 2026-08-07 2nd-round leak fix: AuthPages + ErrorBoundary + misc =====
 
@@ -507,10 +452,11 @@ export const en = {
   '和': 'and',
 
   // ===== 2026-08-07 Auth pages brand-immersive redesign: brand hero + welcome + footer =====
-  '登录您的账户': 'Sign in to your account',
+  '登录专属账户': 'Sign in to your dedicated account',
   '选择语言': 'Select language',
   '一级私募股权 · 稀缺份额分配制': 'Private Equity · Scarce Allocation',
   '香港证监会持牌机构': 'SFC licensed institution',
+  // 2026-10-22 RO 整改：牌照编号统一 SFC NO 措辞
   '记住账号': 'Remember account',
   '密码至少需要 8 个字符': 'Password must be at least 8 characters',
   '密码需同时包含字母和数字': 'Password must contain both letters and numbers',
@@ -524,15 +470,11 @@ export const en = {
   // ===== 2026-08-07 Funding Loop Round 3: Amount Presets + Allocation Rule + History + Countdown =====
 
   // Amount preset form
-  '意向金额（HKD）': 'Intent Amount (HKD)',
-  '意向金额': 'Intent amount',
   '自定义': 'Custom',
   '万': 'K',
   '请选择或填写有效金额': 'Please select or enter a valid amount',
 
   // Compliance (funding loop)
-  '意向金额非合同承诺，最终以 SPV 文件为准': 'Intent amount is non-binding; final terms per SPV',
-  '签署 SPV 协议': 'Sign SPV Agreement',
   '签署将在第三方电子签署平台（DocuSign / Adobe Sign 类）完成，您将收到签署邀请。': 'Signing will be completed on a third-party e-signature platform (e.g. DocuSign / Adobe Sign); you will receive a signing invitation.',
   '签署对象': 'Signing subject',
   '收到邀请': 'Invite',
@@ -546,16 +488,12 @@ export const en = {
   '秒': 's',
 
   // Status (CTA)
-  '已获配额 · 等待签署 SPV': 'Allocated · Awaiting SPV signing',
-  '已签 SPV · 查看持仓': 'SPV signed · View holdings',
-  '重新演示签署流程': 'Redo signing demo',
 
   // Operation history
   '操作历史 · {} 条': 'History · {} entries',
   '提交意向': 'Submitted',
   '资金冻结': 'Funds frozen',
   '资金释放': 'Funds released',
-  '签署 SPV': 'SPV signed',
   '扣款结算': 'Settled',
   '本人': 'You',
   '平台': 'Platform',
@@ -564,34 +502,19 @@ export const en = {
   // ===== 2026-08-07 Page Restructure: CTA Dual State + MySubscription Page =====
 
   // CTA status (project detail sticky bottom)
-  '已签 SPV': 'SPV signed',
-  '已获配额': 'Allocated',
   '已提交意向': 'Intent submitted',
-  '本轮未获配额': 'No allocation this round',
-  '项目仍开放，可重新提交意向': 'Project is still open, you may resubmit intent',
-  '意向金额': 'Intent amount',
-  '获得份额': 'Units received',
-  '已冻结 · 等待签署 SPV': 'Frozen · Awaiting SPV signing',
   '等待线下协调额度': 'Awaiting offline allocation',
-  '重新提交意向': 'Resubmit intent',
   '查看持仓 ›': 'View holdings ›',
-  '查看我的申购 ›': 'View my subscription ›',
 
   // MySubscription page
-  '我的申购': 'My Subscription',
-  '未找到该申购记录': 'Subscription not found',
   '本项目情况': 'This project',
   '查看项目': 'View project',
   '查看项目详情': 'View project details',
 
   // ProjectHeat restructured (rank card removed + top link)
-  '查看我的申购进度 ›': 'View my subscription progress ›',
-  '本轮份额已分配完毕': 'This round has been fully allocated',
-  '份额有限 · 先提交先协调': 'Limited units · submit early for allocation',
 
   // ===== Profile PI entry =====
   '成为专业投资者': 'Become a Professional Investor',
-  '解锁优先认购权，享稀缺份额优先配置': 'Unlock priority subscription rights and preferred allocation',
 
   // ===== 2026-08-10 KYC 3-page optimization + PI qualification =====
   // Step 1 - Basic Info + PI Declaration
@@ -616,14 +539,14 @@ export const en = {
   '《证券及期货条例》附表1定义的专业投资者，您需持有至少 HK$8,000,000 的投资组合或为持牌人士': 'As defined in Part 1 of Schedule 1 to the SFO, you must hold a portfolio of at least HK$8,000,000 or be a licensed person',
   // ===== 2026-09-20 PI 页优化：堆叠选项卡 + 持牌信息 + 声明抽屉 =====
   '持牌信息': 'License Information',
-  '请输入 SFC 中央编号（如：ABC123）': 'Enter SFC Central Number (e.g. ABC123)',
+  '请输入 SFC NO（如：ABC123）': 'Enter SFC NO. (e.g. ABC123)',
   '持牌机构名称': 'Licensed firm name',
-  '请填写持牌编号（CE No.）': 'Please enter your CE No.',
+  '请填写持牌编号（SFC NO）': 'Please enter your SFC NO.',
   '请填写持牌机构名称': 'Please enter your licensed firm name',
-  '后台将凭中央编号在香港证监会公开记录核验您的持牌资格，无需上传文件': 'Your license status will be verified via the SFC public register using the CE No. No document upload required.',
+  '后台将凭牌照编号在香港证监会公开记录核验您的持牌资格，无需上传文件': 'Your license status will be verified via the SFC public register using the SFC NO. No document upload required.',
   '《专业投资者声明》': 'Professional Investor Declaration',
   '《证券及期货条例》附表1定义的专业投资者，您需持有至少 HK$8,000,000 的投资组合': 'As defined in Part 1 of Schedule 1 to the SFO, you must hold a portfolio of at least HK$8,000,000',
-  '《证券及期货条例》附表1定义的专业投资者，持牌资格将凭 SFC 中央编号在证监会公开记录核验': 'As defined in Part 1 of Schedule 1 to the SFO, your license status will be verified via the SFC public register using the CE No.',
+  '《证券及期货条例》附表1定义的专业投资者，持牌资格将凭 SFC NO 在证监会公开记录核验': 'As defined in Part 1 of Schedule 1 to the SFO, your license status will be verified via the SFC public register using the SFC NO.',
   '基本信息': 'Basic Information',
   '请确保姓名与证件上的信息一致': 'Please ensure your name matches your ID document',
   '英文姓名（与证件一致）': 'English Name (as on ID)',
@@ -778,9 +701,7 @@ export const en = {
   '与实名认证审核并行，无需等待': 'Runs in parallel with identity verification — no need to wait',
   // ===== 2026-09-18 PI guidance & status display =====
   '下一步：PI 专业投资者认证': 'Next: PI Professional Investor Certification',
-  '专业投资者资格是申购私募基金的必要条件': 'Professional investor status is required to subscribe to private funds',
   '未完成 PI 认证': 'PI Certification Incomplete',
-  '完成专业投资者认证后可申购私募基金': 'Complete PI certification to subscribe to private funds',
   '去认证': 'Certify Now',
   '查看认证状态': 'View Status',
   '实名认证': 'Identity Verification',
@@ -854,7 +775,6 @@ export const en = {
 
   // KYC status sync back (KYCSubmitted 3-state, 2026-08-13)
   '认证已通过': 'Verification Approved',
-  '您已获得专业投资者资格，可参与平台的稀缺份额申购。': 'You are now a Professional Investor and can subscribe to scarce shares on the platform.',
   '去申购项目': 'Browse Projects',
   '认证未通过': 'Verification Rejected',
   '很抱歉，您的实名认证资料未通过审核。请根据以下原因修正后重新提交。': 'Sorry, your identity verification was not approved. Please correct the following and resubmit.',
@@ -965,11 +885,8 @@ export const en = {
   '请先在签名区完成签名': 'Please sign in the signature box first',
   '签署失败，请稍后重试': 'Signing failed. Please try again later.',
   '签署中...': 'Signing...',
-  '当前申购不可签署（仅已获配额的意向可签署）': 'This subscription cannot be signed (only allocated intents are signable)',
-  'SPV 名称': 'SPV Name',
   '项目': 'Project',
   '认缴金额': 'Subscribed Amount',
-  '协议版本': 'Agreement Version',
   '文档哈希': 'Document Hash',
   '签署时协议版本与哈希将被固化存档，作为签署内容不可篡改的依据': 'The agreement version and hash will be fixed at signing as tamper-evident records',
   '协议全文': 'Full Agreement',
@@ -995,14 +912,6 @@ export const en = {
   '请先阅读并勾选同意上述协议': 'Please read and tick to accept the agreements above',
   '注册中...': 'Registering...',
   '签署将在 APP 内完成：阅读协议全文并使用电子签名确认，签名与协议版本将固化存档，与手写签名具有同等法律效力。': 'Signing is completed in-app: read the full agreement and confirm with an e-signature. Your signature and the agreement version will be archived and carry the same legal effect as a handwritten signature.',
-  '签署凭证': 'Signing Record',
-  '签署编号': 'Signing Ref.',
-  '哈希已固化': 'hash fixed',
-  '签署方式': 'Signing Method',
-  'APP 内电子签署': 'In-app e-signing',
-  '线下签署登记': 'Offline Signing Registered',
-  '签署时间': 'Signed At',
-  '电子签名': 'E-Signature',
   '我已阅读并同意': 'I have read and agree to the',
   '《银行卡及出入金服务协议》': ' Bank Card & Transfer Service Agreement',
   '专业投资者声明': 'Professional Investor Declaration',
@@ -1011,7 +920,6 @@ export const en = {
   '《私隐政策》': ' Privacy Policy',
   '本人已阅读并同意上述声明，确认签署专业投资者声明': 'I have read and agree to the above declaration and confirm signing the PI declaration',
   '我已阅读': 'I have read it',
-  '生效日期': 'Effective',
   '关闭': 'Close',
 
   // 品牌名 HighBlock 三语同文，t() 回退返回 key，无需字典条目
@@ -1098,9 +1006,7 @@ export const en = {
   '删除账户': 'Delete Account',
   '申请删除账户': 'Request Account Deletion',
   '注销后您的身份认证资料与平台数据将被永久删除，且不可恢复': 'Your identity data and platform data will be permanently deleted. This cannot be undone.',
-  '注销后，您的账户信息、身份认证资料与平台数据将被永久删除且不可恢复。进行中的申购与未到期份额需先行处理。': 'Your account information, identity documents and platform data will be permanently deleted and cannot be recovered. Ongoing subscriptions and unexpired fund interests must be settled first.',
   '验证通过后可删除账户': 'Verify to delete your account',
-  '您有进行中的申购或未到期份额，暂无法删除账户，请联系客服处理': 'You have an ongoing subscription or unexpired fund interest. Account deletion is unavailable at the moment. Please contact client services.',
   '账户删除申请已提交。演示模式下内置演示账号未真实删除；正式环境将永久删除您的全部数据。': 'Your account deletion request has been submitted. In demo mode the built-in demo account is not actually deleted; in production all of your data will be permanently removed.',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
   '未绑定': 'Not bound',
@@ -1302,7 +1208,6 @@ export const en = {
   '客服': 'Support',
   '通知': 'Notifications',
   '总资产': 'Total assets',
-  '笔申购进行中': 'subscriptions in progress',
   '周日': 'Sun',
   '周一': 'Mon',
   '周二': 'Tue',
@@ -1341,12 +1246,7 @@ export const en = {
   '暂无往期项目': 'No past projects yet',
 
   '暂无进行中的项目': 'No active projects',
-  '申购 · 路演动态': 'Subscriptions · Events',
-  '已获配额 · 待线下打款与签署': 'Allocated · Pending offline payment & signing',
-  '线下打款与签署': 'Offline Payment & Signing',
-  '本基金为线下认购：获配后请按客户经理指引完成线下资金交割，SPV 协议将在线下完成签署，专属客户经理将全程协助安排。': 'This fund is subscribed offline: after allocation, complete the fund settlement offline per your relationship manager\u2019s instructions. The SPV agreement will be signed offline with dedicated assistance.',
 
-  '获配后请按客户经理指引完成线下打款与 SPV 签署': 'After allocation, complete offline payment and SPV signing per your relationship manager\u2019s instructions',
 
   // KYC field gaps (2026-10-16 groups A/B/C/E)
   '请输入英文姓氏': 'Please enter your last name',
@@ -1409,8 +1309,56 @@ export const en = {
   '（选填）': ' (optional)',
   '请输入联系电话': 'Enter a contact phone number',
   '请输入有效的联系电话': 'Enter a valid contact phone number',
-  '仅用于活动通知与现场联络，平台暂不发送短信': 'Used only for event notices and on-site coordination. The platform does not send SMS at this time.',
   '我同意主办方通过所填电话或邮件联系我，用于活动通知与现场安排': 'I agree that the organizer may contact me via the phone or email provided for event notices and on-site arrangements.',
   '绑定后作为高强度第二因子，防验证码转发与钓鱼': 'Acts as a strong second factor, protecting against code forwarding and phishing',
   '这是您最后一个通行密钥，删除后将使用邮箱验证码登录': 'This is your last passkey. Email verification codes will be used for sign-in after deletion',
+  '了解详情': 'Learn more',
+  '已结束': 'Ended',
+  '文件已提交': 'Document submitted',
+  '客户经理跟进中': 'Account manager following up',
+  '暂无需推进': 'No further action needed',
+  '提交问卷': 'Questionnaire submitted',
+  '转客户经理跟进': 'Handed to account manager',
+  '标记完成': 'Marked complete',
+  '问卷调查': 'Questionnaire',
+  '我的问卷': 'My questionnaires',
+  '未找到该问卷记录': 'Questionnaire not found',
+  '无意向': 'No interest',
+  '意向档位': 'Indicative amount',
+  '意向档位（HKD）': 'Indicative amount (HKD)',
+  '问卷内容不构成投资建议或合同承诺': 'The questionnaire does not constitute investment advice or a contractual commitment',
+  '如有进一步需要，客户经理将线下与您联系': 'If you need anything further, your account manager will contact you offline',
+  '本次提交暂无进一步安排': 'No further arrangement for this submission',
+  '如有进一步意向，可重新填写问卷': 'You may submit a new questionnaire if your interest changes',
+  '重新填写问卷': 'Submit a new questionnaire',
+  '查看我的问卷 ›': 'View my questionnaires ›',
+  '本轮已结束': 'This round has ended',
+  '已提交问卷': 'Questionnaire submitted',
+  '本轮已结束，如有进一步意向可继续提交问卷': 'This round has ended. Submit a new questionnaire if your interest continues',
+  '后续安排': 'Next steps',
+  '如需进一步了解或推进后续安排，专属客户经理将全程协助并线下与您联系。': 'If you would like to learn more or proceed with next steps, your dedicated account manager will assist you throughout and contact you offline.',
+  '完成实名认证后再提交问卷': 'Complete identity verification before submitting the questionnaire',
+  'PI 认证审核中，暂不可提交问卷': 'PI certification under review — questionnaire submission is not available yet',
+  '完成专业投资者认证后再提交问卷': 'Complete professional investor certification before submitting the questionnaire',
+  '此乃专业投资者服务，本会不接受非专业投资者人士参与该活动。如有任何查询，请联络客服经理。': 'This is a professional investor service. We do not accept non-professional investors at this event. For any enquiries, please contact your account manager.',
+  '专业投资者定义': 'Professional investor definition',
+  '问卷 · 路演动态': 'Questionnaire · Roadshow updates',
+  '完成专业投资者认证后可提交项目问卷': 'Submit project questionnaires after professional investor certification',
+  '您已获得专业投资者资格，可使用平台的项目资讯与咨询服务。': 'You have been certified as a professional investor and can use the platform\'s deal information and advisory services.',
+  '去看项目': 'Browse projects',
+  '收到您的咨询。一般账户与操作类问题可查看「帮助中心」；涉及项目研究或后续安排等专业事项，建议点击下方「转人工」获取准确答复。': 'Thank you for your enquiry. For general account and operation questions, see the Help Centre; for project research or next steps, tap "Transfer to agent" below for an accurate answer.',
+  '欢迎使用本平台服务。完成身份认证后，请查阅并同意下列协议，以建立服务关系：': 'Welcome. Once identity verification is complete, please review and accept the following agreements to establish the service relationship:',
+  '未签署开户协议，将无法使用本平台服务。您可以稍后重新登录再签署，或联系客服咨询。': 'Without the account opening agreement you cannot use the platform. You may sign in again later or contact customer service.',
+  '客户经理将线下与您联系': 'Your account manager will contact you offline',
+  '等待客户经理跟进': 'Waiting for your account manager to follow up',
+  '注销后，您的账户信息、身份认证资料与平台数据将被永久删除且不可恢复。进行中的问卷与未办结事项需先行处理。': 'Your account information, identity verification materials and platform data will be permanently deleted and cannot be restored. Outstanding questionnaires and unresolved matters must be settled first.',
+  '版本': 'Version',
+  '使用条款': 'Terms and Conditions',
+  '风险披露声明及免责声明': 'Risk Disclosure Statements and Disclaimers',
+  '隐私声明与个人资料收集声明': 'Privacy statement and personal information collection statement',
+  '网站使用条款与免责声明': 'Website terms of use and disclaimers',
+  '投资风险披露与复杂产品警告': 'Investment risk disclosure and complex product warnings',
+  '香港证监会第 1、4、9 类牌照': 'SFC Type 1, 4 and 9 Licences',
+  '证券交易 · 就证券提供意见 · 资产管理': 'Dealing in securities · Advising on securities · Asset management',
+  '持有至少 HK$8,000,000 的投资组合': 'Holding an investment portfolio of at least HK$8,000,000',
 };

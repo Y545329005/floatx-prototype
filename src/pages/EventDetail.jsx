@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { clickable } from '../lib';
-import { ArrowLeft, Calendar, Monitor, MapPin, TrendingUp, ChevronRight, X, Link2, Copy, Navigation, Users } from 'lucide-react';
+import { ArrowLeft, Calendar, Monitor, MapPin, TrendingUp, ChevronRight, X, Link2, Copy, Navigation, Users, ShieldCheck } from 'lucide-react';
 import { events, projects, currentUser, getProjectHeroGradient, getProjectHeroEmoji, projectStageColors, projectStatusLabels, registerEvent, unregisterEvent, isEventRegistered, getEventRegistration, getCheckInCode, getLastContactPhone, formatCurrency, formatDateCN, getProjectStageSlug, isEventLive, getCurrencySymbol } from '../mock/data';
+import AgreementModal from '../components/AgreementModal';
 import { useLang } from '../i18n';
 
 export default function EventDetail({ id, navigate, goBack, setToast }) {
@@ -9,6 +10,7 @@ export default function EventDetail({ id, navigate, goBack, setToast }) {
   const event = events.find(e => e.id === id);
   const [isRegistered, setIsRegistered] = useState(() => isEventRegistered(id));
   const [showForm, setShowForm] = useState(false);
+  const [showPiDefinition, setShowPiDefinition] = useState(false); // 2026-10-22 RO 整改：专业投资者定义解释
   const [regForm, setRegForm] = useState({
     name: currentUser.name,
     phone: getLastContactPhone(),
@@ -326,6 +328,21 @@ export default function EventDetail({ id, navigate, goBack, setToast }) {
             <button className="btn-icon" onClick={() => setShowForm(false)}><X size={18} /></button>
           </div>
           <p className="text-muted text-sm sheet-sub">{event.title}</p>
+          {/* 2026-10-22 RO 整改：路演属专业投资者服务——明示不接待非专业投资者，并给出专业投资者定义解释入口 */}
+          <div className="event-pi-notice">
+            <ShieldCheck size={14} />
+            <p>
+              {t('此乃专业投资者服务，本会不接受非专业投资者人士参与该活动。如有任何查询，请联络客服经理。')}{' '}
+              {/* 2026-10-22：解释性短文本回退为行内超链接（独立文档行的语义层级过高） */}
+              <button
+                type="button"
+                className="event-pi-definition-link"
+                onClick={() => setShowPiDefinition(true)}
+              >
+                {t('专业投资者定义')}
+              </button>
+            </p>
+          </div>
           <div className="form-group">
             <label>{t('姓名')}</label>
             <input
@@ -343,7 +360,6 @@ export default function EventDetail({ id, navigate, goBack, setToast }) {
               placeholder={t('请输入联系电话')}
               inputMode="tel"
             />
-            <p className="text-muted text-xs">{t('仅用于活动通知与现场联络，平台暂不发送短信')}</p>
             {phoneTrim && !phoneValid && <span className="error-text">{t('请输入有效的联系电话')}</span>}
           </div>
           <div className="form-group">
@@ -384,6 +400,11 @@ export default function EventDetail({ id, navigate, goBack, setToast }) {
             {t('确认报名')}
           </button>
         </div>
+      )}
+
+      {/* 专业投资者定义（2026-10-22 RO 整改：走全局协议弹窗，与关于页政策文件/PI 声明同一交互） */}
+      {showPiDefinition && (
+        <AgreementModal agreementId="pi-definition" onClose={() => setShowPiDefinition(false)} />
       )}
     </div>
   );
