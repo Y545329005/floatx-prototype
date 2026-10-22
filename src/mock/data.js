@@ -85,7 +85,7 @@ export const testAccounts = {
       name: '王慧敏',
       role: '专属客户经理',
       phone: '+852 9300 1122',
-      email: 'huimin.wang@highblockgroup.com',
+      email: 'huimin.wang@highblockhk.com',
       imType: 'WhatsApp',
       im: '+852 9300 1122',
     },
@@ -170,7 +170,7 @@ export const testAccounts = {
       name: '王慧敏',
       role: '专属客户经理',
       phone: '+852 9300 1122',
-      email: 'huimin.wang@highblockgroup.com',
+      email: 'huimin.wang@highblockhk.com',
       imType: 'WhatsApp',
       im: '+852 9300 1122',
     },
@@ -235,7 +235,7 @@ export const testAccounts = {
       name: '王慧敏',
       role: '专属客户经理',
       phone: '+852 9300 1122',
-      email: 'huimin.wang@highblockgroup.com',
+      email: 'huimin.wang@highblockhk.com',
       imType: 'WhatsApp',
       im: '+852 9300 1122',
     },
@@ -3026,9 +3026,9 @@ export const agreements = [
         'The licence was issued on 31 August 2026 (first granted on 5 August 2026). Under the licence conditions, Type 4 (advising on securities) and Type 9 (asset management) services may only be provided to professional investors.'
       ) },
       { h: AG('三、官方网站', '三、官方網站', '3. Official Website'), p: AG(
-        '官方网站：https://www.highblockgroup.com/。网站内容仅供参考，不构成任何投资要约、招揽或收益承诺。',
-        '官方網站：https://www.highblockgroup.com/。網站內容僅供參考，不構成任何投資要約、招攬或收益承諾。',
-        'Official website: https://www.highblockgroup.com/ — its content is for reference only and does not constitute any offer, solicitation or promise of return.'
+        '官方网站：https://www.highblockhk.com/。网站内容仅供参考，不构成任何投资要约、招揽或收益承诺。',
+        '官方網站：https://www.highblockhk.com/。網站內容僅供參考，不構成任何投資要約、招攬或收益承諾。',
+        'Official website: https://www.highblockhk.com/ — its content is for reference only and does not constitute any offer, solicitation or promise of return.'
       ) },
     ],
   },
@@ -3049,9 +3049,9 @@ export const agreements = [
         'Type 1: dealing in securities; Type 4: advising on securities; Type 9: asset management. Under the licence conditions, Type 4 and Type 9 services may only be provided to professional investors, as defined in the Securities and Futures Ordinance and its subsidiary legislation.'
       ) },
       { h: AG('三、查询', '三、查詢', '3. Enquiries'), p: AG(
-        '官方网站：https://www.highblockgroup.com/',
-        '官方網站：https://www.highblockgroup.com/',
-        'Official website: https://www.highblockgroup.com/'
+        '官方网站：https://www.highblockhk.com/',
+        '官方網站：https://www.highblockhk.com/',
+        'Official website: https://www.highblockhk.com/'
       ) },
     ],
   },
@@ -3290,7 +3290,7 @@ export function updatePlatformBrand(fields, operator) {
 // ========== 商务合作联系方式（对外公开，游客可见） ==========
 export const businessContact = {
   intro: '如有意向将项目提交至本平台路演、寻求机构合作或其他业务合作，请通过以下方式联系我们。',
-  email: 'partners@highblockgroup.com',
+  email: 'partners@highblockhk.com',
   phone: '+852 3568 8888',
   whatsapp: '+852 3568 8888',
 };
@@ -3343,16 +3343,16 @@ export const sectors = ['量子计算', '生物医药', '机器人', '新能源'
 // 后台登录账号与角色（简版；页面/菜单命名"后台账号"——本集合含全部角色，非仅"管理员"super）
 // role: super 超级管理员 / ops 运营 / compliance 合规 / service 客服 / finance 财务 / advisor 专属顾问
 export let adminUsers = [
-  { id: 'ad1', username: 'admin', password: 'admin123', name: '系统管理员', role: 'super', roleLabel: '超级管理员', email: 'admin@highblockgroup.com' },
-  { id: 'ad2', username: 'ops', password: 'ops123', name: '王运营', role: 'ops', roleLabel: '运营专员', email: 'ops@highblockgroup.com' },
-  { id: 'ad3', username: 'compliance', password: 'compliance123', name: '李合规', role: 'compliance', roleLabel: '合规专员', email: 'compliance@highblockgroup.com' },
-  { id: 'ad4', username: 'service', password: 'service123', name: '张客服', role: 'service', roleLabel: '客服专员', email: 'service@highblockgroup.com' },
+  { id: 'ad1', username: 'admin', password: 'admin123', name: '系统管理员', role: 'super', roleLabel: '超级管理员', email: 'admin@highblockhk.com' },
+  { id: 'ad2', username: 'ops', password: 'ops123', name: '王运营', role: 'ops', roleLabel: '运营专员', email: 'ops@highblockhk.com' },
+  { id: 'ad3', username: 'compliance', password: 'compliance123', name: '李合规', role: 'compliance', roleLabel: '合规专员', email: 'compliance@highblockhk.com' },
+  { id: 'ad4', username: 'service', password: 'service123', name: '张客服', role: 'service', roleLabel: '客服专员', email: 'service@highblockhk.com' },
   // 财务专员（2026-08-24 上线沟通简报待拍板项落地·方案 A）：只关注资金进出（充值/提现/换汇审核 + 流水对账）
-  { id: 'ad8', username: 'fin1', password: 'fin123456', name: '王财务', role: 'finance', roleLabel: '财务专员', email: 'finance@highblockgroup.com' },
+  { id: 'ad8', username: 'fin1', password: 'fin123456', name: '王财务', role: 'finance', roleLabel: '财务专员', email: 'finance@highblockhk.com' },
   // 专属顾问账号（线索池核心使用者：客户分散给各顾问跟进，各自只看自己的客户；managerId 关联 accountManagers）
-  { id: 'ad5', username: 'advisor1', password: 'advisor123', name: '王慧敏', role: 'advisor', roleLabel: '专属顾问', managerId: 'am1', email: 'wanghuimin@highblockgroup.com' },
-  { id: 'ad6', username: 'advisor2', password: 'advisor123', name: '陈志豪', role: 'advisor', roleLabel: '专属顾问', managerId: 'am2', email: 'chenzhihao@highblockgroup.com' },
-  { id: 'ad7', username: 'advisor3', password: 'advisor123', name: '李雅婷', role: 'advisor', roleLabel: '专属顾问', managerId: 'am3', email: 'liyating@highblockgroup.com' },
+  { id: 'ad5', username: 'advisor1', password: 'advisor123', name: '王慧敏', role: 'advisor', roleLabel: '专属顾问', managerId: 'am1', email: 'wanghuimin@highblockhk.com' },
+  { id: 'ad6', username: 'advisor2', password: 'advisor123', name: '陈志豪', role: 'advisor', roleLabel: '专属顾问', managerId: 'am2', email: 'chenzhihao@highblockhk.com' },
+  { id: 'ad7', username: 'advisor3', password: 'advisor123', name: '李雅婷', role: 'advisor', roleLabel: '专属顾问', managerId: 'am3', email: 'liyating@highblockhk.com' },
 ];
 
 // ===== 角色权限管理（2026-08-24 · 预置角色可配置）=====
