@@ -3007,8 +3007,9 @@ export const agreements = [
       ) },
     ],
   },
-  // 2026-10-22：cp1/cp2 由占位模板替换为正式内容（依据 SFC 牌照证书 2026-08-31
-  //   + 用户提供的官方网站）。注册编号 / 注册地址 / 董事名单仍未提供，暂不写入。
+  // 2026-10-22：cp1/cp2 由占位模板替换为正式内容（依据 SFC 牌照证书 2026-08-31）。
+  //   官网 highblockhk.com 当前只有邮件 MX、无 A 记录（www 为 NXDOMAIN），先不展示官网链接；
+  //   注册编号 / 注册地址 / 董事名单仍未提供，暂不写入。
   {
     id: 'company-profile',
     version: 'v1.0',
@@ -3024,11 +3025,6 @@ export const agreements = [
         '本公司获发牌照日期为 2026 年 8 月 31 日（首次发牌日期为 2026 年 8 月 5 日）。按牌照条件，第 4 类（就证券提供意见）及第 9 类（提供资产管理）受规管活动仅可向专业投资者提供服务。',
         '本公司獲發牌照日期為 2026 年 8 月 31 日（首次發牌日期為 2026 年 8 月 5 日）。按牌照條件，第 4 類（就證券提供意見）及第 9 類（提供資產管理）受規管活動僅可向專業投資者提供服務。',
         'The licence was issued on 31 August 2026 (first granted on 5 August 2026). Under the licence conditions, Type 4 (advising on securities) and Type 9 (asset management) services may only be provided to professional investors.'
-      ) },
-      { h: AG('三、官方网站', '三、官方網站', '3. Official Website'), p: AG(
-        '官方网站：https://www.highblockhk.com/。网站内容仅供参考，不构成任何投资要约、招揽或收益承诺。',
-        '官方網站：https://www.highblockhk.com/。網站內容僅供參考，不構成任何投資要約、招攬或收益承諾。',
-        'Official website: https://www.highblockhk.com/ — its content is for reference only and does not constitute any offer, solicitation or promise of return.'
       ) },
     ],
   },
@@ -3047,11 +3043,6 @@ export const agreements = [
         '第 1 类：证券交易；第 4 类：就证券提供意见；第 9 类：提供资产管理。按牌照条件，第 4 类及第 9 类受规管活动仅可向专业投资者提供服务；「专业投资者」的定义见《证券及期货条例》及其附属法例。',
         '第 1 類：證券交易；第 4 類：就證券提供意見；第 9 類：提供資產管理。按牌照條件，第 4 類及第 9 類受規管活動僅可向專業投資者提供服務；「專業投資者」的定義見《證券及期貨條例》及其附屬法例。',
         'Type 1: dealing in securities; Type 4: advising on securities; Type 9: asset management. Under the licence conditions, Type 4 and Type 9 services may only be provided to professional investors, as defined in the Securities and Futures Ordinance and its subsidiary legislation.'
-      ) },
-      { h: AG('三、查询', '三、查詢', '3. Enquiries'), p: AG(
-        '官方网站：https://www.highblockhk.com/',
-        '官方網站：https://www.highblockhk.com/',
-        'Official website: https://www.highblockhk.com/'
       ) },
     ],
   },
