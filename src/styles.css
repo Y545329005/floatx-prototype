@@ -6892,6 +6892,11 @@ input, select, textarea {
 }
 /* 一段一条的正式法务文本：段间留白（2026-10-22） */
 .agreement-section p + p { margin-top: var(--space-2); }
+.agreement-section p a {
+  color: var(--primary);
+  text-decoration: underline;
+  word-break: break-all;
+}
 .agreement-modal-close { flex-shrink: 0; }
 
 /* ===== Canvas 电子签名 v2 · 全屏书写模式（2026-09-15 · 点击签名区进入全屏，对齐银行 APP 交互） ===== */

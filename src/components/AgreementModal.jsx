@@ -6,6 +6,24 @@ import { useLang } from '../i18n';
 // 协议详情弹窗（2026-09-15 · 对齐公司协议签署实践：点击协议名称弹窗展示全文，按当前界面语言切换）
 // 全局协议（使用条款/隐私政策/风险披露/PI 条款/银行卡协议）统一走此组件
 // 2026-09-15 audit 修复：role=dialog + aria-modal + Esc 关闭（Esc 为真实键盘路径，ImageLightbox 注释有先例但未实现）；UI 标签接入 t()
+// 正文里的 http(s) 链接自动可点（2026-10-22：公司简介/牌照信息要放官方网站）
+const URL_SPLIT = /(https?:\/\/[^\s<>「」【】，。；()（）]+)/g;
+const HAS_URL = /https?:\/\//;
+const IS_URL = /^https?:\/\//;
+
+function Paragraph({ text }) {
+  if (!HAS_URL.test(text)) return <p>{text}</p>;
+  return (
+    <p>
+      {text.split(URL_SPLIT).map((part, i) =>
+        IS_URL.test(part)
+          ? <a key={i} href={part} target="_blank" rel="noopener noreferrer">{part}</a>
+          : part
+      )}
+    </p>
+  );
+}
+
 export default function AgreementModal({ agreementId, onClose }) {
   const { t, lang } = useLang();
   const agreement = getAgreementById(agreementId, t);
@@ -41,7 +59,7 @@ export default function AgreementModal({ agreementId, onClose }) {
           {sections.map(s => (
             <div key={s.key} className="agreement-section">
               {s.h ? <h4>{s.h}</h4> : null}
-              {s.p.map((para, pi) => <p key={pi}>{para}</p>)}
+              {s.p.map((para, pi) => <Paragraph key={pi} text={para} />)}
             </div>
           ))}
         </div>

@@ -3007,8 +3007,8 @@ export const agreements = [
       ) },
     ],
   },
-  // 2026-10-19：About 公司政策 cp1/cp2 的抽屉化正文（消灭「文档预览即将开放」toast——应用市场审核
-  // 要求主体与监管信息文档真实可访问）。⚠️ 正文为占位模板，发审核前须替换为公司真实备案内容。
+  // 2026-10-22：cp1/cp2 由占位模板替换为正式内容（依据 SFC 牌照证书 2026-08-31
+  //   + 用户提供的官方网站）。注册编号 / 注册地址 / 董事名单仍未提供，暂不写入。
   {
     id: 'company-profile',
     version: 'v1.0',
@@ -3016,9 +3016,19 @@ export const agreements = [
     title: AG('公司简介', '公司簡介', 'Company Profile'),
     sections: [
       { h: AG('一、公司概况', '一、公司概況', '1. Overview'), p: AG(
-        '{{BRAND_FULL}}（「本公司」）为根据香港《公司条例》注册成立的有限公司，持有{{LICENSE_TYPE}}，是面向专业投资者的私募股权资讯及咨询平台，提供项目资讯展示、信息收集与顾问咨询服务。【占位模板：发审核前替换为公司真实备案简介，含注册编号、注册地址、董事信息等。】',
-        '{{BRAND_FULL}}（「本公司」）為根據香港《公司條例》註冊成立的有限公司，持有{{LICENSE_TYPE}}，是面向專業投資者的私募股權資訊及諮詢平台，提供項目資訊展示、資料收集與顧問諮詢服務。【佔位模板：發審核前替換為公司真實備案簡介，含註冊編號、註冊地址、董事信息等。】',
-        '{{BRAND_FULL}} (the "Company") is a limited company incorporated in Hong Kong under the Companies Ordinance, licensed for {{LICENSE_TYPE}}. It operates as a private equity information and advisory platform for professional investors, providing deal information, information collection and advisory services. [Placeholder: replace with the company\'s actual registered profile (registration no., registered address, directors) before app-store review.]'
+        'HighBlock Securities Limited（「本公司」）为根据香港《公司条例》注册成立的有限公司，持有香港证券及期货事务监察委员会第 1、4、9 类牌照（中央编号 BWW124），面向专业投资者提供私募股权资讯、项目研究与顾问咨询服务。',
+        'HighBlock Securities Limited（「本公司」）為根據香港《公司條例》註冊成立的有限公司，持有香港證券及期貨事務監察委員會第 1、4、9 類牌照（中央編號 BWW124），面向專業投資者提供私募股權資訊、項目研究與顧問諮詢服務。',
+        'HighBlock Securities Limited (the "Company") is a limited company incorporated in Hong Kong under the Companies Ordinance. It holds SFC Type 1, 4 and 9 licences (Central Entity No. BWW124) and provides private equity information, deal research and advisory services to professional investors.'
+      ) },
+      { h: AG('二、监管资料', '二、監管資料', '2. Regulatory Status'), p: AG(
+        '本公司获发牌照日期为 2026 年 8 月 31 日（首次发牌日期为 2026 年 8 月 5 日）。按牌照条件，第 4 类（就证券提供意见）及第 9 类（提供资产管理）受规管活动仅可向专业投资者提供服务。',
+        '本公司獲發牌照日期為 2026 年 8 月 31 日（首次發牌日期為 2026 年 8 月 5 日）。按牌照條件，第 4 類（就證券提供意見）及第 9 類（提供資產管理）受規管活動僅可向專業投資者提供服務。',
+        'The licence was issued on 31 August 2026 (first granted on 5 August 2026). Under the licence conditions, Type 4 (advising on securities) and Type 9 (asset management) services may only be provided to professional investors.'
+      ) },
+      { h: AG('三、官方网站', '三、官方網站', '3. Official Website'), p: AG(
+        '官方网站：https://www.highblockgroup.com/。网站内容仅供参考，不构成任何投资要约、招揽或收益承诺。',
+        '官方網站：https://www.highblockgroup.com/。網站內容僅供參考，不構成任何投資要約、招攬或收益承諾。',
+        'Official website: https://www.highblockgroup.com/ — its content is for reference only and does not constitute any offer, solicitation or promise of return.'
       ) },
     ],
   },
@@ -3029,14 +3039,19 @@ export const agreements = [
     title: AG('牌照及监管信息', '牌照及監管信息', 'Licence & Regulatory Information'),
     sections: [
       { h: AG('一、监管牌照', '一、監管牌照', '1. Licence'), p: AG(
-        '本公司持有{{LICENSE_TYPE}}，牌照编号（SFC NO）{{LICENSE_NO}}。持牌信息可于香港证监会持牌人登记册公开查询（apps.sfc.hk）。',
-        '本公司持有{{LICENSE_TYPE}}，牌照編號（SFC NO）{{LICENSE_NO}}。持牌信息可於香港證監會持牌人登記冊公開查詢（apps.sfc.hk）。',
-        'The Company holds {{LICENSE_TYPE}} (SFC NO. {{LICENSE_NO}}). The licence status is publicly verifiable via the SFC Register of Licensed Persons (apps.sfc.hk).'
+        'HighBlock Securities Limited 为香港证券及期货事务监察委员会持牌法团，中央编号（CE No.）与平台展示的牌照编号（SFC NO）同为 BWW124。发牌日期为 2026 年 8 月 31 日，首次发牌日期为 2026 年 8 月 5 日。持牌信息可于香港证监会持牌人及注册机构登记册（apps.sfc.hk）公开核实。',
+        'HighBlock Securities Limited 為香港證券及期貨事務監察委員會持牌法團，中央編號（CE No.）與平台展示的牌照編號（SFC NO）同為 BWW124。發牌日期為 2026 年 8 月 31 日，首次發牌日期為 2026 年 8 月 5 日。持牌信息可於香港證監會持牌人及註冊機構登記冊（apps.sfc.hk）公開核實。',
+        'HighBlock Securities Limited is a licensed corporation with the Securities and Futures Commission of Hong Kong. The Central Entity Number (CE No.) and the licence number shown on the platform (SFC NO) are both BWW124. The licence was issued on 31 August 2026 and first granted on 5 August 2026. Licence status is publicly verifiable via the SFC Register of Licensed Persons and Registered Institutions (apps.sfc.hk).'
       ) },
       { h: AG('二、受监管活动', '二、受監管活動', '2. Regulated Activities'), p: AG(
-        '本平台资讯展示与咨询服务在其牌照允许的范围内提供，不构成公开募集、公开推介或任何形式的投资保证。【占位模板：发审核前核对真实牌照的受规管活动描述。】',
-        '本平台資訊展示與諮詢服務在其牌照允許的範圍內提供，不構成公開募集、公開推介或任何形式的投資保證。【佔位模板：發審核前核對真實牌照的受規管活動描述。】',
-        'The Platform\'s information display and advisory services are provided within the scope permitted by its licence, and do not constitute a public offer, solicitation, or any form of investment guarantee. [Placeholder: verify against the actual licensed regulated activities before review.]'
+        '第 1 类：证券交易；第 4 类：就证券提供意见；第 9 类：提供资产管理。按牌照条件，第 4 类及第 9 类受规管活动仅可向专业投资者提供服务；「专业投资者」的定义见《证券及期货条例》及其附属法例。',
+        '第 1 類：證券交易；第 4 類：就證券提供意見；第 9 類：提供資產管理。按牌照條件，第 4 類及第 9 類受規管活動僅可向專業投資者提供服務；「專業投資者」的定義見《證券及期貨條例》及其附屬法例。',
+        'Type 1: dealing in securities; Type 4: advising on securities; Type 9: asset management. Under the licence conditions, Type 4 and Type 9 services may only be provided to professional investors, as defined in the Securities and Futures Ordinance and its subsidiary legislation.'
+      ) },
+      { h: AG('三、查询', '三、查詢', '3. Enquiries'), p: AG(
+        '官方网站：https://www.highblockgroup.com/',
+        '官方網站：https://www.highblockgroup.com/',
+        'Official website: https://www.highblockgroup.com/'
       ) },
     ],
   },
