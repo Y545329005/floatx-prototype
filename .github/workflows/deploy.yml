@@ -33,6 +33,11 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Publish flagship static site
+        run: |
+          mkdir -p dist/flagship
+          cp -R web/flagship/. dist/flagship/
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
