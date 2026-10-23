@@ -21,3 +21,12 @@ DESIGN.md
 *.tar.gz
 AGENTS.md
 AGENTS-state.md
+
+# Flagship 官网公开资产（页面直接引用，需随站点发布；未引用素材继续忽略）
+!web/flagship/assets/
+web/flagship/assets/*
+!web/flagship/assets/device-market.webp
+!web/flagship/assets/device-detail.webp
+!web/flagship/assets/fb-1.jpg
+!web/flagship/assets/fb-2.jpg
+!web/flagship/assets/fb-3.jpg
