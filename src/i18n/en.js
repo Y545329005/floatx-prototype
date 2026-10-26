@@ -421,7 +421,7 @@ export const en = {
 
   // Register page
   '注册': 'Sign Up',
-  '创建您的账号': 'Create your account',
+  '创建您的平台账号': 'Create your platform account',
   '请再次输入密码': 'Please re-enter the password',
   '我已阅读并同意': 'I have read and agree to the',
   '服务条款': 'Terms of Service',
@@ -452,7 +452,7 @@ export const en = {
   '和': 'and',
 
   // ===== 2026-08-07 Auth pages brand-immersive redesign: brand hero + welcome + footer =====
-  '登录专属账户': 'Sign in to your dedicated account',
+  '登录账户': 'Sign in to your account',
   '选择语言': 'Select language',
   '一级私募股权 · 稀缺份额分配制': 'Private Equity · Scarce Allocation',
   '香港证监会持牌机构': 'SFC licensed institution',
@@ -461,7 +461,7 @@ export const en = {
   '密码至少需要 8 个字符': 'Password must be at least 8 characters',
   '密码需同时包含字母和数字': 'Password must contain both letters and numbers',
   '请先阅读并同意服务条款': 'Please read and agree to the Terms of Service',
-  '本平台由香港证监会持牌机构运营，仅面向专业投资者': 'Operated by an SFC-licensed institution, available to professional investors only',
+  '仅供专业投资者使用，内容不构成投资建议或要约': 'For professional investors only. Content does not constitute investment advice or an offer',
 
   // Date units (single-character keys for inline use)
   '月': '/',
@@ -899,7 +899,6 @@ export const en = {
   '我已阅读并同意更新后的协议': 'I have read and agree to the updated agreements',
   '确认并继续': 'Confirm & Continue',
   '我同意': 'I agree to the',
-  '隐私条款': 'Privacy Policy',
   '和': 'and',
   '同意接收营销信息（新闻通讯、产品资讯、活动邀请）': 'Opt in to marketing communications (newsletters, product updates, event invitations)',
   '说明': 'Details',
@@ -1341,6 +1340,8 @@ export const en = {
   'PI 认证审核中，暂不可提交问卷': 'PI certification under review — questionnaire submission is not available yet',
   '完成专业投资者认证后再提交问卷': 'Complete professional investor certification before submitting the questionnaire',
   '此乃专业投资者服务，本会不接受非专业投资者人士参与该活动。如有任何查询，请联络客服经理。': 'This is a professional investor service. We do not accept non-professional investors at this event. For any enquiries, please contact your account manager.',
+  '本活动仅面向专业投资者开放': 'Events are open to professional investors only',
+  '本活动仅作项目介绍及行业交流之用，不构成任何投资建议、要约、招揽或推荐': 'This event is for project introduction and industry exchange only and does not constitute any investment advice, offer, solicitation or recommendation',
   '专业投资者定义': 'Professional investor definition',
   '问卷 · 路演动态': 'Questionnaire · Roadshow updates',
   '完成专业投资者认证后可提交项目问卷': 'Submit project questionnaires after professional investor certification',

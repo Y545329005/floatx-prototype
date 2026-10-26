@@ -2845,7 +2845,6 @@ export const companyPolicies = [
   {
     id: 'cp1',
     title: '公司简介',
-    subtitle: '{{BRAND_FULL}}',
     file: 'highblock-profile.pdf',
     date: '2026-06-30',
     size: '1.2 MB',
@@ -2853,7 +2852,6 @@ export const companyPolicies = [
   {
     id: 'cp2',
     title: '牌照及监管信息',
-    subtitle: '{{LICENSE_TYPE}}',
     file: 'license-info.pdf',
     date: '2026-06-30',
     size: '0.8 MB',
@@ -2861,7 +2859,6 @@ export const companyPolicies = [
   {
     id: 'cp3',
     title: '隐私政策',
-    subtitle: '隐私声明与个人资料收集声明',
     file: 'privacy-policy.pdf',
     date: '2026-06-30',
     size: '1.5 MB',
@@ -2869,7 +2866,6 @@ export const companyPolicies = [
   {
     id: 'cp4',
     title: '使用条款',
-    subtitle: '网站使用条款与免责声明',
     file: 'user-agreement.pdf',
     date: '2026-06-30',
     size: '2.1 MB',
@@ -2877,7 +2873,6 @@ export const companyPolicies = [
   {
     id: 'cp5',
     title: '风险披露声明及免责声明',
-    subtitle: '投资风险披露与复杂产品警告',
     file: 'risk-disclosure.pdf',
     date: '2026-06-30',
     size: '1.0 MB',
@@ -3017,14 +3012,19 @@ export const agreements = [
     title: AG('公司简介', '公司簡介', 'Company Profile'),
     sections: [
       { h: AG('一、公司概况', '一、公司概況', '1. Overview'), p: AG(
-        'HighBlock Securities Limited（「本公司」）为根据香港《公司条例》注册成立的有限公司，持有香港证券及期货事务监察委员会第 1、4、9 类牌照（中央编号 BWW124），面向专业投资者提供私募股权资讯、项目研究与顾问咨询服务。',
-        'HighBlock Securities Limited（「本公司」）為根據香港《公司條例》註冊成立的有限公司，持有香港證券及期貨事務監察委員會第 1、4、9 類牌照（中央編號 BWW124），面向專業投資者提供私募股權資訊、項目研究與顧問諮詢服務。',
-        'HighBlock Securities Limited (the "Company") is a limited company incorporated in Hong Kong under the Companies Ordinance. It holds SFC Type 1, 4 and 9 licences (Central Entity No. BWW124) and provides private equity information, deal research and advisory services to professional investors.'
+        'HighBlock Securities Limited（「本公司」）为根据香港《公司条例》注册成立的有限公司，持有香港证券及期货事务监察委员会第 1、4、9 类牌照（中央编号 BWW124）。本平台现阶段面向专业投资者提供私募市场资讯、项目研究及路演活动等服务。平台所载资料仅供一般参考，不构成投资建议、要约或招揽。任何投资机会及相关安排（如有）均以适用的正式文件为准。',
+        'HighBlock Securities Limited（「本公司」）為根據香港《公司條例》註冊成立的有限公司，持有香港證券及期貨事務監察委員會第 1、4、9 類牌照（中央編號 BWW124）。本平台現階段面向專業投資者提供私募市場資訊、項目研究及路演活動等服務。平台所載資料僅供一般參考，不構成投資建議、要約或招攬。任何投資機會及相關安排（如有）均以適用的正式文件為準。',
+        'HighBlock Securities Limited (the "Company") is a limited company incorporated in Hong Kong under the Companies Ordinance. It holds SFC Type 1, 4 and 9 licences (Central Entity No. BWW124). At this stage, the platform provides private market information, deal research and roadshow events to professional investors. Information contained on the platform is for general reference only and does not constitute investment advice, an offer or solicitation. Any investment opportunities and related arrangements (if any) are subject to the applicable formal documents.'
       ) },
       { h: AG('二、监管资料', '二、監管資料', '2. Regulatory Status'), p: AG(
-        '本公司获发牌照日期为 2026 年 8 月 31 日（首次发牌日期为 2026 年 8 月 5 日）。按牌照条件，第 4 类（就证券提供意见）及第 9 类（提供资产管理）受规管活动仅可向专业投资者提供服务。',
-        '本公司獲發牌照日期為 2026 年 8 月 31 日（首次發牌日期為 2026 年 8 月 5 日）。按牌照條件，第 4 類（就證券提供意見）及第 9 類（提供資產管理）受規管活動僅可向專業投資者提供服務。',
-        'The licence was issued on 31 August 2026 (first granted on 5 August 2026). Under the licence conditions, Type 4 (advising on securities) and Type 9 (asset management) services may only be provided to professional investors.'
+        '本公司获发牌照日期为 2026 年 8 月 31 日（首次发牌日期为 2026 年 8 月 5 日）。按牌照条件，第 4 类（就证券提供意见）及第 9 类（提供资产管理）受规管活动仅可向专业投资者提供服务。有关牌照资料、状态及条件，请以香港证券及期货事务监察委员会持牌人及注册机构公众纪录册为准。',
+        '本公司獲發牌照日期為 2026 年 8 月 31 日（首次發牌日期為 2026 年 8 月 5 日）。按牌照條件，第 4 類（就證券提供意見）及第 9 類（提供資產管理）受規管活動僅可向專業投資者提供服務。有關牌照資料、狀態及條件，請以香港證券及期貨事務監察委員會持牌人及註冊機構公眾紀錄冊為準。',
+        'The licence was issued on 31 August 2026 (first granted on 5 August 2026). Under the licence conditions, Type 4 (advising on securities) and Type 9 (asset management) services may only be provided to professional investors. For licence details, status and conditions, please refer to the public Register of Licensed Persons and Registered Institutions of the Securities and Futures Commission of Hong Kong.'
+      ) },
+      { h: AG('', '', ''), p: AG(
+        '本页面资料仅供一般参考，不构成投资建议、要约、招揽或任何投资承诺。',
+        '本頁面資料僅供一般參考，不構成投資建議、要約、招攬或任何投資承諾。',
+        'The information on this page is for general reference only and does not constitute investment advice, an offer, solicitation or any investment commitment.'
       ) },
     ],
   },

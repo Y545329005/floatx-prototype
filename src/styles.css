@@ -1971,6 +1971,37 @@ input, select, textarea {
   opacity: 0.7;
 }
 
+/* 路演列表统一 PI 提示（Events 页 + 财富页内嵌路演列表共用；嵌入壳同样加载本文件） */
+.pi-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--info-bg);
+  color: var(--info-text);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+
+.pi-banner svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.pi-banner p {
+  margin: 0;
+}
+
+/* 活动详情页：关联融资项目时的免责行（项目卡下方） */
+.event-project-disclaimer {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
 .event-location-row {
   display: flex;
   align-items: flex-start;

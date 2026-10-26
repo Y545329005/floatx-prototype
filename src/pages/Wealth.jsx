@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronRight, Monitor, MapPin } from 'lucide-react';
+import { ChevronRight, Monitor, MapPin, ShieldCheck } from 'lucide-react';
 import { clickable } from '../lib';
 import {
   events, projects, projectStatusLabels, getProjectHeroGradient,
@@ -110,6 +110,11 @@ export default function Wealth({ navigate }) {
 
       {tab === 'roadshow' ? (
         <section className="wealth-section">
+          {/* 2026-10-26 合规：内嵌路演列表统一 PI 提示（与 Events 页同口径） */}
+          <div className="pi-banner">
+            <ShieldCheck size={14} />
+            <p>{t('本活动仅面向专业投资者开放')}</p>
+          </div>
           {upcomingEvents.length > 0 ? (
             <div className="wealth-cal-list">
               {upcomingEvents.map(e => <EventCard key={e.id} e={e} navigate={navigate} />)}

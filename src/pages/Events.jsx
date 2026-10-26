@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { clickable } from '../lib';
-import { MapPin, Monitor, Search, ChevronDown, Check, ArrowLeft } from 'lucide-react';
+import { MapPin, Monitor, Search, ChevronDown, Check, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { events, projects, getProjectHeroGradient, getProjectHeroEmoji, isEventRegistered, isEventLive, eventStatusLabels } from '../mock/data';
 import { useLang } from '../i18n';
 import BusinessContact from '../components/BusinessContact';
@@ -142,6 +142,12 @@ export default function Events({ navigate, setToast, isLoggedIn = false, embed =
           <button className={tab === 'upcoming' ? 'active' : ''} onClick={() => setTab('upcoming')}>{t(eventStatusLabels.upcoming)}</button>
           <button className={tab === 'past' ? 'active' : ''} onClick={() => setTab('past')}>{t(eventStatusLabels.past)}</button>
         </div>
+      </div>
+
+      {/* 2026-10-26 合规：路演列表统一 PI 提示 */}
+      <div className="pi-banner">
+        <ShieldCheck size={14} />
+        <p>{t('本活动仅面向专业投资者开放')}</p>
       </div>
 
       <div className="project-list">

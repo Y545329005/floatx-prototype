@@ -101,7 +101,7 @@ function AuthFooter({ children, setToast, banner = false }) {
     <div className="auth-footer">
       {children && <div className="auth-footer-help">{children}</div>}
       {banner && <BusinessContact setToast={setToast} />}
-      <p className="auth-footer-legal">{t('本平台由香港证监会持牌机构运营，仅面向专业投资者')}</p>
+      <p className="auth-footer-legal">{t('仅供专业投资者使用，内容不构成投资建议或要约')}</p>
     </div>
   );
 }
@@ -289,7 +289,7 @@ export function LoginPage({ navigate, setIsLoggedIn, setUser, setToast }) {
   return (
     <div className="auth-page">
       <AuthHero
-        title={t('登录专属账户')}
+        title={t('登录账户')}
       />
 
       <div className="auth-body">
@@ -632,7 +632,7 @@ export function RegisterPage({ navigate, setIsLoggedIn, setUser, setToast }) {
 
   return (
     <div className="auth-page">
-      <AuthHero compact title={t('注册')} subtitle={t('创建您的账号')} />
+      <AuthHero compact title={t('注册')} subtitle={t('创建您的平台账号')} />
 
       <div className="auth-body">
         <div className="auth-card">

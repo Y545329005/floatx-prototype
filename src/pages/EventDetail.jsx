@@ -252,31 +252,35 @@ export default function EventDetail({ id, navigate, goBack, setToast }) {
       </div>
 
       {project && (
-        <div className="card card-accent event-project-card" {...clickable(() => navigate(`#project/${project.id}`))}>
-          <div className="event-project-top">
-            <div>
-              <div className="event-project-tags">
-                <span className="tag tag-outline">{t(project.sector)}</span>
-                <span className={`tag tag-stage-${getProjectStageSlug(project.stage)}`}>{t(project.stage)}</span>
+        <>
+          <div className="card card-accent event-project-card" {...clickable(() => navigate(`#project/${project.id}`))}>
+            <div className="event-project-top">
+              <div>
+                <div className="event-project-tags">
+                  <span className="tag tag-outline">{t(project.sector)}</span>
+                  <span className={`tag tag-stage-${getProjectStageSlug(project.stage)}`}>{t(project.stage)}</span>
+                </div>
+                <h4>{t('关于 {}').replace('{}', project.title)}</h4>
               </div>
-              <h4>{t('关于 {}').replace('{}', project.title)}</h4>
+              <ChevronRight size={18} className="event-project-arrow" />
             </div>
-            <ChevronRight size={18} className="event-project-arrow" />
+            {project.highlights && project.highlights[0] && (
+              <p className="text-muted text-sm event-project-desc">{project.highlights[0]}</p>
+            )}
+            <div className="detail-stat-row event-project-stats">
+              <div className="detail-stat">
+                <span className="detail-stat-label">{t('估值')}</span>
+                <span className="detail-stat-value text-sm">{getCurrencySymbol(project.currency)} {formatCurrency(project.valuation)}</span>
+              </div>
+              <div className="detail-stat">
+                <span className="detail-stat-label">{t('状态')}</span>
+                <span className="detail-stat-value text-sm">{t(projectStatusLabels[project.status])}</span>
+              </div>
+            </div>
           </div>
-          {project.highlights && project.highlights[0] && (
-            <p className="text-muted text-sm event-project-desc">{project.highlights[0]}</p>
-          )}
-          <div className="detail-stat-row event-project-stats">
-            <div className="detail-stat">
-              <span className="detail-stat-label">{t('估值')}</span>
-              <span className="detail-stat-value text-sm">{getCurrencySymbol(project.currency)} {formatCurrency(project.valuation)}</span>
-            </div>
-            <div className="detail-stat">
-              <span className="detail-stat-label">{t('状态')}</span>
-              <span className="detail-stat-value text-sm">{t(projectStatusLabels[project.status])}</span>
-            </div>
-          </div>
-        </div>
+          {/* 2026-10-26 合规：涉及具体融资项目的活动详情页免责 */}
+          <p className="event-project-disclaimer">{t('本活动仅作项目介绍及行业交流之用，不构成任何投资建议、要约、招揽或推荐')}</p>
+        </>
       )}
 
       <div className="detail-actions">

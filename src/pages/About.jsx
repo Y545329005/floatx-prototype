@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft, FileText, Building2, ShieldCheck, ChevronRight } from 'lucide-react';
-import { companyPolicies, platformBrand, resolveBrand } from '../mock/data';
+import { companyPolicies, platformBrand } from '../mock/data';
 import { useLang } from '../i18n';
 import AgreementModal from '../components/AgreementModal';
 
@@ -54,7 +54,6 @@ export default function About({ navigate, goBack, setToast }) {
               <FileText size={16} />
               <div className="doc-item-body">
                 <span>{t(p.title)}</span>
-                <span className="text-muted text-sm">{t(resolveBrand(p.subtitle, t))}</span>
               </div>
               {/* 2026-10-22：日期为占位值（正式文档未载明），改为箭头保留可点提示 */}
               <ChevronRight size={16} className="text-muted" />

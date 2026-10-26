@@ -6,7 +6,7 @@ import AgreementModal from './AgreementModal';
 import AgreeCheckbox from './AgreeCheckbox';
 
 // 开户协议闸门（2026-10-15 · UC 对齐）：注册已后置为集团 UC 身份层开户，不再勾选基金业务协议；
-// 三件套（使用条款/隐私条款/风险披露声明）改在 KYC 审核通过后首次进 APP 时全屏签署——
+// 三件套（使用条款/隐私政策/风险披露声明）改在 KYC 审核通过后首次进 APP 时全屏签署——
 // 合规时点：销售行为（申购）之前 + 适当性评估（KYC/PI）完成之后。签一次终身有效（agreementRecords
 // 按 userId 持久化），条款更新重同意走 TermsUpdateGate 既有机制，两闸门互不替代。
 // 判定与挂载在 App.jsx（独立壳）；嵌入壳按嵌入集成轮另行处理。
@@ -20,7 +20,7 @@ function OnboardingGate({ onAgreed, onDecline }) {
   const ONBOARDING_IDS = ['user-agreement', 'privacy-policy', 'risk-disclosure'];
   const LABELS = {
     'user-agreement': t('使用条款'),
-    'privacy-policy': t('隐私条款'),
+    'privacy-policy': t('隐私政策'),
     'risk-disclosure': t('风险披露声明及免责声明'),
   };
 
