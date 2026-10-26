@@ -108,7 +108,7 @@ export default function EventDetail({ id, navigate, goBack, setToast }) {
       <div className="detail-sticky">
         <div className="page-header no-margin">
           <button className="back-btn" onClick={() => goBack('#events')}><ArrowLeft size={20} /></button>
-          <h1>{event.title}</h1>
+          <h1>{t(event.title)}</h1>
         </div>
       </div>
 
@@ -331,7 +331,7 @@ export default function EventDetail({ id, navigate, goBack, setToast }) {
             <h3>{t('报名信息')}</h3>
             <button className="btn-icon" onClick={() => setShowForm(false)}><X size={18} /></button>
           </div>
-          <p className="text-muted text-sm sheet-sub">{event.title}</p>
+          <p className="text-muted text-sm sheet-sub">{t(event.title)}</p>
           {/* 2026-10-22 RO 整改：路演属专业投资者服务——明示不接待非专业投资者，并给出专业投资者定义解释入口 */}
           <div className="event-pi-notice">
             <ShieldCheck size={14} />

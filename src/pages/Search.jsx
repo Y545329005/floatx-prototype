@@ -5,7 +5,7 @@ import { projects, events, projectStatusLabels, getProjectHeroGradient, getProje
 import { useLang } from '../i18n';
 
 export default function SearchPage({ navigate, goBack }) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [search, setSearch] = useState('');
   const [selectedSectors, setSelectedSectors] = useState([]);
   const inputRef = useRef(null);
@@ -74,7 +74,7 @@ export default function SearchPage({ navigate, goBack }) {
           <div className="project-card-meta-line">
             {mySub && <span className="sub-mark">{t('已提交问卷')}</span>}
             {mySub && ' · '}
-            {t(p.sector)} · {p.location}
+            {t(p.sector)} · {t(p.location)}
           </div>
         </div>
       </div>
@@ -95,10 +95,10 @@ export default function SearchPage({ navigate, goBack }) {
           ) : (
             <span className="project-card-hero-icon">{getProjectHeroEmoji(heroSector)}</span>
           )}
-          <span className="event-date-pill">{e.date.slice(5, 7)}{t('月')}{e.date.slice(8, 10)}{t('日')}</span>
+          <span className="event-date-pill">{lang === 'en' ? `${e.date.slice(5, 7)}/${e.date.slice(8, 10)}` : `${e.date.slice(5, 7)}${t('月')}${e.date.slice(8, 10)}${t('日')}`}</span>
         </div>
         <div className="project-card-body">
-          <h3>{e.title}</h3>
+          <h3>{t(e.title)}</h3>
           <div className="project-card-meta-line">
             {isEventRegistered(e.id) && <><span className="sub-mark">{t('已报名')}</span> · </>}
             {t(heroSector)}

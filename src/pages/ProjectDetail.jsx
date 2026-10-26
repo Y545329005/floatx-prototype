@@ -174,7 +174,7 @@ export default function ProjectDetail({ id, navigate, goBack }) {
             <div key={e.id} className="related-event" {...clickable(() => navigate(`#event/${e.id}`))}>
               <Calendar size={16} />
               <div>
-                <span>{e.title}</span>
+                <span>{t(e.title)}</span>
                 <span className="text-muted text-sm">{e.date} {e.time}</span>
               </div>
             </div>
