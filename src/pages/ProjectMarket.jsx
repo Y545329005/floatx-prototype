@@ -36,7 +36,7 @@ export default function ProjectMarket({ navigate, embed = false, goBack }) {
           <div className="project-card-meta-line">
             {mySub && <span className="sub-mark">{t('已提交问卷')}</span>}
             {mySub && ' · '}
-            {t(p.sector)} · {p.location}
+            {t(p.sector)} · {t(p.location)}
           </div>
         </div>
       </div>

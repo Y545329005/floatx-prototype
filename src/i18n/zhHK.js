@@ -1362,4 +1362,14 @@ export const zhHK = {
   '香港证监会第 1、4、9 类牌照': '香港證監會第 1、4、9 類牌照',
   '证券交易 · 就证券提供意见 · 资产管理': '證券交易 · 就證券提供意見 · 資產管理',
   '持有至少 HK$8,000,000 的投资组合': '持有至少 HK$8,000,000 的投資組合',
+
+  // Mock data fields — event names (2026-10-26: data i18n pipeline)
+  'QuantumCore 线上路演 — 量子计算的商业化路径': 'QuantumCore 線上路演 — 量子計算的商業化路徑',
+  'BioNova 临床数据解读会': 'BioNova 臨床數據解讀會',
+  'GreenCell 上市前投资人交流会': 'GreenCell 上市前投資人交流會',
+  'SkyNet 产品演示会 — AMR 仓储自动化解决方案': 'SkyNet 產品演示會 — AMR 倉儲自動化解決方案',
+  '参观日：QuantumCore 香港实验室': '參觀日：QuantumCore 香港實驗室',
+  '2026 夏季私募市场展望 — 新经济赛道投资策略': '2026 夏季私募市場展望 — 新經濟賽道投資策略',
+  'Aurora FinTech — RWA 代币化如何改变私募市场': 'Aurora FinTech — RWA 代幣化如何改變私募市場',
+  '香港科学园 科技大道西 8 号 QuantumCore 量子计算中心 3 楼': '香港科學園 科技大道西 8 號 QuantumCore 量子計算中心 3 樓',
 };

@@ -12,7 +12,7 @@ const TYPE_OPTIONS = [
 ];
 
 export default function Events({ navigate, setToast, isLoggedIn = false, embed = false, goBack }) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [tab, setTab] = useState('upcoming');
   const [typeFilter, setTypeFilter] = useState('all'); // 'all' | 'online' | 'offline'
   const [typeOpen, setTypeOpen] = useState(false);
@@ -58,11 +58,11 @@ export default function Events({ navigate, setToast, isLoggedIn = false, embed =
           {live ? (
             <span className="event-date-pill event-date-pill-live">{t('进行中')}</span>
           ) : (
-            <span className="event-date-pill">{e.date.slice(5, 7)}{t('月')}{e.date.slice(8, 10)}{t('日')} · {e.time.split('-')[0]}</span>
+            <span className="event-date-pill">{lang === 'en' ? `${e.date.slice(5, 7)}/${e.date.slice(8, 10)}` : `${e.date.slice(5, 7)}${t('月')}${e.date.slice(8, 10)}${t('日')}`} · {e.time.split('-')[0]}</span>
           )}
         </div>
         <div className="event-card-body-lg">
-          <h3>{e.title}</h3>
+          <h3>{t(e.title)}</h3>
           <div className="project-card-meta-line">
             {isEventRegistered(e.id) && <><span className="sub-mark">{t('已报名')}</span> · </>}
             {t(heroSector)}{proj && proj.stage ? ` · ${t(proj.stage)}` : ''}
@@ -70,7 +70,7 @@ export default function Events({ navigate, setToast, isLoggedIn = false, embed =
           <div className="event-meta">
             <span className="event-meta-loc">
               {e.type === 'online' ? <Monitor size={12} /> : <MapPin size={12} />}
-              <span className="event-meta-loc-text">{e.type === 'online' ? t('线上会议') : e.location}</span>
+              <span className="event-meta-loc-text">{e.type === 'online' ? t('线上会议') : t(e.location)}</span>
             </span>
             {e.status === 'upcoming' && (
               <span className="event-register-count">

@@ -465,7 +465,6 @@ export const en = {
 
   // Date units (single-character keys for inline use)
   '月': '/',
-  '日': '/',
 
   // ===== 2026-08-07 Funding Loop Round 3: Amount Presets + Allocation Rule + History + Countdown =====
 
@@ -1362,4 +1361,16 @@ export const en = {
   '香港证监会第 1、4、9 类牌照': 'SFC Type 1, 4 and 9 Licences',
   '证券交易 · 就证券提供意见 · 资产管理': 'Dealing in securities · Advising on securities · Asset management',
   '持有至少 HK$8,000,000 的投资组合': 'Holding an investment portfolio of at least HK$8,000,000',
+
+  // Mock data fields — project/event names & locations (2026-10-26: data i18n pipeline)
+  '香港': 'Hong Kong',
+  '深圳': 'Shenzhen',
+  'QuantumCore 线上路演 — 量子计算的商业化路径': 'QuantumCore Online Roadshow — Commercializing Quantum Computing',
+  'BioNova 临床数据解读会': 'BioNova Clinical Data Briefing',
+  'GreenCell 上市前投资人交流会': 'GreenCell Pre-IPO Investor Briefing',
+  'SkyNet 产品演示会 — AMR 仓储自动化解决方案': 'SkyNet Product Demo — AMR Warehouse Automation Solutions',
+  '参观日：QuantumCore 香港实验室': 'Open House: QuantumCore Hong Kong Lab',
+  '2026 夏季私募市场展望 — 新经济赛道投资策略': '2026 Summer Private Markets Outlook — New Economy Investment Strategy',
+  'Aurora FinTech — RWA 代币化如何改变私募市场': 'Aurora FinTech — How RWA Tokenization Is Changing Private Markets',
+  '香港科学园 科技大道西 8 号 QuantumCore 量子计算中心 3 楼': 'Level 3, QuantumCore Quantum Computing Centre, 8 Science Park West Avenue, Hong Kong Science Park',
 };
