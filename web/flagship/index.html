@@ -31,7 +31,7 @@
   h1,h2{text-wrap:balance}
   .t-display{font-size:var(--fs-display);line-height:1.08;letter-spacing:-0.03em;font-weight:800}
   .t-h2{font-size:var(--fs-h2);line-height:1.15;letter-spacing:-0.02em;font-weight:800}
-  .t-kicker{font-size:12px;font-weight:600;letter-spacing:0.16em}
+  .t-kicker{font-size:12px;font-weight:600;letter-spacing:0}
   html[lang="zh-HK"] .t-display{letter-spacing:0;font-weight:700}
   html[lang="zh-HK"] .t-h2{letter-spacing:0;font-weight:700}
 
@@ -242,7 +242,7 @@
       <div class="max-w-3xl">
       <div class="fade-up inline-flex items-center gap-2.5 rounded-full border border-gold/30 bg-gold/[0.08] px-4 py-2">
         <span class="h-1.5 w-1.5 rounded-full bg-gold"></span>
-        <span class="text-[12px] font-bold tracking-[0.16em] text-goldlt">SFC 第 1、4、9 類持牌 · 包括專業投資者</span>
+        <span class="text-[12px] font-bold text-goldlt">SFC 第 1、4、9 類持牌 · 包括專業投資者</span>
       </div>
 
       <h1 class="fade-up mt-8 t-display text-white" style="animation-delay:.08s">
@@ -314,13 +314,33 @@
           <span class="rounded-md border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[12px] font-semibold text-white/90">合規流程指引</span>
         </div>
 
-        <div class="mt-8">
-          <button type="button" onclick="openConsult('consult')" class="cta-primary">
-            <i class="fa-regular fa-calendar cta-icon" aria-hidden="true"></i>
-            預約諮詢
-          </button>
-        </div>
         <p class="mt-4 text-[12px] text-greydk">現階段僅提供資訊與諮詢服務，不構成投資要約、招攬或收益承諾。</p>
+
+        <div class="mt-5">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5" aria-label="HighBlock APP 下載（即將上線）">
+            <div class="flex items-center gap-3.5 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3.5">
+              <i class="fa-brands fa-apple w-5 text-center text-[19px] text-white" aria-hidden="true"></i>
+              <span class="flex-1">
+                <span class="flex items-center gap-2">
+                  <span class="block text-[13.5px] font-bold text-white">App Store 下載</span>
+                  <span class="rounded-full bg-cold px-2 py-0 text-[12px] font-semibold text-white">即將上線</span>
+                </span>
+                <span class="block text-[11px] text-greydk">iPhone · iOS 16 以上</span>
+              </span>
+            </div>
+            <div class="flex items-center gap-3.5 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3.5">
+              <i class="fa-brands fa-google-play w-5 text-center text-[17px] text-white" aria-hidden="true"></i>
+              <span class="flex-1">
+                <span class="flex items-center gap-2">
+                  <span class="block text-[13.5px] font-bold text-white">Google Play 下載</span>
+                  <span class="rounded-full bg-cold px-2 py-0 text-[12px] font-semibold text-white">即將上線</span>
+                </span>
+                <span class="block text-[11px] text-greydk">Android · 8.0 以上</span>
+              </span>
+            </div>
+          </div>
+          <p class="mt-3 text-[12px] text-greydk">開放下載時間以商店公佈為準。</p>
+        </div>
       </div>
 
       <div class="prod-device">
@@ -441,10 +461,10 @@
       </div>
 
       <div>
-        <h4 class="text-[12px] font-bold tracking-[0.16em] text-gold">政策與條款</h4>
+        <h4 class="text-[12px] font-bold text-gold">政策與條款</h4>
         <ul class="mt-5 space-y-3 text-[14px]">
-          <li><a href="legal/risk-disclosure.html" class="text-grey hover:text-white transition-colors">風險披露聲明及免責聲明</a></li>
-          <li><a href="legal/privacy-policy.html" class="text-grey hover:text-white transition-colors">隱私政策</a></li>
+          <li><a href="legal/risk-disclosure.html" class="text-grey hover:text-white transition-colors py-1.5">風險披露聲明及免責聲明</a></li>
+          <li><a href="legal/privacy-policy.html" class="text-grey hover:text-white transition-colors py-1.5">隱私政策</a></li>
         </ul>
       </div>
     </div>
