@@ -3022,9 +3022,9 @@ export const agreements = [
         'The licence was issued on 31 August 2026 (first granted on 5 August 2026). Under the licence conditions, Type 4 (advising on securities) and Type 9 (asset management) services may only be provided to professional investors. For licence details, status and conditions, please refer to the public Register of Licensed Persons and Registered Institutions of the Securities and Futures Commission of Hong Kong.'
       ) },
       { h: AG('', '', ''), p: AG(
-        '本页面资料仅供一般参考，不构成投资建议、要约、招揽或任何投资承诺。',
-        '本頁面資料僅供一般參考，不構成投資建議、要約、招攬或任何投資承諾。',
-        'The information on this page is for general reference only and does not constitute investment advice, an offer, solicitation or any investment commitment.'
+        '本网站资料仅供一般参考，不构成投资建议、要约、招揽或任何投资承诺。',
+        '本網站資料僅供一般參考，不構成投資建議、要約、招攬或任何投資承諾。',
+        'The information on this website is for general reference only and does not constitute investment advice, an offer, solicitation or any investment commitment.'
       ) },
     ],
   },
