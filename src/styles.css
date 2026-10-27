@@ -792,6 +792,14 @@ input, select, textarea {
   font-size: var(--text-base);
 }
 
+/* 项目图片示意说明（2026-10-26 合规复查：界面及项目资料均非真实业绩/在售资料） */
+.illustration-note {
+  text-align: center;
+  padding: var(--space-3) 16px 0;
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+}
+
 .section-divider {
   display: flex;
   align-items: center;

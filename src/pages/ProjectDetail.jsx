@@ -73,6 +73,8 @@ export default function ProjectDetail({ id, navigate, goBack }) {
         <div className="project-detail-hero-company">{project.company}</div>
       </div>
 
+      <div className="illustration-note">{t('界面及项目资料仅作示意')}</div>
+
       <div className="card card-accent">
         <div className="detail-stat-row">
           <div className="detail-stat">

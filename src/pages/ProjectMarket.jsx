@@ -6,7 +6,8 @@ import { useLang } from '../i18n';
 
 // 2026-10-16 口径修订：原型需展示完整业务流形态——恢复在售项目展示与申购意向收集
 // （真实无在售产品，原型体验有在售时的情况；资金与 SPV 签署全线下，线上只收意向）
-// 「往期业绩」保留裁剪版命名；资金账本页（钱包/持仓等）维持摘除
+// 2026-10-26 合规复查：页签「往期业绩」→「已结束」——closed 页签只陈列以往介绍过的项目，
+// 不构成公司投资/管理业绩（Track Record）表述；资金账本页（钱包/持仓等）维持摘除
 export default function ProjectMarket({ navigate, embed = false, goBack }) {
   const { t } = useLang();
   const [tab, setTab] = useState('active');
@@ -62,9 +63,11 @@ export default function ProjectMarket({ navigate, embed = false, goBack }) {
 
         <div className="segmented-control">
           <button className={tab === 'active' ? 'active' : ''} onClick={() => setTab('active')}>{t('进行中')}</button>
-          <button className={tab === 'closed' ? 'active' : ''} onClick={() => setTab('closed')}>{t('往期业绩')}</button>
+          <button className={tab === 'closed' ? 'active' : ''} onClick={() => setTab('closed')}>{t('已结束')}</button>
         </div>
       </div>
+
+      <div className="illustration-note">{t('界面及项目资料仅作示意')}</div>
 
       <div className="project-list">
         {tab === 'active' ? (
@@ -79,7 +82,7 @@ export default function ProjectMarket({ navigate, embed = false, goBack }) {
         ) : (
           <>
             {closed.map(renderCard)}
-            {closed.length === 0 && <div className="empty-state">{t('暂无往期项目')}</div>}
+            {closed.length === 0 && <div className="empty-state">{t('暂无已结束项目')}</div>}
           </>
         )}
       </div>

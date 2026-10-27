@@ -190,6 +190,7 @@ export default function SearchPage({ navigate, goBack }) {
                   {t('全部')} <ChevronRight size={14} />
                 </button>
               </div>
+              <div className="illustration-note">{t('界面及项目资料仅作示意')}</div>
               <div className="project-list">
                 {filteredProjects.map(renderProjectCard)}
               </div>

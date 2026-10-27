@@ -1240,8 +1240,8 @@ export const en = {
   '未签署开户协议，将无法使用基金服务。您可以稍后重新登录再签署，或联系客服咨询。': 'Without signing the onboarding agreements, fund services will be unavailable. You may sign in again later to complete signing, or contact customer service for assistance.',
   '返回签署': 'Back to Signing',
   '确认并退出': 'Confirm & Sign Out',
-  '往期业绩': 'Track Record',
-  '暂无往期项目': 'No past projects yet',
+  '界面及项目资料仅作示意': 'Interface and project information are for illustration only',
+  '暂无已结束项目': 'No ended projects yet',
 
   '暂无进行中的项目': 'No active projects',
 
