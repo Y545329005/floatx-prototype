@@ -25,6 +25,8 @@ const AdminEvents = lazy(() => import('./admin/AdminEvents'));
 const AdminRegistrations = lazy(() => import('./admin/AdminRegistrations'));
 const AdminMyClients = lazy(() => import('./admin/AdminMyClients'));
 const AdminSubscriptions = lazy(() => import('./admin/AdminSubscriptions'));
+const AdminFundTrades = lazy(() => import('./admin/AdminFundTrades'));
+const AdminFunds = lazy(() => import('./admin/AdminFunds'));
 const AdminKYC = lazy(() => import('./admin/AdminKYC'));
 const AdminPI = lazy(() => import('./admin/AdminPI'));
 const AdminUsers = lazy(() => import('./admin/AdminUsers'));
@@ -306,6 +308,8 @@ export default function App() {
             {effectiveSub === 'registrations' && <AdminRegistrations admin={adminUser} />}
             {effectiveSub === 'my-clients' && <AdminMyClients navigate={navigate} detailId={hash.param2} admin={adminUser} />}
             {effectiveSub === 'subscriptions' && <AdminSubscriptions navigate={navigate} detailId={hash.param2} admin={adminUser} />}
+            {effectiveSub === 'fund-trades' && <AdminFundTrades admin={adminUser} detailId={hash.param2} navigate={navigate} />}
+            {effectiveSub === 'funds' && <AdminFunds />}
             {effectiveSub === 'kyc' && <AdminKYC navigate={navigate} detailId={hash.param2} admin={adminUser} />}
             {effectiveSub === 'pi' && <AdminPI navigate={navigate} detailId={hash.param2} admin={adminUser} />}
             {/* 2026-10-16 口径修订：申购记录恢复（意向收集链）；funds/transactions/transaction-monitor/
@@ -339,7 +343,7 @@ export default function App() {
     return renderAppPage(hash.path, hash.param, { navigate, goBack, setToast, isLoggedIn, setIsLoggedIn });
   };
 
-  const TOP_LEVEL_PAGES = ['events', 'projects', 'profile'];
+  const TOP_LEVEL_PAGES = ['events', 'projects', 'funds', 'asset', 'profile'];
   const isTopLevel = TOP_LEVEL_PAGES.includes(hash.path);
   // 联动决定 BottomNav 显示 + .app-content 72px 留白（避免游客态 TopLevel 出现死间距）
   const showBottomNav = isTopLevel && isLoggedIn;

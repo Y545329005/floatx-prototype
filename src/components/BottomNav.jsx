@@ -1,11 +1,14 @@
-import { Briefcase, Calendar, User } from 'lucide-react';
+import { Briefcase, Calendar, Coins, PieChart, User } from 'lucide-react';
 import { useLang } from '../i18n';
 
-// 顺序：前期主打路演，路演在前（2026-08-06 调整）
-// 2026-10-16 首期裁剪：「我的资产」Tab 摘除（基金无线上账户+暂无项目，资产树整树下线，二期恢复）
+// 2026-10-27：新增「基金」Tab（一期：线下收款 + 人工确认 + 结单）
+// 2026-10-28：新增「资产」Tab（只读聚合：现金 + 持仓 + 收益），5 Tab
+// 顺序：路演 / 项目市场 / 基金 / 资产 / 我的
 const tabs = [
   { key: 'events', label: '路演活动', icon: Calendar },
   { key: 'projects', label: '项目市场', icon: Briefcase },
+  { key: 'funds', label: '基金', icon: Coins },
+  { key: 'asset', label: '资产', icon: PieChart },
   { key: 'profile', label: '我的', icon: User },
 ];
 

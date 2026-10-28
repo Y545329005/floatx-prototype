@@ -2,16 +2,18 @@ import { useRef, useState } from 'react';
 import { clickable } from '../lib';
 import { ArrowLeft, Landmark, Upload, Zap, ShieldCheck } from 'lucide-react';
 import {
-  wallet, bankCards, platformAccounts, eddaAuth, authorizeEdda,
+  wallet, walletAccountOf, bankCards, platformAccounts, eddaAuth, authorizeEdda,
   depositRequests, withdrawRequests, submitDepositRequest, submitWithdrawRequest, formatCurrency,
   getFreezeState,
 } from '../mock/data';
 import { useLang } from '../i18n';
 
+// 币种以代码为准（2026-10-28）：钱包内部键仍是 cny，换算交给 walletAccountOf，
+// 避免页面层自己维护一套 key ↔ 币种映射（基金用 CNH，钱包键 cny）
 const currencyOptions = [
-  { key: 'hkd', label: 'HKD 港币', symbol: 'HK$' },
-  { key: 'usd', label: 'USD 美元', symbol: '$' },
-  { key: 'cny', label: 'CNY 人民币', symbol: '¥' },
+  { key: 'HKD', label: 'HKD 港币', symbol: 'HK$' },
+  { key: 'USD', label: 'USD 美元', symbol: '$' },
+  { key: 'CNH', label: 'CNH 离岸人民币', symbol: '¥' },
 ];
 
 // 白名单卡（出入金前置：≥1万 HKD 或等值 USD 转账白名单验证，2026-08-19）
@@ -24,7 +26,7 @@ const whitelistedCards = bankCards.filter(c => c.whitelistStatus === 'verified')
 export default function FundOperation({ mode, navigate, goBack }) {
   const { t } = useLang();
   const isDeposit = mode === 'deposit';
-  const [currency, setCurrency] = useState('hkd');
+  const [currency, setCurrency] = useState('HKD');
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState(isDeposit ? 'bank' : 'bank'); // 充值通道：bank 银行转账 / edda eDDA 快捷入金
   const [bankCard, setBankCard] = useState(whitelistedCards[0]?.id || '');
@@ -32,7 +34,7 @@ export default function FundOperation({ mode, navigate, goBack }) {
   const [error, setError] = useState('');
   const fileRef = useRef(null);
 
-  const cur = wallet[currency];
+  const cur = walletAccountOf(currency) || wallet.hkd;
   const amountNum = parseFloat(amount) || 0;
   const [eddaReady, setEddaReady] = useState(eddaAuth.status === 'authorized'); // eddaAuth 非 React state，本地镜像驱动渲染
   // INV-5 凡动必冻：安全冻结期内阻断出金（UI 层前置拦截 + 数据层兜底）
@@ -60,7 +62,7 @@ export default function FundOperation({ mode, navigate, goBack }) {
       return;
     }
     const opts = {
-      currency: currency.toUpperCase(),
+      currency: currency,
       amount: amountNum,
       method: isDeposit && method === 'edda' ? 'eDDA' : '银行转账',
       cardId: bc.id,

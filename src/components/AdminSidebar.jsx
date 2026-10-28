@@ -33,6 +33,7 @@ const MENU_ICONS = {
   registrations: ClipboardCheck,
   projects: FolderKanban,
   subscriptions: ClipboardList,
+  'fund-trades': Coins,   // 基金交易确认（2026-10-28 一期闭环）
   funds: Landmark,
   transactions: Wallet,
   'transaction-monitor': ShieldCheck,

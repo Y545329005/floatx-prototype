@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ArrowLeft, Download, Upload, ArrowLeftRight, ChevronRight, CreditCard, History, ClipboardList } from 'lucide-react';
-import { wallet, currentUser, formatExact } from '../mock/data';
+import { ArrowLeft, Download, Upload, ChevronRight, ClipboardList } from 'lucide-react';
+import { wallet, CURRENCY_META, convertToHKD, getAvailableCash, getFundFrozen, formatExact } from '../mock/data';
 import { useLang } from '../i18n';
 
 // 金额位数自适应降档：返回 0（正常）/1（降一档）/2（降两档）
@@ -14,38 +14,28 @@ function longAmountRank(str) {
 const heroAmountSize = r => (r === 2 ? 'wallet-hero-value-xs' : r === 1 ? 'wallet-hero-value-sm' : '');
 const balanceAmountSize = r => (r === 2 ? 'wallet-balance-item-amount-xs' : r === 1 ? 'wallet-balance-item-amount-sm' : '');
 
+// 钱包（2026-10-28 基金一期）：资金公共模块的明细页
+// 只保留闭环需要的三个动作（充值 / 提现 / 资金申请）；换汇、银行卡、交易记录三页本期未接线，
+// 入口一并摘除——留着就是「点了落到路演页」的静默错页（router default 兜底渲染 Events）。
+const CURRENCIES = ['HKD', 'USD', 'CNH'].map(code => ({ code, ...CURRENCY_META[code] }));
+
 export default function Wallet({ navigate, goBack }) {
   const { t } = useLang();
-  const [heroCurrency, setHeroCurrency] = useState('hkd');
+  const [heroCurrency, setHeroCurrency] = useState('HKD');
 
-  // 币种选项（Hero 卡下拉 + 紧凑列表）
-  const currencyOptions = [
-    { key: 'hkd', label: 'HKD', symbol: 'HK$', rate: 1 },
-    { key: 'usd', label: 'USD', symbol: '$', rate: 7.8 },
-    { key: 'cny', label: 'CNY', symbol: '¥', rate: 1.1 },
-    { key: 'eur', label: 'EUR', symbol: '€', rate: 8.5 },
-  ];
-
-  // 计算总资产（所有币种转换为 HKD）
-  const totalAssetHKD = Object.entries(wallet).reduce((sum, [key, w]) => {
-    const rates = { hkd: 1, usd: 7.8, cny: 1.1, eur: 8.5 };
-    return sum + w.balance * (rates[key] || 1);
+  const totalHKD = CURRENCIES.reduce((s, c) => {
+    const acc = wallet[c.walletKey];
+    return s + (acc ? convertToHKD(acc.balance, c.code) : 0);
   }, 0);
-
-  // 计算选中币种的总资产（各币种折算到选中币种）
-  const getAssetInCurrency = (currencyKey) => {
-    const targetRate = currencyOptions.find(c => c.key === currencyKey)?.rate || 1;
-    const rates = { hkd: 1, usd: 7.8, cny: 1.1, eur: 8.5 };
-    return Object.entries(wallet).reduce((sum, [key, w]) => {
-      return sum + (w.balance * (rates[key] || 1)) / targetRate;
-    }, 0);
-  };
+  const heroRate = convertToHKD(1, heroCurrency) || 1;
+  const heroFrozen = getFundFrozen(undefined, heroCurrency);
+  const heroAvailable = getAvailableCash(heroCurrency);
 
   return (
     <div className="page wallet-page">
       <div className="subpage-sticky">
         <div className="page-header">
-          <button className="back-btn" onClick={() => goBack('#assets')}><ArrowLeft size={20} /></button>
+          <button className="back-btn" onClick={() => goBack('#asset')}><ArrowLeft size={20} /></button>
           <h1>{t('钱包')}</h1>
         </div>
       </div>
@@ -60,31 +50,31 @@ export default function Wallet({ navigate, goBack }) {
               value={heroCurrency}
               onChange={e => setHeroCurrency(e.target.value)}
             >
-              {currencyOptions.map(opt => (
-                <option key={opt.key} value={opt.key}>{opt.label}</option>
+              {CURRENCIES.map(opt => (
+                <option key={opt.code} value={opt.code}>{opt.code}</option>
               ))}
             </select>
             <ChevronRight size={14} className="wallet-currency-chevron" />
           </div>
         </div>
         <div className="wallet-hero-main">
-          <div className={`wallet-hero-value ${heroAmountSize(longAmountRank(formatExact(getAssetInCurrency(heroCurrency))))}`}>
-            {formatExact(getAssetInCurrency(heroCurrency))}
+          <div className={`wallet-hero-value ${heroAmountSize(longAmountRank(formatExact(totalHKD / heroRate)))}`}>
+            {formatExact(Math.round(totalHKD / heroRate))}
           </div>
         </div>
         <div className="wallet-hero-stats">
           <div className="wallet-hero-stat">
             <span className="wallet-hero-stat-label">{t('可用')}</span>
-            <span className="wallet-hero-stat-value">{formatExact(totalAssetHKD / (currencyOptions.find(c => c.key === heroCurrency)?.rate || 1))}</span>
+            <span className="wallet-hero-stat-value">{formatExact(heroAvailable)}</span>
           </div>
           <div className="wallet-hero-stat">
             <span className="wallet-hero-stat-label">{t('冻结')}</span>
-            <span className="wallet-hero-stat-value">{formatExact(currentUser.account.frozen / (currencyOptions.find(c => c.key === heroCurrency)?.rate || 1))}</span>
+            <span className="wallet-hero-stat-value">{formatExact(heroFrozen)}</span>
           </div>
         </div>
       </div>
 
-      {/* 操作宫格：充值/提现/换汇/银行卡/资金申请/交易记录（六入口统一独立页交互，2026-08-19） */}
+      {/* 操作：充值 / 提现 / 资金申请（本期闭环所需的最小集合） */}
       <div className="wallet-actions-grid">
         <button className="wallet-action-item" onClick={() => navigate('#fund-operation/deposit')}>
           <Upload size={24} className="wallet-action-icon" />
@@ -94,38 +84,29 @@ export default function Wallet({ navigate, goBack }) {
           <Download size={24} className="wallet-action-icon" />
           <span className="wallet-action-label">{t('提现')}</span>
         </button>
-        <button className="wallet-action-item" onClick={() => navigate('#exchange')}>
-          <ArrowLeftRight size={24} className="wallet-action-icon" />
-          <span className="wallet-action-label">{t('换汇')}</span>
-        </button>
-        <button className="wallet-action-item" onClick={() => navigate('#bank-cards')}>
-          <CreditCard size={24} className="wallet-action-icon" />
-          <span className="wallet-action-label">{t('银行卡')}</span>
-        </button>
         <button className="wallet-action-item" onClick={() => navigate('#fund-requests')}>
           <ClipboardList size={24} className="wallet-action-icon" />
           <span className="wallet-action-label">{t('资金申请')}</span>
         </button>
-        <button className="wallet-action-item" onClick={() => navigate('#transactions')}>
-          <History size={24} className="wallet-action-icon" />
-          <span className="wallet-action-label">{t('交易记录')}</span>
-        </button>
       </div>
 
-      {/* 币种余额：纵向全宽卡片列表（数量无关，币种多时自然堆叠；2026-08-19） */}
+      {/* 币种余额 */}
       <div className="card">
         <h3 className="card-title">{t('币种余额')}</h3>
         <div className="wallet-balance-list">
-          {currencyOptions.map(currency => {
-            const curWallet = wallet[currency.key];
-            if (!curWallet) return null;
-
+          {CURRENCIES.map(currency => {
+            const acc = wallet[currency.walletKey];
+            if (!acc) return null;
+            const frozen = getFundFrozen(undefined, currency.code);
             return (
-              <div key={currency.key} className="wallet-balance-item">
-                <span className="wallet-balance-card-label">{currency.label}</span>
-                <span className={`wallet-balance-item-amount ${balanceAmountSize(longAmountRank(formatExact(curWallet.balance)))}`}>
-                  {formatExact(curWallet.balance)}
+              <div key={currency.code} className="wallet-balance-item">
+                <span className="wallet-balance-card-label">{currency.code} · {t(currency.label)}</span>
+                <span className={`wallet-balance-item-amount ${balanceAmountSize(longAmountRank(formatExact(acc.balance)))}`}>
+                  {formatExact(acc.balance)}
                 </span>
+                {frozen > 0 && (
+                  <span className="text-muted text-xs">{t('冻结')} {formatExact(frozen)}</span>
+                )}
               </div>
             );
           })}

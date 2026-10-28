@@ -7423,3 +7423,149 @@ input, select, textarea {
   color: var(--text-secondary);
   font-size: var(--text-md);
 }
+
+/* ===== 基金模块富途式改版（2026-10-28）===== */
+/* 列表页：自营/代售页签 + 类型 chips */
+.fund-source-tabs { margin-top: var(--space-2); }
+
+.fund-type-chips { margin-bottom: var(--space-3); }
+.fund-type-chips .chip { min-height: 36px; padding: var(--space-2) var(--space-4); }
+
+/* 来源徽章：自营=品牌实底 / 代售=描边中性 */
+.fund-source-badge {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  line-height: 1.5;
+}
+.fund-source-badge.self { background: var(--primary); color: #fff; }
+.fund-source-badge.external { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
+
+/* 富途式卡片：收益大数字 + 迷你净值曲线 */
+.fund-card { margin-bottom: var(--space-4); }
+.fund-card h3 { margin: var(--space-3) 0 var(--space-2); }
+
+.fund-spark-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin: var(--space-2) 0 var(--space-3);
+}
+.fund-return { display: flex; flex-direction: column; gap: 2px; }
+.fund-return-label { font-size: var(--text-xs); color: var(--text-tertiary); }
+.fund-return-value {
+  font-size: var(--text-display-sm);
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+.fund-return-hero { margin: var(--space-2) 0 var(--space-3); }
+.fund-return-hero .fund-return-value { font-size: var(--text-display-md); }
+.fund-spark { width: 104px; height: 32px; flex-shrink: 0; }
+
+.fund-card-note { margin-top: var(--space-2); }
+
+/* 详情页：业绩正值色（沿用涨跌色标后位覆盖） */
+.fund-metric-value.fund-perf-pos { color: var(--success); }
+.fund-metrics + .fund-metrics { border-top: none; }
+
+/* 净值走势图（内联 SVG，零依赖） */
+.nav-chart-head { display: flex; align-items: baseline; gap: var(--space-2); margin-bottom: var(--space-2); }
+.nav-chart-ret { font-size: var(--text-2xl); font-weight: 700; }
+.nav-chart-ret.pos { color: var(--success); }
+.nav-chart-ret.neg { color: var(--danger); }
+.nav-chart-svg { width: 100%; height: 132px; display: block; }
+.nav-chart-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--space-2);
+}
+.nav-chart-end { font-size: var(--text-sm); font-weight: 600; }
+.nav-pills { display: flex; gap: var(--space-2); }
+.nav-pills button {
+  font-size: var(--text-xs);
+  padding: 4px 10px;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  background: transparent;
+  transition: all 0.2s;
+}
+.nav-pills button.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.nav-chart-note { margin-top: var(--space-2); }
+
+/* 管理人区块：自营（品牌）/代售（警示色披露） */
+.fund-manager-block {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  margin-bottom: var(--space-3);
+}
+.fund-manager-block.self svg { color: var(--primary); flex-shrink: 0; }
+.fund-manager-block.external svg { color: var(--warning); flex-shrink: 0; }
+.fund-manager-name { font-weight: 600; }
+
+/* ========== 基金一期闭环（2026-10-28）：资产只读聚合 + 我的申购 ========== */
+.text-xs { font-size: var(--text-xs); }
+
+.asset-holding-shares { margin-left: var(--space-1); }
+
+.asset-cash-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border-light);
+}
+.asset-cash-row:last-child { border-bottom: none; }
+.asset-cash-label {
+  width: 48px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.asset-cash-value {
+  flex: 1;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.fund-order-card { padding: var(--space-4); }
+.fund-order-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+.fund-order-name { font-weight: 600; }
+.fund-order-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.fund-order-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.fund-order-row strong { color: var(--text); font-variant-numeric: tabular-nums; }
+.fund-order-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-light);
+}

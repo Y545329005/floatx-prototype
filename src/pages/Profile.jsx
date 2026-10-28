@@ -9,6 +9,7 @@ export default function Profile({ navigate, setIsLoggedIn }) {
   // 2026-09-11 定向通知后：未读计数只统计当前用户可见通知（全员 + 发给当前用户）
   const unreadCount = notifications.filter(n => !n.toUserId || n.toUserId === currentUser.id).filter(n => !n.read).length;
   // 2026-10-16 首期裁剪：合规报告入口摘除（#reports 随资产树下线）；消息通知副标题去申购/资金口径
+  // 2026-10-28：基金结单入口迁至「资产」Tab（钱的事在资产，人的事在我的——避免两处入口分叉）
   const menuItems = [
     { icon: Bell, label: t('消息通知'), sub: t('问卷 · 路演动态'), hash: '#notifications', badge: unreadCount },
     { icon: Settings, label: t('账户设置'), sub: t('个人信息 · 认证 · 安全'), hash: '#settings' },

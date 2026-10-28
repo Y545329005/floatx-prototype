@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { clickable } from '../lib';
 import { ArrowLeft, Upload } from 'lucide-react';
-import { depositRequests, withdrawRequests, exchangeRequests, wallet, formatCurrency, submitDepositEvidence, getEvidencePreview } from '../mock/data';
+import { depositRequests, withdrawRequests, exchangeRequests, walletAccountOf, formatCurrency, submitDepositEvidence, getEvidencePreview } from '../mock/data';
 import { useLang } from '../i18n';
 import ImageLightbox from '../components/ImageLightbox';
 
@@ -55,7 +55,7 @@ export default function FundRequestDetail({ id, navigate, goBack }) {
 
   const isDeposit = req.kind === 'deposit';
   const isExchange = req.kind === 'exchange';
-  const symbol = (wallet[String(req.currency || '').toLowerCase()] || {}).symbol || '';
+  const symbol = walletAccountOf(req.currency)?.symbol || '';
 
   // 补传凭证：选择文件 → submitDepositEvidence → 强制刷新（异常态 requires_evidence 专用）
   const handleEvidenceFile = (e) => {

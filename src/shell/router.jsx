@@ -30,6 +30,19 @@ const KYCAddressProof = lazy(() => import('../pages/KYCAddressProof'));
 const KYCSubmitted = lazy(() => import('../pages/KYCSubmitted'));
 const KYCPI = lazy(() => import('../pages/KYCPI'));
 const PISubmitted = lazy(() => import('../pages/PISubmitted'));
+// 一期基金（线下收款 + 人工确认 + 结单）
+const Funds = lazy(() => import('../pages/Funds'));
+const FundDetail = lazy(() => import('../pages/FundDetail'));
+const FundSubscribe = lazy(() => import('../pages/FundSubscribe'));
+const FundStatements = lazy(() => import('../pages/FundStatements'));
+const FundStatementDetail = lazy(() => import('../pages/FundStatementDetail'));
+const FundOrders = lazy(() => import('../pages/FundOrders'));
+// 资产 / 资金（2026-10-28 一期闭环恢复：资产只读聚合 + 资金公共模块最小 4 条路由）
+const AssetOverview = lazy(() => import('../pages/AssetOverview'));
+const Wallet = lazy(() => import('../pages/Wallet'));
+const FundOperation = lazy(() => import('../pages/FundOperation'));
+const FundRequests = lazy(() => import('../pages/FundRequests'));
+const FundRequestDetail = lazy(() => import('../pages/FundRequestDetail'));
 
 // 渲染 APP 端页面（门控放行后调用）。
 // ctx: { navigate, goBack, setToast, isLoggedIn, setIsLoggedIn, embed }
@@ -51,6 +64,32 @@ export function renderAppPage(path, param, ctx) {
       return <EventDetail id={param} navigate={navigate} goBack={goBack} setToast={setToast} />;
     case 'my-subscription':
       return <MySubscription id={param} navigate={navigate} goBack={goBack} />;
+    // 一期基金
+    case 'funds':
+      return <Funds navigate={navigate} goBack={goBack} setToast={setToast} />;
+    case 'fund':
+      return <FundDetail id={param} navigate={navigate} goBack={goBack} setToast={setToast} />;
+    case 'fund-subscribe':
+      return <FundSubscribe id={param} navigate={navigate} goBack={goBack} setToast={setToast} />;
+    case 'fund-statements':
+      return <FundStatements navigate={navigate} goBack={goBack} />;
+    case 'fund-statement':
+      return <FundStatementDetail id={param} navigate={navigate} goBack={goBack} />;
+    case 'fund-orders':
+      return <FundOrders navigate={navigate} goBack={goBack} setToast={setToast} />;
+    // 资产 / 资金公共模块（2026-10-28 恢复；只接最小 4 条资金路由，
+    // 换汇 exchange / 银行卡 bank-cards / 交易流水 transactions 仍未接线——
+    // Wallet 页已同步摘除这三个入口，避免命中 default 静默渲染资讯页）
+    case 'asset':
+      return <AssetOverview navigate={navigate} goBack={goBack} />;
+    case 'wallet':
+      return <Wallet navigate={navigate} goBack={goBack} />;
+    case 'fund-operation':
+      return <FundOperation mode={param || 'deposit'} navigate={navigate} goBack={goBack} />;
+    case 'fund-requests':
+      return <FundRequests navigate={navigate} goBack={goBack} />;
+    case 'fund-request':
+      return <FundRequestDetail id={param} navigate={navigate} goBack={goBack} />;
     // 2026-10-16 首期裁剪：资产树 13 路由摘除（wallet/transactions/fund-requests/fund-request/
     // fund-operation/holdings/assets/asset-trend/exchange/bank-cards/funds/reports/spv-sign）——
     // 命中即落 default 分支（资讯页）。

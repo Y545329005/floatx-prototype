@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { clickable } from '../lib';
 import { ArrowLeft, Clock, ChevronRight, ChevronDown, Check } from 'lucide-react';
-import { depositRequests, withdrawRequests, exchangeRequests, currentUser, wallet, formatCurrency } from '../mock/data';
+import { depositRequests, withdrawRequests, exchangeRequests, currentUser, walletAccountOf, formatCurrency } from '../mock/data';
 import { useLang } from '../i18n';
 
 // 投资人资金申请页（2026-08-18：充值/提现申请独立成页，对齐交易记录页心智）
@@ -144,7 +144,7 @@ export default function FundRequests({ navigate, goBack }) {
               ) : (
                 <span className="fund-request-amount">
                   {r.kind === 'deposit' ? '+' : '-'}
-                  {wallet[String(r.currency || '').toLowerCase()]?.symbol || ''}{formatCurrency(r.amount)}
+                  {walletAccountOf(r.currency)?.symbol || ''}{formatCurrency(r.amount)}
                 </span>
               )}
               <ChevronRight size={16} className="wallet-request-chevron" />
