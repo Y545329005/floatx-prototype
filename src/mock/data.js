@@ -752,9 +752,13 @@ export const funds = [
     lockPeriod: '24个月',
     minHoldPeriod: '12个月',
     redemptionPeriod: 'T+15（人工处理）',
+    lockMonths: 24,        // 锁定期（月）——逻辑唯一来源；lockPeriod 仅用于展示
+    minHoldMonths: 12,      // 最低持有期（月）
+    termMonths: 36,        // 存续期（月）
     inceptionDate: '2024-06',
     fundSize: 'HK$ 2.4亿',
-    navSeries: makeNavSeries(101, 15.3),
+    navSeries: makeNavSeries(101, 15.3, 120),   // 120 周 ≈ 2.3 年：需覆盖种子持仓（26 个月前），
+                                              // 否则确认日早于序列起点、净值只能 clamp 到首点
     manager: 'HighBlock Asset Management',
     managerNote: '',
     description: '聚焦人工智能、数据中心及算力基础设施等AI产业链投资机会。',
@@ -782,6 +786,9 @@ export const funds = [
     lockPeriod: '12个月',
     minHoldPeriod: '6个月',
     redemptionPeriod: 'T+20（人工处理）',
+    lockMonths: 12,        // 锁定期（月）——逻辑唯一来源；lockPeriod 仅用于展示
+    minHoldMonths: 6,      // 最低持有期（月）
+    termMonths: 24,        // 存续期（月）
     inceptionDate: '2024-09',
     fundSize: 'HK$ 3.8亿',
     navSeries: makeNavSeries(202, 11.2),
@@ -812,6 +819,9 @@ export const funds = [
     lockPeriod: '6个月',
     minHoldPeriod: '3个月',
     redemptionPeriod: 'T+10（人工处理）',
+    lockMonths: 6,        // 锁定期（月）——逻辑唯一来源；lockPeriod 仅用于展示
+    minHoldMonths: 3,      // 最低持有期（月）
+    termMonths: 12,        // 存续期（月）
     inceptionDate: '2025-06',
     fundSize: 'HK$ 1.2亿',
     navSeries: makeNavSeries(303, 10.4),
@@ -842,6 +852,9 @@ export const funds = [
     lockPeriod: '12个月',
     minHoldPeriod: '6个月',
     redemptionPeriod: 'T+20（人工处理）',
+    lockMonths: 12,        // 锁定期（月）——逻辑唯一来源；lockPeriod 仅用于展示
+    minHoldMonths: 6,      // 最低持有期（月）
+    termMonths: 18,        // 存续期（月）
     inceptionDate: '2024-11',
     fundSize: 'HK$ 5.1亿',
     navSeries: makeNavSeries(404, 9.8),
@@ -948,16 +961,31 @@ function weeksAgoStamp(weeks) {
   return `${weeksAgoDate(weeks)} 10:00:00`;
 }
 
+// 月粒度日期（种子持仓与锁定期都按月计）
+function monthsAgoDate(months) {
+  const d = new Date();
+  d.setMonth(d.getMonth() - months);
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+function monthsAgoStamp(months) {
+  return `${monthsAgoDate(months)} 10:00:00`;
+}
+
 // 演示种子：u1 于 26 周前确认一笔 AIDC 申购。
 // 没有这笔历史单，新买入按当日净值计价 → 收益恒为 0，资产页的收益区就是个死数字。
-const FUND_SEED = { userId: 'u1', fundId: 'f1', amount: 1000000, weeksAgo: 26 };
+// 种子持仓的年龄决定「赎回能不能演示」：锁定期 24 个月，26 周（6 个月）时整笔都锁着。
+// 取 26 个月而不是 30 个月，是因为 AIDC 成立日 2024-06——30 个月前落在成立前，数据自相矛盾。
+const FUND_SEED = { userId: 'u1', fundId: 'f1', amount: 1000000, monthsAgo: 26 };
 (function seedFundPortfolio() {
   const fund = funds.find(f => f.id === FUND_SEED.fundId);
   if (!fund) return;
-  const nav = navWeeksAgo(fund, FUND_SEED.weeksAgo);
+  const seedWeeks = Math.round(FUND_SEED.monthsAgo * 30.44 / 7);   // 26 个月 ≈ 113 周
+  const nav = navWeeksAgo(fund, seedWeeks);
   const feeAmount = Math.round(FUND_SEED.amount * FUND_FEE_RATE.subscribe);
   const shares = Math.round(((FUND_SEED.amount - feeAmount) / nav) * 10000) / 10000;
-  const confirmedAt = weeksAgoStamp(FUND_SEED.weeksAgo);
+  const confirmedAt = monthsAgoStamp(FUND_SEED.monthsAgo);
   const statementNo = genOrderNo('FS', confirmedAt);
 
   fundOrders.push({
@@ -972,7 +1000,7 @@ const FUND_SEED = { userId: 'u1', fundId: 'f1', amount: 1000000, weeksAgo: 26 };
     feeAmount,
     shares,
     nav,
-    navDate: weeksAgoDate(FUND_SEED.weeksAgo),
+    navDate: monthsAgoDate(FUND_SEED.monthsAgo),
     status: FUND_ORDER_STATUS.CONFIRMED,
     createdAt: confirmedAt,
     updatedAt: confirmedAt,
@@ -989,7 +1017,9 @@ const FUND_SEED = { userId: 'u1', fundId: 'f1', amount: 1000000, weeksAgo: 26 };
     fundName: fund.name,
     currency: 'HKD',
     shares,
-    frozenShares: 0,
+    frozenShares: 0,          // 赎回申请中的冻结份额
+    redeemedShares: 0,        // 已赎回累计份额（FIFO 消耗最早批次）
+    realizedPnl: 0,           // 已实现收益（累计净回款 − 对应成本）
     costAmount: FUND_SEED.amount,
     avgNav: FUND_SEED.amount / shares,
     firstConfirmedAt: confirmedAt,
@@ -1009,10 +1039,10 @@ const FUND_SEED = { userId: 'u1', fundId: 'f1', amount: 1000000, weeksAgo: 26 };
     feeAmount,
     shares,
     nav,
-    navDate: weeksAgoDate(FUND_SEED.weeksAgo),
+    navDate: monthsAgoDate(FUND_SEED.monthsAgo),
     statementNo,
     confirmedAt,
-    date: weeksAgoDate(FUND_SEED.weeksAgo),
+    date: monthsAgoDate(FUND_SEED.monthsAgo),
   });
 })();
 
@@ -1154,6 +1184,208 @@ export function confirmFundOrder(orderId, { nav = null, operator = '运营专员
   return { ok: true, order, statement };
 }
 
+// ========== 赎回（2026-10-28 P2） ==========
+// 锁定期是「份额级」不是「持仓级」：同一只基金可能既有 26 个月前买的（已解锁）又有今天买的（锁定中）。
+// 按持仓判断会把新买的也放出去——所以可赎份额一律从「已确认申购单」派生；
+// FIFO 假设下已赎回先消耗最早的批次，因此
+//   可赎 = 已解锁总额 − 已赎回 − 赎回冻结
+function monthsSince(dateStr, now = new Date()) {
+  const d = new Date(String(dateStr || '').replace(' ', 'T'));
+  if (Number.isNaN(d.getTime())) return 0;
+  return (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
+}
+
+function addMonths(dateStr, months) {
+  const d = new Date(String(dateStr || '').replace(' ', 'T'));
+  if (Number.isNaN(d.getTime())) return null;
+  d.setMonth(d.getMonth() + months);
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+const round4 = v => Math.round(v * 10000) / 10000;
+const round2 = v => Math.round(v * 100) / 100;
+
+// 持仓的可赎口径（同时供 UI 文案：可赎 X 份 / 另有 N 份锁定至 YYYY-MM）
+export function getHoldingRedeemInfo(holding) {
+  const empty = { redeemable: 0, locked: 0, lockMonths: 0, earliestUnlock: null };
+  if (!holding) return empty;
+  const fund = funds.find(f => f.id === holding.fundId);
+  const lockMonths = fund?.lockMonths ?? 0;
+  const buys = fundOrders.filter(o =>
+    o.userId === holding.userId
+    && o.fundId === holding.fundId
+    && o.currency === holding.currency
+    && o.type === 'subscribe'
+    && o.status === FUND_ORDER_STATUS.CONFIRMED);
+
+  const unlockedTotal = lockMonths <= 0
+    ? buys.reduce((s, o) => s + (o.shares || 0), 0)
+    : buys.filter(o => monthsSince(o.confirmedAt) >= lockMonths).reduce((s, o) => s + (o.shares || 0), 0);
+
+  const unlockedRemaining = Math.max(0, unlockedTotal - (holding.redeemedShares || 0));
+  const redeemable = Math.max(0, Math.min(holding.shares || 0, unlockedRemaining - (holding.frozenShares || 0)));
+  // 锁定中的份额 = 持仓总量 − 已解锁剩余（冻结份额属于已解锁，不重复计入）
+  const locked = Math.max(0, Math.min(holding.shares || 0, (holding.shares || 0) - unlockedRemaining));
+  const earliestUnlock = lockMonths > 0
+    ? buys
+      .filter(o => monthsSince(o.confirmedAt) < lockMonths)
+      .map(o => addMonths(o.confirmedAt, lockMonths))
+      .filter(Boolean)
+      .sort()[0] || null
+    : null;
+
+  return { redeemable: round4(redeemable), locked: round4(locked), lockMonths, earliestUnlock };
+}
+
+export function getHolding(holdingId, userId = currentUser.id) {
+  return fundHoldings.find(h => h.id === holdingId && h.userId === userId) || null;
+}
+
+export function getHoldings(userId = currentUser.id) {
+  return fundHoldings.filter(h => h.userId === userId && h.shares > 0);
+}
+
+// 提交赎回：冻结份额（不扣），确认才扣 + 回款。允许部分赎回，不设最低门槛
+// ——「最低 1,000 份」这类规则没有业务依据，只会给校验加分支（2026-10-28 对抗性审查结论）。
+export function submitRedemptionOrder({ holdingId, shares }) {
+  const holding = getHolding(holdingId);
+  if (!holding) return { ok: false, error: '持仓不存在' };
+  const fund = funds.find(f => f.id === holding.fundId);
+  if (!fund) return { ok: false, error: '基金不存在' };
+  const n = Number(shares);
+  if (!Number.isFinite(n) || n <= 0) return { ok: false, error: '请输入有效份额' };
+  if (round4(n) !== n) return { ok: false, error: '份额最多 4 位小数' };
+  const info = getHoldingRedeemInfo(holding);
+  if (info.redeemable <= 0) return { ok: false, error: '当前无可赎回份额（锁定期内）' };
+  if (n > info.redeemable) return { ok: false, error: `超过可赎回份额（上限 ${formatExact(info.redeemable)} 份）` };
+
+  const now = formatNow();
+  const nav = latestNav(fund);
+  const order = {
+    id: `fo${Date.now()}`,
+    type: 'redeem',
+    fundId: fund.id,
+    fundName: fund.name,
+    userId: holding.userId,
+    holdingId: holding.id,
+    currency: holding.currency,
+    shares: n,
+    nav,                       // 提交时参考净值；确认时按确认日净值重算
+    amount: round2(n * nav),   // 预估回款（确认后以 order.netAmount 为准）
+    feeRate: FUND_FEE_RATE.redeem,
+    status: FUND_ORDER_STATUS.PENDING,
+    createdAt: now,
+    updatedAt: now,
+    history: [{ type: 'submitted', timestamp: now, actor: 'user', note: `提交赎回申请（冻结 ${n} 份）` }],
+  };
+  holding.frozenShares = round4((holding.frozenShares || 0) + n);
+  holding.updatedAt = now;
+  fundOrders.unshift(order);
+  pushNotification({
+    type: 'fund',
+    title: '赎回申请已提交',
+    body: `${fund.name} 赎回 ${formatExact(n)} 份已提交，财务确认后回款至可用余额。`,
+  }, holding.userId);
+  Storage.save();
+  return { ok: true, order };
+}
+
+// 后台确认赎回：扣份额 → 按比例冲减成本 → 记已实现收益 → 回款到钱包 → 出结单
+export function confirmRedemptionOrder(orderId, { nav = null, operator = '运营专员' } = {}) {
+  const order = fundOrders.find(o => o.id === orderId && o.type === 'redeem');
+  if (!order) return { ok: false, error: '单据不存在' };
+  if (order.status !== FUND_ORDER_STATUS.PENDING) return { ok: false, error: '单据状态已变更，请刷新' };
+  const holding = fundHoldings.find(h =>
+    h.userId === order.userId && h.fundId === order.fundId && h.currency === order.currency);
+  if (!holding) return { ok: false, error: '持仓不存在' };
+  const shares = Number(order.shares) || 0;
+  if (shares <= 0) return { ok: false, error: '份额异常，无法确认' };
+  // 确认前重校验：期间可能已撤销/驳回，冻结份额不足说明单据已过期
+  if ((holding.frozenShares || 0) + 0.00005 < shares) return { ok: false, error: '冻结份额不足，请刷新后重试' };
+  if ((holding.shares || 0) + 0.00005 < shares) return { ok: false, error: '持仓份额不足，请刷新后重试' };
+
+  const fund = funds.find(f => f.id === order.fundId);
+  const confirmNav = Number(nav) > 0 ? Number(nav) : latestNav(fund);
+  if (!(confirmNav > 0)) return { ok: false, error: '净值异常，无法计算回款' };
+
+  const gross = round2(shares * confirmNav);
+  const feeAmount = round2(gross * (order.feeRate ?? FUND_FEE_RATE.redeem));
+  const netAmount = round2(gross - feeAmount);
+  // 先入账再改持仓：记账失败就不该动份额（否则钱和份额两边都不对）
+  const moved = applyWalletDelta(order.userId, order.currency, netAmount);
+  if (!moved.ok) return { ok: false, error: '回款记账失败' };
+
+  const now = formatNow();
+  const costOut = round2(shares * (holding.avgNav || 0));
+  holding.frozenShares = Math.max(0, round4((holding.frozenShares || 0) - shares));
+  holding.shares = Math.max(0, round4((holding.shares || 0) - shares));
+  holding.redeemedShares = round4((holding.redeemedShares || 0) + shares);
+  holding.costAmount = Math.max(0, round2((holding.costAmount || 0) - costOut));
+  holding.realizedPnl = round2((holding.realizedPnl || 0) + (netAmount - costOut));
+  holding.avgNav = holding.shares > 0 ? holding.costAmount / holding.shares : (holding.avgNav || 0);
+  holding.updatedAt = now;
+  if (moved.self) updateLatestTotal(toHkd(order.currency, netAmount));
+
+  order.status = FUND_ORDER_STATUS.CONFIRMED;
+  order.nav = confirmNav;
+  order.navDate = now.slice(0, 10);
+  order.grossAmount = gross;
+  order.feeAmount = feeAmount;
+  order.netAmount = netAmount;
+  order.confirmedAt = now;
+  order.confirmedBy = operator;
+  order.updatedAt = now;
+  order.history = [...(order.history || []), {
+    type: 'confirmed', timestamp: now, actor: operator,
+    note: `确认赎回 ${shares} 份 @ ${confirmNav} → 回款 ${order.currency} ${formatExact(netAmount)}`,
+  }];
+
+  const statement = {
+    id: `fst${Date.now()}`,
+    orderId: order.id,
+    userId: order.userId,
+    fundId: order.fundId,
+    fundName: order.fundName,
+    type: 'trade',
+    tradeType: '赎回',
+    currency: order.currency,
+    amount: netAmount,
+    grossAmount: gross,
+    feeAmount,
+    shares,
+    nav: confirmNav,
+    navDate: order.navDate,
+    statementNo: genOrderNo('FS', now),
+    confirmedAt: now,
+    date: now.slice(0, 10),
+  };
+  order.statementId = statement.id;
+  fundStatements.unshift(statement);
+
+  logAudit({
+    operator, category: 'fund', action: '确认基金赎回', target: order.fundName, targetId: order.id,
+    note: `${shares} 份 @ ${confirmNav} → 回款 ${order.currency} ${formatExact(netAmount)}`,
+  });
+  pushNotification({
+    type: 'fund',
+    title: '赎回已确认',
+    body: `${order.fundName} 赎回 ${formatExact(shares)} 份已确认，回款 ${order.currency} ${formatExact(netAmount)} 已进入可用余额。`,
+  }, order.userId);
+  Storage.save();
+  return { ok: true, order, statement };
+}
+
+// 释放赎回冻结（驳回 / 撤销共用）
+function releaseRedemptionFreeze(order) {
+  if (!order || order.type !== 'redeem') return;
+  const holding = fundHoldings.find(h =>
+    h.userId === order.userId && h.fundId === order.fundId && h.currency === order.currency);
+  if (!holding) return;
+  holding.frozenShares = Math.max(0, round4((holding.frozenShares || 0) - (order.shares || 0)));
+  holding.updatedAt = formatNow();
+}
+
 export function rejectFundOrder(orderId, reason = '', operator = '运营专员') {
   const order = fundOrders.find(o => o.id === orderId);
   if (!order) return { ok: false, error: '单据不存在' };
@@ -1164,8 +1396,14 @@ export function rejectFundOrder(orderId, reason = '', operator = '运营专员')
   order.confirmedBy = operator;
   order.updatedAt = now;
   order.history = [...(order.history || []), { type: 'rejected', timestamp: now, actor: operator, note: reason || '驳回' }];
-  logAudit({ operator, category: 'fund', action: '驳回基金申购', target: order.fundName, targetId: order.id, note: reason });
-  pushNotification({ type: 'fund', title: '申购未通过', body: `${order.fundName} 申购申请未通过${reason ? `：${reason}` : ''}。` }, order.userId);
+  releaseRedemptionFreeze(order);
+  const isRedeem = order.type === 'redeem';
+  logAudit({ operator, category: 'fund', action: isRedeem ? '驳回基金赎回' : '驳回基金申购', target: order.fundName, targetId: order.id, note: reason });
+  pushNotification({
+    type: 'fund',
+    title: isRedeem ? '赎回未通过' : '申购未通过',
+    body: `${order.fundName} ${isRedeem ? '赎回' : '申购'}申请未通过${reason ? `：${reason}` : ''}。`,
+  }, order.userId);
   Storage.save();
   return { ok: true, order };
 }
@@ -1179,6 +1417,7 @@ export function cancelFundOrder(orderId, userId = currentUser.id) {
   order.status = FUND_ORDER_STATUS.CANCELLED;
   order.updatedAt = now;
   order.history = [...(order.history || []), { type: 'cancelled', timestamp: now, actor: 'user', note: '用户撤销' }];
+  releaseRedemptionFreeze(order);
   Storage.save();
   return { ok: true, order };
 }
@@ -1201,15 +1440,21 @@ export function getFundPortfolio(userId = currentUser.id) {
     .map(h => {
       const fund = funds.find(f => f.id === h.fundId);
       const nav = latestNav(fund);
+      // 在途赎回份额仍计入市值：提交只冻结份额、钱还没到账，剔除会让总资产在提交瞬间掉一块
       const marketValue = h.shares * nav;
-      const pnl = marketValue - h.costAmount;
+      const unrealized = marketValue - h.costAmount;
+      const realized = h.realizedPnl || 0;
+      const pnl = unrealized + realized;
       return {
         ...h,
         fundName: h.fundName || fund?.name || h.fundId,
         nav,
         marketValue,
+        unrealizedPnl: unrealized,
+        realizedPnl: realized,
         pnl,
-        pnlPct: h.costAmount > 0 ? (pnl / h.costAmount) * 100 : 0,
+        pnlPct: h.costAmount > 0 ? (unrealized / h.costAmount) * 100 : 0,
+        redeemInfo: getHoldingRedeemInfo(h),
       };
     });
 
@@ -1229,7 +1474,10 @@ export function getFundPortfolio(userId = currentUser.id) {
   const frozenHKD = cash.reduce((s, c) => s + convertToHKD(c.frozen, c.currency), 0);
   const marketValueHKD = rows.reduce((s, r) => s + convertToHKD(r.marketValue, r.currency), 0);
   const costHKD = rows.reduce((s, r) => s + convertToHKD(r.costAmount, r.currency), 0);
-  const pnlHKD = marketValueHKD - costHKD;
+  const realizedHKD = rows.reduce((s, r) => s + convertToHKD(r.realizedPnl || 0, r.currency), 0);
+  const pnlHKD = (marketValueHKD - costHKD) + realizedHKD;
+  const pendingRedeemShares = rows.reduce((s, r) => s + (r.frozenShares || 0), 0);
+  const pendingRedeemHKD = rows.reduce((s, r) => s + convertToHKD((r.frozenShares || 0) * r.nav, r.currency), 0);
 
   return {
     rows,
@@ -1239,8 +1487,11 @@ export function getFundPortfolio(userId = currentUser.id) {
     cashHKD: availableHKD + frozenHKD,
     marketValueHKD,
     costHKD,
+    realizedHKD,
+    pendingRedeemShares,
+    pendingRedeemHKD,
     pnlHKD,
-    pnlPct: costHKD > 0 ? (pnlHKD / costHKD) * 100 : 0,
+    pnlPct: costHKD > 0 ? ((marketValueHKD - costHKD) / costHKD) * 100 : 0,
     totalHKD: availableHKD + frozenHKD + marketValueHKD,
   };
 }
@@ -7651,16 +7902,21 @@ export const Storage = {
         holdings.length = 0;
         data.holdings.forEach(h => holdings.push(h));
       }
-      // 基金一期实体（2026-10-28）：旧快照无这三个 key → 保持 mock 种子值
-      if (Array.isArray(data.fundOrders)) {
+      // 基金实体（2026-10-28 一期 + P2）：旧快照无这些 key → 保持 mock 种子值。
+      // P2 的迁移判据是 holding.redeemedShares 缺失：那时持仓是「26 周前确认」的口径，
+      // 而赎回要求锁定期（24 个月）已过，旧种子会永远显示「锁定期至 2028-04」——
+      // 直接跳过旧快照、回到模块种子（26 个月前），演示才走得通。
+      const legacyFundSnapshot = Array.isArray(data.fundHoldings)
+        && data.fundHoldings.some(h => h.redeemedShares === undefined);
+      if (Array.isArray(data.fundOrders) && !legacyFundSnapshot) {
         fundOrders.length = 0;
         data.fundOrders.forEach(o => fundOrders.push(o));
       }
-      if (Array.isArray(data.fundHoldings)) {
+      if (Array.isArray(data.fundHoldings) && !legacyFundSnapshot) {
         fundHoldings.length = 0;
         data.fundHoldings.forEach(h => fundHoldings.push(h));
       }
-      if (Array.isArray(data.fundStatements)) {
+      if (Array.isArray(data.fundStatements) && !legacyFundSnapshot) {
         fundStatements.length = 0;
         data.fundStatements.forEach(s => fundStatements.push(s));
       }

@@ -34,6 +34,7 @@ const PISubmitted = lazy(() => import('../pages/PISubmitted'));
 const Funds = lazy(() => import('../pages/Funds'));
 const FundDetail = lazy(() => import('../pages/FundDetail'));
 const FundSubscribe = lazy(() => import('../pages/FundSubscribe'));
+const FundRedeem = lazy(() => import('../pages/FundRedeem'));
 const FundStatements = lazy(() => import('../pages/FundStatements'));
 const FundStatementDetail = lazy(() => import('../pages/FundStatementDetail'));
 const FundOrders = lazy(() => import('../pages/FundOrders'));
@@ -71,6 +72,10 @@ export function renderAppPage(path, param, ctx) {
       return <FundDetail id={param} navigate={navigate} goBack={goBack} setToast={setToast} />;
     case 'fund-subscribe':
       return <FundSubscribe id={param} navigate={navigate} goBack={goBack} setToast={setToast} />;
+    // 赎回申请（2026-10-28 P2）：param = holdingId，不是 fundId——
+    // 同一只基金可能多币种持仓，赎回对象必须是"那一笔持仓"
+    case 'fund-redeem':
+      return <FundRedeem id={param} navigate={navigate} goBack={goBack} setToast={setToast} />;
     case 'fund-statements':
       return <FundStatements navigate={navigate} goBack={goBack} />;
     case 'fund-statement':

@@ -1,6 +1,6 @@
 import { ArrowLeft, FileText, ChevronRight, Landmark, ShieldAlert } from 'lucide-react';
 import NavChart from '../components/NavChart';
-import { funds, getPiStatusForUser, PI_STATUS, currentUser, fundRangeReturns } from '../mock/data';
+import { funds, getPiStatusForUser, PI_STATUS, currentUser, fundRangeReturns, getHoldings, getHoldingRedeemInfo, formatExact } from '../mock/data';
 import { useLang } from '../i18n';
 
 // 基金详情（2026-10-28 富途式改版）：Hero 收益大数字+业绩网格 → 净值走势 → 基金档案
@@ -13,6 +13,9 @@ export default function FundDetail({ id, navigate, goBack, setToast }) {
   const pi = getPiStatusForUser(currentUser.id);
   const canSubscribe = pi === PI_STATUS.APPROVED && fund.openForSubscription;
   const isSelf = fund.source === 'self';
+  // 赎回入口只认「有没有持仓」，与 PI / 申购开放状态无关——PI 过期不该锁住卖出
+  const holding = getHoldings().find(h => h.fundId === fund.id) || null;
+  const redeemInfo = holding ? getHoldingRedeemInfo(holding) : null;
   const ranges = fundRangeReturns(fund.navSeries);
 
   const openLegal = (type) => {
@@ -127,6 +130,13 @@ export default function FundDetail({ id, navigate, goBack, setToast }) {
             <span className="fund-metric-value">{t(fund.redemptionPeriod || '-')}</span>
           </div>
         </div>
+        {holding && redeemInfo && (
+          <p className="text-sm text-muted fund-redeem-hint">
+            {redeemInfo.redeemable > 0
+              ? `${t('我的可赎回份额')}：${formatExact(redeemInfo.redeemable)} ${t('份')}${redeemInfo.locked > 0 ? ` · ${t('另有')} ${formatExact(redeemInfo.locked)} ${t('份锁定期内')}` : ''}`
+              : `${t('暂无解锁份额')}${redeemInfo.earliestUnlock ? ` · ${t('最近解锁')} ${redeemInfo.earliestUnlock}` : ''}`}
+          </p>
+        )}
       </div>
 
       <div className="card">
@@ -149,14 +159,24 @@ export default function FundDetail({ id, navigate, goBack, setToast }) {
       </div>
 
       <div className="bottom-action-bar">
-        {!canSubscribe && (
-          <button className="btn btn-outline btn-full" onClick={() => navigate('#kyc-pi')}>
-            {pi === PI_STATUS.PENDING_REVIEW ? t('PI 认证审核中') : t('需完成 PI 认证方可申购')}
+        {holding && redeemInfo.redeemable > 0 && (
+          <button className="btn btn-outline btn-full" onClick={() => navigate(`#fund-redeem/${holding.id}`)}>
+            {t('赎回')}
+          </button>
+        )}
+        {holding && redeemInfo.redeemable <= 0 && (
+          <button className="btn btn-outline btn-full" disabled title={t('锁定期内不可赎回')}>
+            {redeemInfo.earliestUnlock ? `${t('锁定期至')} ${redeemInfo.earliestUnlock}` : t('暂无可赎回份额')}
           </button>
         )}
         {canSubscribe && (
           <button className="btn btn-primary btn-full" onClick={() => navigate(`#fund-subscribe/${fund.id}`)}>
             {t('申购申请')}
+          </button>
+        )}
+        {!canSubscribe && !holding && (
+          <button className="btn btn-outline btn-full" onClick={() => navigate('#kyc-pi')}>
+            {pi === PI_STATUS.PENDING_REVIEW ? t('PI 认证审核中') : t('需完成 PI 认证方可申购')}
           </button>
         )}
       </div>

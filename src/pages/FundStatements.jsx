@@ -26,8 +26,11 @@ export default function FundStatements({ navigate, goBack }) {
           <div className="list-item">
             <div className="list-item-icon"><FileText size={18} /></div>
             <div className="list-item-content">
-              <div className="list-item-title">{s.type === 'monthly' ? t('月结单') : t('逐笔结单')} · {s.period || s.date}</div>
-              <div className="list-item-subtitle">{s.fundName} {s.currency} {s.amount?.toLocaleString()}</div>
+              <div className="list-item-title">
+                {s.type === 'monthly' ? t('月结单') : t('逐笔结单')} · {s.period || s.date}
+                {s.tradeType && <span className="tag tag-outline fund-order-type">{t(s.tradeType)}</span>}
+              </div>
+              <div className="list-item-subtitle">{t(s.fundName)} {s.currency} {s.amount?.toLocaleString()}</div>
             </div>
             <ChevronRight size={18} />
           </div>

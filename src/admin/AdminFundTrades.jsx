@@ -2,9 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { X, CheckCircle, XCircle, Search } from 'lucide-react';
 import {
   fundOrders,
+  fundHoldings,
   funds,
   getInvestorUsers,
   confirmFundOrder,
+  confirmRedemptionOrder,
   rejectFundOrder,
   latestNav,
   FUND_ORDER_STATUS,
@@ -35,6 +37,9 @@ const FILTERS = [
 export default function AdminFundTrades({ admin, detailId, navigate }) {
   const [tick, setTick] = useState(0);
   const [filter, setFilter] = useState(FUND_ORDER_STATUS.PENDING);
+  // 类型分栏（2026-10-28 P2）：申购与赎回同属基金单据，但列语义不同
+  // （申购看金额、赎回看份额×净值），混在一张表里同一列会有两种意思，所以分两栏、各自成表
+  const [typeTab, setTypeTab] = useState('subscribe');
   const [keyword, setKeyword] = useState('');
   const [navInput, setNavInput] = useState('');
   const [rejectOpen, setRejectOpen] = useState(false);
@@ -51,6 +56,7 @@ export default function AdminFundTrades({ admin, detailId, navigate }) {
   const list = useMemo(() => {
     const kw = keyword.trim();
     return fundOrders
+      .filter(o => o.type === typeTab)
       .filter(o => (filter === 'all' ? true : o.status === filter))
       .filter(o => {
         if (!kw) return true;
@@ -61,7 +67,7 @@ export default function AdminFundTrades({ admin, detailId, navigate }) {
       })
       .slice()
       .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
-  }, [filter, keyword, investors]);
+  }, [filter, keyword, investors, typeTab]);
 
   const selected = detailId ? fundOrders.find(o => o.id === detailId) : null;
   const drawerOpen = !!selected;
@@ -84,19 +90,26 @@ export default function AdminFundTrades({ admin, detailId, navigate }) {
     setErrorMsg('');
   }, [detailId]);
 
-  const pendingCount = fundOrders.filter(o => o.status === FUND_ORDER_STATUS.PENDING).length;
-  const confirmedCount = fundOrders.filter(o => o.status === FUND_ORDER_STATUS.CONFIRMED).length;
+  const pendingOf = (type) => fundOrders.filter(o => o.type === type && o.status === FUND_ORDER_STATUS.PENDING).length;
+  const pendingCount = pendingOf(typeTab);
+  const confirmedCount = fundOrders.filter(o => o.type === typeTab && o.status === FUND_ORDER_STATUS.CONFIRMED).length;
+  const isRedeem = selected?.type === 'redeem';
 
   const fund = selected ? funds.find(f => f.id === selected.fundId) : null;
   const effectiveNav = Number(navInput) > 0 ? Number(navInput) : (fund ? latestNav(fund) : 0);
   const feeRate = selected?.feeRate ?? FUND_FEE_RATE.subscribe;
-  const previewFee = selected ? Math.round(selected.amount * feeRate) : 0;
-  const previewShares = selected && effectiveNav > 0 ? (selected.amount - previewFee) / effectiveNav : 0;
+  const previewFee = selected
+    ? (isRedeem ? Math.round(selected.shares * effectiveNav * feeRate) : Math.round(selected.amount * feeRate))
+    : 0;
+  const previewShares = selected && effectiveNav > 0 && !isRedeem ? (selected.amount - previewFee) / effectiveNav : 0;
+  const previewNet = selected && isRedeem ? Math.round(selected.shares * effectiveNav) - previewFee : 0;
 
   const refresh = () => setTick(t => t + 1);
 
   const handleConfirm = () => {
-    const res = confirmFundOrder(selected.id, { nav: Number(navInput) > 0 ? Number(navInput) : null, operator });
+    const res = (isRedeem ? confirmRedemptionOrder : confirmFundOrder)(
+      selected.id, { nav: Number(navInput) > 0 ? Number(navInput) : null, operator },
+    );
     if (!res.ok) { setErrorMsg(res.error); return; }
     setErrorMsg('');
     setTick(t => t + 1);
@@ -117,8 +130,24 @@ export default function AdminFundTrades({ admin, detailId, navigate }) {
       <div className="admin-page-header">
         <h1>基金交易</h1>
         <span className="text-muted">
-          待确认 {pendingCount} 笔 · 已成交 {confirmedCount} 笔
+          申购待确认 {pendingOf('subscribe')} 笔 · 赎回待确认 {pendingOf('redeem')} 笔 · 本栏已成交 {confirmedCount} 笔
         </span>
+      </div>
+
+      <div className="admin-tabs">
+        {[
+          { key: 'subscribe', label: '申购' },
+          { key: 'redeem', label: '赎回' },
+        ].map(x => (
+          <button
+            key={x.key}
+            className={`admin-tab ${typeTab === x.key ? 'active' : ''}`}
+            onClick={() => { setTypeTab(x.key); setFilter(FUND_ORDER_STATUS.PENDING); }}
+          >
+            {x.label}
+            {pendingOf(x.key) > 0 ? ` (${pendingOf(x.key)})` : ''}
+          </button>
+        ))}
       </div>
 
       <div className="admin-view-row">
@@ -152,7 +181,7 @@ export default function AdminFundTrades({ admin, detailId, navigate }) {
           <span className="col-id">申请单号</span>
           <span className="col-name">投资人</span>
           <span className="col-id">基金</span>
-          <span className="col-amount">金额</span>
+          <span className="col-amount">{typeTab === 'redeem' ? '赎回份额' : '金额'}</span>
           <span className="col-date">提交时间</span>
           <span className="col-status">状态</span>
           <span className="col-actions">操作</span>
@@ -172,7 +201,9 @@ export default function AdminFundTrades({ admin, detailId, navigate }) {
               <span className="col-id">{o.id}</span>
               <span className="col-name"><strong>{maskName(inv?.name || o.userId)}</strong></span>
               <span className="col-id">{o.fundName}</span>
-              <span className="col-amount">{o.currency} {formatExact(o.amount)}</span>
+              <span className="col-amount">
+                {typeTab === 'redeem' ? `${formatExact(o.shares)} 份` : `${o.currency} ${formatExact(o.amount)}`}
+              </span>
               <span className="col-date">{formatListDateTime(o.createdAt)}</span>
               <span className="col-status"><span className={`status-badge ${meta.cls}`}>{meta.label}</span></span>
               <span className="col-actions">
@@ -192,7 +223,7 @@ export default function AdminFundTrades({ admin, detailId, navigate }) {
       {drawerOpen && selected && (
         <div className="admin-drawer" ref={drawerRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={`申购单 ${selected.id}`}>
           <div className="admin-drawer-head">
-            <h3 className="admin-drawer-title">申购单 {selected.id}</h3>
+            <h3 className="admin-drawer-title">{isRedeem ? '赎回单' : '申购单'} {selected.id}</h3>
             <button className="btn-icon" title="关闭" onClick={goList}><X size={18} /></button>
           </div>
 
@@ -200,7 +231,16 @@ export default function AdminFundTrades({ admin, detailId, navigate }) {
             <div className="card">
               <div className="kyc-review-row"><span>基金</span><strong>{selected.fundName}</strong></div>
               <div className="kyc-review-row"><span>投资人</span><strong>{investors.get(selected.userId)?.name || selected.userId}</strong></div>
-              <div className="kyc-review-row"><span>申购金额</span><strong>{selected.currency} {formatExact(selected.amount)}</strong></div>
+              {isRedeem ? (
+                <>
+                  <div className="kyc-review-row"><span>赎回份额</span><strong>{formatExact(selected.shares)} 份</strong></div>
+                  <div className="kyc-review-row"><span>提交时参考净值</span><strong>{selected.nav}</strong></div>
+                  <div className="kyc-review-row"><span>预估回款</span><strong>{selected.currency} {formatExact(selected.amount)}</strong></div>
+                  <div className="kyc-review-row"><span>持仓剩余</span><strong>{formatExact(Math.max(0, (fundHoldings.find(hh => hh.userId === selected.userId && hh.fundId === selected.fundId)?.shares || 0) - selected.shares))} 份</strong></div>
+                </>
+              ) : (
+                <div className="kyc-review-row"><span>申购金额</span><strong>{selected.currency} {formatExact(selected.amount)}</strong></div>
+              )}
               <div className="kyc-review-row"><span>提交时间</span><strong>{selected.createdAt}</strong></div>
               <div className="kyc-review-row"><span>状态</span><strong>{STATUS_META[selected.status]?.label}</strong></div>
               {selected.status === FUND_ORDER_STATUS.CONFIRMED && (
@@ -221,7 +261,7 @@ export default function AdminFundTrades({ admin, detailId, navigate }) {
               <div className="card">
                 <div className="card-title">确认成交</div>
                 <div className="form-group">
-                  <label>确认净值（默认取当前净值，可按确认日网价修改）</label>
+                  <label>{isRedeem ? '确认净值（决定回款金额，默认取当前净值）' : '确认净值（默认取当前净值，可按确认日网价修改）'}</label>
                   <input
                     className="form-input"
                     type="number"
@@ -231,11 +271,23 @@ export default function AdminFundTrades({ admin, detailId, navigate }) {
                     onChange={e => { setNavInput(e.target.value); if (errorMsg) setErrorMsg(''); }}
                   />
                   <div className="admin-form-hint">
-                    费率 {(feeRate * 100).toFixed(2)}% · 认购费 {selected.currency} {formatExact(previewFee)} · 预计入账 {formatExact(Number(previewShares.toFixed(4)))} 份
-                  </div>
+                  {isRedeem ? (
+                    <>
+                      费率 {(feeRate * 100).toFixed(2)}% · 赎回费 {selected.currency} {formatExact(previewFee)} ·
+                      预计回款 {selected.currency} {formatExact(previewNet)}
+                    </>
+                  ) : (
+                    <>
+                      费率 {(feeRate * 100).toFixed(2)}% · 认购费 {selected.currency} {formatExact(previewFee)} ·
+                      预计入账 {formatExact(Number(previewShares.toFixed(4)))} 份
+                    </>
+                  )}
+                </div>
                 </div>
                 <p className="text-muted text-sm">
-                  确认后将从投资人可用余额扣款 {selected.currency} {formatExact(selected.amount)}，并生成逐笔结单。
+                  {isRedeem
+                    ? `确认后将扣减 ${formatExact(selected.shares)} 份持仓，回款 ${selected.currency} ${formatExact(previewNet)} 进入投资人可用余额，并生成逐笔结单。`
+                    : `确认后将从投资人可用余额扣款 ${selected.currency} ${formatExact(selected.amount)}，并生成逐笔结单。`}
                 </p>
               </div>
             )}
@@ -268,7 +320,7 @@ export default function AdminFundTrades({ admin, detailId, navigate }) {
               ) : (
                 <>
                   <button className="btn btn-md btn-outline" onClick={() => setRejectOpen(true)}><XCircle size={16} /> 驳回</button>
-                  <button className="btn btn-md btn-primary" onClick={handleConfirm}><CheckCircle size={16} /> 确认成交</button>
+                  <button className="btn btn-md btn-primary" onClick={handleConfirm}><CheckCircle size={16} /> {isRedeem ? '确认赎回' : '确认成交'}</button>
                 </>
               )}
             </div>

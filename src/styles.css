@@ -7569,3 +7569,19 @@ input, select, textarea {
   padding-top: var(--space-3);
   border-top: 1px solid var(--border-light);
 }
+
+/* ========== 赎回（2026-10-28 P2） ========== */
+/* 底部操作条：此前无样式（单按钮靠 .btn-full 撑满），补 flex 以承载「赎回 + 申购」双按钮 */
+.bottom-action-bar {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3) 0 calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+}
+.bottom-action-bar .btn { flex: 1; }
+.bottom-action-bar .btn:disabled { opacity: 0.55; }
+
+.fund-order-type { margin-left: var(--space-2); font-weight: 500; }
+.fund-redeem-quick { display: flex; gap: var(--space-2); margin-top: var(--space-2); }
+.fund-redeem-hint { margin-top: var(--space-2); }
+.asset-holding-tag { margin-left: var(--space-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0 4px; }
+.asset-realized { font-weight: 400; }

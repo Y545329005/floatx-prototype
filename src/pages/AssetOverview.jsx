@@ -74,7 +74,7 @@ export default function AssetOverview({ navigate, goBack, embed = false }) {
         </button>
         <button className="asset-action" onClick={() => navigate('#fund-orders')}>
           <span className="asset-action-icon"><ClipboardList size={18} /></span>
-          <span>{t('我的申购')}{orders.length > 0 ? `·${orders.length}` : ''}</span>
+          <span>{t('我的交易')}{orders.length > 0 ? `·${orders.length}` : ''}</span>
         </button>
       </div>
 
@@ -101,6 +101,16 @@ export default function AssetOverview({ navigate, goBack, embed = false }) {
                   <span className="text-muted text-xs asset-holding-shares">
                     {formatExact(h.shares)} {t('份')} · {h.currency}
                   </span>
+                  {h.frozenShares > 0 && (
+                    <span className="text-muted text-xs asset-holding-tag">
+                      {t('赎回处理中')} {formatExact(h.frozenShares)}
+                    </span>
+                  )}
+                  {h.redeemInfo?.locked > 0 && (
+                    <span className="text-muted text-xs asset-holding-tag">
+                      {t('锁定')} {formatExact(h.redeemInfo.locked)}
+                    </span>
+                  )}
                 </div>
                 <div className="holding-preview-right">
                   <strong>{h.currency} {formatExact(Math.round(h.marketValue))}</strong>
@@ -121,6 +131,11 @@ export default function AssetOverview({ navigate, goBack, embed = false }) {
             <span>{t('累计收益')}</span>
             <strong className={p.pnlHKD >= 0 ? 'up' : 'down'}>
               {p.pnlHKD >= 0 ? '+' : '-'}HK$ {formatExact(Math.abs(Math.round(p.pnlHKD)))}
+              {p.realizedHKD !== 0 && (
+                <span className="text-muted text-xs asset-realized">
+                  （{t('含已实现')} {p.realizedHKD >= 0 ? '+' : '-'}{formatExact(Math.abs(Math.round(p.realizedHKD)))}）
+                </span>
+              )}
             </strong>
           </div>
         </div>
@@ -156,8 +171,8 @@ export default function AssetOverview({ navigate, goBack, embed = false }) {
         <button className="list-item" onClick={() => navigate('#fund-orders')}>
           <div className="list-item-icon"><PieChart size={18} /></div>
           <div className="list-item-content">
-            <div className="list-item-title">{t('我的申购')}</div>
-            <div className="list-item-subtitle">{t('申请进度 · 份额确认')}</div>
+            <div className="list-item-title">{t('我的交易')}</div>
+            <div className="list-item-subtitle">{t('申购 · 赎回进度')}</div>
           </div>
           <ChevronRight size={18} />
         </button>
