@@ -41,6 +41,9 @@ const FundOrders = lazy(() => import('../pages/FundOrders'));
 // 资产 / 资金（2026-10-28 一期闭环恢复：资产只读聚合 + 资金公共模块最小 4 条路由）
 const AssetOverview = lazy(() => import('../pages/AssetOverview'));
 const Wallet = lazy(() => import('../pages/Wallet'));
+const BankCards = lazy(() => import('../pages/BankCards'));
+const Exchange = lazy(() => import('../pages/Exchange'));
+const Transactions = lazy(() => import('../pages/Transactions'));
 const FundOperation = lazy(() => import('../pages/FundOperation'));
 const FundRequests = lazy(() => import('../pages/FundRequests'));
 const FundRequestDetail = lazy(() => import('../pages/FundRequestDetail'));
@@ -89,6 +92,14 @@ export function renderAppPage(path, param, ctx) {
       return <AssetOverview navigate={navigate} goBack={goBack} />;
     case 'wallet':
       return <Wallet navigate={navigate} goBack={goBack} />;
+    // 2026-10-28：APP 侧收口——银行卡（白名单验证 + eDDA 授权）、换汇、交易流水接回。
+    // 这三页文件一直在，只是首期裁剪时摘了入口；eDDA 的「模拟授权」按钮已改为跳本页授权。
+    case 'bank-cards':
+      return <BankCards navigate={navigate} goBack={goBack} setToast={setToast} />;
+    case 'exchange':
+      return <Exchange navigate={navigate} goBack={goBack} setToast={setToast} />;
+    case 'transactions':
+      return <Transactions navigate={navigate} goBack={goBack} />;
     case 'fund-operation':
       return <FundOperation mode={param || 'deposit'} navigate={navigate} goBack={goBack} />;
     case 'fund-requests':

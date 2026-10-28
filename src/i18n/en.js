@@ -1523,4 +1523,16 @@ export const en = {
   '锁定期内份额': 'Locked-up units',
   '锁定期至': 'Lock-up until',
   '预估回款': 'Estimated proceeds',
+  // APP wiring (2026-10-28): bank cards / FX / transactions / demo reset
+  '充值 · 提现 · 换汇处理进度': 'Deposits · withdrawals · FX status',
+  '全部资金流水': 'All cash movements',
+  '去授权': 'Authorise',
+  '将清空本机全部业务数据（余额、持仓、单据、认证、通知），回到初始种子状态。此操作不可撤销。': 'This clears all local business data (balances, holdings, orders, verification, notifications) and restores the initial seed state. This cannot be undone.',
+  '已过期': 'Expired',
+  '恢复初始余额、持仓、单据与认证状态': 'Restore initial balances, holdings, orders and verification',
+  '未通过': 'Rejected',
+  '演示维护': 'Demo maintenance',
+  '资料不完整': 'Incomplete information',
+  '重置演示数据': 'Reset demo data',
+  '银行卡': 'Bank cards',
 };

@@ -1,12 +1,15 @@
-import { ArrowLeft, Shield, Lock, BadgeCheck, ChevronRight, Languages, Clock, XCircle, AlertCircle, Award } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowLeft, Shield, Lock, BadgeCheck, ChevronRight, Languages, Clock, XCircle, AlertCircle, Award, RotateCcw, AlertTriangle } from 'lucide-react';
 import { clickable } from '../lib';
-import { currentUser, KYC_STATUS } from '../mock/data';
+import { currentUser, KYC_STATUS, resetDemoData } from '../mock/data';
 import { useLang, LANGUAGES } from '../i18n';
 
 export default function Settings({ navigate, goBack }) {
   const pi = currentUser.pi;
   const sec = currentUser.security;
   const { lang, setLang, t } = useLang();
+  // 演示重置二次确认（一键清空不可撤销，不允许单点触发）
+  const [confirmReset, setConfirmReset] = useState(false);
 
   // 2026-09-18：PI 卡片分态渲染——此前无条件展示"已认证"，KYC 提交后即误导用户已获 PI 资格。
   // 仅 verified 且未过期展示认证详情；pending/rejected/expired 展示对应状态与操作；
@@ -175,6 +178,41 @@ export default function Settings({ navigate, goBack }) {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* 演示维护（2026-10-28）：演示几次后余额/持仓/单据已经偏离初始态，
+          没有入口就只能手动清缓存——非技术同事做不了。只清业务数据，保留语言与登录态。 */}
+      <div className="card card-secondary">
+        <h3 className="card-title">{t('演示维护')}</h3>
+        {!confirmReset && (
+          <button className="list-item" onClick={() => setConfirmReset(true)}>
+            <div className="list-item-icon"><RotateCcw size={18} /></div>
+            <div className="list-item-content">
+              <div className="list-item-title">{t('重置演示数据')}</div>
+              <div className="list-item-subtitle">{t('恢复初始余额、持仓、单据与认证状态')}</div>
+            </div>
+            <ChevronRight size={18} className="text-muted" />
+          </button>
+        )}
+        {confirmReset && (
+          <div className="settings-reset-confirm">
+            <p className="text-sm">
+              <AlertTriangle size={14} /> {t('将清空本机全部业务数据（余额、持仓、单据、认证、通知），回到初始种子状态。此操作不可撤销。')}
+            </p>
+            <div className="settings-reset-actions">
+              <button className="btn btn-outline btn-sm" onClick={() => setConfirmReset(false)}>{t('取消')}</button>
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={() => {
+                  const res = resetDemoData();
+                  if (res.ok) window.location.reload();
+                }}
+              >
+                {t('确认重置')}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

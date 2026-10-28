@@ -7603,3 +7603,50 @@ input, select, textarea {
 }
 .segmented-control.notification-tabs::-webkit-scrollbar { display: none; }
 .segmented-control.notification-tabs button { white-space: nowrap; }
+
+.wallet-actions-grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+.settings-reset-confirm { padding: var(--space-2) 0; }
+.settings-reset-confirm p { display: flex; gap: 6px; margin-bottom: var(--space-2); color: var(--text-secondary); }
+.settings-reset-actions { display: flex; gap: var(--space-2); justify-content: flex-end; }
+
+/* 列表项（2026-10-28）：此前 .list-item 完全没有样式，<button> 默认 inline-block 会并排、
+   文字被挤压（资产页两个入口、基金详情法务文件都受影响）。这里补成标准整行列表项。 */
+.list-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) 0;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--border-light);
+  text-align: left;
+  cursor: pointer;
+}
+.list-item:last-child { border-bottom: none; }
+.list-item-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--primary-light);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.list-item-content { flex: 1; min-width: 0; }
+.list-item-title { font-weight: 600; }
+.list-item-subtitle { font-size: var(--text-sm); color: var(--text-secondary); }
+
+/* 交易记录类型筛选（8 类）：窄屏超出可视宽度，末位「分红」点不到 → 横向滚动 */
+.segmented-control.transaction-tabs {
+  justify-content: flex-start;
+  gap: var(--space-4);
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 1px;
+}
+.segmented-control.transaction-tabs::-webkit-scrollbar { display: none; }
+.segmented-control.transaction-tabs button { white-space: nowrap; }

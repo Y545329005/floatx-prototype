@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Clock } from 'lucide-react';
-import { transactions, wallet, formatExact } from '../mock/data';
+import { transactions, wallet, walletAccountOf, formatExact } from '../mock/data';
 import { useLang } from '../i18n';
 
 // 投资人交易记录页（2026-08-18：钱包交易记录独立成页，对齐后台资金流水查询心智）
@@ -15,6 +15,7 @@ const TX_FILTERS = [
   { key: 'deposit', labelKey: '充值' },
   { key: 'withdraw', labelKey: '提现' },
   { key: 'subscription', labelKey: '申购' },
+  { key: 'redeem', labelKey: '赎回' },
   { key: 'exchange', labelKey: '换汇' },
   { key: 'exit', labelKey: '退出' },
   { key: 'dividend', labelKey: '分红' },
@@ -41,6 +42,7 @@ export default function Transactions({ navigate, goBack }) {
     deposit: t('充值'),
     withdraw: t('提现'),
     subscription: t('申购'),
+    redeem: t('赎回'),
     exchange: t('换汇'),
     exit: t('退出'),
     dividend: t('分红'),
@@ -152,8 +154,8 @@ export default function Transactions({ navigate, goBack }) {
                     <Clock size={12} /> {tx.createdAt}
                   </span>
                   <span className="wallet-transaction-amount">
-                    {tx.type === 'deposit' || tx.type === 'exit' || tx.type === 'dividend' ? '+' : tx.type === 'exchange' ? '' : '-'}
-                    {wallet[tx.currency.toLowerCase()]?.symbol || ''}{formatExact(tx.amount)}
+                    {(tx.type === 'deposit' || tx.type === 'exit' || tx.type === 'dividend' || tx.type === 'redeem') ? '+' : tx.type === 'exchange' ? '' : '-'}
+                    {walletAccountOf(tx.currency)?.symbol || ''}{formatExact(tx.amount)}
                   </span>
                 </div>
               </div>

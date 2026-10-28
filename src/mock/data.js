@@ -1174,6 +1174,20 @@ export function confirmFundOrder(orderId, { nav = null, operator = '运营专员
   order.statementId = statement.id;
   fundStatements.unshift(statement);
 
+  // 资金流水：申购是真实扣款，不记流水会让「钱包余额」和「交易记录」对不上（2026-10-28 自查）
+  transactions.unshift({
+    id: `t${Date.now()}`,
+    orderNo: genOrderNo('TX'),
+    type: 'subscription',
+    amount: order.amount,
+    currency: order.currency,
+    status: 'completed',
+    createdAt: now,
+    method: '基金申购',
+    projectName: order.fundName,
+    reference: order.id,
+  });
+
   logAudit({ operator, category: 'fund', action: '确认基金申购', target: order.fundName, targetId: order.id, note: `${order.currency} ${order.amount.toLocaleString()} → ${shares} 份 @ ${confirmNav}` });
   pushNotification({
     type: 'fund',
@@ -1362,6 +1376,19 @@ export function confirmRedemptionOrder(orderId, { nav = null, operator = '运营
   };
   order.statementId = statement.id;
   fundStatements.unshift(statement);
+
+  transactions.unshift({
+    id: `t${Date.now()}`,
+    orderNo: genOrderNo('TX'),
+    type: 'redeem',
+    amount: netAmount,
+    currency: order.currency,
+    status: 'completed',
+    createdAt: now,
+    method: '基金赎回',
+    projectName: order.fundName,
+    reference: order.id,
+  });
 
   logAudit({
     operator, category: 'fund', action: '确认基金赎回', target: order.fundName, targetId: order.id,
@@ -8026,8 +8053,11 @@ export const Storage = {
         data.faqItems.forEach(f => faqItems.push(f));
       }
       if (data.exchangeRates) {
-        Object.keys(exchangeRates).forEach(k => delete exchangeRates[k]);
-        Object.keys(data.exchangeRates).forEach(k => { exchangeRates[k] = data.exchangeRates[k]; });
+        // 2026-10-28 修复：原实现先删光再按快照重建 —— 代码里新增的币种对（如 cnh-hkd）
+        // 会被旧快照整体抹掉，换汇页永远少一对。改为「增量合并」：代码默认值保留，快照值覆盖同名。
+        Object.keys(data.exchangeRates).forEach(k => {
+          exchangeRates[k] = { ...(exchangeRates[k] || {}), ...data.exchangeRates[k] };
+        });
       }
       if (data.businessContact) {
         Object.keys(businessContact).forEach(k => delete businessContact[k]);
@@ -8112,6 +8142,24 @@ export const Storage = {
  * resetTarget: 若为 subscription id，则跳过恢复该 subscription（保留 mock 初始状态）
  * 返回是否成功加载了持久化数据
  */
+// 演示数据重置（2026-10-28）：清掉所有 zhifu-* 持久化键，回到模块种子状态。
+// 保留语言、后台登录态、记住的邮箱——重置的是"业务数据"，不该顺手把语言和登录也清掉。
+const DEMO_KEEP_KEYS = new Set(['zhifu-lang', 'zhifu-admin-login', 'zhifu-remember-email', 'mock-logged-in']);
+
+export function resetDemoData() {
+  try {
+    const drop = [];
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('zhifu-') && !DEMO_KEEP_KEYS.has(k)) drop.push(k);
+    }
+    drop.forEach(k => localStorage.removeItem(k));
+    return { ok: true, cleared: drop.length };
+  } catch (e) {
+    return { ok: false, cleared: 0 };
+  }
+}
+
 export function initState(resetTarget) {
   migrateContactKeys(); // 旧手机/短信持久化键清理（一次性）
   loadSecurityStore(); // 2FA 安全档案独立 key，先于快照恢复（2026-09-22）

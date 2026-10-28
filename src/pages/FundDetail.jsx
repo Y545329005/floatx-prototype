@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { ArrowLeft, FileText, ChevronRight, Landmark, ShieldAlert } from 'lucide-react';
 import NavChart from '../components/NavChart';
+import AgreementModal from '../components/AgreementModal';
 import { funds, getPiStatusForUser, PI_STATUS, currentUser, fundRangeReturns, getHoldings, getHoldingRedeemInfo, formatExact } from '../mock/data';
 import { useLang } from '../i18n';
 
@@ -18,11 +20,11 @@ export default function FundDetail({ id, navigate, goBack, setToast }) {
   const redeemInfo = holding ? getHoldingRedeemInfo(holding) : null;
   const ranges = fundRangeReturns(fund.navSeries);
 
-  const openLegal = (type) => {
-    // 复用平台三份法务文本：通过 about/legal 流程或直接提示
-    navigate('#about');
-    setToast && setToast(t('请在「关于」页查看相关法务文件'));
-  };
+  // 基金档案里的法律文件直接打开全文（此前只 navigate 到「关于」+ toast，等于打不开——
+  // 应用市场审核会逐份点开，这里是硬要求）。文档 type 与协议 id 有一处不同名，需映射。
+  const [legalDoc, setLegalDoc] = useState(null);
+  const LEGAL_ID = { 'terms-of-use': 'user-agreement', 'privacy-policy': 'privacy-policy', 'risk-disclosure': 'risk-disclosure' };
+  const openLegal = (type) => setLegalDoc(LEGAL_ID[type] || type);
 
   return (
     <div className="page fund-detail-page">
@@ -157,6 +159,8 @@ export default function FundDetail({ id, navigate, goBack, setToast }) {
       <div className="card">
         <p className="text-sm text-muted">{t('本平台为持牌资讯·咨询平台。基金申购与赎回均为人工确认流程：申购从账户可用余额扣款，财务确认后份额入账并出具结单。')}</p>
       </div>
+
+      {legalDoc && <AgreementModal agreementId={legalDoc} onClose={() => setLegalDoc(null)} />}
 
       <div className="bottom-action-bar">
         {holding && redeemInfo.redeemable > 0 && (

@@ -184,9 +184,9 @@ export default function FundOperation({ mode, navigate, goBack }) {
                     <button
                       type="button"
                       className="btn btn-outline btn-sm"
-                      onClick={() => { authorizeEdda(); setEddaReady(true); setError(''); }}
+                      onClick={() => navigate('#bank-cards')}
                     >
-                      {t('模拟授权')}
+                      {t('去授权')}
                     </button>
                   </>
                 )}

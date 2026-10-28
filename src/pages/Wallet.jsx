@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Download, Upload, ChevronRight, ClipboardList } from 'lucide-react';
+import { ArrowLeft, Download, Upload, ChevronRight, ClipboardList, ArrowLeftRight, CreditCard, History } from 'lucide-react';
 import { wallet, CURRENCY_META, convertToHKD, getAvailableCash, getFundFrozen, formatExact } from '../mock/data';
 import { useLang } from '../i18n';
 
@@ -74,8 +74,8 @@ export default function Wallet({ navigate, goBack }) {
         </div>
       </div>
 
-      {/* 操作：充值 / 提现 / 资金申请（本期闭环所需的最小集合） */}
-      <div className="wallet-actions-grid">
+      {/* 操作：充值 / 提现 / 换汇 / 银行卡（2026-10-28 APP 侧收口：换汇与银行卡页接回） */}
+      <div className="wallet-actions-grid wallet-actions-grid-4">
         <button className="wallet-action-item" onClick={() => navigate('#fund-operation/deposit')}>
           <Upload size={24} className="wallet-action-icon" />
           <span className="wallet-action-label">{t('充值')}</span>
@@ -84,9 +84,32 @@ export default function Wallet({ navigate, goBack }) {
           <Download size={24} className="wallet-action-icon" />
           <span className="wallet-action-label">{t('提现')}</span>
         </button>
-        <button className="wallet-action-item" onClick={() => navigate('#fund-requests')}>
-          <ClipboardList size={24} className="wallet-action-icon" />
-          <span className="wallet-action-label">{t('资金申请')}</span>
+        <button className="wallet-action-item" onClick={() => navigate('#exchange')}>
+          <ArrowLeftRight size={24} className="wallet-action-icon" />
+          <span className="wallet-action-label">{t('换汇')}</span>
+        </button>
+        <button className="wallet-action-item" onClick={() => navigate('#bank-cards')}>
+          <CreditCard size={24} className="wallet-action-icon" />
+          <span className="wallet-action-label">{t('银行卡')}</span>
+        </button>
+      </div>
+
+      <div className="card">
+        <button className="list-item" onClick={() => navigate('#fund-requests')}>
+          <div className="list-item-icon"><ClipboardList size={18} /></div>
+          <div className="list-item-content">
+            <div className="list-item-title">{t('资金申请')}</div>
+            <div className="list-item-subtitle">{t('充值 · 提现 · 换汇处理进度')}</div>
+          </div>
+          <ChevronRight size={18} className="text-muted" />
+        </button>
+        <button className="list-item" onClick={() => navigate('#transactions')}>
+          <div className="list-item-icon"><History size={18} /></div>
+          <div className="list-item-content">
+            <div className="list-item-title">{t('交易记录')}</div>
+            <div className="list-item-subtitle">{t('全部资金流水')}</div>
+          </div>
+          <ChevronRight size={18} className="text-muted" />
         </button>
       </div>
 
