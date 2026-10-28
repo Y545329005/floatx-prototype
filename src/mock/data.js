@@ -326,6 +326,38 @@ export function walletAccountOf(currency) {
   return key ? wallet[key] : null;
 }
 
+// ========== 钱包归属护栏（2026-10-28 P1 复盘） ==========
+// wallet 只代表「当前登录的演示账户」，本身没有 userId 维度。但后台资金审核列表里混着其他客户
+// （吴世昌/刘倩/陈志远…）的单据——直接写 wallet，会把别人的钱加进演示账户（实测：确认陈志远的
+// 500 万充值，张三余额凭空 +500 万）。这里按 userId 分流：演示账户走 wallet 并同步流水/资产曲线；
+// 其他客户只更新 testAccounts 里各自的 account，不碰全局钱包。真正的多用户分账留到接后端时做。
+export function applyWalletDelta(userId, currency, delta) {
+  const key = walletKeyOf(currency) || String(currency || '').toLowerCase();
+  const owner = userId || currentUser.id;
+  if (owner === currentUser.id) {
+    const w = wallet[key];
+    if (!w) return { ok: false, key, self: true };
+    w.balance = Math.max(0, w.balance + delta);
+    if (currentUser.account[key] !== undefined) currentUser.account[key] = w.balance;
+    return { ok: true, key, self: true };
+  }
+  // 其他客户：只有 testAccounts 里建档的账户才有余额可记。未建档的客户（u31/u32… 来自 KYC/线索）
+  // 在本原型里没有钱包，不能因此让后台核销“点不动”——单据照常流转，只是不记余额（接后端后补）。
+  const acct = Object.values(testAccounts).find(a => a.id === owner);
+  if (!acct) return { ok: true, key, self: false, tracked: false };
+  if (!acct.account) acct.account = { hkd: 0, usd: 0, frozen: 0 };
+  acct.account[key] = Math.max(0, (acct.account[key] || 0) + delta);
+  return { ok: true, key, self: false, tracked: true };
+}
+
+// 单据归属账户视图：self = 当前演示账户（读全局钱包）；tracked=false 表示该客户在 mock 里没有钱包
+export function walletOwnerView(userId) {
+  const owner = userId || currentUser.id;
+  if (owner === currentUser.id) return { self: true, tracked: true, account: null };
+  const acct = Object.values(testAccounts).find(a => a.id === owner);
+  return { self: false, tracked: !!acct, account: acct?.account || null };
+}
+
 // 折合港币（mock 近似汇率；仅用于资产总览的跨币种加总）
 export const FX_TO_HKD = { HKD: 1, USD: 7.8, CNH: 1.08, CNY: 1.08 };
 
@@ -5431,14 +5463,14 @@ export function submitDepositRequest({ currency, amount, method, cardId, bank, c
 export function approveDepositRequest(reqId, { actualAmount, bankRef } = {}, operator = '') {
   const req = depositRequests.find(r => r.id === reqId);
   if (!req || req.status !== 'pending') return false;
-  const key = walletKeyOf(req.currency) || String(req.currency).toLowerCase();
-  const w = wallet[key];
+  const w = walletAccountOf(req.currency);
   if (!w) return false;
   const credited = Number(actualAmount);
   if (!Number.isFinite(credited) || credited <= 0) return false; // 实际到账必须为有效正数，拒绝无效/缺失值
-  w.balance += credited;
-  if (currentUser.account[key] !== undefined) currentUser.account[key] = w.balance;
-  updateLatestTotal(toHkd(req.currency, credited));
+  // 按单据归属记账：演示账户走全局钱包，其他客户只更各自账户（护栏见 applyWalletDelta）
+  const moved = applyWalletDelta(req.userId, req.currency, credited);
+  if (!moved.ok) return false;
+  if (moved.self) updateLatestTotal(toHkd(req.currency, credited));
   const ref = bankRef || `REF${Date.now()}`;
   req.actualAmount = credited;
   req.bankRef = ref;
@@ -5446,17 +5478,19 @@ export function approveDepositRequest(reqId, { actualAmount, bankRef } = {}, ope
   req.handledAt = formatNow();
   req.handledBy = operator || '运营后台';
   const diffNote = credited !== req.amount ? `（登记 ${w.symbol}${req.amount.toLocaleString()} → 实际 ${w.symbol}${credited.toLocaleString()}）` : '';
-  transactions.unshift({
-    id: `t${Date.now()}`,
-    orderNo: genOrderNo('TX'),
-    type: 'deposit',
-    amount: credited,
-    currency: req.currency,
-    status: 'completed',
-    createdAt: formatNow(),
-    method: req.method,
-    reference: ref,
-  });
+  if (moved.self) {
+    transactions.unshift({
+      id: `t${Date.now()}`,
+      orderNo: genOrderNo('TX'),
+      type: 'deposit',
+      amount: credited,
+      currency: req.currency,
+      status: 'completed',
+      createdAt: formatNow(),
+      method: req.method,
+      reference: ref,
+    });
+  }
   // T10 异常检测：入金核销事件触发（R001 单笔大额入金 / R004 频繁入金）
   runAnomalyDetection(req.userId, 'deposit', { amount: credited, date: formatNow() });
   // T11 PEP 交易监控：PEP 客户入金自动标记（含跨境入金）
@@ -5465,7 +5499,7 @@ export function approveDepositRequest(reqId, { actualAmount, bankRef } = {}, ope
     type: 'wallet',
     title: '入金到账',
     body: `${w.label}入金 ${w.symbol}${credited.toLocaleString()} 已确认到账，可用资金已更新。`,
-  });
+  }, req.userId);
   logAudit({ operator: operator || '运营后台', category: 'fund', action: 'approve', target: req.userName, targetId: reqId, note: `充值确认到账 ${w.symbol}${credited.toLocaleString()}${diffNote}` });
   Storage.save();
   return true;
@@ -5482,7 +5516,7 @@ export function rejectDepositRequest(reqId, reason, operator = '') {
     type: 'wallet',
     title: '入金申请未通过',
     body: `您的入金申请未通过审核：${req.rejectReason}`,
-  });
+  }, req.userId);
   logAudit({ operator: operator || '运营后台', category: 'fund', action: 'reject', target: req.userName, targetId: reqId, note: `充值申请拒绝：${req.rejectReason}` });
   Storage.save();
   return true;
@@ -5642,7 +5676,10 @@ export function approveWithdrawRequest(reqId, operator = '') {
   const key = walletKeyOf(req.currency) || String(req.currency).toLowerCase();
   const w = wallet[key];
   if (!w) return false;
-  if (req.amount > w.balance) {
+  // 余额校验按单据归属账户：其他客户不看演示账户余额；未建档客户不拦截（mock 无钱包）
+  const owner = walletOwnerView(req.userId);
+  const ownerBalance = owner.self ? w.balance : (owner.tracked ? (owner.account?.[key] ?? 0) : null);
+  if (ownerBalance !== null && req.amount > ownerBalance) {
     req.status = 'rejected';
     req.rejectReason = '可用余额不足';
     req.handledAt = formatNow();
@@ -5650,20 +5687,22 @@ export function approveWithdrawRequest(reqId, operator = '') {
     Storage.save();
     return false;
   }
-  w.balance -= req.amount;
-  if (currentUser.account[key] !== undefined) currentUser.account[key] = w.balance;
-  updateLatestTotal(-toHkd(req.currency, req.amount));
-  transactions.unshift({
-    id: `t${Date.now()}`,
-    orderNo: genOrderNo('TX'),
-    type: 'withdraw',
-    amount: req.amount,
-    currency: req.currency,
-    status: 'completed',
-    createdAt: formatNow(),
-    method: req.method,
-    reference: `REF${Date.now()}`,
-  });
+  const moved = applyWalletDelta(req.userId, req.currency, -req.amount);
+  if (!moved.ok) return false;
+  if (moved.self) updateLatestTotal(-toHkd(req.currency, req.amount));
+  if (moved.self) {
+    transactions.unshift({
+      id: `t${Date.now()}`,
+      orderNo: genOrderNo('TX'),
+      type: 'withdraw',
+      amount: req.amount,
+      currency: req.currency,
+      status: 'completed',
+      createdAt: formatNow(),
+      method: req.method,
+      reference: `REF${Date.now()}`,
+    });
+  }
   req.status = 'approved';
   req.handledAt = formatNow();
   req.handledBy = operator || '运营后台';
@@ -5673,7 +5712,7 @@ export function approveWithdrawRequest(reqId, operator = '') {
     type: 'wallet',
     title: '提现成功',
     body: `${w.label}提现 ${w.symbol}${req.amount.toLocaleString()} 已处理，资金将在 1-2 个工作日到账。`,
-  });
+  }, req.userId);
   logAudit({ operator: operator || '运营后台', category: 'fund', action: 'approve', target: req.userName, targetId: reqId, note: `提现打款 ${w.symbol}${req.amount.toLocaleString()}` });
   Storage.save();
   return true;
@@ -5690,7 +5729,7 @@ export function rejectWithdrawRequest(reqId, reason, operator = '') {
     type: 'wallet',
     title: '提现申请未通过',
     body: `您的提现申请未通过审核：${req.rejectReason}`,
-  });
+  }, req.userId);
   logAudit({ operator: operator || '运营后台', category: 'fund', action: 'reject', target: req.userName, targetId: reqId, note: `提现申请拒绝：${req.rejectReason}` });
   Storage.save();
   return true;

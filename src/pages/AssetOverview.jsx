@@ -97,7 +97,7 @@ export default function AssetOverview({ navigate, goBack, embed = false }) {
               <div key={h.id} className="holding-preview-row" {...clickable(() => navigate(`#fund/${h.fundId}`))}>
                 <div className="holding-preview-name">
                   <span className="holding-preview-dot">{h.fundName[0]}</span>
-                  <span>{h.fundName}</span>
+                  <span>{t(h.fundName)}</span>
                   <span className="text-muted text-xs asset-holding-shares">
                     {formatExact(h.shares)} {t('份')} · {h.currency}
                   </span>

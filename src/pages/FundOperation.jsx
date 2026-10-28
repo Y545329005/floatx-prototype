@@ -76,7 +76,8 @@ export default function FundOperation({ mode, navigate, goBack }) {
           setError(t('请先在银行卡管理完成 eDDA 授权'));
           return;
         }
-        ok = submitDepositRequest(opts);
+        // eDDA 的付款账户是已授权的快捷扣款账户，不是上方银行转账用的白名单卡
+        ok = submitDepositRequest({ ...opts, bank: eddaAuth.bank, cardNo: eddaAuth.accountMasked });
       } else {
         if (!evidenceName) {
           setError(t('请上传银行转账凭证'));

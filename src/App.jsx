@@ -309,7 +309,10 @@ export default function App() {
             {effectiveSub === 'my-clients' && <AdminMyClients navigate={navigate} detailId={hash.param2} admin={adminUser} />}
             {effectiveSub === 'subscriptions' && <AdminSubscriptions navigate={navigate} detailId={hash.param2} admin={adminUser} />}
             {effectiveSub === 'fund-trades' && <AdminFundTrades admin={adminUser} detailId={hash.param2} navigate={navigate} />}
-            {effectiveSub === 'funds' && <AdminFunds />}
+            {/* 资金审核：tab 走 param2、抽屉走 param3（#admin/funds/{tab}/{id}）；
+                2026-10-28 修复：此前只渲染 <AdminFunds /> 未透传 navigate/tab/detailId，
+                导致点行只改 hash、抽屉永远打不开 → 整个核销动作不可达 */}
+            {effectiveSub === 'funds' && <AdminFunds navigate={navigate} tab={hash.param2} detailId={hash.param3} admin={adminUser} />}
             {effectiveSub === 'kyc' && <AdminKYC navigate={navigate} detailId={hash.param2} admin={adminUser} />}
             {effectiveSub === 'pi' && <AdminPI navigate={navigate} detailId={hash.param2} admin={adminUser} />}
             {/* 2026-10-16 口径修订：申购记录恢复（意向收集链）；funds/transactions/transaction-monitor/

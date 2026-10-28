@@ -26,22 +26,22 @@ export default function FundDetail({ id, navigate, goBack, setToast }) {
       <div className="subpage-sticky">
         <div className="page-header">
           <button className="back-btn" onClick={() => goBack('#funds')}><ArrowLeft size={20} /></button>
-          <h1>{fund.name}</h1>
+          <h1>{t(fund.name)}</h1>
         </div>
       </div>
 
       <div className="card fund-detail-hero">
         <div className="fund-card-top">
           <span className={`fund-source-badge ${fund.source}`}>{t(isSelf ? '自营' : '代售')}</span>
-          <span className={`tag tag-risk-${riskClass(fund.riskLevel)}`}>{fund.riskLevel}</span>
-          <span className="tag tag-outline">{fund.type}</span>
+          <span className={`tag tag-risk-${riskClass(fund.riskLevel)}`}>{t(fund.riskLevel)}</span>
+          <span className="tag tag-outline">{t(fund.type)}</span>
           {fund.status === 'open' && <span className="tag tag-outline tag-purchasable">{t('可申购')}</span>}
         </div>
-        <h2>{fund.name}</h2>
-        <p className="text-muted text-sm">{fund.description}</p>
+        <h2>{t(fund.name)}</h2>
+        <p className="text-muted text-sm">{t(fund.description)}</p>
         <div className="fund-return fund-return-hero">
           <span className="fund-return-label">{t(fund.returnLabel)} · {t(fund.returnNote)}</span>
-          <span className="fund-return-value">{fund.returnValue}</span>
+          <span className="fund-return-value">{t(fund.returnValue)}</span>
         </div>
         <div className="fund-metrics">
           <div className="fund-metric">
@@ -96,7 +96,7 @@ export default function FundDetail({ id, navigate, goBack, setToast }) {
           </div>
           <div className="fund-metric">
             <span className="fund-metric-label">{t('基金规模')}</span>
-            <span className="fund-metric-value">{fund.fundSize}</span>
+            <span className="fund-metric-value">{t(fund.fundSize)}</span>
           </div>
           <div className="fund-metric">
             <span className="fund-metric-label">{t('币种')}</span>
@@ -106,7 +106,7 @@ export default function FundDetail({ id, navigate, goBack, setToast }) {
         <div className="fund-metrics">
           <div className="fund-metric">
             <span className="fund-metric-label">{t('期限')}</span>
-            <span className="fund-metric-value">{fund.term}</span>
+            <span className="fund-metric-value">{t(fund.term)}</span>
           </div>
           <div className="fund-metric">
             <span className="fund-metric-label">{t('起投')}</span>
@@ -114,17 +114,17 @@ export default function FundDetail({ id, navigate, goBack, setToast }) {
           </div>
           <div className="fund-metric">
             <span className="fund-metric-label">{t('锁定期')}</span>
-            <span className="fund-metric-value">{fund.lockPeriod}</span>
+            <span className="fund-metric-value">{t(fund.lockPeriod)}</span>
           </div>
         </div>
         <div className="fund-metrics">
           <div className="fund-metric">
             <span className="fund-metric-label">{t('最低持有期')}</span>
-            <span className="fund-metric-value">{fund.minHoldPeriod || '-'}</span>
+            <span className="fund-metric-value">{t(fund.minHoldPeriod || '-')}</span>
           </div>
           <div className="fund-metric">
             <span className="fund-metric-label">{t('赎回周期')}</span>
-            <span className="fund-metric-value">{fund.redemptionPeriod || '-'}</span>
+            <span className="fund-metric-value">{t(fund.redemptionPeriod || '-')}</span>
           </div>
         </div>
       </div>

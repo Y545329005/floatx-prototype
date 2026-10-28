@@ -41,7 +41,7 @@ export default function FundSubscribe({ id, navigate, goBack, setToast }) {
       </div>
 
       <div className="card">
-        <div className="card-header"><h3>{fund.name}</h3></div>
+        <div className="card-header"><h3>{t(fund.name)}</h3></div>
         <div className="form-row">
           <label>{t('申购币种')}</label>
           <div className="segmented">

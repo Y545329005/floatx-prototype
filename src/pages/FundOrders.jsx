@@ -67,7 +67,7 @@ export default function FundOrders({ navigate, goBack, setToast }) {
           <div key={o.id} className="card fund-order-card">
             <div className="fund-order-head">
               <div>
-                <div className="fund-order-name">{o.fundName}</div>
+                <div className="fund-order-name">{t(o.fundName)}</div>
                 <div className="text-muted text-sm">
                   <Clock size={10} /> {o.createdAt}
                 </div>

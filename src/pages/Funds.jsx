@@ -69,22 +69,22 @@ export default function Funds({ navigate, goBack, setToast }) {
         <div key={f.id} className="card fund-card" onClick={() => navigate(`#fund/${f.id}`)}>
           <div className="fund-card-top">
             <span className={`fund-source-badge ${f.source}`}>{t(f.source === 'self' ? '自营' : '代售')}</span>
-            <span className={`tag tag-risk-${riskClass(f.riskLevel)}`}>{f.riskLevel}</span>
-            <span className="tag tag-outline">{f.type}</span>
+            <span className={`tag tag-risk-${riskClass(f.riskLevel)}`}>{t(f.riskLevel)}</span>
+            <span className="tag tag-outline">{t(f.type)}</span>
             {f.openForSubscription && <span className="tag tag-outline tag-purchasable">{t('可申购')}</span>}
           </div>
-          <h3>{f.name}</h3>
+          <h3>{t(f.name)}</h3>
           <div className="fund-spark-row">
             <div className="fund-return">
               <span className="fund-return-label">{t(f.returnLabel)} · {t(f.returnNote)}</span>
-              <span className="fund-return-value">{f.returnValue}</span>
+              <span className="fund-return-value">{t(f.returnValue)}</span>
             </div>
             <Spark series={f.navSeries} />
           </div>
           <div className="fund-metrics">
             <div className="fund-metric">
               <span className="fund-metric-label">{t('期限')}</span>
-              <span className="fund-metric-value">{f.term}</span>
+              <span className="fund-metric-value">{t(f.term)}</span>
             </div>
             <div className="fund-metric">
               <span className="fund-metric-label">{t('起投')}</span>
@@ -92,7 +92,7 @@ export default function Funds({ navigate, goBack, setToast }) {
             </div>
             <div className="fund-metric">
               <span className="fund-metric-label">{t('锁定期')}</span>
-              <span className="fund-metric-value">{f.lockPeriod}</span>
+              <span className="fund-metric-value">{t(f.lockPeriod)}</span>
             </div>
           </div>
           {f.source === 'external' && (
