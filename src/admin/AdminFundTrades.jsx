@@ -236,7 +236,7 @@ export default function AdminFundTrades({ admin, detailId, navigate }) {
                   <div className="kyc-review-row"><span>赎回份额</span><strong>{formatExact(selected.shares)} 份</strong></div>
                   <div className="kyc-review-row"><span>提交时参考净值</span><strong>{selected.nav}</strong></div>
                   <div className="kyc-review-row"><span>预估回款</span><strong>{selected.currency} {formatExact(selected.amount)}</strong></div>
-                  <div className="kyc-review-row"><span>持仓剩余</span><strong>{formatExact(Math.max(0, (fundHoldings.find(hh => hh.userId === selected.userId && hh.fundId === selected.fundId)?.shares || 0) - selected.shares))} 份</strong></div>
+                  <div className="kyc-review-row"><span>持仓剩余</span><strong>{formatExact(Math.max(0, (fundHoldings.find(hh => hh.userId === selected.userId && hh.fundId === selected.fundId && hh.currency === selected.currency)?.shares || 0) - selected.shares))} 份</strong></div>
                 </>
               ) : (
                 <div className="kyc-review-row"><span>申购金额</span><strong>{selected.currency} {formatExact(selected.amount)}</strong></div>

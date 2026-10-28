@@ -7585,3 +7585,21 @@ input, select, textarea {
 .fund-redeem-hint { margin-top: var(--space-2); }
 .asset-holding-tag { margin-left: var(--space-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0 4px; }
 .asset-realized { font-weight: 400; }
+
+/* 通知类型：基金（2026-10-28 P1/P2 恢复资金与基金通知） */
+.notification-icon.fund {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+/* 通知分类（6 类）：默认 segmented-control 居中不滚动，窄屏第 6 个页签会被裁掉、点不到。
+   这里改为可横向滚动 —— 是可达性问题，不只是视觉。 */
+.segmented-control.notification-tabs {
+  justify-content: flex-start;
+  gap: var(--space-4);
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 1px;
+}
+.segmented-control.notification-tabs::-webkit-scrollbar { display: none; }
+.segmented-control.notification-tabs button { white-space: nowrap; }

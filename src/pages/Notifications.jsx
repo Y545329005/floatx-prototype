@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, ClipboardList, Calendar, Headphones, CheckCheck, Trash2, X } from 'lucide-react';
+import { ArrowLeft, ClipboardList, Calendar, Headphones, CheckCheck, Trash2, X, Coins, Landmark } from 'lucide-react';
 import { notifications, currentUser, markNotificationRead, removeNotification, clearNotifications } from '../mock/data';
 import { useLang } from '../i18n';
 
@@ -9,10 +9,15 @@ const typeMeta = {
   subscription: { labelKey: '问卷', icon: ClipboardList, cls: 'sub' },
   event: { labelKey: '活动', icon: Calendar, cls: 'event' },
   service: { labelKey: '服务', icon: Headphones, cls: 'service' },
+  // 2026-10-28：资金与基金通知随 P1/P2 恢复。此前缺失会让它们落到 service 兜底（耳机图标 + 无处可筛）
+  fund: { labelKey: '基金', icon: Coins, cls: 'fund' },
+  wallet: { labelKey: '资金', icon: Landmark, cls: 'wallet' },
 };
 
 const tabs = [
   { key: 'all', labelKey: '全部' },
+  { key: 'fund', labelKey: '基金' },
+  { key: 'wallet', labelKey: '资金' },
   { key: 'subscription', labelKey: '问卷' },
   { key: 'event', labelKey: '活动' },
   { key: 'service', labelKey: '服务' },
