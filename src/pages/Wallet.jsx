@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft, Download, Upload, ChevronRight, ClipboardList, ArrowLeftRight, CreditCard, History } from 'lucide-react';
-import { wallet, CURRENCY_META, convertToHKD, getAvailableCash, getFundFrozen, formatExact } from '../mock/data';
+import { wallet, CURRENCY_META, convertToHKD, getAvailableCash, getFundFrozen, formatExactAmount } from '../mock/data';
 import { useLang } from '../i18n';
 
 // 金额位数自适应降档：返回 0（正常）/1（降一档）/2（降两档）
@@ -58,18 +58,18 @@ export default function Wallet({ navigate, goBack }) {
           </div>
         </div>
         <div className="wallet-hero-main">
-          <div className={`wallet-hero-value ${heroAmountSize(longAmountRank(formatExact(totalHKD / heroRate)))}`}>
-            {formatExact(Math.round(totalHKD / heroRate))}
+          <div className={`wallet-hero-value ${heroAmountSize(longAmountRank(formatExactAmount(totalHKD / heroRate)))}`}>
+            {formatExactAmount(Math.round(totalHKD / heroRate))}
           </div>
         </div>
         <div className="wallet-hero-stats">
           <div className="wallet-hero-stat">
             <span className="wallet-hero-stat-label">{t('可用')}</span>
-            <span className="wallet-hero-stat-value">{formatExact(heroAvailable)}</span>
+            <span className="wallet-hero-stat-value">{formatExactAmount(heroAvailable)}</span>
           </div>
           <div className="wallet-hero-stat">
             <span className="wallet-hero-stat-label">{t('冻结')}</span>
-            <span className="wallet-hero-stat-value">{formatExact(heroFrozen)}</span>
+            <span className="wallet-hero-stat-value">{formatExactAmount(heroFrozen)}</span>
           </div>
         </div>
       </div>
@@ -124,11 +124,11 @@ export default function Wallet({ navigate, goBack }) {
             return (
               <div key={currency.code} className="wallet-balance-item">
                 <span className="wallet-balance-card-label">{currency.code} · {t(currency.label)}</span>
-                <span className={`wallet-balance-item-amount ${balanceAmountSize(longAmountRank(formatExact(acc.balance)))}`}>
-                  {formatExact(acc.balance)}
+                <span className={`wallet-balance-item-amount ${balanceAmountSize(longAmountRank(formatExactAmount(acc.balance)))}`}>
+                  {formatExactAmount(acc.balance)}
                 </span>
                 {frozen > 0 && (
-                  <span className="text-muted text-xs">{t('冻结')} {formatExact(frozen)}</span>
+                  <span className="text-muted text-xs">{t('冻结')} {formatExactAmount(frozen)}</span>
                 )}
               </div>
             );

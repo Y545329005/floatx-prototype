@@ -167,7 +167,7 @@ export default function EmbedApp() {
   // 门控与渲染同源；setIsLoggedIn 传 noop：退出登录归宿主（集团「我的」承接），本模块无登录页。
   const renderEmbed = () => {
     if (redirectTo) return null;
-    return renderAppPage(hash.path, hash.param, { navigate, goBack, setToast, isLoggedIn, setIsLoggedIn: () => {}, embed: true });
+    return renderAppPage(hash.path, hash.param, { navigate, goBack, setToast, isLoggedIn, setIsLoggedIn: () => {}, embed: true, param2: hash.param2 });
   };
 
   return (

@@ -858,3 +858,33 @@ export function keyed(handler) {
     },
   };
 }
+
+// 金额/份额输入的千分位显示。
+// 受控 input 每敲一个字都会被 React 重置光标到末尾，直接在 value 里塞逗号会让「改中间一位」变成灾难：
+// 因此 value 渲染格式化串，onChange 里按「光标前的有效字符数」在下一帧把光标放回去。
+// e.target.value 此时已是用户敲完的新值（React 尚未重渲染），所以能读到原始光标位置。
+export function groupDigits(raw) {
+  if (!raw) return "";
+  const [int, dec] = String(raw).split(".");
+  const head = int.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return dec === undefined ? head : `${head}.${dec}`;
+}
+
+export function applyNumberInput(e, setValue) {
+  const el = e.target;
+  const caret = el.selectionStart == null ? el.value.length : el.selectionStart;
+  const meaningful = el.value.slice(0, caret).replace(/[^\d.]/g, "").length;
+  const raw = el.value.replace(/[^\d.]/g, "");
+  setValue(raw);
+  // 等 React 把格式化后的 value 写回 DOM，再还原光标
+  requestAnimationFrame(() => {
+    const formatted = groupDigits(raw);
+    let pos = 0;
+    let seen = 0;
+    while (pos < formatted.length && seen < meaningful) {
+      if (/[\d.]/.test(formatted[pos])) seen += 1;
+      pos += 1;
+    }
+    try { el.setSelectionRange(pos, pos); } catch { /* 已失焦/已卸载 */ }
+  });
+}

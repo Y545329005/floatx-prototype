@@ -92,6 +92,10 @@
   --text-on-dark-tertiary:     rgba(255, 255, 255, 0.55);
   --success-on-dark:           #4ADE80;
   --danger-on-dark:            #F87171;
+  /* 浅底文字档（2026-10-28 资产页重做）：--success/--danger 是「填充色」，当正文只有 3.3:1，
+     浅底上的涨跌数字必须走这一档（白底 7.1:1 / 浅主色底 5.9:1） */
+  --success-text:              #166534;
+  --danger-text:               #B91C1C;
 
   /* 系统色（特殊场景） */
   --ios-green: #34C759;  /* iOS 系统绿（通知图标/原生 badge） */
@@ -330,7 +334,12 @@ input, select, textarea {
 .my-subscription-page,
 .change-email-page,
 .transactions-page,
-.fund-requests-page {
+.fund-requests-page,
+.asset-overview-page,
+.fund-orders-page,
+.fund-statements-page,
+.fund-statement-detail-page,
+.security-center {
   padding-top: 0;
 }
 
@@ -860,102 +869,105 @@ input, select, textarea {
 .kyc-badge.kyc-muted { background: var(--border-light); color: var(--text-tertiary); }
 .kyc-badge.clickable { cursor: pointer; }
 
+/* 资产 hero（2026-10-28 结构重做）：实色主色块 → 浅底 + 主色数字。
+   动因是同一个「钱」在三个页面三套语言（资产=实色块 / 钱包=浅底 / 基金详情=白卡墨字）。
+   这里向钱包页看齐；浅底还带来一个实际好处：涨跌色、辅助文字才有第二档层次可退。
+   底色沿用 --primary-light（8%），涨跌走高对比档 --success-text/--danger-text。 */
 .asset-hero-card {
-  background: var(--primary);
+  background: var(--primary-light);
   border-radius: var(--radius-lg);
   padding: var(--space-5);
   margin-bottom: var(--space-3);
-  box-shadow: var(--shadow-md);
-  color: var(--bg-card);
-}
-
-.asset-hero-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }
 
 .asset-hero-label {
+  display: block;
   font-size: var(--text-base);
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.asset-hero-more {
-  display: flex;
-  align-items: center;
-  color: rgba(255, 255, 255, 0.55);
-  padding: 2px;
-}
-
-.asset-hero-main {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 14px;
-  margin: 4px 0 6px;
+  color: var(--text-secondary);
 }
 
 .asset-hero-value {
+  margin: 4px 0 2px;
+  text-align: right;
   font-size: var(--text-display-sm);
   font-weight: 700;
   letter-spacing: -0.03em;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.asset-hero-spark {
-  flex: 1;
-  max-width: 150px;
-  cursor: pointer;
-}
-
-.asset-hero-spark svg {
-  display: block;
-  width: 100%;
-  height: 34px;
+  line-height: 1.1;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
 }
 
 .asset-hero-change {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  align-items: baseline;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 2px var(--space-2);
   font-size: var(--text-md);
   font-weight: 600;
 }
 
-.asset-hero-change .up { color: var(--success-on-dark); }
-.asset-hero-change .down { color: var(--danger-on-dark); }
+.asset-hero-change .up { color: var(--success-text); }
+.asset-hero-change .down { color: var(--danger-text); }
 
-.asset-hero-stats {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 18px;
-  padding-top: var(--space-4);
-  border-top: 1px solid rgba(255, 255, 255, 0.18);
+.asset-hero-realized {
+  font-size: var(--text-sm);
+  font-weight: 400;
+  color: var(--text-secondary);
 }
 
-.asset-hero-stats > div {
+/* 三格改成三行（2026-10-28 量测）：390px 视口下内容区 314px，
+   三列各 99px，而「19,480,000.00」在 13px 下就要 100px+ —— 两位小数与三列在物理上不可兼得。
+   行式账目同时解决了金额右对齐与占比对齐，也和交易页的账单语言一致。 */
+.asset-hero-parts {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--primary-border);
+}
+
+/* 百分比的含义必须写出来：「94.6%」不说明分母，读者只能猜是总资产还是持仓成本 */
+.asset-hero-parts-note {
+  margin: 0 0 2px;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.asset-hero-part {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
   min-width: 0;
 }
 
-.asset-hero-stats span {
+.asset-hero-part-k {
+  flex-shrink: 0;
   font-size: var(--text-sm);
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--text-secondary);
 }
 
-.asset-hero-stats strong {
-  font-size: var(--text-lg);
+/* 占比是标签的注脚，紧跟在名字后面；它不再占最右一列 */
+.asset-hero-part-pct {
+  flex-shrink: 0;
+  font-style: normal;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* margin-left:auto = 金额永远贴卡片右边缘，与 hero 大数字同一条轴 */
+.asset-hero-part-v {
+  margin-left: auto;
+  font-size: var(--text-md);
   font-weight: 600;
-  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .asset-actions {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 4px;
   background: var(--bg-card);
   border-radius: var(--radius-lg);
@@ -984,6 +996,28 @@ input, select, textarea {
   border-radius: var(--radius-lg);
   background: var(--primary-light);
   color: var(--primary);
+}
+
+/* 待确认角标：让「为什么可用现金比余额少」在入口处就有答案 */
+.asset-action-icon { position: relative; }
+
+.asset-action-dot {
+  position: absolute;
+  top: -5px;
+  right: -6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-xl);  /* 18px 高的角标 = 胶囊（token 内取最大档，不用裸数值） */
+  background: var(--warning-text);
+  color: #fff;
+  font-style: normal;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .range-card-head {
@@ -1066,83 +1100,96 @@ input, select, textarea {
   gap: 4px;
 }
 
-.position-summary {
-  display: flex;
-  justify-content: space-between;
-  padding: 2px 0 14px;
-  margin-bottom: 4px;
-  border-bottom: 1px solid var(--border-light);
-}
-
-.position-summary > div {
+/* 持仓行（2026-10-28 结构重做）：原来金额、收益率、赎回按钮三样挤在右列，
+   行高随「能不能赎回」跳变；现在拆成「名称+市值 / 份额+动作」两段，
+   市值永远同一位，动作永远同一侧。 */
+.asset-hold-list {
   display: flex;
   flex-direction: column;
-  gap: 3px;
 }
 
-.position-summary span {
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
-}
-
-.position-summary strong {
-  font-size: var(--text-xl);
-}
-
-.holding-preview-row {
+.asset-hold-row {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-3);
+  flex-direction: column;
+  gap: var(--space-2);
   padding: var(--space-3) 0;
-  min-height: var(--min-touch-target);
   border-bottom: 1px solid var(--border-light);
   cursor: pointer;
 }
 
-.holding-preview-row:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
+.asset-hold-row:first-child { padding-top: 0; }
+.asset-hold-row:last-child { padding-bottom: 0; border-bottom: none; }
+.asset-hold-row:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
 }
 
-.holding-preview-name {
+.asset-hold-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.asset-hold-title {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-2);
+  min-width: 0;
   font-size: var(--text-lg);
   font-weight: 500;
-  min-width: 0;
 }
 
-.holding-preview-dot {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-md);
-  background: var(--primary);
-  color: var(--bg-card);
-  font-size: var(--text-lg);
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
+/* 长基金名折行，不把名字挤成一列单字 */
+.asset-hold-title > span:last-child { min-width: 0; overflow-wrap: anywhere; }
 
-.holding-preview-right {
+.asset-hold-value {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 2px;
+  gap: 1px;
+  flex-shrink: 0;
 }
 
-.holding-preview-right strong {
+.asset-hold-value strong {
   font-size: var(--text-lg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
-.holding-preview-right span {
-  font-size: var(--text-base);
-  font-weight: 600;
+/* 收益率带标签：裸百分比在有市值并列时会读成「涨跌幅」，而它是成本收益率 */
+.asset-hold-pct {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
 }
+
+.asset-hold-pct b {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 白底上的涨跌色走深档（--success 当正文只有 3.3:1） */
+.asset-hold-value .up { color: var(--success-text); }
+.asset-hold-value .down { color: var(--danger-text); }
+
+.asset-hold-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: 0;
+  min-width: 0;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.asset-hold-meta svg { flex-shrink: 0; color: var(--text-tertiary); }
 
 .tag {
   display: inline-flex;
@@ -1416,31 +1463,8 @@ input, select, textarea {
   margin: 8px 0 4px;
 }
 
-.fund-metrics {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: var(--space-3);
-  margin: var(--space-3) 0;
-  padding: var(--space-3) 0;
-  border-top: 1px solid var(--border-light);
-  border-bottom: 1px solid var(--border-light);
-}
-
-.fund-metric {
-  text-align: center;
-}
-
-.fund-metric-label {
-  display: block;
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
-  margin-bottom: 4px;
-}
-
-.fund-metric-value {
-  font-size: var(--text-xl);
-  font-weight: 700;
-}
+/* .fund-metrics / .fund-metric* 于 2026-10-28 详情页改版删除（仅 FundDetail 引用，
+   已由 p-fund-detail-rows 标签/值行替代，grep 零残留） */
 
 .fund-banner {
   display: flex;
@@ -7424,134 +7448,545 @@ input, select, textarea {
   font-size: var(--text-md);
 }
 
-/* ===== 基金模块富途式改版（2026-10-28）===== */
-/* 列表页：自营/代售页签 + 类型 chips */
-.fund-source-tabs { margin-top: var(--space-2); }
-
-.fund-type-chips { margin-bottom: var(--space-3); }
-.fund-type-chips .chip { min-height: 36px; padding: var(--space-2) var(--space-4); }
-
-/* 来源徽章：自营=品牌实底 / 代售=描边中性 */
-.fund-source-badge {
-  font-size: var(--text-xs);
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: var(--radius-sm);
-  line-height: 1.5;
+/* ===== 基金详情（2026-10-28 决策档案改版）=====
+   与列表 p-funds-* 同族但完全独立：命名一律 p-fund-detail-*，改这里不会牵动列表。
+   上一版详情专用类 .fund-return* / .fund-metric* / .fund-manager-block / .fund-source-badge
+   与 .nav-pills 均已零引用删除（重写后 grep 确认为空）。
+   注意 .fund-detail-hero / .fund-detail-card 属「资金申请详情」页，不是本页，勿删。 */
+.fund-detail-page {
+  padding-top: 0;
+  /* 固定操作条 ≈80px（14+52+14）+ 安全区，再留 16px 呼吸，保证尾注不被压住 */
+  padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
 }
-.fund-source-badge.self { background: var(--primary); color: #fff; }
-.fund-source-badge.external { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
 
-/* 富途式卡片：收益大数字 + 迷你净值曲线 */
-.fund-card { margin-bottom: var(--space-4); }
-.fund-card h3 { margin: var(--space-3) 0 var(--space-2); }
+.subpage-sticky + .p-fund-detail-card { margin-top: var(--space-2); }
 
-.fund-spark-row {
+.p-fund-detail-card {
+  padding: var(--space-4);
+  margin-bottom: var(--space-2);
+  box-shadow: var(--shadow-sm);
+}
+.p-fund-detail-cardhead {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-4);
-  margin: var(--space-2) 0 var(--space-3);
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
 }
-.fund-return { display: flex; flex-direction: column; gap: 2px; }
-.fund-return-label { font-size: var(--text-xs); color: var(--text-tertiary); }
-.fund-return-value {
-  font-size: var(--text-display-sm);
-  font-weight: 700;
-  color: var(--primary);
-  letter-spacing: -0.5px;
-  line-height: 1.2;
-}
-.fund-return-hero { margin: var(--space-2) 0 var(--space-3); }
-.fund-return-hero .fund-return-value { font-size: var(--text-display-md); }
-.fund-spark { width: 104px; height: 32px; flex-shrink: 0; }
+.p-fund-detail-cardhead h3 { font-size: var(--text-xl); font-weight: 600; }
 
-.fund-card-note { margin-top: var(--space-2); }
-
-/* 详情页：业绩正值色（沿用涨跌色标后位覆盖） */
-.fund-metric-value.fund-perf-pos { color: var(--success); }
-.fund-metrics + .fund-metrics { border-top: none; }
-
-/* 净值走势图（内联 SVG，零依赖） */
-.nav-chart-head { display: flex; align-items: baseline; gap: var(--space-2); margin-bottom: var(--space-2); }
-.nav-chart-ret { font-size: var(--text-2xl); font-weight: 700; }
-.nav-chart-ret.pos { color: var(--success); }
-.nav-chart-ret.neg { color: var(--danger); }
-.nav-chart-svg { width: 100%; height: 132px; display: block; }
-.nav-chart-foot {
+/* 标签行：来源/类型/风险/状态合并成一行文字，不再用 4 个不同颜色的徽章抢焦点 */
+.p-fund-detail-tags {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-top: var(--space-2);
-}
-.nav-chart-end { font-size: var(--text-sm); font-weight: 600; }
-.nav-pills { display: flex; gap: var(--space-2); }
-.nav-pills button {
+  flex-wrap: wrap;
+  gap: 6px;
   font-size: var(--text-xs);
-  padding: 4px 10px;
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--border);
   color: var(--text-secondary);
-  background: transparent;
-  transition: all 0.2s;
 }
-.nav-pills button.active { background: var(--primary); border-color: var(--primary); color: #fff; }
-.nav-chart-note { margin-top: var(--space-2); }
+/* 分隔符用相邻选择器生成：换行时不会留下行尾孤立的「·」 */
+.p-fund-detail-tags > span + span:not(.p-fund-detail-state)::before {
+  content: '·';
+  margin: 0 6px;
+  color: var(--text-tertiary);
+}
+/* 状态推到行右端并自带状态灯：英文标签换行时它单独占一行右侧，
+   不会被读成「行首多了一个点」 */
+.p-fund-detail-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  color: var(--text-tertiary);
+}
+.p-fund-detail-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+}
+.p-fund-detail-state.is-open { color: var(--success); }
+.p-fund-detail-state.is-open .p-fund-detail-dot { background: var(--success); }
+.p-fund-detail-source { font-weight: 600; color: var(--primary); }
+.p-fund-detail-source.external { color: var(--text-secondary); }
+.p-fund-detail-risk.is-high { color: var(--danger); font-weight: 600; }
+.p-fund-detail-state.is-open { font-weight: 600; }
 
-/* 管理人区块：自营（品牌）/代售（警示色披露） */
-.fund-manager-block {
+.p-fund-detail-desc {
+  margin-top: var(--space-2);
+  font-size: var(--text-md);
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+/* 目标回报：墨色 = 承诺口径。实际收益才用涨跌色，两者不可同色（否则读成"已经涨了"） */
+/* 首屏双数字（学富途）：左=目标回报（承诺口径，墨色）｜右=最新净值（可核对的数值） */
+.p-fund-detail-hero-row {
   display: flex;
   align-items: flex-start;
+  justify-content: space-between;
   gap: var(--space-3);
-  padding: var(--space-3);
-  border-radius: var(--radius-md);
-  background: var(--bg);
-  margin-bottom: var(--space-3);
+  margin-top: var(--space-3);
 }
-.fund-manager-block.self svg { color: var(--primary); flex-shrink: 0; }
-.fund-manager-block.external svg { color: var(--warning); flex-shrink: 0; }
-.fund-manager-name { font-weight: 600; }
+.p-fund-detail-target {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.p-fund-detail-target-label {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+.p-fund-detail-target-value {
+  font-size: var(--text-display-md);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.p-fund-detail-nav {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.p-fund-detail-nav-label,
+.p-fund-detail-nav-date { font-size: var(--text-xs); color: var(--text-secondary); }
+.p-fund-detail-nav-value {
+  font-size: var(--text-4xl);   /* 28px：与 40px 的目标回报拉开主次，仍属正文档位内 */
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.p-fund-detail-facts {
+  display: flex;
+  flex-wrap: wrap;                 /* 320px + 英文时三项 255px > 内容宽 248px，硬排会挤成一团 */
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-light);
+}
+.p-fund-detail-facts > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.p-fund-detail-facts span { font-size: var(--text-xs); color: var(--text-secondary); }
+.p-fund-detail-facts strong {
+  font-size: var(--text-md);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 持仓事实行（2026-10-28 五轮）：底栏已是唯一赎回入口，这里只陈述、不可点。
+   一条细线把它和「基金本身的事实」分开：上面是这只基金，下面是你和它的关系。 */
+.p-fund-detail-holdingline {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-light);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.p-fund-detail-holdingline-k { flex-shrink: 0; }
+.p-fund-detail-holdingline strong {
+  color: var(--text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 区间控件 = 三个区间收益本身：上一版「区间收益大数字 + 6M/1Y/成立以来三格」同屏重复 */
+.p-fund-detail-ranges {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: var(--space-3);
+  background: var(--bg);
+  border-radius: var(--radius-md);
+}
+.p-fund-detail-range {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 2px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.16s ease, box-shadow 0.16s ease;
+}
+.p-fund-detail-range-label { font-size: var(--text-xs); color: var(--text-secondary); }
+.p-fund-detail-range-value {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.p-fund-detail-range-value.pos { color: var(--success); }
+.p-fund-detail-range-value.neg { color: var(--danger); }
+.p-fund-detail-range.is-active { background: var(--bg-card); box-shadow: var(--shadow-sm); }
+.p-fund-detail-range.is-active .p-fund-detail-range-label { color: var(--text); }
+.p-fund-detail-range:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+
+/* 纵轴刻度是独立 HTML 栏：svg 用 preserveAspectRatio="none"，文字放进去会被横向拉伸；
+   而 svg 内留白会随屏宽缩放漂移（390 屏 0.97、430 屏 1.09），与 HTML 对不齐。
+   所以留白放在 flex 布局层，svg 内部不预留。 */
+.p-fund-detail-chartrow { display: flex; gap: var(--space-2); }
+.p-fund-detail-yaxis {
+  flex: 0 0 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 6px 0;              /* 对齐 svg 的 PAD=6 */
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.nav-chart-svg { flex: 1; min-width: 0; height: 150px; display: block; }
+
+.p-fund-detail-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--space-2);
+  margin-left: calc(40px + var(--space-2));   /* 与绘图区左缘对齐，不压到刻度 */
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.p-fund-detail-note { margin-top: var(--space-2); font-size: var(--text-xs); line-height: 1.55; color: var(--text-secondary); }
+
+/* 条款分组 + 标签/值行：值右对齐 tabular-nums，不再用居中 3 列（上一版 9 格有 4 格折行） */
+.p-fund-detail-group {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: var(--space-4) 0 var(--space-1);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text);
+}
+.p-fund-detail-group:first-of-type { margin-top: var(--space-2); }
+
+.p-fund-detail-rows > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;   /* 英文标签很长（「Product key facts statement · Private placement memorandum」）
+                        时不允许换行，标签会撑出卡片右边缘、值被挤到看不见——实测 2026-10-28 */
+  gap: 2px var(--space-3);
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+.p-fund-detail-rows > div:last-child { border-bottom: 0; }
+.p-fund-detail-rows dt { flex-shrink: 1; min-width: 0; font-size: var(--text-sm); color: var(--text-secondary); }
+.p-fund-detail-rows dd {
+  min-width: 0;
+  margin: 0 0 0 auto;   /* 换行到下一行时仍靠右，而不是回到左边 */
+  font-size: var(--text-md);
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.p-fund-detail-rows dd a { color: var(--primary); }
+/* 缺值占位（详见基金文件 / 联系客户经理获取）不是数据：不加粗、不占主视觉 */
+.p-fund-detail-rows dd.is-empty {
+  font-weight: 400;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.p-fund-detail-risks { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.p-fund-detail-risks li {
+  position: relative;
+  padding-left: 10px;
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+.p-fund-detail-risks li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+}
+
+/* 分销披露：淡底块，不做左侧色条（3px 侧条是套板式样，检测器直接标记；这里信息量本就只有一句） */
+.p-fund-detail-disclosure {
+  margin-top: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--warning-bg);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.p-fund-detail-doc {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 10px 0;
+  border: 0;
+  border-bottom: 1px solid var(--border-light);
+  background: none;
+  text-align: left;
+  font-size: var(--text-md);
+  color: var(--text);
+  cursor: pointer;
+}
+.p-fund-detail-doc:last-child { border-bottom: 0; }
+.p-fund-detail-doc > span { flex: 1; min-width: 0; }
+.p-fund-detail-doc svg { flex-shrink: 0; color: var(--text-tertiary); }
+
+.p-fund-detail-more { margin-top: var(--space-1); }
+/* 展开区里风险条目紧跟条款行，需要一段空气，否则读成最后一条条款 */
+.p-fund-detail-more .p-fund-detail-risks { margin-top: var(--space-3); }
+
+.p-fund-detail-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: var(--space-3);
+  padding: 10px 0;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--border-light);
+  color: var(--primary);
+  font-size: var(--text-md);
+  font-weight: 600;
+  cursor: pointer;
+}
+.p-fund-detail-toggle svg { transition: transform 0.18s ease; }
+.p-fund-detail-toggle svg.is-open { transform: rotate(180deg); }
+.p-fund-detail-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* 固定操作条（2026-10-28 二轮）：详情页 2036px，主按钮原本在 y≈1952——
+   要滚 1108px 才点得到。壳宽居中规则与 .sheet / .bottom-nav 一致；详情页无底部 Tab，不冲突。 */
+.bottom-action-bar.p-fund-detail-cta,
+.bottom-action-bar.p-fund-trade-cta {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-light);
+  z-index: 90;
+}
+
+.p-fund-detail-disclaimer {
+  padding: 0 2px var(--space-2);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* 320~360px：双数字各降一档，保证两列不互相挤 */
+@media (max-width: 360px) {
+  .p-fund-detail-target-value { font-size: var(--text-display-sm); }
+  .p-fund-detail-nav-value { font-size: var(--text-2xl); }
+}
 
 /* ========== 基金一期闭环（2026-10-28）：资产只读聚合 + 我的申购 ========== */
 .text-xs { font-size: var(--text-xs); }
 
-.asset-holding-shares { margin-left: var(--space-1); }
 
-.asset-cash-row {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
-  padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--border-light);
-}
-.asset-cash-row:last-child { border-bottom: none; }
-.asset-cash-label {
-  width: 48px;
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-.asset-cash-value {
-  flex: 1;
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-}
+/* 结单详情（2026-10-28 补齐）：这组类名此前在 CSS 里没有任何定义，
+   所以「交易类型认购」「份额966,796.88 份」全部粘成一行——不是排版选择，是缺样式。 */
+.statement-card { padding: var(--space-4); }
 
-.fund-order-card { padding: var(--space-4); }
-.fund-order-head {
+.statement-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border-light);
 }
-.fund-order-name { font-weight: 600; }
-.fund-order-rows {
+
+.statement-title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.statement-amount {
+  flex-shrink: 0;
+  text-align: right;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.statement-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 6px 0;
+  font-size: var(--text-sm);
+}
+
+.statement-row > span:first-child {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.statement-row > span:last-child {
+  min-width: 0;
+  text-align: right;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 交易单据卡（2026-10-28 结构重做）：一张「委托 → 成交」账单。
+   卡片不再是可点整块——点交易单的预期是「这笔单」，不是「这只基金」，
+   导航退成卡头一条文字链，卡内因此没有需要 stopPropagation 的嵌套按钮。 */
+.order-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.order-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0;
+  min-width: 0;
+}
+
+.order-name { font-size: var(--text-lg); font-weight: 600; }
+
+.order-type {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.order-type::before {
+  content: '·';
+  margin: 0 6px;
+  color: var(--text-tertiary);
+}
+
+/* 状态：只有「待确认」实色。在途是唯一需要行动的状态，已成交是终态，不该最响。
+   实色取 --warning-text（#C2410C）而非 --warning：白字 5.18:1，后者只有 3.6:1。 */
+.order-status {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.order-status.is-pending { background: var(--warning-text); color: #fff; }
+.order-status.is-done { background: var(--success-light); color: var(--success-text); }
+.order-status.is-rejected { background: var(--danger-light); color: var(--danger-text); }
+.order-status.is-cancelled { background: var(--border-light); color: var(--text-secondary); }
+
+/* 时间 + 查看基金：这一行就是链接的命中区（44px），不做伪元素外扩——
+   向上扩会盖到上面的状态 pill，点 pill 反而跳去基金页。 */
+.order-sub {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 44px;
+  margin-top: 0;
+}
+
+.order-sub > span {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.order-link {
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 0 0 var(--space-2);
+  border: 0;
+  background: none;
+  color: var(--primary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.order-link:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
+}
+
+/* 主数字 = 这笔的结果；明细是过程，一条细线分开 */
+.order-main {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.order-main-k {
+  flex-shrink: 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.order-main-v {
+  min-width: 0;
+  text-align: right;
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.order-card.is-closed .order-main-v {
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.order-rows {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 6px;
+  margin: var(--space-3) 0 0;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-light);
 }
-.fund-order-row {
+
+.order-row {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -7559,15 +7994,82 @@ input, select, textarea {
   font-size: var(--text-sm);
   color: var(--text-secondary);
 }
-.fund-order-row strong { color: var(--text); font-variant-numeric: tabular-nums; }
-.fund-order-actions {
+
+.order-row dt { flex-shrink: 0; }
+
+.order-row dd {
+  margin: 0;
+  min-width: 0;
+  text-align: right;
+  color: var(--text);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 在途说明条：冻结口径 + 撤销（44px 起步，保证撤销的命中区） */
+.order-note {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
-  margin-top: var(--space-3);
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--border-light);
+  gap: var(--space-3);
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--warning-bg);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.order-note.is-quiet { background: var(--bg); color: var(--text-secondary); }
+.order-note.is-danger { background: var(--compliance-bg); color: var(--danger-text); }
+
+.order-cancel {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: var(--text-md);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.order-cancel:active { background: var(--bg); }
+
+/* 320/359px：主数字 20px 与标签并排在 248px 内容区里放不下（英文
+   「Redemption units」+「483,398.4375 units」会顶到边），改为上下排、降一档 */
+@media (max-width: 359px) {
+  .order-main {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+  }
+  .order-main-v {
+    text-align: left;
+    font-size: var(--text-2xl);
+  }
+}
+
+/* tab 计数只给「待确认」：三个 tab 都标数会出现「全部 3 ≠ 待确认 1 + 已成交 1」
+   ——已撤销/已驳回没有 tab，账加不平比不给数字更糟。 */
+.orders-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 4px;
+  padding: 0 5px;
+  border-radius: var(--radius-xl);  /* 18px 高的角标 = 胶囊（token 内取最大档，不用裸数值） */
+  background: var(--warning-text);
+  color: #fff;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ========== 赎回（2026-10-28 P2） ========== */
@@ -7580,11 +8082,283 @@ input, select, textarea {
 .bottom-action-bar .btn { flex: 1; }
 .bottom-action-bar .btn:disabled { opacity: 0.55; }
 
-.fund-order-type { margin-left: var(--space-2); font-weight: 500; }
-.fund-redeem-quick { display: flex; gap: var(--space-2); margin-top: var(--space-2); }
-.fund-redeem-hint { margin-top: var(--space-2); }
-.asset-holding-tag { margin-left: var(--space-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0 4px; }
-.asset-realized { font-weight: 400; }
+
+/* ========== 基金交易页（申购 / 赎回，2026-10-28 四轮重做）==========
+   两页共用一套骨架：身份条 → 交易卡（输入 + 后果明细）→ 口径说明 → 固定底栏。
+   视觉定位「可核对的成交单」：数字右对齐 + tabular-nums，靠细分割线分栏，不加装饰。 */
+
+.p-fund-trade {
+  padding-top: 0;
+  /* 固定操作条 ≈80px + 安全区，再留 16px 呼吸，保证口径说明不被压住 */
+  padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+}
+
+/* 身份条：成交页重述关键条款（合规惯例），不做卡片——它是这一屏的前提，不是内容 */
+.p-fund-trade-ident { padding: var(--space-2) var(--space-1) var(--space-3); }
+.p-fund-trade-ident-name {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--text);
+}
+.p-fund-trade-ident-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px var(--space-3);
+  margin-top: 2px;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+/* 每段自己不断行（否则英文会把「HKD」和金额拆到两行）。
+   不用「·」分隔：折行时分隔点会孤零零留在行尾，比不加更难看。 */
+.p-fund-trade-ident-meta span { white-space: nowrap; }
+
+.p-fund-trade-card {
+  padding: var(--space-4);
+  margin-bottom: var(--space-2);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 输入：标签小字在上，数字大号右对齐，下划一条线——成交单的横线，不是输入框的框 */
+.p-fund-trade-label {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+/* 标签行：左标签 + 右快捷填充。快捷按钮自带 44px 命中区，这一行因此就是 44px 高 */
+.p-fund-trade-labelrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.p-fund-trade-input {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: var(--space-2) 0 var(--space-3);
+  border-bottom: 1.5px solid var(--border);
+  transition: border-color 0.2s;
+}
+.p-fund-trade-input:focus-within { border-bottom-color: var(--primary); }
+.p-fund-trade-unit {
+  flex: none;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.p-fund-trade-input input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;                      /* 触控标准：输入区不低于 44px */
+  padding: 0;
+  border: 0;
+  background: none;
+  outline: none;
+  text-align: right;
+  font-size: var(--text-display-sm);
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.p-fund-trade-input input::placeholder {
+  color: var(--text-tertiary);
+  font-weight: 600;
+}
+
+/* 提示行：左=余额/持仓上下文，右=快捷填充（文字按钮，命中区仍按 44px） */
+.p-fund-trade-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 44px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.p-fund-trade-quick { display: flex; gap: var(--space-2); flex: none; }
+.p-fund-trade-quick button {
+  min-height: 44px;
+  padding: 0 var(--space-2);
+  border: 0;
+  background: none;
+  color: var(--primary);
+  font-size: var(--text-md);
+  font-weight: 600;
+  cursor: pointer;
+}
+.p-fund-trade-quick button:active { color: var(--primary-hover); }
+.p-fund-trade-quick button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* 明细行：左标签右数值，两端对齐 = 成交单的账目结构 */
+.p-fund-trade-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-light);
+}
+.p-fund-trade-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--text-md);
+  color: var(--text-secondary);
+}
+/* 输入框自带下划线时，紧接的明细块不再补一条顶边——两道横线相距 17px 会读成「画错了」 */
+.p-fund-trade-rows.is-flush { padding-top: 0; border-top: 0; }
+.p-fund-trade-row dt { flex: none; }
+.p-fund-trade-row dd {
+  margin: 0;
+  text-align: right;
+  color: var(--text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 赎回页的持仓状态：放在输入之前，先讲清「哪部分能卖」 */
+/* 持仓状态：走正文档（--text-md）。这里是「能卖多少」的操作依据，
+   降到 --text-sm 辅助档等于把决定性的数字当成脚注。 */
+.p-fund-trade-status {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-light);
+}
+
+/* 结果：主数字（预估份额 / 预估回款），全页唯一的强调档 */
+.p-fund-trade-result {
+  display: flex;
+  flex-wrap: wrap;                  /* 长金额（HKD 1,114,716.80）在窄屏必须整块折行，不能在币种和数字之间断 */
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-light);
+}
+.p-fund-trade-result-label {
+  flex: none;
+  font-size: var(--text-md);
+  color: var(--text-secondary);
+}
+.p-fund-trade-result-value {
+  margin-left: auto;
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+.p-fund-trade-result-value em {
+  margin-left: 4px;
+  font-size: var(--text-md);
+  font-style: normal;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* 提交后余额：灰底条，回答「这笔交易让我还剩多少」 */
+.p-fund-trade-after {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  /* 14px 而不是 12px：这行回答的是「这笔交易之后我还剩多少」，是三个核心问题之一，
+     降成辅助档等于把自己给出的事实降级成脚注 */
+  font-size: var(--text-md);
+  color: var(--text-secondary);
+}
+.p-fund-trade-after strong {
+  color: var(--text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 校验提示：就地给差额与出口，不让用户滚到底部找 */
+.p-fund-trade-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--danger-light);
+  font-size: var(--text-sm);
+  color: var(--danger);
+}
+.p-fund-trade-alert.is-plain {
+  background: none;
+  padding: 0;
+  margin: var(--space-2) 0 0;
+}
+.p-fund-trade-alert-link {
+  flex: none;
+  min-height: 32px;
+  padding: 0 var(--space-2);
+  border: 0;
+  background: none;
+  color: var(--primary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.p-fund-trade-note {
+  margin: 0 var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* 全锁定态：给「为什么不能赎 + 什么时候能」，而不是一个填不进数字的输入框 */
+.p-fund-trade-locked { padding: var(--space-2) 0 var(--space-4); text-align: center; }
+.p-fund-trade-locked-title {
+  display: block;
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--text);
+}
+.p-fund-trade-locked-body {
+  margin-top: var(--space-2);
+  font-size: var(--text-md);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* 确认 sheet */
+.p-fund-trade-sheet .sheet-sub { margin-bottom: var(--space-3); }
+.p-fund-trade-rows.is-sheet {
+  margin: 0;
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light);
+}
+.p-fund-trade-sheet-note {
+  margin: var(--space-3) 0 var(--space-4);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+.p-fund-trade-sheet-actions { display: flex; gap: var(--space-2); }
+.p-fund-trade-sheet-actions .btn { flex: 1; }
+
+/* 320px：32px 大数字会把「966,796.875 份」顶到边，降一档避免与后缀挤在一起 */
+@media (max-width: 359px) {
+  .p-fund-trade-input input { font-size: var(--text-4xl); }
+}
+
 
 /* 通知类型：基金（2026-10-28 P1/P2 恢复资金与基金通知） */
 .notification-icon.fund {
@@ -7650,3 +8424,124 @@ input, select, textarea {
 }
 .segmented-control.transaction-tabs::-webkit-scrollbar { display: none; }
 .segmented-control.transaction-tabs button { white-space: nowrap; }
+
+/* ===== 基金列表决策卡（2026-10-28 改版，替代 fund-card 徽章大卡）=====
+   新类一律 p-funds-*：详情页仍在用 fund-card / fund-return / fund-metrics，
+   两套互不影响，改列表不会牵连 FundDetail。 */
+.p-funds-head { align-items: baseline; }
+.p-funds-count {
+  flex-shrink: 0;
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 吸顶条与第一张卡之间留一口气：sticky 自带阴影，贴边会被看成「卡片被切掉」 */
+.subpage-sticky + .p-funds-card { margin-top: var(--space-2); }
+
+.p-funds-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  text-align: left;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-3);
+  margin-bottom: var(--space-2);
+  transition: box-shadow 0.16s ease, transform 0.16s ease;
+}
+/* 按下反馈：整卡可点但没有箭头动画，用极轻的缩放交代「这一下点到了」 */
+.p-funds-card:active { transform: scale(0.993); box-shadow: var(--shadow-md); }
+.p-funds-card:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.p-funds-card-head { display: flex; align-items: center; gap: var(--space-2); }
+.p-funds-card-name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-xl);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 来源：透明性信息，压到 11px 挂在名称右侧，不做徽章（徽章会与名称争视觉焦点） */
+.p-funds-card-source {
+  flex-shrink: 0;
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+.p-funds-card-source.self { color: var(--primary); }
+.p-funds-card-source.external { color: var(--text-secondary); }
+.p-funds-card-head svg { flex-shrink: 0; color: var(--text-tertiary); }
+
+/* 收益与风险同行两端：高收益/高风险本来就是成对判断，拆成两带只是多一块地板 */
+.p-funds-card-return { display: flex; flex-direction: column; gap: 2px; margin-top: 10px; }
+.p-funds-card-rate { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+.p-funds-card-return-value {
+  flex-shrink: 0;
+  font-size: var(--text-4xl);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+/* 口径（目标回报/预期年化）不做弱化：跨产品扫读时它决定了这个数字能不能横向比较 */
+.p-funds-card-return-label {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.p-funds-card-risk { flex-shrink: 0; font-size: var(--text-sm); color: var(--text-secondary); white-space: nowrap; }
+.p-funds-card-risk.is-high { color: var(--danger); font-weight: 500; }
+
+/* 条款带：锁定期 / 起投 同一行（label + value 内联，不再一格一个地板） */
+.p-funds-card-facts {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  row-gap: 4px;
+  margin-top: 10px;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-light);
+}
+.p-funds-card-fact { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.p-funds-card-fact + .p-funds-card-fact {
+  padding-left: var(--space-2);
+  border-left: 1px solid var(--border-light);
+}
+.p-funds-card-fact-k { font-size: var(--text-xs); color: var(--text-secondary); white-space: nowrap; }
+.p-funds-card-fact-v {
+  font-size: var(--text-md);
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+/* 已持有：只对本人持仓出现，挂在名称行（状态属于「这是我的哪个产品」） */
+.p-funds-card-held {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* 页尾注脚：审核留痕，不声称起告知作用（风险告知在详情页与申购确认环节）。
+   单句 22 字：390 与 320 都单行不折——多一句 PI 声明就会撑破一行，而 PI 已由页面门控强制执行。
+   居中：它是页脚声明，不是正文段落；左对齐时右侧留 120px 空档会被看成「没排完」。 */
+.p-funds-footnote {
+  margin: var(--space-3) 0 var(--space-2);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  color: var(--text-secondary);
+  text-align: center;
+  text-wrap: balance;
+}

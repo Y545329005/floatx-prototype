@@ -1,10 +1,14 @@
 import { ArrowLeft, FileText, ChevronRight } from 'lucide-react';
-import { fundStatements } from '../mock/data';
+import { fundStatements, formatExactAmount } from '../mock/data';
 import { useLang } from '../i18n';
 
 export default function FundStatements({ navigate, goBack }) {
   const { t } = useLang();
-  const list = fundStatements || [];
+  // 按确认时间倒序：种子数据是 push 进来的（时间正序），运行时确认的是 unshift（时间倒序），
+  // 两种来源混在一起，只有显式排序才稳定
+  const list = (fundStatements || [])
+    .slice()
+    .sort((a, b) => String(b.confirmedAt || b.date || '').localeCompare(String(a.confirmedAt || a.date || '')));
 
   return (
     <div className="page fund-statements-page">
@@ -30,7 +34,7 @@ export default function FundStatements({ navigate, goBack }) {
                 {s.type === 'monthly' ? t('月结单') : t('逐笔结单')} · {s.period || s.date}
                 {s.tradeType && <span className="tag tag-outline fund-order-type">{t(s.tradeType)}</span>}
               </div>
-              <div className="list-item-subtitle">{t(s.fundName)} {s.currency} {s.amount?.toLocaleString()}</div>
+              <div className="list-item-subtitle">{t(s.fundName)} {s.currency} {formatExactAmount(s.amount)}</div>
             </div>
             <ChevronRight size={18} />
           </div>

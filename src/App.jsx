@@ -25,6 +25,7 @@ const AdminEvents = lazy(() => import('./admin/AdminEvents'));
 const AdminRegistrations = lazy(() => import('./admin/AdminRegistrations'));
 const AdminMyClients = lazy(() => import('./admin/AdminMyClients'));
 const AdminSubscriptions = lazy(() => import('./admin/AdminSubscriptions'));
+const AdminFundProducts = lazy(() => import('./admin/AdminFundProducts'));
 const AdminFundTrades = lazy(() => import('./admin/AdminFundTrades'));
 const AdminFunds = lazy(() => import('./admin/AdminFunds'));
 const AdminKYC = lazy(() => import('./admin/AdminKYC'));
@@ -308,6 +309,9 @@ export default function App() {
             {effectiveSub === 'registrations' && <AdminRegistrations admin={adminUser} />}
             {effectiveSub === 'my-clients' && <AdminMyClients navigate={navigate} detailId={hash.param2} admin={adminUser} />}
             {effectiveSub === 'subscriptions' && <AdminSubscriptions navigate={navigate} detailId={hash.param2} admin={adminUser} />}
+            {/* 基金产品：抽屉走 param2（#admin/fund-products/{id}）。
+                2026-10-28 教训：渲染分支必须把 navigate/detailId 传全——少传不报错、功能静默失效 */}
+            {effectiveSub === 'fund-products' && <AdminFundProducts admin={adminUser} detailId={hash.param2} navigate={navigate} />}
             {effectiveSub === 'fund-trades' && <AdminFundTrades admin={adminUser} detailId={hash.param2} navigate={navigate} />}
             {/* 资金审核：tab 走 param2、抽屉走 param3（#admin/funds/{tab}/{id}）；
                 2026-10-28 修复：此前只渲染 <AdminFunds /> 未透传 navigate/tab/detailId，
@@ -343,7 +347,7 @@ export default function App() {
       navigate(gate.to);
       return null;
     }
-    return renderAppPage(hash.path, hash.param, { navigate, goBack, setToast, isLoggedIn, setIsLoggedIn });
+    return renderAppPage(hash.path, hash.param, { navigate, goBack, setToast, isLoggedIn, setIsLoggedIn, param2: hash.param2 });
   };
 
   const TOP_LEVEL_PAGES = ['events', 'projects', 'funds', 'asset', 'profile'];

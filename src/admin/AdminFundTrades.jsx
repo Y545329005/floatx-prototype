@@ -12,7 +12,8 @@ import {
   FUND_ORDER_STATUS,
   FUND_FEE_RATE,
   maskName,
-  formatExact,
+  formatExactAmount,
+  formatShares,
   formatListDateTime,
 } from '../mock/data';
 import { useDrawerFocus } from './useDrawerFocus';
@@ -202,7 +203,7 @@ export default function AdminFundTrades({ admin, detailId, navigate }) {
               <span className="col-name"><strong>{maskName(inv?.name || o.userId)}</strong></span>
               <span className="col-id">{o.fundName}</span>
               <span className="col-amount">
-                {typeTab === 'redeem' ? `${formatExact(o.shares)} 份` : `${o.currency} ${formatExact(o.amount)}`}
+                {typeTab === 'redeem' ? `${formatShares(o.shares)} 份` : `${o.currency} ${formatExactAmount(o.amount)}`}
               </span>
               <span className="col-date">{formatListDateTime(o.createdAt)}</span>
               <span className="col-status"><span className={`status-badge ${meta.cls}`}>{meta.label}</span></span>
@@ -233,21 +234,21 @@ export default function AdminFundTrades({ admin, detailId, navigate }) {
               <div className="kyc-review-row"><span>投资人</span><strong>{investors.get(selected.userId)?.name || selected.userId}</strong></div>
               {isRedeem ? (
                 <>
-                  <div className="kyc-review-row"><span>赎回份额</span><strong>{formatExact(selected.shares)} 份</strong></div>
+                  <div className="kyc-review-row"><span>赎回份额</span><strong>{formatShares(selected.shares)} 份</strong></div>
                   <div className="kyc-review-row"><span>提交时参考净值</span><strong>{selected.nav}</strong></div>
-                  <div className="kyc-review-row"><span>预估回款</span><strong>{selected.currency} {formatExact(selected.amount)}</strong></div>
-                  <div className="kyc-review-row"><span>持仓剩余</span><strong>{formatExact(Math.max(0, (fundHoldings.find(hh => hh.userId === selected.userId && hh.fundId === selected.fundId && hh.currency === selected.currency)?.shares || 0) - selected.shares))} 份</strong></div>
+                  <div className="kyc-review-row"><span>预估回款</span><strong>{selected.currency} {formatExactAmount(selected.amount)}</strong></div>
+                  <div className="kyc-review-row"><span>持仓剩余</span><strong>{formatShares(Math.max(0, (fundHoldings.find(hh => hh.userId === selected.userId && hh.fundId === selected.fundId && hh.currency === selected.currency)?.shares || 0) - selected.shares))} 份</strong></div>
                 </>
               ) : (
-                <div className="kyc-review-row"><span>申购金额</span><strong>{selected.currency} {formatExact(selected.amount)}</strong></div>
+                <div className="kyc-review-row"><span>申购金额</span><strong>{selected.currency} {formatExactAmount(selected.amount)}</strong></div>
               )}
               <div className="kyc-review-row"><span>提交时间</span><strong>{selected.createdAt}</strong></div>
               <div className="kyc-review-row"><span>状态</span><strong>{STATUS_META[selected.status]?.label}</strong></div>
               {selected.status === FUND_ORDER_STATUS.CONFIRMED && (
                 <>
                   <div className="kyc-review-row"><span>确认净值</span><strong>{selected.nav}（{selected.navDate}）</strong></div>
-                  <div className="kyc-review-row"><span>确认份额</span><strong>{formatExact(selected.shares)} 份</strong></div>
-                  <div className="kyc-review-row"><span>认购费</span><strong>{selected.currency} {formatExact(selected.feeAmount || 0)}</strong></div>
+                  <div className="kyc-review-row"><span>确认份额</span><strong>{formatShares(selected.shares)} 份</strong></div>
+                  <div className="kyc-review-row"><span>认购费</span><strong>{selected.currency} {formatExactAmount(selected.feeAmount || 0)}</strong></div>
                   <div className="kyc-review-row"><span>处理人</span><strong>{selected.confirmedBy || '—'}
                   </strong></div>
                 </>
@@ -273,21 +274,21 @@ export default function AdminFundTrades({ admin, detailId, navigate }) {
                   <div className="admin-form-hint">
                   {isRedeem ? (
                     <>
-                      费率 {(feeRate * 100).toFixed(2)}% · 赎回费 {selected.currency} {formatExact(previewFee)} ·
-                      预计回款 {selected.currency} {formatExact(previewNet)}
+                      费率 {(feeRate * 100).toFixed(2)}% · 赎回费 {selected.currency} {formatExactAmount(previewFee)} ·
+                      预计回款 {selected.currency} {formatExactAmount(previewNet)}
                     </>
                   ) : (
                     <>
-                      费率 {(feeRate * 100).toFixed(2)}% · 认购费 {selected.currency} {formatExact(previewFee)} ·
-                      预计入账 {formatExact(Number(previewShares.toFixed(4)))} 份
+                      费率 {(feeRate * 100).toFixed(2)}% · 认购费 {selected.currency} {formatExactAmount(previewFee)} ·
+                      预计入账 {formatShares(Number(previewShares.toFixed(4)))} 份
                     </>
                   )}
                 </div>
                 </div>
                 <p className="text-muted text-sm">
                   {isRedeem
-                    ? `确认后将扣减 ${formatExact(selected.shares)} 份持仓，回款 ${selected.currency} ${formatExact(previewNet)} 进入投资人可用余额，并生成逐笔结单。`
-                    : `确认后将从投资人可用余额扣款 ${selected.currency} ${formatExact(selected.amount)}，并生成逐笔结单。`}
+                    ? `确认后将扣减 ${formatShares(selected.shares)} 份持仓，回款 ${selected.currency} ${formatExactAmount(previewNet)} 进入投资人可用余额，并生成逐笔结单。`
+                    : `确认后将从投资人可用余额扣款 ${selected.currency} ${formatExactAmount(selected.amount)}，并生成逐笔结单。`}
                 </p>
               </div>
             )}

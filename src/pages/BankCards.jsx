@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft, Plus, CreditCard, Trash2, X, ShieldCheck, ShieldQuestion, Zap, Check } from 'lucide-react';
-import { bankCards, platformAccounts, eddaAuth, authorizeEdda, submitCardVerification, recordAgreement, getFreezeState } from '../mock/data';
+import { bankCards, platformAccounts, eddaAuth, authorizeEdda, submitCardVerification, recordAgreement, getFreezeState, formatExactAmount } from '../mock/data';
 import { useLang } from '../i18n';
 import AgreementModal from '../components/AgreementModal';
 
@@ -219,7 +219,7 @@ export default function BankCards({ navigate, goBack }) {
             </div>
             <div className="bank-card-whitelist">
               {c.whitelistStatus === 'verified' ? (
-                <><ShieldCheck size={14} className="wl-ok" /> <span>{meta.label}{c.verifiedAmount ? ` · ${c.currency} ${c.verifiedAmount.toLocaleString()}` : ''}</span></>
+                <><ShieldCheck size={14} className="wl-ok" /> <span>{meta.label}{c.verifiedAmount ? ` · ${c.currency} ${formatExactAmount(c.verifiedAmount)}` : ''}</span></>
               ) : c.whitelistStatus === 'verifying' ? (
                 <><ShieldQuestion size={14} /> <span>{meta.label} · {t('财务核对中')}</span></>
               ) : (

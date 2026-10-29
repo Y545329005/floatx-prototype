@@ -51,7 +51,7 @@ const FundRequestDetail = lazy(() => import('../pages/FundRequestDetail'));
 // 渲染 APP 端页面（门控放行后调用）。
 // ctx: { navigate, goBack, setToast, isLoggedIn, setIsLoggedIn, embed }
 export function renderAppPage(path, param, ctx) {
-  const { navigate, goBack, setToast, isLoggedIn, setIsLoggedIn, embed } = ctx;
+  const { navigate, goBack, setToast, isLoggedIn, setIsLoggedIn, embed, param2 } = ctx;
   switch (path) {
     case 'search':
       return <SearchPage navigate={navigate} goBack={goBack} isLoggedIn={isLoggedIn} />;
@@ -78,7 +78,8 @@ export function renderAppPage(path, param, ctx) {
     // 赎回申请（2026-10-28 P2）：param = holdingId，不是 fundId——
     // 同一只基金可能多币种持仓，赎回对象必须是"那一笔持仓"
     case 'fund-redeem':
-      return <FundRedeem id={param} navigate={navigate} goBack={goBack} setToast={setToast} />;
+      // param2 = 入口来源：asset 表示从资产页持仓行进来，返回要回资产页（2026-10-28 双入口）
+      return <FundRedeem id={param} from={param2} navigate={navigate} goBack={goBack} setToast={setToast} />;
     case 'fund-statements':
       return <FundStatements navigate={navigate} goBack={goBack} />;
     case 'fund-statement':

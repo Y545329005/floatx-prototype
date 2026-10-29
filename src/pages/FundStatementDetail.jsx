@@ -1,5 +1,5 @@
 import { ArrowLeft, Download } from 'lucide-react';
-import { fundStatements, formatExact } from '../mock/data';
+import { fundStatements, formatExactAmount, formatShares } from '../mock/data';
 import { useLang } from '../i18n';
 
 export default function FundStatementDetail({ id, navigate, goBack }) {
@@ -35,22 +35,22 @@ export default function FundStatementDetail({ id, navigate, goBack }) {
             <div className="statement-title">{s.fundName}</div>
             <div className="text-sm text-muted">{s.period || s.date}</div>
           </div>
-          <div className="statement-amount">{s.currency} {s.amount?.toLocaleString()}</div>
+          <div className="statement-amount">{s.currency} {formatExactAmount(s.amount)}</div>
         </div>
         <div className="statement-row"><span>{t('交易类型')}</span><span>{t(s.tradeType || '认购')}</span></div>
         {s.shares > 0 && (
-          <div className="statement-row"><span>{t('份额')}</span><span>{formatExact(s.shares)} {t('份')}</span></div>
+          <div className="statement-row"><span>{t('份额')}</span><span>{formatShares(s.shares)} {t('份')}</span></div>
         )}
         {s.nav > 0 && (
           <div className="statement-row"><span>{t('确认净值')}</span><span>{s.nav}{s.navDate ? `（${s.navDate}）` : ''}</span></div>
         )}
         {s.grossAmount > 0 && (
-          <div className="statement-row"><span>{t('赎回总额')}</span><span>{s.currency} {formatExact(s.grossAmount)}</span></div>
+          <div className="statement-row"><span>{t('赎回总额')}</span><span>{s.currency} {formatExactAmount(s.grossAmount)}</span></div>
         )}
         {s.feeAmount > 0 && (
           <div className="statement-row">
             <span>{t(s.tradeType === '赎回' ? '赎回费' : '认购费')}</span>
-            <span>{s.currency} {formatExact(s.feeAmount)}</span>
+            <span>{s.currency} {formatExactAmount(s.feeAmount)}</span>
           </div>
         )}
         <div className="statement-row"><span>{t('状态')}</span><span>{t('已确认')}</span></div>

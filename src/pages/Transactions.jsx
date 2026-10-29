@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Clock } from 'lucide-react';
-import { transactions, wallet, walletAccountOf, formatExact } from '../mock/data';
+import { transactions, wallet, walletAccountOf, formatExactAmount } from '../mock/data';
 import { useLang } from '../i18n';
 
 // 投资人交易记录页（2026-08-18：钱包交易记录独立成页，对齐后台资金流水查询心智）
@@ -9,7 +9,7 @@ import { useLang } from '../i18n';
 // 2026-08-19：行结构对齐钱包页 wallet-transaction-card 两行布局（此前 .transaction-row CSS 缺失导致全部内容靠左堆叠）；
 // 「加载更多」按钮 → 无限滚动（window scroll + rAF 兜底，触底追加日期组，组完整不被截断；全部加载后显示到底标记）；
 // 筛选区（类型 tab + 时间工具栏）整体吸顶（transactions-sticky 变体）；
-// 金额改精确数值 formatExact（对账场景不缩写，对齐钱包页余额格式；币种符号前置为国际惯例）
+// 金额走 formatExactAmount（全站金额一律 2 位小数，对账场景不缩写；币种符号前置为国际惯例）
 const TX_FILTERS = [
   { key: 'all', labelKey: '全部' },
   { key: 'deposit', labelKey: '充值' },
@@ -155,7 +155,7 @@ export default function Transactions({ navigate, goBack }) {
                   </span>
                   <span className="wallet-transaction-amount">
                     {(tx.type === 'deposit' || tx.type === 'exit' || tx.type === 'dividend' || tx.type === 'redeem') ? '+' : tx.type === 'exchange' ? '' : '-'}
-                    {walletAccountOf(tx.currency)?.symbol || ''}{formatExact(tx.amount)}
+                    {walletAccountOf(tx.currency)?.symbol || ''}{formatExactAmount(tx.amount)}
                   </span>
                 </div>
               </div>

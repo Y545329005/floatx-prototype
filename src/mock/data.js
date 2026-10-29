@@ -299,10 +299,13 @@ export let currentUser = { ...testAccounts.approved };
 export const kycStatus = currentUser.kyc_status;
 export const kycProfileData = currentUser.kyc_profile;
 
+// 首期只做 HKD 一个币种（2026-10-28 标注反馈）：USD / CNH 余额清零，
+// 否则总资产里会有一块「页面上任何地方都看不到」的折合金额。
+// 多币种份额属二期，届时钱包、基金净值序列、起投额要一起恢复。
 export const wallet = {
-  hkd: { label: '港币', symbol: 'HK$', balance: 12500000, frozen: 3000000 },
-  usd: { label: '美元', symbol: '$', balance: 850000, frozen: 0 },
-  cny: { label: '人民币', symbol: '¥', balance: 320000, frozen: 0 },
+  hkd: { label: '港币', symbol: 'HK$', balance: 9000000, frozen: 3000000 },
+  usd: { label: '美元', symbol: '$', balance: 0, frozen: 0 },
+  cny: { label: '人民币', symbol: '¥', balance: 0, frozen: 0 },
 };
 
 // ========== 币种口径（2026-10-28 基金一期） ==========
@@ -729,11 +732,50 @@ function makeNavSeries(seed, sinceInceptionPct, n = 104) {
   return pts;
 }
 
+// 净值序列长度按「成立至今」自动推算（2026-10-28 详情页改版）。navSeries 是周频、末点=当前，
+// 长度必须与 inceptionDate 自洽，否则详情页的日期轴会把曲线画到成立之前——
+// 实测 f3 成立 2025-06 却用了默认 104 周（≈2 年），轴首点落到 2024-10，凭空多出 8 个月。
+function weeksSince(ym) {
+  const [y, m] = String(ym).split('-').map(Number);
+  const start = new Date(y, (m || 1) - 1, 1);
+  return Math.max(2, Math.round((Date.now() - start.getTime()) / (7 * 86400000)));
+}
+
 // 2026-10-28 富途式改版：
 // - source 区分自营('self'，HighBlock 管理) / 代售('external'，第三方产品、本平台为分销机构)
 // - returnLabel/returnValue/returnNote 结构化收益（替代旧 annualReturn 字符串，富途式大数字展示）
 // - performance（PI 门控内业绩网格）、navSeries（示意净值，NavChart 用）
 // - manager/managerNote（管理人区块，代售含分销披露）、inceptionDate/fundSize（基金档案）
+// - 2026-10-28 详情页改版新增配置项（原型为示意值，上线由后台填写）：
+//   navMeta{currency}            净值计价币种 + 周频口径（日期轴据此推算，不硬编码日期）
+//   economics{managementFeePct, performanceFeePct}
+//                                管理费/表现费——纯披露，无计算逻辑，存**数值**（后台将来填数字，不是填文案）。
+//                                认购费/赎回费**不在此重复**，一律读 FUND_FEE_RATE（账务与展示同源）
+//   dealing{openFrequency, confirmDays, redemptionNoticeDays}
+//                                开放日（枚举 quarterly-start/quarterly-end/semi-annual-start）、
+//                                确认时效（T+n）、赎回通知期天数——同样是数值/枚举，文案在页面里拼
+//   parties{custodian, administrator, auditor}
+//                                第三方机构：缺值 = 详见基金文件，原型**不编造具名机构**（审核会逐一点名核查）
+//   fundDocuments[]              基金发售文件（KFS/PPM/认购表格）：url 为 null 时页面只做说明，不给死链
+// 基金产品的**封闭枚举**（2026-10-28）：后台下拉、数据层校验、APP 展示共用一份。
+// 为什么一定要收敛：这些值在 APP 端都过一次 t()，而字典只能为「写死的那几个值」提供译文——
+// 自由文本框里多打一个字（「中高风险 」）或换一种说法，英文界面就会整块回退成中文，
+// 而且没有任何报错。枚举是**白名单**，不是建议名单。
+export const FUND_OPTIONS = {
+  // 来源：自营 = HighBlock 管理；代售 = 第三方管理（须披露分销关系）
+  sources: ['self', 'external'],
+  types: ['另类投资', '权益投资', '固定收益', '多策略'],
+  // 风险阶梯：APP 只对「高风险」着色，其余为普通文字，档位顺序即风险从低到高
+  riskLevels: ['低风险', '中低风险', '中风险', '中高风险', '高风险'],
+  returnLabels: ['目标回报', '预期年化'],
+  // 收益口径只有两种，都不代表实际收益；「保证」在任何辖区都属于受监管表述，填之前需合规确认
+  returnNotes: ['非保证', '保证'],
+  redemptionModes: ['manual', 'auto'],
+  // 开放日：枚举存 key，文案在页面里拼（与 dealing.openFrequency 同源）
+  openFrequencies: ['quarterly-start', 'quarterly-end', 'semi-annual-start'],
+  docTypes: ['kfs', 'ppm', 'other'],
+};
+
 export const funds = [
   {
     id: 'f1',
@@ -744,21 +786,31 @@ export const funds = [
     returnNote: '非保证',
     type: '另类投资',
     riskLevel: '中高风险',
-    term: '36个月',
     minInvestment: 1000000,
     status: 'open',
     openForSubscription: true,
-    currency: ['HKD', 'USD', 'CNH'],
-    lockPeriod: '24个月',
-    minHoldPeriod: '12个月',
-    redemptionPeriod: 'T+15（人工处理）',
-    lockMonths: 24,        // 锁定期（月）——逻辑唯一来源；lockPeriod 仅用于展示
+    currency: ['HKD'],   // 首期仅港币（2026-10-28）：没有任何 USD/CNH 的申购/持仓路径
+    redemptionDays: 15,      // 赎回到账 T+n 的 n
+    redemptionMode: 'manual',   // 处理方式：manual 人工处理 / auto 自动处理
+    lockMonths: 24,        // 锁定期（月）——唯一事实源；「24个月」由页面用 i18n 模板生成
     minHoldMonths: 12,      // 最低持有期（月）
     termMonths: 36,        // 存续期（月）
     inceptionDate: '2024-06',
-    fundSize: 'HK$ 2.4亿',
-    navSeries: makeNavSeries(101, 15.3, 120),   // 120 周 ≈ 2.3 年：需覆盖种子持仓（26 个月前），
-                                              // 否则确认日早于序列起点、净值只能 clamp 到首点
+    fundSizeYi: 2.4,        // 规模（亿港元）——展示文案按语言生成
+    // 序列长度随成立日推算（种子持仓 26 个月前需落在序列内，故不再写死 120）
+    navSeries: makeNavSeries(101, 15.3, weeksSince('2024-06')),
+    // lastNavDate = 最后一条净值的实际披露日，净值走势图的日期轴以它为末点。
+    // 取「一周前」而不是今天：周频净值的常态是「本周净值下周才披露」，
+    // 且若末点是今天，后台第一次追加净值就必然要求「日期晚于今天」= 永远录不进去。
+    navMeta: { cadence: 'weekly', currency: 'HKD', lastNavDate: weeksAgoDate(1) },
+    economics: { managementFeePct: 1.5, performanceFeePct: 20 },
+    dealing: { openFrequency: 'quarterly-end', confirmDays: 3, redemptionNoticeDays: 30 },
+    parties: { custodian: null, administrator: null, auditor: null },
+    // 只列 KFS + PPM：认购表格与本平台的线上申购流程冲突（纸质表格会让投资人以为要线下签）
+    fundDocuments: [
+      { name: '产品资料概要', type: 'kfs', url: null },
+      { name: '要约备忘录（PPM）', type: 'ppm', url: null },
+    ],
     manager: 'HighBlock Asset Management',
     managerNote: '',
     description: '聚焦人工智能、数据中心及算力基础设施等AI产业链投资机会。',
@@ -771,27 +823,34 @@ export const funds = [
   },
   {
     id: 'f2',
-    name: 'IPO/美股券商客户基金（老板名义投向）',
+    name: '美股 IPO 配置基金',
     source: 'self',
     returnLabel: '目标回报',
     returnValue: '10%+',
     returnNote: '非保证',
     type: '权益投资',
     riskLevel: '高风险',
-    term: '24个月',
     minInvestment: 2000000,
     status: 'open',
     openForSubscription: true,
-    currency: ['HKD', 'USD', 'CNH'],
-    lockPeriod: '12个月',
-    minHoldPeriod: '6个月',
-    redemptionPeriod: 'T+20（人工处理）',
-    lockMonths: 12,        // 锁定期（月）——逻辑唯一来源；lockPeriod 仅用于展示
+    currency: ['HKD'],   // 首期仅港币（2026-10-28）：没有任何 USD/CNH 的申购/持仓路径
+    redemptionDays: 20,      // 赎回到账 T+n 的 n
+    redemptionMode: 'manual',   // 处理方式：manual 人工处理 / auto 自动处理
+    lockMonths: 12,        // 锁定期（月）——唯一事实源；「12个月」由页面用 i18n 模板生成
     minHoldMonths: 6,      // 最低持有期（月）
     termMonths: 24,        // 存续期（月）
     inceptionDate: '2024-09',
-    fundSize: 'HK$ 3.8亿',
-    navSeries: makeNavSeries(202, 11.2),
+    fundSizeYi: 3.8,
+    navSeries: makeNavSeries(202, 11.2, weeksSince('2024-09')),
+    navMeta: { cadence: 'weekly', currency: 'HKD', lastNavDate: weeksAgoDate(1) },
+    economics: { managementFeePct: 2, performanceFeePct: 20 },
+    dealing: { openFrequency: 'semi-annual-start', confirmDays: 3, redemptionNoticeDays: 45 },
+    parties: { custodian: null, administrator: null, auditor: null },
+    // 只列 KFS + PPM：认购表格与本平台的线上申购流程冲突（纸质表格会让投资人以为要线下签）
+    fundDocuments: [
+      { name: '产品资料概要', type: 'kfs', url: null },
+      { name: '要约备忘录（PPM）', type: 'ppm', url: null },
+    ],
     manager: 'HighBlock Asset Management',
     managerNote: '',
     description: '通过合规渠道参与一级/优先配置等机会，具体安排以基金文件及客户经理沟通为准。',
@@ -811,20 +870,27 @@ export const funds = [
     returnNote: '非保证',
     type: '固定收益',
     riskLevel: '中低风险',
-    term: '12个月',
     minInvestment: 1000000,
     status: 'open',
     openForSubscription: true,
-    currency: ['HKD', 'USD', 'CNH'],
-    lockPeriod: '6个月',
-    minHoldPeriod: '3个月',
-    redemptionPeriod: 'T+10（人工处理）',
-    lockMonths: 6,        // 锁定期（月）——逻辑唯一来源；lockPeriod 仅用于展示
+    currency: ['HKD'],   // 首期仅港币（2026-10-28）：没有任何 USD/CNH 的申购/持仓路径
+    redemptionDays: 10,      // 赎回到账 T+n 的 n
+    redemptionMode: 'manual',   // 处理方式：manual 人工处理 / auto 自动处理
+    lockMonths: 6,        // 锁定期（月）——唯一事实源；「6个月」由页面用 i18n 模板生成
     minHoldMonths: 3,      // 最低持有期（月）
     termMonths: 12,        // 存续期（月）
     inceptionDate: '2025-06',
-    fundSize: 'HK$ 1.2亿',
-    navSeries: makeNavSeries(303, 10.4),
+    fundSizeYi: 1.2,
+    navSeries: makeNavSeries(303, 10.4, weeksSince('2025-06')),
+    navMeta: { cadence: 'weekly', currency: 'HKD', lastNavDate: weeksAgoDate(1) },
+    economics: { managementFeePct: 0.8, performanceFeePct: 10 },
+    dealing: { openFrequency: 'quarterly-start', confirmDays: 2, redemptionNoticeDays: 15 },
+    parties: { custodian: null, administrator: null, auditor: null },
+    // 只列 KFS + PPM：认购表格与本平台的线上申购流程冲突（纸质表格会让投资人以为要线下签）
+    fundDocuments: [
+      { name: '产品资料概要', type: 'kfs', url: null },
+      { name: '要约备忘录（PPM）', type: 'ppm', url: null },
+    ],
     manager: 'Harbourline Asset Management',
     managerNote: '分销披露：本平台为分销机构，产品由第三方管理人管理，平台不承担产品管理责任。',
     description: '对标 IFC 货币交易等固收类机会，由香港持牌资产管理公司管理。',
@@ -844,20 +910,27 @@ export const funds = [
     returnNote: '非保证',
     type: '多策略',
     riskLevel: '中风险',
-    term: '18个月',
     minInvestment: 1500000,
     status: 'open',
     openForSubscription: true,
-    currency: ['HKD', 'USD'],
-    lockPeriod: '12个月',
-    minHoldPeriod: '6个月',
-    redemptionPeriod: 'T+20（人工处理）',
-    lockMonths: 12,        // 锁定期（月）——逻辑唯一来源；lockPeriod 仅用于展示
+    currency: ['HKD'],   // 首期仅港币（2026-10-28）：没有任何 USD/CNH 的申购/持仓路径
+    redemptionDays: 20,      // 赎回到账 T+n 的 n
+    redemptionMode: 'manual',   // 处理方式：manual 人工处理 / auto 自动处理
+    lockMonths: 12,        // 锁定期（月）——唯一事实源；「12个月」由页面用 i18n 模板生成
     minHoldMonths: 6,      // 最低持有期（月）
     termMonths: 18,        // 存续期（月）
     inceptionDate: '2024-11',
-    fundSize: 'HK$ 5.1亿',
-    navSeries: makeNavSeries(404, 9.8),
+    fundSizeYi: 5.1,
+    navSeries: makeNavSeries(404, 9.8, weeksSince('2024-11')),
+    navMeta: { cadence: 'weekly', currency: 'HKD', lastNavDate: weeksAgoDate(1) },
+    economics: { managementFeePct: 1.5, performanceFeePct: 15 },
+    dealing: { openFrequency: 'quarterly-end', confirmDays: 3, redemptionNoticeDays: 30 },
+    parties: { custodian: null, administrator: null, auditor: null },
+    // 只列 KFS + PPM：认购表格与本平台的线上申购流程冲突（纸质表格会让投资人以为要线下签）
+    fundDocuments: [
+      { name: '产品资料概要', type: 'kfs', url: null },
+      { name: '要约备忘录（PPM）', type: 'ppm', url: null },
+    ],
     manager: 'Atlas Pacific Asset Management',
     managerNote: '分销披露：本平台为分销机构，产品由第三方管理人管理，平台不承担产品管理责任。',
     description: '由欧美资管机构管理的多策略配置机会，具体安排以基金文件及客户经理沟通为准。',
@@ -951,6 +1024,289 @@ export function latestNav(fund) {
   return navWeeksAgo(fund, 0);
 }
 
+/* 月份文案（2026-10-28）：锁定期 / 最低持有期 / 存续期在数据里只有数字，
+   「24个月」由这里按语言生成。此前是 data.js 里手填的字符串，中英文各存一份、
+   且与数字并存两套事实——后台只要改数字不改文案，页面就会显示改之前的期限。 */
+/* 赎回到账文案（2026-10-28）：数据里只有天数 + 处理方式，「T+15（人工处理）」由这里生成。
+   与「月份」同一个道理——文案写进数据，就会有一份对的文案配着一份错的天数。 */
+export function fundRedemptionLabel(days, mode, t) {
+  const n = Number(days);
+  if (!Number.isFinite(n) || n < 0) return '-';
+  return t(mode === 'auto' ? 'T+{}（自动处理）' : 'T+{}（人工处理）').replace('{}', n);
+}
+
+/* 基金规模：数据里只存「亿港元」的数字，文案按语言生成（中文「HK$ 2.4亿」/ 英文「HK$240M」）。
+   存字符串的话，每新增一个规模都要在字典里补一条英文，否则英文界面悄悄回退成中文。 */
+export function formatFundSize(yi, lang) {
+  const n = Number(yi);
+  if (!Number.isFinite(n) || n <= 0) return '-';
+  const v = Math.round(n * 100) / 100;
+  if (lang === 'en') return `HK$${v * 100}M`;
+  return `HK$ ${v}${lang === 'zhHK' ? '億' : '亿'}`;
+}
+
+export function fundMonthsLabel(months, t) {
+  const n = Number(months);
+  if (!Number.isFinite(n) || n <= 0) return '-';
+  return t('{} 个月').replace('{}', n);
+}
+
+// ========== 基金产品维护（2026-10-28 · 后台「基金产品管理」） ==========
+// 分工：产品 = 条款与展示口径（可改）；净值 = 只追加（可改会破坏已确认单据的对账）。
+// 单据里记的 nav 是成交快照，所以**改产品、追加净值都不会回头改历史单据**。
+
+// 可改字段白名单：id / navSeries / 状态类字段不接受 patch，
+// 否则后台一个手滑就能把「净值序列」或「产品 id」覆盖掉（id 是持仓的外键）。
+const FUND_EDITABLE_KEYS = [
+  'name', 'source', 'type', 'riskLevel', 'description', 'manager', 'managerNote',
+  'returnLabel', 'returnValue', 'returnNote', 'minInvestment',
+  'lockMonths', 'minHoldMonths', 'termMonths',
+  'inceptionDate', 'fundSizeYi', 'redemptionDays', 'redemptionMode',
+];
+
+const FUND_MONTH_KEYS = ['lockMonths', 'minHoldMonths', 'termMonths'];
+
+// 审计日志用的中文标签（不写内部字段名）
+const FUND_FIELD_LABELS = {
+  name: '名称', source: '来源', type: '类型', riskLevel: '风险等级',
+  description: '一句话描述', manager: '管理人', managerNote: '管理人披露',
+  returnLabel: '收益标签', returnValue: '收益数值', returnNote: '收益口径',
+  minInvestment: '起投额', lockMonths: '锁定期', minHoldMonths: '最低持有期', termMonths: '存续期',
+  inceptionDate: '成立时间', fundSizeYi: '基金规模',
+  redemptionDays: '赎回到账天数', redemptionMode: '到账处理方式',
+  economics: '费率', dealing: '交易条款', parties: '第三方机构', fundDocuments: '发售文件',
+};
+const NESTED_FIELD_LABELS = {
+  managementFeePct: '管理费', performanceFeePct: '表现费',
+  openFrequency: '开放日', confirmDays: '确认时效', redemptionNoticeDays: '赎回通知期',
+  custodian: '托管人', administrator: '行政管理人', auditor: '审计师',
+};
+
+function formatFundValue(key, v) {
+  if (key === 'source') return v === 'self' ? '自营' : '代售';
+  if (key === 'redemptionMode') return v === 'auto' ? '自动处理' : '人工处理';
+  if (key === 'fundSizeYi') return `${v} 亿港元`;
+  if (key === 'redemptionDays') return `T+${v}`;
+  if (FUND_MONTH_KEYS.includes(key)) return `${v} 个月`;
+  if (v === null || v === undefined || v === '') return '空';
+  return String(v);
+}
+
+function fundHoldingCount(fundId) {
+  return fundHoldings.filter(h => h.fundId === fundId && Number(h.shares) > 0).length;
+}
+
+/**
+ * 更新基金产品资料。
+ * 锁定期是唯一会改变「别人能不能卖」的字段：它一变，存量持仓的可赎回状态全部重算
+ * （已押着的份额可能突然可赎）。因此数据层自带闸门——未 acknowledge 时直接拒绝，
+ * 不依赖 UI 弹窗（弹窗可以绕过，数据层不能）。
+ */
+export function updateFundProduct(fundId, patch = {}, { operator = '运营后台', acknowledge = false } = {}) {
+  const fund = funds.find(f => f.id === fundId);
+  if (!fund) return { ok: false, error: '基金不存在' };
+  if (!patch || typeof patch !== 'object') return { ok: false, error: '没有需要保存的内容' };
+
+  const next = {};
+  for (const k of FUND_EDITABLE_KEYS) {
+    if (patch[k] === undefined) continue;
+    next[k] = patch[k];
+  }
+
+  // —— 校验（先校验、后落库：任何一项不过就整体不写，不留半生效状态）——
+  if (next.name !== undefined) {
+    const name = String(next.name).trim();
+    if (!name) return { ok: false, error: '基金名称不能为空' };
+    next.name = name;
+  }
+  for (const k of FUND_MONTH_KEYS) {
+    if (next[k] === undefined) continue;
+    const n = Number(next[k]);
+    if (!Number.isInteger(n) || n < 0 || n > 600) {
+      return { ok: false, error: '月数须为 0~600 的整数' };
+    }
+    next[k] = n;
+  }
+  if (next.minInvestment !== undefined) {
+    const n = Number(next.minInvestment);
+    if (!Number.isFinite(n) || n <= 0) return { ok: false, error: '起投额须为大于 0 的数字' };
+    next.minInvestment = Math.round(n);
+  }
+  if (next.inceptionDate !== undefined && next.inceptionDate && !/^\d{4}-\d{2}$/.test(String(next.inceptionDate))) {
+    return { ok: false, error: '成立时间格式须为 YYYY-MM' };
+  }
+
+  // —— 封闭枚举校验（后台是下拉，但数据层仍要拦：直接改快照、脚本调用都能绕过 UI）——
+  const enumChecks = [
+    ['source', 'sources'], ['type', 'types'], ['riskLevel', 'riskLevels'],
+    ['returnLabel', 'returnLabels'], ['returnNote', 'returnNotes'],
+  ];
+  for (const [key, list] of enumChecks) {
+    if (next[key] === undefined) continue;
+    if (!FUND_OPTIONS[list].includes(next[key])) {
+      return { ok: false, error: `「${next[key]}」不是可选的${FUND_FIELD_LABELS[key] || key}档位` };
+    }
+  }
+  if (next.redemptionMode !== undefined && !FUND_OPTIONS.redemptionModes.includes(next.redemptionMode)) {
+    return { ok: false, error: '到账处理方式只能是人工打款或自动清算' };
+  }
+  if (next.redemptionDays !== undefined) {
+    const n = Number(next.redemptionDays);
+    if (!Number.isInteger(n) || n < 0 || n > 365) return { ok: false, error: '到账天数须为 0~365 的整数' };
+    next.redemptionDays = n;
+  }
+  if (next.fundSizeYi !== undefined) {
+    const n = Number(next.fundSizeYi);
+    if (!Number.isFinite(n) || n <= 0 || n > 100000) return { ok: false, error: '基金规模须为大于 0 的数字（单位：亿港元）' };
+    next.fundSizeYi = Math.round(n * 100) / 100;
+  }
+
+  // —— 锁定期变更的影响面 ——
+  if (next.lockMonths !== undefined && next.lockMonths !== fund.lockMonths) {
+    const affected = fundHoldingCount(fundId);
+    if (affected > 0 && !acknowledge) {
+      return {
+        ok: false,
+        needsConfirm: true,
+        error: `锁定期由 ${fund.lockMonths} 个月改为 ${next.lockMonths} 个月，将重算 ${affected} 个存量持仓的可赎回状态`,
+        impact: { kind: 'lockMonths', from: fund.lockMonths, to: next.lockMonths, holdings: affected },
+      };
+    }
+  }
+
+  // —— 嵌套块（费率 / 交易 / 三方机构）——
+  const nested = [];
+  if (patch.economics && typeof patch.economics === 'object') {
+    const pct = k => {
+      const v = patch.economics[k];
+      if (v === undefined) return undefined;
+      if (v === null || v === '') return null;
+      const n = Number(v);
+      return Number.isFinite(n) && n >= 0 && n <= 100 ? n : NaN;
+    };
+    const managementFeePct = pct('managementFeePct');
+    const performanceFeePct = pct('performanceFeePct');
+    if (Number.isNaN(managementFeePct) || Number.isNaN(performanceFeePct)) {
+      return { ok: false, error: '费率须为 0~100 的百分比' };
+    }
+    nested.push(['economics', { managementFeePct, performanceFeePct }]);
+  }
+  if (patch.dealing && typeof patch.dealing === 'object') {
+    const d = patch.dealing;
+    const out = {};
+    if (d.openFrequency !== undefined) out.openFrequency = d.openFrequency || null;
+    for (const k of ['confirmDays', 'redemptionNoticeDays']) {
+      if (d[k] === undefined) continue;
+      if (d[k] === '' || d[k] === null) { out[k] = null; continue; }
+      const n = Number(d[k]);
+      if (!Number.isInteger(n) || n < 0 || n > 365) return { ok: false, error: '天数须为 0~365 的整数' };
+      out[k] = n;
+    }
+    nested.push(['dealing', out]);
+  }
+  if (patch.parties && typeof patch.parties === 'object') {
+    const out = {};
+    for (const k of ['custodian', 'administrator', 'auditor']) {
+      if (patch.parties[k] === undefined) continue;
+      const v = String(patch.parties[k] ?? '').trim();
+      // 空值 = APP 显示「详见基金文件」。不编造具名机构（审核会逐一点名核查）。
+      out[k] = v || null;
+    }
+    nested.push(['parties', out]);
+  }
+  if (Array.isArray(patch.fundDocuments)) {
+    nested.push(['fundDocuments', patch.fundDocuments
+      .filter(d => d && String(d.name || '').trim())
+      .map(d => ({ name: String(d.name).trim(), type: d.type || 'other', url: d.url ? String(d.url).trim() : null }))]);
+  }
+
+  if (!Object.keys(next).length && !nested.length) return { ok: false, error: '没有需要保存的内容' };
+
+  // —— 落库 + 留痕 ——
+  // 留痕是给合规/审计看的中文记录，不写内部字段名（`lockMonths 24 → 12` 读起来像 diff 不像日志）
+  const changes = [];
+  for (const k of Object.keys(next)) {
+    if (fund[k] === next[k]) continue;
+    changes.push(`${FUND_FIELD_LABELS[k] || k} ${formatFundValue(k, fund[k])} → ${formatFundValue(k, next[k])}`);
+    fund[k] = next[k];
+  }
+  for (const [k, val] of nested) {
+    const before = fund[k];
+    // 数组字段整体替换，不能展开：{...数组} 得到的是 {0:{...},1:{...}} 对象，
+    // 存进快照后页面一句 .map 就抛 TypeError（2026-10-28 实测踩中）
+    if (Array.isArray(val)) {
+      // 内容没变就不进日志：每次保存都写「文件 2 项 → 2 项」会让审计台账全是无意义条目
+      if (JSON.stringify(before) === JSON.stringify(val)) continue;
+      fund[k] = val;
+      changes.push(`${FUND_FIELD_LABELS[k] || k} ${(Array.isArray(before) ? before.length : 0)} 项 → ${val.length} 项`);
+      continue;
+    }
+    const prevObj = (before && typeof before === 'object') ? before : {};
+    fund[k] = { ...prevObj, ...val };
+    const diff = Object.keys(val).filter(x => JSON.stringify(prevObj[x]) !== JSON.stringify(val[x]));
+    if (diff.length) changes.push(`${FUND_FIELD_LABELS[k] || k}（${diff.map(x => NESTED_FIELD_LABELS[x] || x).join('/')}）`);
+  }
+  if (!changes.length) return { ok: false, error: '内容没有变化' };
+
+  fund.updatedAt = formatNow();
+  logAudit({
+    operator, category: 'fund', action: '更新基金产品',
+    target: fund.name, targetId: fund.id,
+    note: changes.join('；'),
+  });
+  Storage.save();
+  return { ok: true, fund, changes };
+}
+
+/**
+ * 追加一条净值（只追加，不提供改/删）。
+ * 为什么不能改历史点：已确认单据的 nav 是成交快照，改历史净值会让「持仓收益」与「结单净值」
+ * 从此对不上账，而结单是要发给投资人的。要修正只能追加一条并说明。
+ */
+export function appendFundNav(fundId, { date, nav } = {}, { operator = '运营后台', acknowledge = false } = {}) {
+  const fund = funds.find(f => f.id === fundId);
+  if (!fund) return { ok: false, error: '基金不存在' };
+  if (!Array.isArray(fund.navSeries) || !fund.navSeries.length) return { ok: false, error: '该基金没有净值序列' };
+
+  const day = String(date || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return { ok: false, error: '净值日期格式须为 YYYY-MM-DD' };
+  const n = Number(nav);
+  if (!Number.isFinite(n) || n <= 0 || n > 10000) return { ok: false, error: '净值须为大于 0 的数字' };
+
+  const today = weeksAgoDate(0);
+  if (day > today) return { ok: false, error: '不能录入未来日期的净值' };
+
+  const lastDay = fund.navMeta?.lastNavDate || today;
+  if (day <= lastDay) return { ok: false, error: `净值日期须晚于上次记录（${lastDay}）` };
+  const gapDays = Math.round((new Date(`${day}T00:00:00`) - new Date(`${lastDay}T00:00:00`)) / 86400000);
+  if (gapDays < 6) return { ok: false, error: `净值按周频披露，距上次记录仅 ${gapDays} 天（至少 7 天）` };
+
+  const prevNav = latestNav(fund);
+  const pct = ((n / prevNav) - 1) * 100;
+  // 单周 ±30% 对这类产品几乎一定是输错小数位（1.153 打成 11.53 / 0.1153）。
+  // 输错一位就会把所有人的市值改掉一个数量级，所以先拦一次，确认后才写。
+  if (Math.abs(pct) > 30 && !acknowledge) {
+    return {
+      ok: false,
+      needsConfirm: true,
+      error: `新净值 ${n} 较上次 ${prevNav} 变动 ${pct.toFixed(2)}%，超出单周 ±30% 的正常范围，请核对是否输错`,
+      impact: { kind: 'nav', prevNav, nav: n, pct, holdings: fundHoldingCount(fundId) },
+    };
+  }
+
+  fund.navSeries.push(Math.round(n * 1000) / 1000);
+  fund.navMeta = { ...(fund.navMeta || {}), cadence: fund.navMeta?.cadence || 'weekly', currency: fund.navMeta?.currency || 'HKD', lastNavDate: day };
+  fund.updatedAt = formatNow();
+
+  logAudit({
+    operator, category: 'fund', action: '追加基金净值',
+    target: fund.name, targetId: fund.id,
+    note: `${day} 净值 ${n}（上次 ${prevNav}，${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%）`,
+  });
+  Storage.save();
+  return { ok: true, fund, prevNav, pct, date: day, nav: n };
+}
+
 function weeksAgoDate(weeks) {
   const d = new Date(Date.now() - weeks * 7 * 86400000);
   const p = n => String(n).padStart(2, '0');
@@ -977,14 +1333,29 @@ function monthsAgoStamp(months) {
 // 没有这笔历史单，新买入按当日净值计价 → 收益恒为 0，资产页的收益区就是个死数字。
 // 种子持仓的年龄决定「赎回能不能演示」：锁定期 24 个月，26 周（6 个月）时整笔都锁着。
 // 取 26 个月而不是 30 个月，是因为 AIDC 成立日 2024-06——30 个月前落在成立前，数据自相矛盾。
+// 演示种子（2026-10-28 扩充）：一个真实的 PI 配置应同时具备
+//   ① 已过锁定期的老持仓（可赎回）
+//   ② 锁定期内的新持仓（红字、不可赎回）
+//   ③ 一笔已实现收益（让「累计收益」与「持仓收益率」不再恰好相等）
+// 否则资产页的三个分支（可赎回 / 锁定期至 / 含已实现）永远只看得到其中一个。
 const FUND_SEED = { userId: 'u1', fundId: 'f1', amount: 1000000, monthsAgo: 26 };
+const REDEEM_SEED = { shares: 200000, weeksAgo: 8 };
+const SECOND_SEED = { fundId: 'f2', amount: 5000000, weeksAgo: 6 };
+
+// 种子里的金额会同时被「钱包交易记录」复用（那边在文件后段、拿不到闭包），导出一次避免两处各算一遍
+export const FUND_SEED_RESULT = { redeemNet: 0, redeemAt: '' };
+
 (function seedFundPortfolio() {
+  const r2 = v => Math.round(v * 100) / 100;
+  const r4 = v => Math.round(v * 10000) / 10000;
+
+  // ---------- ① 主持仓：AIDC 基金，26 个月前确认（24 个月锁定期已过） ----------
   const fund = funds.find(f => f.id === FUND_SEED.fundId);
   if (!fund) return;
   const seedWeeks = Math.round(FUND_SEED.monthsAgo * 30.44 / 7);   // 26 个月 ≈ 113 周
   const nav = navWeeksAgo(fund, seedWeeks);
   const feeAmount = Math.round(FUND_SEED.amount * FUND_FEE_RATE.subscribe);
-  const shares = Math.round(((FUND_SEED.amount - feeAmount) / nav) * 10000) / 10000;
+  const sharesBought = r4((FUND_SEED.amount - feeAmount) / nav);
   const confirmedAt = monthsAgoStamp(FUND_SEED.monthsAgo);
   const statementNo = genOrderNo('FS', confirmedAt);
 
@@ -998,7 +1369,7 @@ const FUND_SEED = { userId: 'u1', fundId: 'f1', amount: 1000000, monthsAgo: 26 }
     amount: FUND_SEED.amount,
     feeRate: FUND_FEE_RATE.subscribe,
     feeAmount,
-    shares,
+    shares: sharesBought,
     nav,
     navDate: monthsAgoDate(FUND_SEED.monthsAgo),
     status: FUND_ORDER_STATUS.CONFIRMED,
@@ -1008,22 +1379,6 @@ const FUND_SEED = { userId: 'u1', fundId: 'f1', amount: 1000000, monthsAgo: 26 }
     confirmedBy: '财务专员',
     statementId: 'fst-seed-1',
     history: [{ type: 'confirmed', timestamp: confirmedAt, actor: '财务专员', note: '种子数据：历史确认单' }],
-  });
-
-  fundHoldings.push({
-    id: 'fh-seed-1',
-    userId: FUND_SEED.userId,
-    fundId: fund.id,
-    fundName: fund.name,
-    currency: 'HKD',
-    shares,
-    frozenShares: 0,          // 赎回申请中的冻结份额
-    redeemedShares: 0,        // 已赎回累计份额（FIFO 消耗最早批次）
-    realizedPnl: 0,           // 已实现收益（累计净回款 − 对应成本）
-    costAmount: FUND_SEED.amount,
-    avgNav: FUND_SEED.amount / shares,
-    firstConfirmedAt: confirmedAt,
-    updatedAt: confirmedAt,
   });
 
   fundStatements.push({
@@ -1037,12 +1392,158 @@ const FUND_SEED = { userId: 'u1', fundId: 'f1', amount: 1000000, monthsAgo: 26 }
     currency: 'HKD',
     amount: FUND_SEED.amount,
     feeAmount,
-    shares,
+    shares: sharesBought,
     nav,
     navDate: monthsAgoDate(FUND_SEED.monthsAgo),
     statementNo,
     confirmedAt,
     date: monthsAgoDate(FUND_SEED.monthsAgo),
+  });
+
+  // ---------- ② 主持仓的部分赎回：8 周前确认（份额/成本冲减/已实现收益，与 confirmRedemptionOrder 同口径） ----------
+  const redShares = REDEEM_SEED.shares;
+  const redNav = navWeeksAgo(fund, REDEEM_SEED.weeksAgo);
+  const redAt = weeksAgoStamp(REDEEM_SEED.weeksAgo);
+  const redDate = weeksAgoDate(REDEEM_SEED.weeksAgo);
+  const avgNavBought = FUND_SEED.amount / sharesBought;      // 含认购费的成本净值
+  const costOut = r2(redShares * avgNavBought);
+  const grossRed = r2(redShares * redNav);
+  const redFee = r2(grossRed * FUND_FEE_RATE.redeem);
+  const netRed = r2(grossRed - redFee);
+  const realized = r2(netRed - costOut);
+  const sharesLeft = r4(sharesBought - redShares);
+  const costLeft = r2(FUND_SEED.amount - costOut);
+
+  fundOrders.push({
+    id: 'fo-seed-redeem',
+    type: 'redeem',
+    fundId: fund.id,
+    fundName: fund.name,
+    userId: FUND_SEED.userId,
+    holdingId: 'fh-seed-1',
+    currency: 'HKD',
+    shares: redShares,
+    nav: redNav,
+    navDate: redDate,
+    amount: grossRed,
+    grossAmount: grossRed,
+    feeRate: FUND_FEE_RATE.redeem,
+    feeAmount: redFee,
+    netAmount: netRed,
+    status: FUND_ORDER_STATUS.CONFIRMED,
+    createdAt: redAt,
+    updatedAt: redAt,
+    confirmedAt: redAt,
+    confirmedBy: '财务专员',
+    statementId: 'fst-seed-redeem',
+    history: [{ type: 'confirmed', timestamp: redAt, actor: '财务专员', note: '种子数据：历史部分赎回' }],
+  });
+
+  fundStatements.push({
+    id: 'fst-seed-redeem',
+    orderId: 'fo-seed-redeem',
+    userId: FUND_SEED.userId,
+    fundId: fund.id,
+    fundName: fund.name,
+    type: 'trade',
+    tradeType: '赎回',
+    currency: 'HKD',
+    amount: netRed,
+    grossAmount: grossRed,
+    feeAmount: redFee,
+    shares: redShares,
+    nav: redNav,
+    navDate: redDate,
+    statementNo: genOrderNo('FS', redAt),
+    confirmedAt: redAt,
+    date: redDate,
+  });
+
+  fundHoldings.push({
+    id: 'fh-seed-1',
+    userId: FUND_SEED.userId,
+    fundId: fund.id,
+    fundName: fund.name,
+    currency: 'HKD',
+    shares: sharesLeft,
+    frozenShares: 0,
+    redeemedShares: redShares,
+    realizedPnl: realized,
+    costAmount: costLeft,
+    avgNav: costLeft / sharesLeft,
+    firstConfirmedAt: confirmedAt,
+    updatedAt: redAt,
+  });
+
+  FUND_SEED_RESULT.redeemNet = netRed;
+  FUND_SEED_RESULT.redeemAt = redDate;
+
+  // ---------- ③ 第二只持仓：美股 IPO 配置基金，6 周前买入 ----------
+  // 12 个月锁定期 → 资产页显示「锁定期至」而不是「可赎回」；
+  // 买入点取近端净值高点（1.115 > 现值 1.112），含 1% 认购费后为负收益 → 跌色分支不再无数据可测。
+  const fund2 = funds.find(f => f.id === SECOND_SEED.fundId);
+  if (!fund2) return;
+  const nav2 = navWeeksAgo(fund2, SECOND_SEED.weeksAgo);
+  const fee2 = Math.round(SECOND_SEED.amount * FUND_FEE_RATE.subscribe);
+  const shares2 = r4((SECOND_SEED.amount - fee2) / nav2);
+  const at2 = weeksAgoStamp(SECOND_SEED.weeksAgo);
+  const date2 = weeksAgoDate(SECOND_SEED.weeksAgo);
+
+  fundOrders.push({
+    id: 'fo-seed-2',
+    type: 'subscribe',
+    fundId: fund2.id,
+    fundName: fund2.name,
+    userId: FUND_SEED.userId,
+    currency: 'HKD',
+    amount: SECOND_SEED.amount,
+    feeRate: FUND_FEE_RATE.subscribe,
+    feeAmount: fee2,
+    shares: shares2,
+    nav: nav2,
+    navDate: date2,
+    status: FUND_ORDER_STATUS.CONFIRMED,
+    createdAt: at2,
+    updatedAt: at2,
+    confirmedAt: at2,
+    confirmedBy: '财务专员',
+    statementId: 'fst-seed-2',
+    history: [{ type: 'confirmed', timestamp: at2, actor: '财务专员', note: '种子数据：第二只持仓' }],
+  });
+
+  fundStatements.push({
+    id: 'fst-seed-2',
+    orderId: 'fo-seed-2',
+    userId: FUND_SEED.userId,
+    fundId: fund2.id,
+    fundName: fund2.name,
+    type: 'trade',
+    tradeType: '认购',
+    currency: 'HKD',
+    amount: SECOND_SEED.amount,
+    feeAmount: fee2,
+    shares: shares2,
+    nav: nav2,
+    navDate: date2,
+    statementNo: genOrderNo('FS', at2),
+    confirmedAt: at2,
+    date: date2,
+  });
+
+  fundHoldings.push({
+    id: 'fh-seed-2',
+    userId: FUND_SEED.userId,
+    fundId: fund2.id,
+    fundName: fund2.name,
+    currency: 'HKD',
+    shares: shares2,
+    frozenShares: 0,
+    redeemedShares: 0,
+    realizedPnl: 0,
+    costAmount: SECOND_SEED.amount,
+    avgNav: SECOND_SEED.amount / shares2,
+    firstConfirmedAt: at2,
+    updatedAt: at2,
   });
 })();
 
@@ -1272,7 +1773,7 @@ export function submitRedemptionOrder({ holdingId, shares }) {
   if (round4(n) !== n) return { ok: false, error: '份额最多 4 位小数' };
   const info = getHoldingRedeemInfo(holding);
   if (info.redeemable <= 0) return { ok: false, error: '当前无可赎回份额（锁定期内）' };
-  if (n > info.redeemable) return { ok: false, error: `超过可赎回份额（上限 ${formatExact(info.redeemable)} 份）` };
+  if (n > info.redeemable) return { ok: false, error: `超过可赎回份额（上限 ${formatShares(info.redeemable)} 份）` };
 
   const now = formatNow();
   const nav = latestNav(fund);
@@ -1299,7 +1800,7 @@ export function submitRedemptionOrder({ holdingId, shares }) {
   pushNotification({
     type: 'fund',
     title: '赎回申请已提交',
-    body: `${fund.name} 赎回 ${formatExact(n)} 份已提交，财务确认后回款至可用余额。`,
+    body: `${fund.name} 赎回 ${formatShares(n)} 份已提交，财务确认后回款至可用余额。`,
   }, holding.userId);
   Storage.save();
   return { ok: true, order };
@@ -1352,7 +1853,7 @@ export function confirmRedemptionOrder(orderId, { nav = null, operator = '运营
   order.updatedAt = now;
   order.history = [...(order.history || []), {
     type: 'confirmed', timestamp: now, actor: operator,
-    note: `确认赎回 ${shares} 份 @ ${confirmNav} → 回款 ${order.currency} ${formatExact(netAmount)}`,
+    note: `确认赎回 ${shares} 份 @ ${confirmNav} → 回款 ${order.currency} ${formatExactAmount(netAmount)}`,
   }];
 
   const statement = {
@@ -1392,12 +1893,12 @@ export function confirmRedemptionOrder(orderId, { nav = null, operator = '运营
 
   logAudit({
     operator, category: 'fund', action: '确认基金赎回', target: order.fundName, targetId: order.id,
-    note: `${shares} 份 @ ${confirmNav} → 回款 ${order.currency} ${formatExact(netAmount)}`,
+    note: `${shares} 份 @ ${confirmNav} → 回款 ${order.currency} ${formatExactAmount(netAmount)}`,
   });
   pushNotification({
     type: 'fund',
     title: '赎回已确认',
-    body: `${order.fundName} 赎回 ${formatExact(shares)} 份已确认，回款 ${order.currency} ${formatExact(netAmount)} 已进入可用余额。`,
+    body: `${order.fundName} 赎回 ${formatShares(shares)} 份已确认，回款 ${order.currency} ${formatExactAmount(netAmount)} 已进入可用余额。`,
   }, order.userId);
   Storage.save();
   return { ok: true, order, statement };
@@ -4213,6 +4714,9 @@ export const ADMIN_MENUS = [
   { key: 'subscriptions', label: '问卷记录', hash: '#admin/subscriptions', group: '项目' },
   // 2026-10-28 基金一期闭环：基金交易（申购/赎回人工确认）+ 资金审核（充值/提现/换汇核销）恢复。
   // 前者是交易域（钱换份额），后者是资金域（银行 ↔ 平台），两者不合并。
+  // 基金产品（2026-10-28）：条款/文件/净值的填写入口。与 fund-trades（成交确认）分属不同动作，
+  // 也不并入 funds（资金审核）——三者常被混为「基金后台」，实际是三件事。
+  { key: 'fund-products', label: '基金产品', hash: '#admin/fund-products', group: '项目' },
   { key: 'fund-trades', label: '基金交易', hash: '#admin/fund-trades', group: '项目' },
   { key: 'funds', label: '资金审核', hash: '#admin/funds', group: '资金' },
   { key: 'broadcast', label: '通知触达', hash: '#admin/broadcast', group: '运营' },
@@ -4229,8 +4733,8 @@ export const ADMIN_MENUS = [
 export const roleMenuKeys = {
   // 超级管理员 = 最高权限：全部菜单（2026-08-15 用户确认"所有页面所有功能都有"——my-clients 原 advisor 专属，补上）；锁定不可编辑
   // 2026-10-16 口径修订：问卷记录恢复（意向收集链），其余资金/交易/投后 10 key 保持摘除
-  super: ['kyc', 'pi', 'users', 'my-clients', 'projects', 'events', 'registrations', 'subscriptions', 'fund-trades', 'funds', 'broadcast', 'messages', 'audit', 'roles', 'admins', 'config'],
-  ops: ['projects', 'events', 'registrations', 'subscriptions', 'fund-trades', 'funds', 'broadcast', 'users', 'config'],
+  super: ['kyc', 'pi', 'users', 'my-clients', 'projects', 'events', 'registrations', 'subscriptions', 'fund-products', 'fund-trades', 'funds', 'broadcast', 'messages', 'audit', 'roles', 'admins', 'config'],
+  ops: ['projects', 'events', 'registrations', 'subscriptions', 'fund-products', 'fund-trades', 'funds', 'broadcast', 'users', 'config'],
   // 合规角色：KYC审核 + PI认证 + 用户管理 + 问卷记录 + 审计日志（交易监控类 7 key 随资金流下线摘除）
   compliance: ['kyc', 'pi', 'users', 'subscriptions', 'audit'],
   // 客服：看问卷 + 客户账户 + 通知触达（主动）+ 客户消息（响应式 1v1 咨询，2026-08-24）；不跟进线索（线索是顾问的职责）
@@ -4243,9 +4747,9 @@ export const roleMenuKeys = {
 };
 
 // 权限覆盖持久化（localStorage 快照优先于默认值；"恢复默认"按钮清覆盖逃生——防代码更新默认值被旧快照屏蔽）
-// 2026-10-28：key 升 v2。旧 v1 快照是「菜单裁剪期」保存的，缺少新恢复的 funds/fund-trades 两个 key，
-// 沿用会让新菜单在老浏览器里整片消失（getRoleMenuKeys 只做 VALID 过滤，不会补默认值）。
-const ROLE_MENUS_KEY = 'zhifu-admin-role-menus-v2';
+// 2026-10-28：key 升 v3。v2 快照缺少新增的 fund-products（getRoleMenuKeys 只做 VALID 过滤、不补默认值），
+// 沿用会让新菜单在存过角色配置的浏览器里整片消失——与 v1→v2 同源事故，新菜单必须升版。
+const ROLE_MENUS_KEY = 'zhifu-admin-role-menus-v3';
 function getRoleMenuOverrides() {
   try {
     const raw = localStorage.getItem(ROLE_MENUS_KEY);
@@ -6587,13 +7091,18 @@ export function formatExactAmount(v) {
   return Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-/* 精确金额（钱包页专用）：千分位，整数显示为整数，小数显示两位小数，不缩写 */
-export function formatExact(v) {
-  if (Number.isInteger(v)) {
-    return v.toLocaleString();
-  }
-  return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+/* 份额精确显示：最多 4 位小数（与 submitRedemptionOrder 的 4 位校验同源）。
+   若按金额口径（2 位）格式化，966,796.875 会显示成 966,796.88，与「全部」实际填入的值对不上——
+   同一事实两处不同精度，用户会以为是可赎额度少了。 */
+export function formatShares(v) {
+  if (v == null || Number.isNaN(Number(v))) return '—';
+  return Number(v).toLocaleString('en-US', { maximumFractionDigits: 4 });
 }
+
+/* 2026-10-28 口径定版：金额一律 2 位小数（formatExactAmount），份额最多 4 位（formatShares）。
+   旧 helper `formatExact`（整数显示整数、小数两位）已删除——同一个数在资产页显示 966,796.80、
+   在结单显示 966,796，用户没法判断哪个才是账上的数字。两种口径各留一个显式函数，
+   调用点必须自己选，不再有「按页面自动变精度」的第三个函数。 */
 
 /* 币种符号（项目级 currency 配置：HKD/USD/CNY，编辑表单与用户侧展示共用） */
 export function getCurrencySymbol(currency) {
@@ -7845,6 +8354,9 @@ export const Storage = {
         fundOrders: fundOrders,
         fundHoldings: fundHoldings,
         fundStatements: fundStatements,
+        // 基金产品（2026-10-28）：后台「基金产品管理」改了条款/文件/净值必须刷新保留。
+        // 只存产品本体，不存由它派生的展示文案（那边已经改成按数字生成）。
+        funds: funds,
         holdings: holdings,
         transactions: transactions,
         notifications: notifications,
@@ -7946,6 +8458,24 @@ export const Storage = {
       if (Array.isArray(data.fundStatements) && !legacyFundSnapshot) {
         fundStatements.length = 0;
         data.fundStatements.forEach(s => fundStatements.push(s));
+      }
+      // 基金产品（2026-10-28）：**按 id 合并**，不做整表替换。
+      // 理由（项目规则「持久化快照只叠加不重建」）：代码以后给产品新增字段时，
+      // 整表替换会让老快照把它抹掉，且只在「有旧快照」的浏览器里复现。
+      // 快照里没有的产品 id 保持代码默认值（本模块不提供新增/删除产品）。
+      if (Array.isArray(data.funds)) {
+        data.funds.forEach(sf => {
+          if (!sf || !sf.id) return;
+          const target = funds.find(f => f.id === sf.id);
+          if (!target) return;
+          Object.keys(sf).forEach(k => {
+            if (k === 'id') return;
+            // 默认值是数组、快照却不是数组 → 跳过。这条兜底专治「数组被对象展开后存进快照」
+            // 这类已写坏的数据：不清库也能自愈，否则该产品页一开就抛 TypeError。
+            if (Array.isArray(target[k]) && !Array.isArray(sf[k])) return;
+            target[k] = sf[k];
+          });
+        });
       }
       // transactions
       if (Array.isArray(data.transactions)) {

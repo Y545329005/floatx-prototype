@@ -3362,3 +3362,124 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ===== 基金产品（2026-10-28）：列表 9 列 + 表单抽屉 =====
+   列宽原则同其他表：minmax(贴合内容, fr)，fr 权重 ∝ min，宽视口等比放大、无右侧空洞 */
+.admin-table--fund-products .admin-table-header,
+.admin-table--fund-products .admin-table-row {
+  grid-template-columns:
+    minmax(200px, 20fr)
+    minmax(88px, 9fr)
+    minmax(80px, 8fr)
+    minmax(104px, 10fr)
+    minmax(76px, 8fr)
+    minmax(80px, 8fr)
+    minmax(100px, 10fr)
+    minmax(66px, 7fr)
+    minmax(48px, 5fr);
+  gap: 16px;
+}
+/* 数值列右对齐（与 header 同侧；净值/月数/持有人都是可比数字） */
+.admin-table--fund-products .col-amount,
+.admin-table--fund-products .col-count,
+.admin-table--fund-products .col-months,
+.admin-table--fund-products .col-nav {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.admin-table--fund-products .col-risk {
+  color: var(--text-secondary);
+}
+.admin-table--fund-products .col-date {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+/* 产品名下面的来源徽章：.status-badge 本身只有颜色，不需要额外布局 */
+.admin-table--fund-products .col-name .status-badge {
+  align-self: flex-start;
+  font-size: var(--text-xs);
+}
+
+/* 表单抽屉加宽：这页是后台字段最多的表单（5 张卡、三列一行的文件行），520px 会挤成两行 */
+.admin-drawer--wide { width: 640px; max-width: 94vw; }
+
+/* 一行放多个输入（收益三元组 / 净值日期+数值+按钮 / 文件行） */
+.fund-product-inline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.fund-product-inline > .form-input {
+  flex: 1 1 120px;
+  min-width: 0;
+}
+.fund-product-doc {
+  display: grid;
+  grid-template-columns: minmax(120px, 1.4fr) minmax(130px, 1fr) minmax(120px, 1.4fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border-light);
+}
+.fund-product-doc:last-of-type { border-bottom: none; }
+
+/* 二次确认块：与表单其他部分用底色区分，因为它要求的是「看懂后果再点」而不是继续填写 */
+.fund-product-confirm {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  background: var(--warning-light);
+  border-radius: var(--radius-md);
+}
+.fund-product-confirm p {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--warning-text);
+}
+.fund-product-confirm p svg { flex-shrink: 0; margin-top: 2px; }
+.fund-product-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+/* 底栏上方的确认/回执区：与滚动区分离，保证「点了保存之后发生了什么」始终在视线内 */
+.fund-product-confirm--footer {
+  margin: 0;
+  border-top: 1px solid var(--warning-border);
+  border-radius: 0;
+  flex-shrink: 0;
+}
+.fund-product-footer-status {
+  padding: var(--space-2) var(--space-6) 0;
+  flex-shrink: 0;
+}
+.fund-product-footer-status p { margin: 0; }
+
+/* 带单位/前缀的数值输入（基金规模「亿港元」、赎回到账「T+」）：
+   单位是标签不是输入内容——混在同一个 input 里，用户要么把它删掉，要么写出「2.4亿港元亿」。 */
+/* 注意 .form-group 是纵向 flex 容器：这里写 flex: 1 会让整块在**纵向**上撑高
+   （实测输入框被垂直居中、下面空出 200 多像素）。所以只给宽度，
+   只有在 .fund-product-inline 这种横向行里才允许横向伸缩。 */
+.fund-product-suffix {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+.fund-product-inline > .fund-product-suffix {
+  flex: 1 1 140px;
+  width: auto;
+}
+.fund-product-suffix .form-input { flex: 1; min-width: 0; }
+.fund-product-suffix-unit {
+  flex-shrink: 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
