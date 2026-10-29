@@ -33,10 +33,23 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Publish flagship static site
+      # 官网发布源（2026-10-29）：HighBlock 新站（web/highblock-site/dist，含手工源码 assets/legal）。
+      # 发布路径名保留 flagship 仅为旧 URL（.../flagship/）兼容，内容已是新站；旧站 web/flagship/ 不再发布。
+      - name: Setup Node for HighBlock site
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: web/highblock-site/.nvmrc
+
+      - name: Build and check HighBlock site
+        working-directory: web/highblock-site
+        run: |
+          npm run build
+          npm run check
+
+      - name: Publish site
         run: |
           mkdir -p dist/flagship
-          cp -R web/flagship/. dist/flagship/
+          cp -R web/highblock-site/dist/. dist/flagship/
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
