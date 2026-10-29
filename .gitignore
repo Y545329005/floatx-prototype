@@ -1,8 +1,8 @@
 # Dependencies
 node_modules/
 
-# Build output
-dist/
+# Build output（仅根级 Vite 产物；嵌套项目如 web/highblock-site/dist 是手工源码，需入库）
+/dist/
 
 # macOS
 .DS_Store
@@ -16,7 +16,6 @@ dist/
 # 内部文档/演示页：不进公开仓库（GitHub Pages 公开托管，最小化公开面）
 docs/
 demo.html
-assets/
 DESIGN.md
 *.tar.gz
 AGENTS.md
