@@ -1,0 +1,86 @@
+# TEMPLATE ONLY: for a SEPARATE development repository, project files at root.
+# This publishes dist/ as that repository's ENTIRE GitHub Pages website.
+# Do not enable this workflow in the original website repository.
+# Activate as .github/workflows/highblock-pages-dev.yml only after configuration.
+name: HighBlock isolated Pages preview
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # Replace with the exact owner/repository of the SEPARATE preview repository.
+  EXPECTED_PREVIEW_REPOSITORY: REPLACE_OWNER/REPLACE_PREVIEW_REPOSITORY
+
+concurrency:
+  group: highblock-pages-preview
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: read
+    steps:
+      - name: Verify isolated preview repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          normalized_repository=$(printf '%s' "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')
+          if [[ "$normalized_repository" == "y545329005/floatx-prototype" ]]; then
+            echo "::error::This template must not replace the original Pages website."
+            exit 1
+          fi
+          if [[ "$GITHUB_REPOSITORY" != "$EXPECTED_PREVIEW_REPOSITORY" ]]; then
+            echo "::error::Set EXPECTED_PREVIEW_REPOSITORY to the confirmed separate preview repository."
+            exit 1
+          fi
+
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+
+      # Enable Pages manually in Settings > Pages > GitHub Actions first.
+      - name: Read Pages configuration
+        uses: actions/configure-pages@v5
+        with:
+          enablement: false
+
+      # dist/assets and dist/legal are checked-in source; do not clean dist.
+      - name: Build pages
+        run: npm run build
+
+      - name: Check website
+        run: npm run check
+
+      - name: Upload complete website
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+          retention-days: 1
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy isolated preview
+        id: deployment
+        uses: actions/deploy-pages@v4

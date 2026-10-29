@@ -1,0 +1,51 @@
+# TEMPLATE ONLY: source project files must be in highblock-site/.
+# Activate at the REPOSITORY ROOT as .github/workflows/highblock-ci.yml.
+# If the project directory changes, update all highblock-site paths below.
+# This workflow builds/checks only and never deploys a website.
+name: HighBlock site CI
+
+on:
+  push:
+    paths:
+      - 'highblock-site/**'
+      - '.github/workflows/highblock-ci.yml'
+  pull_request:
+    paths:
+      - 'highblock-site/**'
+      - '.github/workflows/highblock-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: highblock-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: highblock-site
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # Action paths resolve from the repository root, not defaults.run.
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: highblock-site/.nvmrc
+          package-manager-cache: false
+
+      # Zero dependencies. Preserve the versioned dist/assets and dist/legal.
+      - name: Build pages
+        run: npm run build
+
+      - name: Check website
+        run: npm run check

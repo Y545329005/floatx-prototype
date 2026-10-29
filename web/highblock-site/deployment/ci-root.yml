@@ -1,0 +1,40 @@
+# TEMPLATE ONLY: source project files must be at repository root.
+# Activate by copying to .github/workflows/highblock-ci.yml.
+# This workflow builds/checks only and never deploys a website.
+name: HighBlock site CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: highblock-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+
+      # Zero dependencies: no npm install/npm ci is required.
+      # dist/assets and dist/legal are source files. Never delete dist first.
+      - name: Build pages
+        run: npm run build
+
+      - name: Check website
+        run: npm run check
