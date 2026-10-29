@@ -2,6 +2,9 @@
 
 繁體中文與英文的靜態網站。交接基準提交：`d304b5d09d9e935aeddd8718b50cc0ae4359a2e9`。
 
+> **⚠️ 紅線：`dist/assets/` 與 `dist/legal/` 是手工維護的源碼，不是構建快取，禁止刪除或清空後重建。**
+> `build.mjs` 只會重建一般頁面；資產與法律文件被刪即無法還原。詳見 `docs/02_修改位置與驗收.md`（存於倉庫外 `app/docs/highblock-site/`）。
+
 公開 dev 預覽：https://highblock-securities-dev.pages.dev/
 
 ## 啟動
