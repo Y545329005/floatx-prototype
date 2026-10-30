@@ -29,8 +29,6 @@ export function informationHub(c) {
     privacyText: 'Collection, use and protection of personal data',
     use: 'Terms of Use',
     useText: 'Terms applicable to access to and use of this website',
-    delete: 'Delete your account',
-    deleteText: 'How to request deletion of your HighBlock App account',
   } : {
     title: '資訊',
     intro: '查閱持牌資料、基金動態及網站相關聲明',
@@ -58,8 +56,6 @@ export function informationHub(c) {
     privacyText: '有關個人資料的收集、使用及保護',
     use: '使用條款',
     useText: '瀏覽及使用本網站所適用的條款',
-    delete: '刪除帳號',
-    deleteText: '申請刪除 HighBlock App 帳號的流程與說明',
   };
   const doc = name => `legal/${name}${c.suffix}.html`;
   const sfc = `https://apps.sfc.hk/publicregWeb/corp/BWW124/details?locale=${en ? 'en' : 'zh'}`;
@@ -99,7 +95,6 @@ export function informationHub(c) {
         <h2 id="fund-updates-heading">${copy.updates}</h2>
         <article class="ih-update">
           <header class="ih-update-header"><time datetime="2026-08-05">${copy.date}</time><h3>${copy.updateTitle}</h3></header>
-          <div class="ih-update-visual ih-image-placeholder" role="img" aria-label="${copy.imageAlt}"><span aria-hidden="true">${copy.imageAlt}</span></div>
           <div class="ih-update-prose"><p>${copy.updateFirst}</p><p>${copy.updateActivities}</p><p>${copy.updateConditions}</p></div>
           <aside class="ih-update-source"><p>${copy.source}</p><a href="${sfc}" target="_blank" rel="noopener">${copy.sourceLabel}</a></aside>
         </article>
@@ -116,7 +111,6 @@ export function informationHub(c) {
         <div class="ih-document-list">
           <a class="ih-document-row" href="${doc('privacy-policy')}"><div class="ih-document-copy"><h3>${copy.privacy}</h3><p>${copy.privacyText}</p></div><span class="ih-document-action">${copy.full}</span></a>
           <a class="ih-document-row" href="${doc('terms-of-use')}"><div class="ih-document-copy"><h3>${copy.use}</h3><p>${copy.useText}</p></div><span class="ih-document-action">${copy.full}</span></a>
-          <a class="ih-document-row" href="${doc('account-deletion')}"><div class="ih-document-copy"><h3>${copy.delete}</h3><p>${copy.deleteText}</p></div><span class="ih-document-action">${copy.full}</span></a>
         </div>
       </section>
     </div>
