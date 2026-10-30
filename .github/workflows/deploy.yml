@@ -21,9 +21,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 官网提根（2026-10-30）：发布源只有 HighBlock 新站，站点位于 Pages 根。
-      # 原 React 原型不再随此站点发布；旧 /flagship/ 深链由 404.html 跳回根对应路径。
-      - name: Setup Node
+      # 双源发布（2026-10-30）：官网（HighBlock 新站）占 Pages 根，
+      # React 原型恢复上线挂 /app/ 子路径（vite base './' 相对路径天然兼容）。
+      # 旧 /flagship/ 深链由 404.html 跳回根对应路径。
+      - name: Setup Node (site)
         uses: actions/setup-node@v4
         with:
           node-version-file: web/highblock-site/.nvmrc
@@ -35,10 +36,24 @@ jobs:
           npm run build
           npm run check
 
-      - name: Publish site at root
+      - name: Setup Node (prototype)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Build prototype
         run: |
-          mkdir -p dist
+          npm ci
+          npx vite build --outDir dist-prototype
+
+      - name: Publish site at root and prototype at /app/
+        run: |
+          mkdir -p dist/app
           cp -R web/highblock-site/dist/. dist/
+          cp -R dist-prototype/. dist/app/
+          rm -rf dist-prototype
           cp web/highblock-site/deployment/pages-404-redirect.html dist/404.html
 
       - name: Configure Pages
