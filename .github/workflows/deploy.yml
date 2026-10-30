@@ -21,35 +21,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # 官网提根（2026-10-30）：发布源只有 HighBlock 新站，站点位于 Pages 根。
+      # 原 React 原型不再随此站点发布；旧 /flagship/ 深链由 404.html 跳回根对应路径。
       - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-
-      # 官网发布源（2026-10-29）：HighBlock 新站（web/highblock-site/dist，含手工源码 assets/legal）。
-      # 发布路径名保留 flagship 仅为旧 URL（.../flagship/）兼容，内容已是新站；旧站 web/flagship/ 不再发布。
-      - name: Setup Node for HighBlock site
         uses: actions/setup-node@v4
         with:
           node-version-file: web/highblock-site/.nvmrc
 
+      # dist/assets 与 dist/legal 是手工源码，禁止先清空再构建
       - name: Build and check HighBlock site
         working-directory: web/highblock-site
         run: |
           npm run build
           npm run check
 
-      - name: Publish site
+      - name: Publish site at root
         run: |
-          mkdir -p dist/flagship
-          cp -R web/highblock-site/dist/. dist/flagship/
+          mkdir -p dist
+          cp -R web/highblock-site/dist/. dist/
+          cp web/highblock-site/deployment/pages-404-redirect.html dist/404.html
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

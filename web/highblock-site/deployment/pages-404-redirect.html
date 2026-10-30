@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>頁面已搬遷｜Page moved</title>
+</head>
+<body>
+<p>此頁已隨官網提根搬遷，正在跳轉……／This page has moved; redirecting…</p>
+<script>
+(function () {
+  var path = location.pathname;
+  var marker = '/flagship/';
+  var i = path.indexOf(marker);
+  if (i === -1) {
+    location.replace('/' + location.search + location.hash);
+    return;
+  }
+  // 舊旗艦路徑 …/flagship/x → 同前綴下的 /x（綁域前保留 /floatx-prototype 前綴，綁域後前綴為空）
+  var base = path.slice(0, i);
+  var rest = path.slice(i + marker.length);
+  location.replace(base + '/' + rest + location.search + location.hash);
+})();
+</script>
+</body>
+</html>
