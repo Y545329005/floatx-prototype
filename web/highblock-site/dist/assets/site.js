@@ -4,7 +4,7 @@
   const legalPage = location.pathname.includes('/legal/');
   const legalInformationPage = document.body.dataset.page === 'compliance';
   const corporateNewsPage = ['news', 'news-licensing'].includes(document.body.dataset.page);
-  const acceptedKey = 'highblock-disclaimer-20261028-v4';
+  const acceptedKey = 'highblock-disclaimer-20261030-v5';
   const words = window.HighBlockWebsiteNotice[isEnglish ? 'en' : 'zh'];
   const dialog = document.createElement('dialog');
   dialog.className = 'disclaimer-dialog';
