@@ -2,6 +2,8 @@
   'use strict';
   const isEnglish = document.documentElement.lang.toLowerCase().startsWith('en');
   const legalPage = location.pathname.includes('/legal/');
+  const legalInformationPage = document.body.dataset.page === 'compliance';
+  const corporateNewsPage = ['news', 'news-licensing'].includes(document.body.dataset.page);
   const acceptedKey = 'highblock-disclaimer-20261028-v4';
   const words = window.HighBlockWebsiteNotice[isEnglish ? 'en' : 'zh'];
   const dialog = document.createElement('dialog');
@@ -42,7 +44,7 @@
     const translated = isEnglish ? target.replace('.en.html', '.html') : target.replace('.html', '.en.html');
     location.href = translated + location.search + location.hash;
   });
-  if (!legalPage && !hasAccepted()) openNotice();
+  if (!legalPage && !legalInformationPage && !corporateNewsPage && !hasAccepted()) openNotice();
   const nav = document.querySelector('.site-header');
   const menuToggle = document.querySelector('.menu-toggle');
   const closeMenu = () => {

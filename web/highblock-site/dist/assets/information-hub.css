@@ -1,0 +1,216 @@
+/* Information categories with progressively enhanced tab navigation. */
+.information-hub {
+  --ih-border: rgba(201, 168, 124, .22);
+  --ih-panel: #0f1522;
+  --ih-reading: #bac0ca;
+}
+.information-hub .ih-container {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding-inline: var(--pad);
+}
+.information-hub .ih-intro { padding-top: 76px; padding-bottom: 66px; }
+.information-hub .ih-intro h1 {
+  max-width: 1040px;
+  margin-top: 24px;
+  font-size: clamp(36px, 4.2vw, 60px);
+  font-weight: 300;
+  line-height: 1.3;
+  letter-spacing: .015em;
+  text-wrap: balance;
+}
+.information-hub .ih-intro-copy {
+  max-width: 720px;
+  margin-top: 24px;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.9;
+}
+.information-hub .ih-layout {
+  display: grid;
+  grid-template-columns: minmax(165px, 220px) minmax(0, 1fr);
+  gap: clamp(36px, 5vw, 76px);
+  padding-bottom: 110px;
+}
+.information-hub .ih-sidebar { min-width: 0; }
+.information-hub .ih-navigation {
+  position: sticky;
+  top: 116px;
+  padding-top: 3px;
+}
+.information-hub .ih-nav-label {
+  margin-bottom: 20px;
+  font-size: 12px;
+  letter-spacing: .12em;
+  color: var(--muted);
+}
+.information-hub .ih-navigation a {
+  display: block;
+  width: fit-content;
+  min-width: 138px;
+  margin: 5px 0 5px -15px;
+  padding: 10px 15px;
+  border-radius: 12px;
+  font-size: 15px;
+  color: var(--ih-reading);
+  transition: color .2s, background .2s;
+}
+.information-hub .ih-navigation a:hover { color: var(--gold); background: rgba(201,168,124,.07); }
+.information-hub .ih-content { min-width: 0; }
+.information-hub .ih-section { scroll-margin-top: 112px; }
+.information-hub .ih-section + .ih-section { margin-top: 50px; }
+.information-hub .ih-section > h2 {
+  margin-bottom: 22px;
+  font-size: 26px;
+  line-height: 1.45;
+  letter-spacing: .035em;
+  font-weight: 400;
+}
+.information-hub .ih-licence-panel {
+  padding: 32px 34px;
+  border: 1px solid var(--ih-border);
+  border-radius: 20px;
+  background: var(--ih-panel);
+}
+.information-hub .ih-entity {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  margin: 0 0 33px;
+}
+.information-hub .ih-entity dt { margin-bottom: 9px; color: var(--muted); font-size: 12px; }
+.information-hub .ih-entity dd { margin: 0; line-height: 1.55; }
+.information-hub .ih-entity-name dd { font-family: var(--display); font-size: 21px; font-weight: 400; }
+.information-hub .ih-entity-ce dd { color: var(--gold); font-size: 20px; letter-spacing: .055em; font-variant-numeric: tabular-nums; }
+.information-hub .ih-activity-label { margin-bottom: 13px; font-size: 12px; color: var(--muted); }
+.information-hub .ih-activities { margin: 0; border-top: 1px solid var(--ih-border); }
+.information-hub .ih-activities > div {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr);
+  gap: 20px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--ih-border);
+  font-size: 16px;
+  line-height: 1.6;
+}
+.information-hub .ih-activities dt { color: var(--gold); }
+.information-hub .ih-activities dd { margin: 0; }
+.information-hub .ih-scope { margin-top: 24px; color: var(--muted); font-size: 13px; line-height: 1.9; }
+.information-hub .ih-register-link {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 4px 0;
+  color: var(--gold);
+  border-bottom: 1px solid rgba(201,168,124,.45);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.information-hub .ih-register-link:hover { border-bottom-color: var(--gold); }
+.information-hub .ih-risk-document {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 29px 34px;
+  border: 1px solid rgba(201,168,124,.37);
+  border-radius: 20px;
+  background: linear-gradient(115deg, rgba(201,168,124,.055), rgba(24,35,58,.3));
+  transition: border-color .2s, background-color .2s;
+}
+.information-hub .ih-risk-document:hover { border-color: rgba(201,168,124,.7); background-color: #111927; }
+.information-hub .ih-document-copy { min-width: 0; }
+.information-hub .ih-document-copy h3 { font-size: 20px; line-height: 1.6; font-weight: 400; }
+.information-hub .ih-document-copy p { max-width: 550px; margin-top: 9px; color: var(--muted); font-size: 15px; line-height: 1.85; }
+.information-hub .ih-document-action {
+  flex-shrink: 0;
+  color: var(--gold);
+  font-size: 13px;
+  line-height: 1.6;
+  border-bottom: 1px solid rgba(201,168,124,.3);
+  padding-bottom: 3px;
+}
+.information-hub .ih-document-list { border: 1px solid var(--ih-border); border-radius: 20px; overflow: hidden; }
+.information-hub .ih-document-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+  padding: 25px 34px;
+  transition: background-color .2s;
+}
+.information-hub .ih-document-row + .ih-document-row { border-top: 1px solid var(--ih-border); }
+.information-hub .ih-document-row:hover { background: rgba(201,168,124,.035); }
+.information-hub .ih-document-row:focus-visible { outline-offset: -5px; border-radius: 16px; }
+html[lang=en] .information-hub .ih-intro h1 { letter-spacing: -.035em; }
+html[lang=en] .information-hub .ih-section > h2 { letter-spacing: -.01em; }
+@media (max-width: 1000px) {
+  .information-hub .ih-layout { grid-template-columns: 170px minmax(0, 1fr); gap: 32px; }
+  .information-hub .ih-licence-panel { padding: 28px; }
+  .information-hub .ih-entity { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .information-hub .ih-risk-document, .information-hub .ih-document-row { padding: 26px 28px; gap: 24px; }
+  .information-hub .ih-risk-document { align-items: flex-start; flex-direction: column; gap: 18px; }
+}
+@media (max-width: 780px) {
+  .information-hub .ih-intro { padding-top: 52px; padding-bottom: 35px; }
+  .information-hub .ih-intro h1 { margin-top: 20px; font-size: clamp(32px, 7vw, 44px); }
+  .information-hub .ih-intro .eyebrow { font-size: 10px; letter-spacing: 1.5px; }
+  .information-hub .ih-intro-copy { margin-top: 19px; font-size: 15px; }
+  .information-hub .ih-layout { display: block; padding-bottom: 76px; }
+  .information-hub .ih-navigation { position: static; display: flex; flex-wrap: wrap; gap: 7px; padding: 0 0 29px; margin-bottom: 30px; border-bottom: 1px solid var(--ih-border); }
+  .information-hub .ih-nav-label { width: 100%; margin-bottom: 6px; font-size: 11px; }
+  .information-hub .ih-navigation a { min-width: 0; margin: 0; padding: 8px 12px; border: 1px solid var(--ih-border); border-radius: 10px; font-size: 13px; }
+  .information-hub .ih-section { scroll-margin-top: 96px; }
+  .information-hub .ih-section + .ih-section { margin-top: 37px; }
+  .information-hub .ih-section > h2 { font-size: 24px; margin-bottom: 18px; }
+  .information-hub .ih-licence-panel { padding: 25px 22px; }
+  .information-hub .ih-entity { margin-bottom: 26px; }
+  .information-hub .ih-entity-name dd { font-size: 20px; }
+  .information-hub .ih-entity-ce dd { font-size: 18px; }
+  .information-hub .ih-activities > div { grid-template-columns: 77px minmax(0, 1fr); gap: 14px; font-size: 15px; }
+  .information-hub .ih-risk-document, .information-hub .ih-document-row { padding: 24px 22px; }
+  .information-hub .ih-document-copy h3 { font-size: 19px; }
+  .information-hub .ih-document-copy p { font-size: 14px; }
+  .information-hub .ih-document-row { align-items: flex-start; flex-direction: column; gap: 15px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .information-hub a, .information-hub button { transition: none; }
+}
+
+.information-hub .ih-layout { align-items: start; }
+.information-hub .ih-tabs { width: 100%; }
+.information-hub .ih-navigation a { border: 1px solid transparent; }
+.information-hub .ih-navigation a[aria-selected="true"] {
+  color: var(--gold);
+  border-color: rgba(201,168,124,.28);
+  background: rgba(201,168,124,.075);
+}
+.information-hub[data-tabs-ready] .ih-content { min-height: 520px; }
+.information-hub[data-tabs-ready] .ih-section + .ih-section { margin-top: 0; }
+.information-hub .ih-section[hidden] { display: none !important; }
+.information-hub .ih-section:focus-visible { outline: 2px solid var(--gold); outline-offset: 8px; border-radius: 20px; }
+.information-hub .ih-update { padding-top: 25px; border-top: 1px solid var(--ih-border); }
+.information-hub .ih-update-header time { display: block; font-size: 12px; line-height: 1.7; color: var(--muted); letter-spacing: .03em; }
+.information-hub .ih-update-header h3 { margin-top: 16px; max-width: 720px; font-size: clamp(24px,2.15vw,30px); font-weight: 400; line-height: 1.6; text-wrap: pretty; }
+.information-hub .ih-update-visual { width: min(100%,460px); margin: 25px 0 26px; border: 1px solid var(--ih-border); border-radius: 18px; overflow: hidden; background: #0b1120; }
+.information-hub .ih-image-placeholder { aspect-ratio: 16 / 9; display: grid; place-items: center; background: #0f1522; }
+.information-hub .ih-image-placeholder span { color: #788294; font-size: 13px; letter-spacing: .08em; }
+.information-hub .ih-update-prose { max-width: 740px; }
+.information-hub .ih-update-prose p { color: #bac0ca; font-size: 16px; line-height: 2; }
+.information-hub .ih-update-prose p + p { margin-top: 18px; }
+.information-hub .ih-update-source { margin-top: 28px; padding-top: 23px; border-top: 1px solid var(--ih-border); }
+.information-hub .ih-update-source p { color: var(--muted); font-size: 12px; line-height: 1.7; margin-bottom: 9px; }
+.information-hub .ih-update-source a { display: inline-block; color: var(--gold); border-bottom: 1px solid rgba(201,168,124,.4); padding-bottom: 3px; font-size: 13px; line-height: 1.8; }
+.information-hub .ih-update-source a:hover { border-bottom-color: var(--gold); }
+html[lang=en] .information-hub .ih-update-header h3 { letter-spacing: -.01em; line-height: 1.45; }
+@media (max-width: 780px) {
+  .information-hub .ih-navigation { display: block; }
+  .information-hub .ih-nav-label { margin-bottom: 12px; }
+  .information-hub .ih-tabs { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+  .information-hub .ih-navigation a { width: 100%; border-color: var(--ih-border); }
+  .information-hub[data-tabs-ready] .ih-content { min-height: 0; }
+  .information-hub .ih-update { padding-top: 22px; }
+  .information-hub .ih-update-header h3 { font-size: 23px; line-height: 1.55; margin-top: 14px; }
+  .information-hub .ih-update-visual { margin-block: 23px; border-radius: 16px; }
+  .information-hub .ih-update-prose p { font-size: 15px; line-height: 1.95; }
+}

@@ -14,6 +14,6 @@ Pages 範本只適用**獨立開發倉庫**；先填好 `EXPECTED_PREVIEW_REPOSI
 
 所有範本使用 Node.js 24、`npm run build`、`npm run check`。本專案沒有第三方 npm 依賴；`dist/assets/`、`dist/legal/` 是來源檔案，必須保留並提交，不可在構建前清空 `dist/`。
 
-GitHub 與目前 Sites 預覽沒有自動同步。這些範本的任何執行都不會更新 Sites 網址。
+GitHub 與目前 Cloudflare Pages 預覽沒有自動同步。這些範本不包含 Cloudflare 發布步驟；CI 範本只做檢查，Pages 範本發布獨立 GitHub Pages 站點。
 
 官方依據與版本查核日期：2026-10-28。[checkout](https://github.com/actions/checkout)、[setup-node](https://github.com/actions/setup-node)、[Pages 自訂工作流](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)。
