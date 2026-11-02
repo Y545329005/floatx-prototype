@@ -1,90 +1,135 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Clock } from 'lucide-react';
-import { transactions, wallet, walletAccountOf, formatExactAmount } from '../mock/data';
+import { ArrowLeft, Clock, ChevronRight } from 'lucide-react';
+import { clickable } from '../lib';
+import {
+  transactions, depositRequests, withdrawRequests, walletAccountOf, formatExactAmount, currentUser,
+} from '../mock/data';
 import { useLang } from '../i18n';
 
-// 投资人交易记录页（2026-08-18：钱包交易记录独立成页，对齐后台资金流水查询心智）
-// 钱包页只保留最近 5 条摘要 + 「查看全部」入口 → 此页承担完整明细查询：
-// 类型筛选 + 时间范围 + 日期分组 + 分组加载
-// 2026-08-19：行结构对齐钱包页 wallet-transaction-card 两行布局（此前 .transaction-row CSS 缺失导致全部内容靠左堆叠）；
-// 「加载更多」按钮 → 无限滚动（window scroll + rAF 兜底，触底追加日期组，组完整不被截断；全部加载后显示到底标记）；
-// 筛选区（类型 tab + 时间工具栏）整体吸顶（transactions-sticky 变体）；
-// 金额走 formatExactAmount（全站金额一律 2 位小数，对账场景不缩写；币种符号前置为国际惯例）
-const TX_FILTERS = [
+// 资金明细（2026-10-29 二轮：由「资金记录」+「资金申请」归并而成）
+//
+// 为什么归并：同一笔钱此前存了两份——申请单（depositRequests / withdrawRequests）
+// 与核准后写入的流水（transactions）。两个页面各取一份，打开来当然长得一样。
+//
+// 归并规则是互斥的，不需要 id 关联字段：
+//   申请单只取「未成功」的（处理中 / 待补凭证 / 未通过）——过程
+//   流水只取「已记账」的（completed）——结果
+//   一笔钱要么还在过程里，要么已经记进结果，不可能同时在两边，天然零重复。
+//
+// 一条筛选 + 一套日期分组 + 一套无限滚动（沿用 2026-08-19 的滚动机制），
+// 不再有两套列表各自的筛选器与重置逻辑。
+
+const KIND_FILTERS = [
   { key: 'all', labelKey: '全部' },
   { key: 'deposit', labelKey: '充值' },
   { key: 'withdraw', labelKey: '提现' },
-  { key: 'subscription', labelKey: '申购' },
-  { key: 'redeem', labelKey: '赎回' },
-  { key: 'exchange', labelKey: '换汇' },
-  { key: 'exit', labelKey: '退出' },
-  { key: 'dividend', labelKey: '分红' },
 ];
 
-const TX_RANGES = [
+const STATUS_FILTERS = [
+  { key: 'all', labelKey: '全部状态' },
+  { key: 'pending', labelKey: '处理中' },
+  { key: 'requires_evidence', labelKey: '待补凭证' },
+  { key: 'rejected', labelKey: '未通过' },
+  { key: 'completed', labelKey: '已完成' },
+];
+
+const RANGES = [
   { key: 'all', labelKey: '全部时间' },
   { key: '7d', labelKey: '近 7 天' },
   { key: '30d', labelKey: '近 30 天' },
   { key: '90d', labelKey: '近 90 天' },
 ];
 
-// 分组加载：初始显示 2 个日期组，触底每次追加 2 组（移动端逐条分页反而打断日期分组）
+// 分组加载：初始 2 个日期组，触底每次追加 2 组
 const INITIAL_GROUPS = 2;
 const STEP_GROUPS = 2;
 
+// 申请单的 time 到秒、流水只到日；统一裁到分钟（对投资人而言秒没有决策价值）
+const fmtTime = s => (String(s || '').length > 10 ? String(s).slice(0, 16) : String(s || ''));
+
+// 状态徽标：已完成为默认终态，不挂徽标（每行都挂「已完成」等于噪音）
+const STATUS_META = {
+  pending: { labelKey: '处理中', cls: 'tag-warning' },
+  requires_evidence: { labelKey: '待补凭证', cls: 'tag-danger' },
+  rejected: { labelKey: '未通过', cls: 'tag-neutral' },
+};
+
 export default function Transactions({ navigate, goBack }) {
   const { t } = useLang();
-  const [filter, setFilter] = useState('all');
+  const [kind, setKind] = useState('all');
+  const [status, setStatus] = useState('all');
   const [range, setRange] = useState('all');
   const [shownGroups, setShownGroups] = useState(INITIAL_GROUPS);
 
-  const labels = {
-    deposit: t('充值'),
-    withdraw: t('提现'),
-    subscription: t('申购'),
-    redeem: t('赎回'),
-    exchange: t('换汇'),
-    exit: t('退出'),
-    dividend: t('分红'),
-  };
+  const resetPaging = () => setShownGroups(INITIAL_GROUPS);
 
-  const inRange = (tx) => {
+  // 只取未成功的申请单（过程）；approved 的钱已经由流水承担，不重复出列
+  const toReqRow = (r, kind) => ({
+    key: `req-${r.id}`,
+    kind,
+    status: r.status,
+    amount: r.amount,
+    currency: r.currency,
+    time: r.createdAt,
+    extra: r.bank || '',
+    reqId: r.id,
+  });
+  // 申请单只取「本人」且未成功的（2026-11-02 修复：此前无归属过滤，u1 能看到并打开其他客户的在途/被拒单）
+  const reqRows = [
+    ...depositRequests.filter(r => r.userId === currentUser.id && r.status !== 'approved').map(r => toReqRow(r, 'deposit')),
+    ...withdrawRequests.filter(r => r.userId === currentUser.id && r.status !== 'approved').map(r => toReqRow(r, 'withdraw')),
+  ];
+
+  // 只取已记账的资金流水
+  const txRows = transactions
+    .filter(tx => (tx.type === 'deposit' || tx.type === 'withdraw') && tx.status === 'completed')
+    .map(tx => ({
+      key: `tx-${tx.id}`,
+      id: tx.id,
+      kind: tx.type,
+      status: 'completed',
+      amount: tx.amount,
+      currency: tx.currency,
+      time: tx.createdAt,
+      extra: tx.method || '',
+      // 统一详情出口（2026-11-02 定稿）：审批流水带 reqId → 申请详情；历史导入流水无申请单 → 交易详情页
+      reqId: tx.reqId || null,
+    }));
+
+  const inRange = (row) => {
     if (range === 'all') return true;
     const days = { '7d': 7, '30d': 30, '90d': 90 }[range];
-    const d = new Date(tx.createdAt.slice(0, 10));
+    const d = new Date(String(row.time).slice(0, 10));
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - days);
     return d >= cutoff;
   };
 
-  // 过滤 + 按日期倒序（createdAt 为 YYYY-MM-DD，字符串比较即时间序）
-  const filtered = transactions
-    .filter(tx => (filter === 'all' || tx.type === filter) && inRange(tx))
-    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  const rows = [...reqRows, ...txRows]
+    .filter(row => (kind === 'all' || row.kind === kind))
+    .filter(row => (status === 'all' || row.status === status))
+    .filter(inRange)
+    .sort((a, b) => (String(a.time) < String(b.time) ? 1 : -1));
 
   // 按日期分组（保证每组完整渲染，不被分页截断）
   const groups = [];
-  filtered.forEach(tx => {
+  rows.forEach(row => {
+    const date = String(row.time).slice(0, 10);
     const last = groups[groups.length - 1];
-    if (last && last.date === tx.createdAt) {
-      last.items.push(tx);
-    } else {
-      groups.push({ date: tx.createdAt, items: [tx] });
-    }
+    if (last && last.date === date) last.items.push(row);
+    else groups.push({ date, items: [row] });
   });
   const visibleGroups = groups.slice(0, shownGroups);
   const hasMore = visibleGroups.length < groups.length;
 
-  // 无限滚动：触底（提前 160px）自动追加下一批日期组。
-  // scroll 事件触发立即检查；未触底时 rAF 循环兜底（覆盖滚动位置已到底但无新事件的场景，如浏览器恢复滚动位置）；
-  // shownGroups 变化后 effect 重跑自检 → 内容不足一屏时自动连续加载到撑满或全部加载完
+  // 无限滚动：触底（提前 160px）追加下一批日期组；rAF 兜底覆盖无滚动事件的场景
   useEffect(() => {
     if (!hasMore) return undefined;
     let raf = 0;
     const check = () => {
       if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 160) {
         setShownGroups(s => Math.min(s + STEP_GROUPS, groups.length));
-        return; // 已触底加载，等 effect 重跑后再次检查
+        return;
       }
       raf = requestAnimationFrame(check);
     };
@@ -104,16 +149,16 @@ export default function Transactions({ navigate, goBack }) {
     <div className="page transactions-page">
       <div className="subpage-sticky transactions-sticky">
         <div className="page-header">
-          <button className="back-btn" onClick={() => goBack('#wallet')}><ArrowLeft size={20} /></button>
-          <h1>{t('交易记录')}</h1>
+          <button className="back-btn" onClick={() => goBack('#asset')}><ArrowLeft size={20} /></button>
+          <h1>{t('资金明细')}</h1>
         </div>
 
         <div className="segmented-control transaction-tabs">
-          {TX_FILTERS.map(f => (
+          {KIND_FILTERS.map(f => (
             <button
               key={f.key}
-              className={filter === f.key ? 'active' : ''}
-              onClick={() => { setFilter(f.key); setShownGroups(INITIAL_GROUPS); }}
+              className={kind === f.key ? 'active' : ''}
+              onClick={() => { setKind(f.key); resetPaging(); }}
             >
               {t(f.labelKey)}
             </button>
@@ -123,43 +168,64 @@ export default function Transactions({ navigate, goBack }) {
         <div className="transaction-toolbar">
           <select
             className="form-input transaction-range"
-            value={range}
-            onChange={e => { setRange(e.target.value); setShownGroups(INITIAL_GROUPS); }}
+            value={status}
+            onChange={e => { setStatus(e.target.value); resetPaging(); }}
+            aria-label={t('状态')}
           >
-            {TX_RANGES.map(r => <option key={r.key} value={r.key}>{t(r.labelKey)}</option>)}
+            {STATUS_FILTERS.map(s => <option key={s.key} value={s.key}>{t(s.labelKey)}</option>)}
           </select>
-          <span className="transaction-count text-muted text-sm">{t('共 {} 条').replace('{}', filtered.length)}</span>
+          <select
+            className="form-input transaction-range"
+            value={range}
+            onChange={e => { setRange(e.target.value); resetPaging(); }}
+            aria-label={t('时间范围')}
+          >
+            {RANGES.map(r => <option key={r.key} value={r.key}>{t(r.labelKey)}</option>)}
+          </select>
+          <span className="transaction-count text-muted text-sm">{t('共 {} 条').replace('{}', rows.length)}</span>
         </div>
       </div>
 
       <div className="card">
         {groups.length === 0 && (
           <div className="empty-state">
-            <p className="text-muted">{t('暂无交易记录')}</p>
+            <p className="text-muted">{t('暂无记录')}</p>
           </div>
         )}
         {visibleGroups.map(g => (
           <div key={g.date} className="transaction-group">
             <div className="transaction-group-title">{g.date}</div>
-            {g.items.map(tx => (
-              <div key={tx.id} className="wallet-transaction-card">
-                <div className="wallet-transaction-header">
-                  <span className={`transaction-type ${tx.type}`}>{labels[tx.type] || tx.type}</span>
-                  <span className="wallet-transaction-extra">
-                    {tx.projectName || (tx.type === 'exchange' ? tx.method : '') || ''}
-                  </span>
+            {g.items.map(row => {
+              const meta = STATUS_META[row.status];
+              const sign = row.kind === 'deposit' ? '+' : '-';
+              const symbol = walletAccountOf(row.currency)?.symbol || '';
+              // 两路统一跳详情（2026-11-02 定稿）：申请单行带 reqId → 申请详情；流水行带 id → 交易详情
+              const href = row.reqId ? `#fund-request/${row.reqId}` : `#transaction/${row.id}`;
+              return (
+                <div
+                  key={row.key}
+                  className="wallet-transaction-card transaction-row-link"
+                  {...clickable(() => navigate(href))}
+                >
+                  <div className="wallet-transaction-header">
+                    <span className="transaction-type-group">
+                      <span className={`transaction-type ${row.kind}`}>{t(row.kind === 'deposit' ? '充值' : '提现')}</span>
+                      {meta && <span className={`tag ${meta.cls} transaction-status-tag`}>{t(meta.labelKey)}</span>}
+                    </span>
+                    {row.extra && <span className="wallet-transaction-extra">{row.extra}</span>}
+                  </div>
+                  <div className="wallet-transaction-footer">
+                    <span className="text-muted text-sm">
+                      <Clock size={12} /> {fmtTime(row.time)}
+                    </span>
+                    <span className="wallet-transaction-amount">
+                      {sign}{symbol}{formatExactAmount(row.amount)}
+                      <ChevronRight size={14} className="transaction-row-arrow" />
+                    </span>
+                  </div>
                 </div>
-                <div className="wallet-transaction-footer">
-                  <span className="text-muted text-sm">
-                    <Clock size={12} /> {tx.createdAt}
-                  </span>
-                  <span className="wallet-transaction-amount">
-                    {(tx.type === 'deposit' || tx.type === 'exit' || tx.type === 'dividend' || tx.type === 'redeem') ? '+' : tx.type === 'exchange' ? '' : '-'}
-                    {walletAccountOf(tx.currency)?.symbol || ''}{formatExactAmount(tx.amount)}
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ))}
       </div>

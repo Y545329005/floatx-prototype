@@ -39,14 +39,17 @@ const FundStatements = lazy(() => import('../pages/FundStatements'));
 const FundStatementDetail = lazy(() => import('../pages/FundStatementDetail'));
 const FundOrders = lazy(() => import('../pages/FundOrders'));
 // 资产 / 资金（2026-10-28 一期闭环恢复：资产只读聚合 + 资金公共模块最小 4 条路由）
+// 2026-11-02 资金审查收尾：#wallet 摘除——资金域归属地为 #asset，#wallet 全仓无正向入口
+// （仅子页返回兜底引用，正常点击路径到不了），Wallet.jsx 文件保留不删，二期随资金域重估再定
 const AssetOverview = lazy(() => import('../pages/AssetOverview'));
-const Wallet = lazy(() => import('../pages/Wallet'));
+// 资产走势（2026-11-02 接回）：文件与样式一直在，首期裁剪只摘了入口；
+// hero 迷你走势是它的唯一入口，点进去不能落回资讯页。
+const AssetTrend = lazy(() => import('../pages/AssetTrend'));
 const BankCards = lazy(() => import('../pages/BankCards'));
-const Exchange = lazy(() => import('../pages/Exchange'));
 const Transactions = lazy(() => import('../pages/Transactions'));
 const FundOperation = lazy(() => import('../pages/FundOperation'));
-const FundRequests = lazy(() => import('../pages/FundRequests'));
 const FundRequestDetail = lazy(() => import('../pages/FundRequestDetail'));
+const TransactionDetail = lazy(() => import('../pages/TransactionDetail'));
 
 // 渲染 APP 端页面（门控放行后调用）。
 // ctx: { navigate, goBack, setToast, isLoggedIn, setIsLoggedIn, embed }
@@ -86,30 +89,37 @@ export function renderAppPage(path, param, ctx) {
       return <FundStatementDetail id={param} navigate={navigate} goBack={goBack} />;
     case 'fund-orders':
       return <FundOrders navigate={navigate} goBack={goBack} setToast={setToast} />;
-    // 资产 / 资金公共模块（2026-10-28 恢复；只接最小 4 条资金路由，
-    // 换汇 exchange / 银行卡 bank-cards / 交易流水 transactions 仍未接线——
-    // Wallet 页已同步摘除这三个入口，避免命中 default 静默渲染资讯页）
+    // 资产 / 资金公共模块（2026-10-28 恢复；app/withdraw/bank-cards/transactions 资金路由全量接线——
+    // 下方 bank-cards/transactions 两个 case 即当日补齐；#wallet 已于 2026-11-02 摘除，见上方注释）
+    // 2026-11-02 资金审查口径 A：换汇收口——#exchange 路由与 lazy 引入摘除（Exchange.jsx 文件保留，
+    // Wallet 入口同步摘除，数据层 submitExchangeRequest 兜底拦截；二期接回恢复三处即可）
     case 'asset':
       return <AssetOverview navigate={navigate} goBack={goBack} />;
-    case 'wallet':
-      return <Wallet navigate={navigate} goBack={goBack} />;
-    // 2026-10-28：APP 侧收口——银行卡（白名单验证 + eDDA 授权）、换汇、交易流水接回。
-    // 这三页文件一直在，只是首期裁剪时摘了入口；eDDA 的「模拟授权」按钮已改为跳本页授权。
+    case 'asset-trend':
+      return <AssetTrend navigate={navigate} goBack={goBack} />;
+    // case 'wallet' 2026-11-02 摘除（死页：全仓无正向入口，仅子页返回兜底引用——兜底已改 #asset），
+    // #wallet 深链落 default 资讯页。二期恢复 = lazy 清单 + 本 case + Wallet.jsx 头注释三处同步
+    // 2026-10-28：APP 侧收口——银行卡（白名单验证 + eDDA 授权）、交易流水接回。
+    // 这两页文件一直在，只是首期裁剪时摘了入口；eDDA 的「模拟授权」按钮已改为跳本页授权。
+    // 换汇 2026-11-02 口径收口：入口/路由/数据层三层拦截（见上方 case 区注释）
     case 'bank-cards':
       return <BankCards navigate={navigate} goBack={goBack} setToast={setToast} />;
-    case 'exchange':
-      return <Exchange navigate={navigate} goBack={goBack} setToast={setToast} />;
     case 'transactions':
       return <Transactions navigate={navigate} goBack={goBack} />;
     case 'fund-operation':
       return <FundOperation mode={param || 'deposit'} navigate={navigate} goBack={goBack} />;
     case 'fund-requests':
-      return <FundRequests navigate={navigate} goBack={goBack} />;
+      // 2026-10-29：资金申请页已并入「资金明细」，旧深链落到同一页（默认筛「全部状态」即可看到在途单）
+      return <Transactions navigate={navigate} goBack={goBack} />;
     case 'fund-request':
       return <FundRequestDetail id={param} navigate={navigate} goBack={goBack} />;
+    // 交易详情（2026-11-02）：无申请单的历史导入流水详情出口，资金明细行统一跳详情的落点
+    case 'transaction':
+      return <TransactionDetail id={param} goBack={goBack} />;
     // 2026-10-16 首期裁剪：资产树 13 路由摘除（wallet/transactions/fund-requests/fund-request/
     // fund-operation/holdings/assets/asset-trend/exchange/bank-cards/funds/reports/spv-sign）——
     // 命中即落 default 分支（资讯页）。
+    // 2026-11-02：asset-trend 已接回（hero 迷你走势的落地页）；其余状态见各 case 注释。
     // 2026-10-19：#subscriptions 汇总页摘除（双壳均无活入口的死页；深链直入后列表⇄详情
     // 双返回键成死循环）。问卷进度以项目为粒度：项目详情 CTA 直达 #my-subscription/:id。
     // 2026-10-22 RO 整改：#project-heat（申购热度页）与 #reports（合规报告）随页面下线一并摘除；

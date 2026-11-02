@@ -1,7 +1,12 @@
 import { useState } from 'react';
-import { ArrowLeft, Download, Upload, ChevronRight, ClipboardList, ArrowLeftRight, CreditCard, History } from 'lucide-react';
-import { wallet, CURRENCY_META, convertToHKD, getAvailableCash, getFundFrozen, formatExactAmount } from '../mock/data';
+import { ArrowLeft, Download, Upload, ChevronRight, ClipboardList, CreditCard, History } from 'lucide-react';
+import { wallet, CURRENCY_META, convertToHKD, getAvailableCash, getFundFrozen, getWithdrawFrozen, formatExactAmount } from '../mock/data';
 import { useLang } from '../i18n';
+
+// ⚠ 死页（2026-11-02 资金审查摘除）：#wallet 路由已从 router.jsx 摘除，全仓无正向入口，
+// 仅深链可达。资金域归属地为 #asset（资产总览），本页的多币种余额/冻结拆解信息 #asset 已覆盖。
+// 文件保留不删（同 Exchange.jsx 模式），2026-11-02 的冻结拆分/双口径修复仍有效；
+// 二期随资金域重评估：恢复 = router lazy + case 'wallet' + 本注释三处同步。
 
 // 金额位数自适应降档：返回 0（正常）/1（降一档）/2（降两档）
 // 位数越长字号越小，防止长数字撑爆布局换行（2026-08-19）
@@ -15,8 +20,9 @@ const heroAmountSize = r => (r === 2 ? 'wallet-hero-value-xs' : r === 1 ? 'walle
 const balanceAmountSize = r => (r === 2 ? 'wallet-balance-item-amount-xs' : r === 1 ? 'wallet-balance-item-amount-sm' : '');
 
 // 钱包（2026-10-28 基金一期）：资金公共模块的明细页
-// 只保留闭环需要的三个动作（充值 / 提现 / 资金申请）；换汇、银行卡、交易记录三页本期未接线，
-// 入口一并摘除——留着就是「点了落到路演页」的静默错页（router default 兜底渲染 Events）。
+// 动作四格：充值 / 提现 / 银行卡 + 资金申请入口。换汇 2026-11-02 口径收口（资金审查 A）：
+// 首期不做换汇，入口与路由摘除（Exchange.jsx 文件保留、数据层 submitExchangeRequest 兜底拦截），
+// 留着入口就是「能下单但单据无处可寻」的半闭环。
 const CURRENCIES = ['HKD', 'USD', 'CNH'].map(code => ({ code, ...CURRENCY_META[code] }));
 
 export default function Wallet({ navigate, goBack }) {
@@ -28,7 +34,9 @@ export default function Wallet({ navigate, goBack }) {
     return s + (acc ? convertToHKD(acc.balance, c.code) : 0);
   }, 0);
   const heroRate = convertToHKD(1, heroCurrency) || 1;
-  const heroFrozen = getFundFrozen(undefined, heroCurrency);
+  const heroFundFrozen = getFundFrozen(undefined, heroCurrency);
+  // 冻结 = 申购冻结 + 在途提现（2026-11-02 口径 B：提现申请即冻结；币种行有分项拆解）
+  const heroFrozen = heroFundFrozen + getWithdrawFrozen(undefined, heroCurrency);
   const heroAvailable = getAvailableCash(heroCurrency);
 
   return (
@@ -74,19 +82,16 @@ export default function Wallet({ navigate, goBack }) {
         </div>
       </div>
 
-      {/* 操作：充值 / 提现 / 换汇 / 银行卡（2026-10-28 APP 侧收口：换汇与银行卡页接回） */}
-      <div className="wallet-actions-grid wallet-actions-grid-4">
+      {/* 操作：充值 / 提现 / 银行卡（换汇入口 2026-11-02 口径收口摘除） */}
+      <div className="wallet-actions-grid">
         <button className="wallet-action-item" onClick={() => navigate('#fund-operation/deposit')}>
-          <Upload size={24} className="wallet-action-icon" />
+          {/* 入金=钱落进账户（Download 落托盘）；出金=钱提出去（Upload 升出）。行业通用方向（Binance/券商/银行 APP 同款） */}
+          <Download size={24} className="wallet-action-icon" />
           <span className="wallet-action-label">{t('充值')}</span>
         </button>
         <button className="wallet-action-item" onClick={() => navigate('#fund-operation/withdraw')}>
-          <Download size={24} className="wallet-action-icon" />
+          <Upload size={24} className="wallet-action-icon" />
           <span className="wallet-action-label">{t('提现')}</span>
-        </button>
-        <button className="wallet-action-item" onClick={() => navigate('#exchange')}>
-          <ArrowLeftRight size={24} className="wallet-action-icon" />
-          <span className="wallet-action-label">{t('换汇')}</span>
         </button>
         <button className="wallet-action-item" onClick={() => navigate('#bank-cards')}>
           <CreditCard size={24} className="wallet-action-icon" />
@@ -99,7 +104,7 @@ export default function Wallet({ navigate, goBack }) {
           <div className="list-item-icon"><ClipboardList size={18} /></div>
           <div className="list-item-content">
             <div className="list-item-title">{t('资金申请')}</div>
-            <div className="list-item-subtitle">{t('充值 · 提现 · 换汇处理进度')}</div>
+            <div className="list-item-subtitle">{t('充值 · 提现处理进度')}</div>
           </div>
           <ChevronRight size={18} className="text-muted" />
         </button>
@@ -120,15 +125,21 @@ export default function Wallet({ navigate, goBack }) {
           {CURRENCIES.map(currency => {
             const acc = wallet[currency.walletKey];
             if (!acc) return null;
-            const frozen = getFundFrozen(undefined, currency.code);
+            const fundFrozen = getFundFrozen(undefined, currency.code);
+            const wdrFrozen = getWithdrawFrozen(undefined, currency.code);
             return (
               <div key={currency.code} className="wallet-balance-item">
                 <span className="wallet-balance-card-label">{currency.code} · {t(currency.label)}</span>
                 <span className={`wallet-balance-item-amount ${balanceAmountSize(longAmountRank(formatExactAmount(acc.balance)))}`}>
                   {formatExactAmount(acc.balance)}
                 </span>
-                {frozen > 0 && (
-                  <span className="text-muted text-xs">{t('冻结')} {formatExactAmount(frozen)}</span>
+                {(fundFrozen > 0 || wdrFrozen > 0) && (
+                  <span className="text-muted text-xs">
+                    {[
+                      fundFrozen > 0 ? `${t('申购冻结')} ${formatExactAmount(fundFrozen)}` : null,
+                      wdrFrozen > 0 ? `${t('在途提现')} ${formatExactAmount(wdrFrozen)}` : null,
+                    ].filter(Boolean).join(' · ')}
+                  </span>
                 )}
               </div>
             );
