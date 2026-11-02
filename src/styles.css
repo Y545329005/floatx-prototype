@@ -339,6 +339,7 @@ input, select, textarea {
 .fund-orders-page,
 .fund-statements-page,
 .fund-statement-detail-page,
+.fund-request-detail-page,
 .security-center {
   padding-top: 0;
 }
@@ -881,14 +882,32 @@ input, select, textarea {
 }
 
 .asset-hero-label {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: var(--text-base);
   color: var(--text-secondary);
 }
 
+/* hero 主行（2026-11-02 用户定版）：总资产数字左对齐，迷你走势同一行右对齐。
+   走势此前悬在标签行右侧，与数字错位，读不出「这张图属于这个数」。 */
+.asset-hero-eye {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+}
+
+.asset-hero-change .is-masked {
+  color: var(--text-secondary);
+  letter-spacing: 0.08em;
+}
+
 .asset-hero-value {
-  margin: 4px 0 2px;
-  text-align: right;
+  margin: var(--space-1) 0 var(--space-2);
   font-size: var(--text-display-sm);
   font-weight: 700;
   letter-spacing: -0.03em;
@@ -897,69 +916,64 @@ input, select, textarea {
   font-variant-numeric: tabular-nums;
 }
 
+/* 累计收益合并一行：标签 + 金额 +（收益率）（2026-11-02 用户定版）。
+   括号里是收益率，不是第二个收益数字——同一事实的两种表达，必须同色。 */
 .asset-hero-change {
   display: flex;
   align-items: baseline;
-  justify-content: flex-end;
   flex-wrap: wrap;
-  gap: 2px var(--space-2);
+  gap: 2px 6px;
   font-size: var(--text-md);
   font-weight: 600;
 }
 
-.asset-hero-change .up { color: var(--success-text); }
-.asset-hero-change .down { color: var(--danger-text); }
-
-.asset-hero-realized {
+.asset-hero-change-k {
   font-size: var(--text-sm);
   font-weight: 400;
   color: var(--text-secondary);
 }
 
-/* 三格改成三行（2026-10-28 量测）：390px 视口下内容区 314px，
-   三列各 99px，而「19,480,000.00」在 13px 下就要 100px+ —— 两位小数与三列在物理上不可兼得。
-   行式账目同时解决了金额右对齐与占比对齐，也和交易页的账单语言一致。 */
+.asset-hero-change-v {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.asset-hero-change-pct {
+  font-style: normal;
+  font-size: var(--text-sm);
+  font-weight: 400;
+  opacity: 0.85;
+}
+
+.asset-hero-change .up { color: var(--success-text); }
+.asset-hero-change .down { color: var(--danger-text); }
+
+/* 分解区（2026-11-02 统一上下）：两列账目，每列标签在上、数值在下；
+   冻结为 0 时不出现，出现时自动换到第二行。 */
 .asset-hero-parts {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3) var(--space-4);
   margin-top: var(--space-4);
   padding-top: var(--space-3);
   border-top: 1px solid var(--primary-border);
 }
 
-/* 百分比的含义必须写出来：「94.6%」不说明分母，读者只能猜是总资产还是持仓成本 */
-.asset-hero-parts-note {
-  margin: 0 0 2px;
-  font-size: var(--text-xs);
-  color: var(--text-secondary);
-}
-
 .asset-hero-part {
   display: flex;
-  align-items: baseline;
-  gap: 6px;
+  flex-direction: column;
+  gap: 2px;
   min-width: 0;
 }
 
 .asset-hero-part-k {
-  flex-shrink: 0;
   font-size: var(--text-sm);
   color: var(--text-secondary);
 }
 
-/* 占比是标签的注脚，紧跟在名字后面；它不再占最右一列 */
-.asset-hero-part-pct {
-  flex-shrink: 0;
-  font-style: normal;
-  font-size: var(--text-xs);
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-
-/* margin-left:auto = 金额永远贴卡片右边缘，与 hero 大数字同一条轴 */
 .asset-hero-part-v {
-  margin-left: auto;
   font-size: var(--text-md);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -967,7 +981,8 @@ input, select, textarea {
 
 .asset-actions {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  /* 2026-10-29：4 → 6 格（3×2），补「资金记录 / 资金申请」两个资金域入口 */
+  grid-template-columns: repeat(3, 1fr);
   gap: 4px;
   background: var(--bg-card);
   border-radius: var(--radius-lg);
@@ -1100,9 +1115,19 @@ input, select, textarea {
   gap: 4px;
 }
 
-/* 持仓行（2026-10-28 结构重做）：原来金额、收益率、赎回按钮三样挤在右列，
-   行高随「能不能赎回」跳变；现在拆成「名称+市值 / 份额+动作」两段，
-   市值永远同一位，动作永远同一侧。 */
+/* 持仓卡 = 表头在顶的两列表（2026-11-02 用户定版）：
+   左列名称 + 份额，右列持仓金额 + 累计收益（收益率）；标签只在表头出现一次，
+   行内只放数值。状态（可赎回 / 锁定期 / 在途）在基金详情。 */
+.asset-hold-colhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
 .asset-hold-list {
   display: flex;
   flex-direction: column;
@@ -1110,14 +1135,14 @@ input, select, textarea {
 
 .asset-hold-row {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: var(--space-2);
   padding: var(--space-3) 0;
   border-bottom: 1px solid var(--border-light);
   cursor: pointer;
 }
 
-.asset-hold-row:first-child { padding-top: 0; }
+.asset-hold-row:first-child { padding-top: var(--space-2); }
 .asset-hold-row:last-child { padding-bottom: 0; border-bottom: none; }
 .asset-hold-row:focus-visible {
   outline: 2px solid var(--primary);
@@ -1125,71 +1150,66 @@ input, select, textarea {
   border-radius: var(--radius-sm);
 }
 
-.asset-hold-head {
+.asset-hold-left {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
-
-.asset-hold-title {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
   min-width: 0;
-  font-size: var(--text-lg);
-  font-weight: 500;
 }
 
-/* 长基金名折行，不把名字挤成一列单字 */
-.asset-hold-title > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+.asset-hold-name {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 
-.asset-hold-value {
+.asset-hold-shares {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.asset-hold-right {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 1px;
+  gap: 2px;
   flex-shrink: 0;
 }
 
-.asset-hold-value strong {
+.asset-hold-amount {
   font-size: var(--text-lg);
-  font-weight: 600;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
-/* 收益率带标签：裸百分比在有市值并列时会读成「涨跌幅」，而它是成本收益率 */
-.asset-hold-pct {
+/* 金额 +（收益率）同色同族：括号是同一事实的另一种表达 */
+.asset-hold-pnl {
   display: inline-flex;
   align-items: baseline;
-  gap: 4px;
+  gap: 3px;
   font-size: var(--text-sm);
-  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
-.asset-hold-pct b {
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
+.asset-hold-pnl b { font-weight: 600; }
+
+.asset-hold-pct {
+  font-style: normal;
+  font-weight: 400;
+  opacity: 0.85;
 }
 
 /* 白底上的涨跌色走深档（--success 当正文只有 3.3:1） */
-.asset-hold-value .up { color: var(--success-text); }
-.asset-hold-value .down { color: var(--danger-text); }
+.asset-hold-pnl.up { color: var(--success-text); }
+.asset-hold-pnl.down { color: var(--danger-text); }
 
-.asset-hold-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  margin: 0;
-  min-width: 0;
-  font-size: var(--text-sm);
-  line-height: 1.5;
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
+.asset-hold-row > svg {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
 }
-
-.asset-hold-meta svg { flex-shrink: 0; color: var(--text-tertiary); }
 
 .tag {
   display: inline-flex;
@@ -4333,33 +4353,7 @@ input, select, textarea {
   gap: 10px;
 }
 
-/* ===== 银行卡白名单 + eDDA 授权（2026-08-19） ===== */
-.edda-auth-card {
-  margin-bottom: var(--space-3);
-}
-
-.edda-auth-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--space-2);
-}
-
-.edda-auth-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-}
-
-.edda-auth-title svg {
-  color: var(--primary);
-}
-
-.edda-auth-btn {
-  margin-top: var(--space-2);
-}
-
+/* ===== 银行卡白名单（2026-08-19；2026-10-29 eDDA 授权卡下线，相关样式一并移除） ===== */
 .bank-card-whitelist {
   display: flex;
   align-items: center;
@@ -4402,11 +4396,6 @@ input, select, textarea {
 .inline-icon {
   vertical-align: -2px;
   margin-right: 4px;
-}
-
-.admin-fund-hint {
-  margin: 0 0 12px;
-  line-height: 1.5;
 }
 
 /* ===== 关于 ===== */
@@ -4493,6 +4482,11 @@ input, select, textarea {
   margin-bottom: var(--space-3);
 }
 
+/* 错误提示紧跟按钮时原样式只有 margin-top，会和按钮贴在一起 */
+.fund-operation-form .form-error {
+  margin-bottom: var(--space-3);
+}
+
 /* 线下充值闭环（2026-08-19）：平台收款账户 + 方式选择 + 凭证上传 */
 .fund-account-card {
   margin-bottom: var(--space-3);
@@ -4535,39 +4529,6 @@ input, select, textarea {
 .fund-method-chips .chip {
   flex: 1;
   justify-content: center;
-}
-
-.fund-edda-note {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  background: var(--primary-light);
-  border-radius: var(--radius-md);
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
-  line-height: 1.5;
-}
-
-.fund-edda-note.ok {
-  background: var(--success-light);
-  color: var(--success);
-}
-
-.fund-edda-note .btn-sm {
-  margin-left: auto;
-}
-
-.fund-edda-account {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-3);
-  background: var(--bg);
-  border-radius: var(--radius-md);
-  font-size: var(--text-sm);
 }
 
 .fund-evidence-box {
@@ -4613,8 +4574,418 @@ input, select, textarea {
 
 .fund-operation-tip {
   margin-top: var(--space-3);
-  text-align: center;
+  text-align: left;
   line-height: 1.5;
+}
+
+/* ===== 充值页重构（2026-10-29）=====
+   结构：付款账户 → 通道 → ① 转账（参考代码置顶 / 收款账户逐行可复制）→ ② 登记 → ③ 注意
+   设计依据：入金页不是表单，是一次对账；页面上每个元素都在降低「这笔钱是谁的」的判断成本 */
+.fund-pay-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-4);
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-2);
+}
+
+.fund-pay-label {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.fund-pay-control {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.fund-pay-select {
+  width: 100%;
+  min-height: 44px;
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text);
+  text-align: right;
+  padding: 0 22px 0 0;
+  cursor: pointer;
+}
+
+.fund-pay-control svg {
+  position: absolute;
+  right: 0;
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+/* 选卡触发器/弹层（2026-10-29：原生 select → APP 风格底部选项列表） */
+/* 提现页触发按钮：对齐 .form-input 外观（button 需补 flex 与两侧布局） */
+.fund-card-trigger {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.fund-card-trigger-chevron {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+}
+
+/* 充值页行内触发按钮：沿用 .fund-pay-select 外观，补 button 重置 */
+.fund-pay-trigger {
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.fund-card-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+
+.fund-card-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.fund-card-option.selected {
+  border-color: var(--primary);
+  background: var(--primary-bg);
+}
+
+.fund-card-option-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fund-card-option-check {
+  flex-shrink: 0;
+  color: var(--primary);
+}
+
+/* 「管理」：卡是页面前提，但用户不知道它从哪来 —— 一行小字直达银行卡管理 */
+.fund-pay-manage {
+  flex-shrink: 0;
+  padding: 0 0 0 var(--space-2);
+  border: none;
+  border-left: 1px solid var(--border-light);
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--primary);
+  cursor: pointer;
+  min-height: 32px;
+}
+
+.fund-step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-5) 0 var(--space-2);
+}
+
+.fund-step-num {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--text);
+  color: var(--bg-card);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fund-step-title {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* 参考代码：整页唯一必填的「备注」动作，视觉权重高于账号本身 */
+.fund-ref-card {
+  background: var(--primary-light);
+  border: 1px solid var(--border-light);
+  box-shadow: none;
+}
+
+.fund-ref-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.fund-ref-label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--primary);
+  letter-spacing: 0.02em;
+}
+
+.fund-ref-badge {
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--warning-border);
+  background: var(--warning-light);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--warning-text);
+}
+
+.fund-ref-code {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.fund-ref-code strong {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--text-display-sm);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 1.15;
+}
+
+.fund-ref-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--primary);
+}
+
+.fund-ref-note {
+  display: flex;
+  gap: 6px;
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--warning-text);
+}
+
+.fund-ref-note svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.fund-acct-card {
+  padding: var(--space-3) var(--space-4);
+}
+
+.fund-acct-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: var(--space-2);
+}
+
+.fund-acct-head svg {
+  color: var(--primary);
+}
+
+.fund-acct-head strong {
+  font-size: var(--text-md);
+}
+
+.fund-acct-bank {
+  margin-left: auto;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+/* 整行即复制目标：44px 的整行点击区，比一个 16px 图标按钮好点得多 */
+.fund-acct-row {
+  display: grid;
+  /* 固定标签列宽：每行是独立 grid，用 max-content 会让各行的值左边缘参差（中英文标签长度差很大） */
+  grid-template-columns: 84px 1fr 16px;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-2) 0;
+  border: none;
+  border-top: 1px solid var(--border-light);
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fund-acct-row .k {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.fund-acct-row .v {
+  font-size: var(--text-md);
+  font-weight: 500;
+  color: var(--text);
+  text-align: right;
+  word-break: break-word;
+}
+
+.fund-acct-row .v.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.02em;
+}
+
+/* 长值（户名、银行地址）改左对齐：多行右对齐会把断行甩到左边，读起来是碎的 */
+.fund-acct-row .v.long {
+  text-align: left;
+}
+
+.fund-acct-row svg {
+  color: var(--text-tertiary);
+  transition: color 0.16s ease;
+}
+
+.fund-acct-row:active {
+  background: var(--primary-light);
+}
+
+.fund-acct-row.copied .v,
+.fund-acct-row.copied svg {
+  color: var(--success);
+}
+
+.fund-acct-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-2) 0;
+  border: none;
+  border-top: 1px solid var(--border-light);
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.fund-acct-toggle svg {
+  flex-shrink: 0;
+  transition: transform 0.18s ease;
+}
+
+.fund-acct-toggle svg.flip {
+  transform: rotate(180deg);
+}
+
+.fund-acct-all {
+  margin-top: var(--space-2);
+}
+
+.fund-acct-trust {
+  display: flex;
+  gap: 6px;
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.fund-acct-trust svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--success);
+}
+
+.fund-field-hint {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.fund-empty-card p {
+  margin: 0 0 var(--space-2);
+  line-height: 1.5;
+}
+
+.fund-empty-card .btn {
+  margin-top: var(--space-2);
+}
+
+/* 凡动必冻横幅（此前引用但从未定义，冻结态实际无样式） */
+.sc-freeze-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+  border: 1px solid var(--warning-border);
+  border-radius: var(--radius-md);
+  background: var(--warning-light);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--warning-text);
+}
+
+.sc-freeze-banner svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.fund-pay-select:focus-visible,
+.fund-pay-manage:focus-visible,
+.fund-acct-row:focus-visible,
+.fund-acct-toggle:focus-visible,
+.fund-ref-code:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
 .fund-form .form-group {
@@ -5156,6 +5527,7 @@ input, select, textarea {
 .transaction-toolbar {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-3);
   margin-bottom: var(--space-3);
 }
@@ -6689,6 +7061,34 @@ input, select, textarea {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   flex-shrink: 0; /* 精确金额变长时不挤压左侧日期（2026-08-19） */
+}
+
+/* 资金明细归并（2026-10-29）：状态徽标与可点行 */
+.transaction-type-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.transaction-status-tag {
+  flex-shrink: 0;
+  font-size: var(--text-xs);
+}
+
+.transaction-row-link {
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.transaction-row-link:active {
+  background: var(--primary-light);
+}
+
+.transaction-row-arrow {
+  margin-left: 2px;
+  vertical-align: -2px;
+  color: var(--text-tertiary);
 }
 
 
@@ -8468,4 +8868,30 @@ input, select, textarea {
   color: var(--text-secondary);
   text-align: center;
   text-wrap: balance;
+}
+
+/* 净值序列不足（新发布产品、或草稿还没有净值）：给一句说明，而不是画一个单点图。
+   单点会被当成「零跨度区间」，图上什么都没有，区间收益却是 +0.0%——看起来像真业绩。 */
+.nav-chart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 150px;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  text-align: center;
+}
+.nav-chart-empty-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.nav-chart-empty-hint {
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  color: var(--text-tertiary);
+  max-width: 240px;
 }

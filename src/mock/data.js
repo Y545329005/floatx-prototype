@@ -414,6 +414,23 @@ export const bankCards = [
     verifiedAt: null,
     verifiedAmount: null,
   },
+  {
+    // 吴世昌（u13）的验证卡——vr1 白名单验证单的 cardId 指向它。
+    // 2026-11-02 修复：此前种子缺 bc9，approveCardVerification 找不到卡一律 return false，
+    // 而 VerificationDrawer 不看返回值直接关抽屉 → vr1 审批「假成功」静默丢失（实测复现后补种子）
+    id: 'bc9',
+    userId: 'u6',   // 与 vr1 归属对齐（吴世昌 = 用户档案 u6；2026-11-02 同上）
+    bank: '星展银行',
+    branch: '香港',
+    holder: 'NG SAI CHEONG',
+    maskedNo: '**** 7711',
+    cardNo: '6222 1420 8830 7711', // 完整卡号（mock 演示值）
+    type: '香港账户',
+    currency: 'HKD',
+    whitelistStatus: 'unverified', // 随 vr1 审批通过置 verified（演示白名单流程）
+    verifiedAt: null,
+    verifiedAmount: null,
+  },
 ];
 
 export const exchangeRates = {
@@ -774,6 +791,12 @@ export const FUND_OPTIONS = {
   // 开放日：枚举存 key，文案在页面里拼（与 dealing.openFrequency 同源）
   openFrequencies: ['quarterly-start', 'quarterly-end', 'semi-annual-start'],
   docTypes: ['kfs', 'ppm', 'other'],
+  // 产品三态（2026-10-29）：草稿只在后台可见；发布后投资人才看得到；下架保留历史但不进列表。
+  // 此前用 status + openForSubscription 两个字段表达同一件事，收敛成单一事实源。
+  statuses: ['draft', 'open', 'closed'],
+  // 净值披露频率：私募自营多为周频，代售第三方常见月频。日期轴与录入间隔校验都按它走，
+  // 不参数化的话月频产品的三个月会被标成三周（图上日期全是错的）。
+  cadences: ['weekly', 'monthly'],
 };
 
 export const funds = [
@@ -788,7 +811,6 @@ export const funds = [
     riskLevel: '中高风险',
     minInvestment: 1000000,
     status: 'open',
-    openForSubscription: true,
     currency: ['HKD'],   // 首期仅港币（2026-10-28）：没有任何 USD/CNH 的申购/持仓路径
     redemptionDays: 15,      // 赎回到账 T+n 的 n
     redemptionMode: 'manual',   // 处理方式：manual 人工处理 / auto 自动处理
@@ -832,7 +854,6 @@ export const funds = [
     riskLevel: '高风险',
     minInvestment: 2000000,
     status: 'open',
-    openForSubscription: true,
     currency: ['HKD'],   // 首期仅港币（2026-10-28）：没有任何 USD/CNH 的申购/持仓路径
     redemptionDays: 20,      // 赎回到账 T+n 的 n
     redemptionMode: 'manual',   // 处理方式：manual 人工处理 / auto 自动处理
@@ -872,7 +893,6 @@ export const funds = [
     riskLevel: '中低风险',
     minInvestment: 1000000,
     status: 'open',
-    openForSubscription: true,
     currency: ['HKD'],   // 首期仅港币（2026-10-28）：没有任何 USD/CNH 的申购/持仓路径
     redemptionDays: 10,      // 赎回到账 T+n 的 n
     redemptionMode: 'manual',   // 处理方式：manual 人工处理 / auto 自动处理
@@ -912,7 +932,6 @@ export const funds = [
     riskLevel: '中风险',
     minInvestment: 1500000,
     status: 'open',
-    openForSubscription: true,
     currency: ['HKD'],   // 首期仅港币（2026-10-28）：没有任何 USD/CNH 的申购/持仓路径
     redemptionDays: 20,      // 赎回到账 T+n 的 n
     redemptionMode: 'manual',   // 处理方式：manual 人工处理 / auto 自动处理
@@ -941,17 +960,102 @@ export const funds = [
       { name: '隐私政策', type: 'privacy-policy' },
     ],
   },
+  // —— 非在售态种子（2026-10-29）——
+  // 三态各有数据才验收得到：只有 open 的种子，「草稿不下发」「下架不进列表」两条分支永远没人走过。
+  // APP 列表只认 status==='open'，所以这两只不出现在投资人侧，列表仍是 4 只。
+  {
+    id: 'f5',
+    name: '亚洲基建收益基金（新加坡资管合作）',
+    source: 'external',
+    returnLabel: '预期年化',
+    returnValue: '5-7%',
+    returnNote: '非保证',
+    type: '固定收益',
+    riskLevel: '中风险',
+    minInvestment: 1000000,
+    // 草稿：资料尚未定稿，净值还在管理人手上——这正是「允许空净值建草稿」要覆盖的场景
+    status: 'draft',
+    currency: ['HKD'],
+    redemptionDays: 20,
+    redemptionMode: 'manual',
+    lockMonths: 12,
+    minHoldMonths: 6,
+    termMonths: 24,
+    inceptionDate: '2025-09',
+    fundSizeYi: 0.8,
+    navSeries: [],
+    navMeta: { cadence: 'monthly', currency: 'HKD', lastNavDate: null },
+    economics: { managementFeePct: 1.2, performanceFeePct: 10 },
+    dealing: { openFrequency: 'quarterly-start', confirmDays: 2, redemptionNoticeDays: 20 },
+    parties: { custodian: null, administrator: null, auditor: null },
+    fundDocuments: [{ name: '产品资料概要', type: 'kfs', url: null }],
+    manager: 'Merlion Infrastructure Partners',
+    managerNote: '分销披露：本平台为分销机构，产品由第三方管理人管理，平台不承担产品管理责任。',
+    description: '以东南亚基建与公用事业资产为标的的收益型产品，资料仍在整理，尚未对外发布。',
+    riskDisclosureRef: 'risk-disclosure',
+    documents: [
+      { name: '风险披露声明及免责声明', type: 'risk-disclosure' },
+      { name: '使用条款', type: 'terms-of-use' },
+      { name: '隐私政策', type: 'privacy-policy' },
+    ],
+  },
+  {
+    id: 'f6',
+    name: '消费升级主题基金（欧洲资管合作）',
+    source: 'external',
+    returnLabel: '目标回报',
+    returnValue: '7-11%',
+    returnNote: '非保证',
+    type: '权益投资',
+    riskLevel: '高风险',
+    minInvestment: 2000000,
+    // 已下架：不再接受申购，但历史净值/持有人/结单全部保留（下架 ≠ 删除）
+    status: 'closed',
+    currency: ['HKD'],
+    redemptionDays: 15,
+    redemptionMode: 'manual',
+    lockMonths: 18,
+    minHoldMonths: 9,
+    termMonths: 36,
+    inceptionDate: '2023-10',
+    fundSizeYi: 3.2,
+    navSeries: makeNavSeries(606, 13.7, weeksSince('2023-10')),
+    navMeta: { cadence: 'weekly', currency: 'HKD', lastNavDate: weeksAgoDate(1) },
+    economics: { managementFeePct: 1.8, performanceFeePct: 20 },
+    dealing: { openFrequency: 'quarterly-end', confirmDays: 3, redemptionNoticeDays: 30 },
+    parties: { custodian: null, administrator: null, auditor: null },
+    fundDocuments: [
+      { name: '产品资料概要', type: 'kfs', url: null },
+      { name: '要约备忘录（PPM）', type: 'ppm', url: null },
+    ],
+    manager: 'Continental Consumer Partners',
+    managerNote: '分销披露：本平台为分销机构，产品由第三方管理人管理，平台不承担产品管理责任。',
+    description: '聚焦欧洲消费品牌与渠道升级机会，已于 2026 年 9 月 30 日结束募集并下架。',
+    riskDisclosureRef: 'risk-disclosure',
+    documents: [
+      { name: '风险披露声明及免责声明', type: 'risk-disclosure' },
+      { name: '使用条款', type: 'terms-of-use' },
+      { name: '隐私政策', type: 'privacy-policy' },
+    ],
+  },
 ];
 
 // 区间收益（2026-10-28）：与 NavChart 完全同口径（切片首尾 last/first-1），
 // m6=近6月(26点) y1=近1年(52点) all=成立以来(全序列)——业绩网格与净值图共用，杜绝两处各算各的
 export function fundRangeReturns(navSeries) {
-  const fmt = (v) => { const r = (v * 100).toFixed(1); return `${r >= 0 ? '+' : ''}${r}%`; };
-  const ret = (pts) => pts[pts.length - 1] / pts[0] - 1;
+  const series = Array.isArray(navSeries) ? navSeries : [];
+  // 少于两个点没有「区间收益」可言：自己除自己会算出 +0.0%，那是假数据不是空态
+  // （新建产品只有一条成立日净值时，三个区间会全部显示「+0.0%」，看起来像真业绩）。
+  const fmt = (pts) => {
+    if (!pts || pts.length < 2) return '—';
+    const v = pts[pts.length - 1] / pts[0] - 1;
+    const r = (v * 100).toFixed(1);
+    return `${r >= 0 ? '+' : ''}${r}%`;
+  };
   return {
-    m6: fmt(ret(navSeries.slice(-26))),
-    y1: fmt(ret(navSeries.slice(-52))),
-    all: fmt(ret(navSeries)),
+    m6: fmt(series.slice(-26)),
+    y1: fmt(series.slice(-52)),
+    all: fmt(series),
   };
 }
 
@@ -1071,6 +1175,7 @@ const FUND_FIELD_LABELS = {
   name: '名称', source: '来源', type: '类型', riskLevel: '风险等级',
   description: '一句话描述', manager: '管理人', managerNote: '管理人披露',
   returnLabel: '收益标签', returnValue: '收益数值', returnNote: '收益口径',
+  status: '产品状态',
   minInvestment: '起投额', lockMonths: '锁定期', minHoldMonths: '最低持有期', termMonths: '存续期',
   inceptionDate: '成立时间', fundSizeYi: '基金规模',
   redemptionDays: '赎回到账天数', redemptionMode: '到账处理方式',
@@ -1096,6 +1201,264 @@ function fundHoldingCount(fundId) {
   return fundHoldings.filter(h => h.fundId === fundId && Number(h.shares) > 0).length;
 }
 
+// ========== 新建 / 发布 / 删除（2026-10-29 · 后台「基金产品管理」补全增删改）==========
+//
+// 一条来自本轮审查的约束：**「删除」与「快照只叠加不重建」是两套互斥规则**。
+// 若 load 只按 id 覆盖、代码里有而快照里没有就「保持代码默认」，那么删掉一只种子产品后，
+// 下次刷新它会原样复活。反过来把集合改成「以快照为准」又违反项目常驻规则（代码新增的条目会被旧快照抹掉）。
+// 唯一同时满足两者的做法是**墓碑**：快照里显式记住删过谁，合并照旧、最后再按墓碑过滤。
+
+// 删过的产品 id（持久化在快照里；演示重置会随 localStorage 一起清空）
+export const deletedFundIds = new Set();
+
+// 新建产品的底：只给结构性默认值。业务事实（名称/描述/管理人/收益数值）没有合理默认，
+// 由 createFundProduct 单独做必填校验——编一个默认名称比报错危险得多。
+export const FUND_DEFAULTS = {
+  source: 'self',
+  type: '另类投资',
+  riskLevel: '中风险',
+  returnLabel: '目标回报',
+  returnValue: '',
+  returnNote: '非保证',
+  minInvestment: 1000000,
+  status: 'draft',
+  currency: ['HKD'],
+  redemptionDays: 15,
+  redemptionMode: 'manual',
+  lockMonths: 12,
+  minHoldMonths: 6,
+  termMonths: 24,
+  inceptionDate: null,
+  fundSizeYi: null,
+  navSeries: [],
+  navMeta: { cadence: 'weekly', currency: 'HKD', lastNavDate: null },
+  economics: { managementFeePct: null, performanceFeePct: null },
+  dealing: { openFrequency: null, confirmDays: null, redemptionNoticeDays: null },
+  parties: { custodian: null, administrator: null, auditor: null },
+  fundDocuments: [],
+  manager: '',
+  managerNote: '',
+  description: '',
+  riskDisclosureRef: 'risk-disclosure',
+  documents: [
+    { name: '风险披露声明及免责声明', type: 'risk-disclosure' },
+    { name: '使用条款', type: 'terms-of-use' },
+    { name: '隐私政策', type: 'privacy-policy' },
+  ],
+};
+
+// 新建时接受的白名单。status 不在内——新建一律草稿，发布是独立动作（见 publishFundProduct）。
+const FUND_CREATE_KEYS = [
+  'name', 'source', 'type', 'riskLevel', 'description', 'manager', 'managerNote',
+  'returnLabel', 'returnValue', 'returnNote', 'minInvestment',
+  'lockMonths', 'minHoldMonths', 'termMonths',
+  'inceptionDate', 'fundSizeYi', 'redemptionDays', 'redemptionMode',
+];
+
+// 发布前必须非空的业务事实（净值单独校验）
+const FUND_REQUIRED_FOR_PUBLISH = [
+  ['name', '基金名称'], ['description', '一句话描述'],
+  ['manager', '管理人'], ['returnValue', '收益数值'],
+];
+
+// 单字段校验：update（增量）与 create（全量）共用同一套规则。
+// 不共用整段流程——update 是增量、create 是全量，硬塞进一个函数会长满 if (isCreate)，
+// 而两套规则各写一遍则必然有一天漂移（这正是本轮反复收敛的那类问题）。
+function normalizeFundField(key, value) {
+  switch (key) {
+    case 'name': {
+      const v = String(value ?? '').trim();
+      if (!v) return { ok: false, error: '基金名称不能为空' };
+      return { ok: true, value: v };
+    }
+    case 'description':
+    case 'manager':
+    case 'managerNote':
+    case 'returnValue':
+      return { ok: true, value: String(value ?? '').trim() };
+    case 'lockMonths':
+    case 'minHoldMonths':
+    case 'termMonths': {
+      const n = Number(value);
+      if (!Number.isInteger(n) || n < 0 || n > 600) return { ok: false, error: '月数须为 0~600 的整数' };
+      return { ok: true, value: n };
+    }
+    case 'minInvestment': {
+      const n = Number(value);
+      if (!Number.isFinite(n) || n <= 0) return { ok: false, error: '起投额须为大于 0 的数字' };
+      return { ok: true, value: Math.round(n) };
+    }
+    case 'inceptionDate': {
+      const v = String(value ?? '').trim();
+      if (v && !/^\d{4}-\d{2}$/.test(v)) return { ok: false, error: '成立时间格式须为 YYYY-MM' };
+      return { ok: true, value: v || null };
+    }
+    case 'fundSizeYi': {
+      // 允许清空：null / '' = 不披露规模。此前 Number(null) === 0 会被判「须大于 0」，
+      // 结果是规模填错之后删不掉（一直报错），只能重填一个假数字。
+      if (value === null || value === '') return { ok: true, value: null };
+      const n = Number(value);
+      if (!Number.isFinite(n) || n <= 0 || n > 100000) {
+        return { ok: false, error: '基金规模须为大于 0 的数字（单位：亿港元）' };
+      }
+      return { ok: true, value: Math.round(n * 100) / 100 };
+    }
+    case 'redemptionDays': {
+      const n = Number(value);
+      if (!Number.isInteger(n) || n < 0 || n > 365) return { ok: false, error: '到账天数须为 0~365 的整数' };
+      return { ok: true, value: n };
+    }
+    case 'redemptionMode': {
+      if (!FUND_OPTIONS.redemptionModes.includes(value)) {
+        return { ok: false, error: '到账处理方式只能是人工处理或自动处理' };
+      }
+      return { ok: true, value };
+    }
+    default: {
+      const enumMap = {
+        source: 'sources', type: 'types', riskLevel: 'riskLevels',
+        returnLabel: 'returnLabels', returnNote: 'returnNotes',
+      };
+      const list = enumMap[key];
+      if (list && !FUND_OPTIONS[list].includes(value)) {
+        return { ok: false, error: `「${value}」不是可选的${FUND_FIELD_LABELS[key] || key}档位` };
+      }
+      return { ok: true, value };
+    }
+  }
+}
+
+// 新建产品：一律草稿。id 用时间戳 base36 而不是自增序号——自增在删除后会复用，
+// 旧审计日志里的 targetId 会指向一个完全不同的新产品。
+export function createFundProduct(payload = {}, { operator = '运营后台' } = {}) {
+  if (!payload || typeof payload !== 'object') return { ok: false, error: '没有需要保存的内容' };
+
+  const next = { ...FUND_DEFAULTS, navMeta: { ...FUND_DEFAULTS.navMeta } };
+  for (const k of FUND_CREATE_KEYS) {
+    if (payload[k] === undefined) continue;
+    const r = normalizeFundField(k, payload[k]);
+    if (!r.ok) return r;
+    next[k] = r.value;
+  }
+  for (const [k, label] of FUND_REQUIRED_FOR_PUBLISH) {
+    if (!String(next[k] ?? '').trim()) return { ok: false, error: `${label}不能为空` };
+  }
+
+  // 净值频率：创建时选定、之后不可改（改了会让既有序列的日期轴整体失真）
+  if (payload.cadence !== undefined) {
+    if (!FUND_OPTIONS.cadences.includes(payload.cadence)) {
+      return { ok: false, error: '净值频率只能是周频或月频' };
+    }
+    next.navMeta.cadence = payload.cadence;
+  }
+
+  // 首条净值：自营可预填 1.000（成立日净值就是 1.000，是事实不是编的）；
+  // 代售常拿不到，允许留空进草稿——逼着运营填一个数，等于逼着编数据。
+  const rawNav = payload.startNav;
+  const navDate = String(payload.startNavDate || '').trim();
+  if (rawNav !== undefined && rawNav !== null && rawNav !== '') {
+    const n = Number(rawNav);
+    if (!Number.isFinite(n) || n <= 0 || n > 10000) return { ok: false, error: '初始净值须为大于 0 的数字' };
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(navDate)) return { ok: false, error: '净值日期格式须为 YYYY-MM-DD' };
+    if (navDate > weeksAgoDate(0)) return { ok: false, error: '净值日期不能晚于今天' };
+    next.navSeries = [Math.round(n * 1000) / 1000];
+    next.navMeta.lastNavDate = navDate;
+  } else {
+    next.navSeries = [];
+    next.navMeta.lastNavDate = null;
+  }
+
+  let id = `f${Date.now().toString(36)}`;
+  while (funds.some(f => f.id === id)) id += 'x'; // 同毫秒并发（几乎不可能）也不留悬空 id
+  next.id = id;
+  next.status = 'draft'; // 新建一律草稿，对投资人不可见
+  next.updatedAt = formatNow();
+  deletedFundIds.delete(id); // 万一撞上墓碑（理论上不会），以新建为准
+
+  funds.push(next);
+  logAudit({
+    operator, category: 'fundProduct', action: '新建基金产品',
+    target: next.name, targetId: id,
+    note: `草稿：${formatFundValue('source', next.source)} · ${next.type} · 锁定期 ${next.lockMonths} 个月`,
+  });
+  Storage.save();
+  return { ok: true, fund: next };
+}
+
+// 发布：草稿 / 已下架 → 在售。发布前必须有净值，因为申购份额 = 金额 ÷ 净值，
+// 空序列时 latestNav 会静默返回 1.000 —— 等于按 1.000 把份额卖给投资人。
+export function publishFundProduct(fundId, { operator = '运营后台' } = {}) {
+  const fund = funds.find(f => f.id === fundId);
+  if (!fund) return { ok: false, error: '基金不存在' };
+  if (fund.status === 'open') return { ok: false, error: '该产品已在售' };
+  if (!Array.isArray(fund.navSeries) || !fund.navSeries.length) {
+    return { ok: false, error: '发布前必须已有净值：申购份额按净值计算，没有净值只能采用 1.000' };
+  }
+  for (const [k, label] of FUND_REQUIRED_FOR_PUBLISH) {
+    if (!String(fund[k] ?? '').trim()) return { ok: false, error: `${label}不能为空，无法发布` };
+  }
+  const from = fund.status;
+  fund.status = 'open';
+  fund.updatedAt = formatNow();
+  logAudit({
+    operator, category: 'fundProduct', action: '发布基金产品',
+    target: fund.name, targetId: fund.id,
+    note: `${from === 'draft' ? '草稿' : '已下架'} → 在售，投资人可见`,
+  });
+  Storage.save();
+  return { ok: true, fund };
+}
+
+// 下架：在售 → 已下架。历史净值、持仓、结单全部保留——下架不等于删除。
+export function unpublishFundProduct(fundId, { operator = '运营后台' } = {}) {
+  const fund = funds.find(f => f.id === fundId);
+  if (!fund) return { ok: false, error: '基金不存在' };
+  if (fund.status !== 'open') return { ok: false, error: '仅在售产品可下架' };
+  fund.status = 'closed';
+  fund.updatedAt = formatNow();
+  logAudit({
+    operator, category: 'fundProduct', action: '下架基金产品',
+    target: fund.name, targetId: fund.id, note: '在售 → 已下架，不再接受申购',
+  });
+  Storage.save();
+  return { ok: true, fund };
+}
+
+// 删除：只允许「从未产生任何业务记录」的产品。
+// 闸门用「任一记录存在」而不是 fundHoldingCount —— 后者只数 shares > 0，
+// 而清仓后的持仓记录仍带着成本与已实现收益，用它当闸门等于「清仓即可抹账」。
+export function deleteFundProduct(fundId, { operator = '运营后台' } = {}) {
+  const idx = funds.findIndex(f => f.id === fundId);
+  if (idx < 0) return { ok: false, error: '基金不存在' };
+  const fund = funds[idx];
+
+  const refs = {
+    holdings: fundHoldings.filter(h => h.fundId === fundId).length,
+    orders: fundOrders.filter(o => o.fundId === fundId).length,
+    statements: fundStatements.filter(s => s.fundId === fundId).length,
+  };
+  const blocked = Object.entries(refs).filter(([, n]) => n > 0);
+  if (blocked.length) {
+    const label = { holdings: '持仓记录', orders: '交易单据', statements: '结单' };
+    return {
+      ok: false,
+      refs,
+      error: `无法删除：该产品已有 ${blocked.map(([k, n]) => `${n} 条${label[k]}`).join('、')}。`
+        + '删除会让这些记录失去引用；如需停止销售请改用「下架」。',
+    };
+  }
+
+  const name = fund.name;
+  funds.splice(idx, 1);
+  deletedFundIds.add(fundId); // 墓碑：否则下次 load 会把它当「代码默认产品」复活
+  logAudit({
+    operator, category: 'fundProduct', action: '删除基金产品',
+    target: name, targetId: fundId, note: `状态 ${fund.status} · 无持仓无单据`,
+  });
+  Storage.save();
+  return { ok: true, name };
+}
+
 /**
  * 更新基金产品资料。
  * 锁定期是唯一会改变「别人能不能卖」的字段：它一变，存量持仓的可赎回状态全部重算
@@ -1114,51 +1477,12 @@ export function updateFundProduct(fundId, patch = {}, { operator = '运营后台
   }
 
   // —— 校验（先校验、后落库：任何一项不过就整体不写，不留半生效状态）——
-  if (next.name !== undefined) {
-    const name = String(next.name).trim();
-    if (!name) return { ok: false, error: '基金名称不能为空' };
-    next.name = name;
-  }
-  for (const k of FUND_MONTH_KEYS) {
-    if (next[k] === undefined) continue;
-    const n = Number(next[k]);
-    if (!Number.isInteger(n) || n < 0 || n > 600) {
-      return { ok: false, error: '月数须为 0~600 的整数' };
-    }
-    next[k] = n;
-  }
-  if (next.minInvestment !== undefined) {
-    const n = Number(next.minInvestment);
-    if (!Number.isFinite(n) || n <= 0) return { ok: false, error: '起投额须为大于 0 的数字' };
-    next.minInvestment = Math.round(n);
-  }
-  if (next.inceptionDate !== undefined && next.inceptionDate && !/^\d{4}-\d{2}$/.test(String(next.inceptionDate))) {
-    return { ok: false, error: '成立时间格式须为 YYYY-MM' };
-  }
-
-  // —— 封闭枚举校验（后台是下拉，但数据层仍要拦：直接改快照、脚本调用都能绕过 UI）——
-  const enumChecks = [
-    ['source', 'sources'], ['type', 'types'], ['riskLevel', 'riskLevels'],
-    ['returnLabel', 'returnLabels'], ['returnNote', 'returnNotes'],
-  ];
-  for (const [key, list] of enumChecks) {
-    if (next[key] === undefined) continue;
-    if (!FUND_OPTIONS[list].includes(next[key])) {
-      return { ok: false, error: `「${next[key]}」不是可选的${FUND_FIELD_LABELS[key] || key}档位` };
-    }
-  }
-  if (next.redemptionMode !== undefined && !FUND_OPTIONS.redemptionModes.includes(next.redemptionMode)) {
-    return { ok: false, error: '到账处理方式只能是人工打款或自动清算' };
-  }
-  if (next.redemptionDays !== undefined) {
-    const n = Number(next.redemptionDays);
-    if (!Number.isInteger(n) || n < 0 || n > 365) return { ok: false, error: '到账天数须为 0~365 的整数' };
-    next.redemptionDays = n;
-  }
-  if (next.fundSizeYi !== undefined) {
-    const n = Number(next.fundSizeYi);
-    if (!Number.isFinite(n) || n <= 0 || n > 100000) return { ok: false, error: '基金规模须为大于 0 的数字（单位：亿港元）' };
-    next.fundSizeYi = Math.round(n * 100) / 100;
+  // 规则与新建共用 normalizeFundField：两套校验各写一遍，必然有一天漂移
+  // （上一版就是这样出现「后台下拉是人工处理、报错文案却是人工打款」的）。
+  for (const k of Object.keys(next)) {
+    const r = normalizeFundField(k, next[k]);
+    if (!r.ok) return r;
+    next[k] = r.value;
   }
 
   // —— 锁定期变更的影响面 ——
@@ -1250,7 +1574,7 @@ export function updateFundProduct(fundId, patch = {}, { operator = '运营后台
 
   fund.updatedAt = formatNow();
   logAudit({
-    operator, category: 'fund', action: '更新基金产品',
+    operator, category: 'fundProduct', action: '更新基金产品',
     target: fund.name, targetId: fund.id,
     note: changes.join('；'),
   });
@@ -1266,7 +1590,6 @@ export function updateFundProduct(fundId, patch = {}, { operator = '运营后台
 export function appendFundNav(fundId, { date, nav } = {}, { operator = '运营后台', acknowledge = false } = {}) {
   const fund = funds.find(f => f.id === fundId);
   if (!fund) return { ok: false, error: '基金不存在' };
-  if (!Array.isArray(fund.navSeries) || !fund.navSeries.length) return { ok: false, error: '该基金没有净值序列' };
 
   const day = String(date || '').trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return { ok: false, error: '净值日期格式须为 YYYY-MM-DD' };
@@ -1276,35 +1599,115 @@ export function appendFundNav(fundId, { date, nav } = {}, { operator = '运营�
   const today = weeksAgoDate(0);
   if (day > today) return { ok: false, error: '不能录入未来日期的净值' };
 
-  const lastDay = fund.navMeta?.lastNavDate || today;
-  if (day <= lastDay) return { ok: false, error: `净值日期须晚于上次记录（${lastDay}）` };
-  const gapDays = Math.round((new Date(`${day}T00:00:00`) - new Date(`${lastDay}T00:00:00`)) / 86400000);
-  if (gapDays < 6) return { ok: false, error: `净值按周频披露，距上次记录仅 ${gapDays} 天（至少 7 天）` };
+  const series = Array.isArray(fund.navSeries) ? fund.navSeries : [];
+  // 空序列必须允许录入第一条：草稿产品（尤其代售）建的时候拿不到净值，
+  // 若这里直接拒绝，那只产品永远补不上净值、也就永远发不了布。
+  const lastDay = series.length ? String(fund.navMeta?.lastNavDate || '') : '';
 
-  const prevNav = latestNav(fund);
-  const pct = ((n / prevNav) - 1) * 100;
-  // 单周 ±30% 对这类产品几乎一定是输错小数位（1.153 打成 11.53 / 0.1153）。
+  // 披露频率决定门槛：周频与月频用同一套「至少 7 天」的话，月频产品每次录入都会被判过密
+  const cadence = fund.navMeta?.cadence === 'monthly' ? 'monthly' : 'weekly';
+  const minGap = cadence === 'monthly' ? 25 : 6;
+  const maxJump = cadence === 'monthly' ? 50 : 30;
+  const cadenceLabel = cadence === 'monthly' ? '月' : '周';
+
+  if (lastDay) {
+    if (day <= lastDay) return { ok: false, error: `净值日期须晚于上次记录（${lastDay}）` };
+    const gapDays = Math.round((new Date(`${day}T00:00:00`) - new Date(`${lastDay}T00:00:00`)) / 86400000);
+    if (gapDays < minGap) {
+      return { ok: false, error: `净值按${cadenceLabel}频披露，距上次记录仅 ${gapDays} 天（至少 ${minGap + 1} 天）` };
+    }
+  }
+
+  const prevNav = series.length ? latestNav(fund) : null;
+  const pct = prevNav ? ((n / prevNav) - 1) * 100 : null;
+  // 幅度异常对这类产品几乎一定是输错小数位（1.153 打成 11.53 / 0.1153）。
   // 输错一位就会把所有人的市值改掉一个数量级，所以先拦一次，确认后才写。
-  if (Math.abs(pct) > 30 && !acknowledge) {
+  // 首条净值没有「上次」可比，不做这项检查（否则 1.000 → 任何值都会被当成异常）。
+  if (pct !== null && Math.abs(pct) > maxJump && !acknowledge) {
     return {
       ok: false,
       needsConfirm: true,
-      error: `新净值 ${n} 较上次 ${prevNav} 变动 ${pct.toFixed(2)}%，超出单周 ±30% 的正常范围，请核对是否输错`,
+      error: `新净值 ${n} 较上次 ${prevNav} 变动 ${pct.toFixed(2)}%，超出单${cadenceLabel} ±${maxJump}% 的正常范围，请核对是否输错`,
       impact: { kind: 'nav', prevNav, nav: n, pct, holdings: fundHoldingCount(fundId) },
     };
   }
 
-  fund.navSeries.push(Math.round(n * 1000) / 1000);
-  fund.navMeta = { ...(fund.navMeta || {}), cadence: fund.navMeta?.cadence || 'weekly', currency: fund.navMeta?.currency || 'HKD', lastNavDate: day };
+  fund.navSeries = [...series, Math.round(n * 1000) / 1000];
+  fund.navMeta = {
+    ...(fund.navMeta || {}),
+    cadence,
+    currency: fund.navMeta?.currency || 'HKD',
+    lastNavDate: day,
+  };
   fund.updatedAt = formatNow();
 
   logAudit({
-    operator, category: 'fund', action: '追加基金净值',
+    operator, category: 'fundProduct', action: '追加基金净值',
     target: fund.name, targetId: fund.id,
-    note: `${day} 净值 ${n}（上次 ${prevNav}，${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%）`,
+    note: prevNav
+      ? `${day} 净值 ${n}（上次 ${prevNav}，${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%）`
+      : `${day} 首条净值 ${n}`,
   });
   Storage.save();
   return { ok: true, fund, prevNav, pct, date: day, nav: n };
+}
+
+// 批量导入历史净值（2026-10-29）：代售产品上线时通常已有 1~3 年净值，
+// 一周一条地补是补不完的。与单条追加的区别：
+//   1) 不校验间隔——管理人给的序列可能漏过某一期，那是真实数据，不是录错；
+//   2) 整体校验通过才写，中间任何一行有问题一律不落库（不留半生效状态）；
+//   3) 只允许追加到尾部（全部晚于 lastNavDate），净值永不可回头改。
+export function importFundNavSeries(fundId, rows = [], { operator = '运营后台' } = {}) {
+  const fund = funds.find(f => f.id === fundId);
+  if (!fund) return { ok: false, error: '基金不存在' };
+  if (!Array.isArray(rows) || !rows.length) return { ok: false, error: '没有可导入的净值' };
+  if (rows.length > 3000) return { ok: false, error: '单次最多导入 3000 条' };
+
+  const today = weeksAgoDate(0);
+  const series = Array.isArray(fund.navSeries) ? fund.navSeries : [];
+  const lastDay = series.length ? String(fund.navMeta?.lastNavDate || '') : '';
+  const seen = new Set();
+  const parsed = [];
+
+  for (let i = 0; i < rows.length; i += 1) {
+    const r = rows[i] || {};
+    const date = String(r.date || '').trim();
+    const nav = Number(r.nav);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return { ok: false, error: `第 ${i + 1} 行：日期须为 YYYY-MM-DD（「${r.date ?? ''}」）` };
+    }
+    if (!Number.isFinite(nav) || nav <= 0 || nav > 10000) {
+      return { ok: false, error: `第 ${i + 1} 行：净值须为大于 0 的数字（「${r.nav ?? ''}」）` };
+    }
+    if (date > today) return { ok: false, error: `第 ${i + 1} 行：日期晚于今天（${date}）` };
+    if (lastDay && date <= lastDay) {
+      return { ok: false, error: `第 ${i + 1} 行：${date} 不晚于上次记录（${lastDay}），净值只能向后追加` };
+    }
+    if (seen.has(date)) return { ok: false, error: `第 ${i + 1} 行：与前面重复（${date}）` };
+    seen.add(date);
+    parsed.push({ date, nav: Math.round(nav * 1000) / 1000 });
+  }
+  parsed.sort((a, b) => a.date.localeCompare(b.date));
+
+  fund.navSeries = [...series, ...parsed.map(p => p.nav)];
+  fund.navMeta = {
+    ...(fund.navMeta || {}),
+    cadence: fund.navMeta?.cadence === 'monthly' ? 'monthly' : 'weekly',
+    currency: fund.navMeta?.currency || 'HKD',
+    lastNavDate: parsed[parsed.length - 1].date,
+  };
+  fund.updatedAt = formatNow();
+
+  logAudit({
+    operator, category: 'fundProduct', action: '导入基金净值',
+    target: fund.name, targetId: fund.id,
+    note: `${parsed.length} 条（${parsed[0].date} ~ ${parsed[parsed.length - 1].date}）`,
+  });
+  Storage.save();
+  return {
+    ok: true, count: parsed.length,
+    from: parsed[0].date, to: parsed[parsed.length - 1].date, fund,
+  };
 }
 
 function weeksAgoDate(weeks) {
@@ -1545,6 +1948,87 @@ export const FUND_SEED_RESULT = { redeemNet: 0, redeemAt: '' };
     firstConfirmedAt: at2,
     updatedAt: at2,
   });
+
+  // ---------- ④ 待处理单据（2026-10-29 补齐全部分支） ----------
+  // 后台「基金交易」默认落地「待确认」：没有待确认单据时主工作流永远是一张空表，
+  // 演示/验收只能手工造数。种子覆盖：待确认申购 ×2（不同投资人）、
+  // 待确认赎回 ×1（已解锁份额，同步冻结——否则后台确认会报「冻结份额不足」）、已驳回 ×1。
+  const hoursAgoStamp = (h) => {
+    const d = new Date(Date.now() - h * 3600000);
+    const p = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+  };
+  const fund3 = funds.find(f => f.id === 'f3');
+
+  if (fund3) {
+    // 待确认申购：u3 王五（PI 已认证）买固收类基金
+    const subAt = hoursAgoStamp(5);
+    fundOrders.push({
+      id: 'fo-seed-3',
+      type: 'subscribe',
+      fundId: fund3.id,
+      fundName: fund3.name,
+      userId: 'u3',
+      currency: 'HKD',
+      amount: 1000000,
+      feeRate: FUND_FEE_RATE.subscribe,
+      status: FUND_ORDER_STATUS.PENDING,
+      createdAt: subAt,
+      updatedAt: subAt,
+      history: [{ type: 'submitted', timestamp: subAt, actor: 'user', note: '提交申购申请（余额冻结）' }],
+    });
+    // 已驳回申购：u1 张三，带驳回原因（驳回原因分支的展示样本）。
+    // 理由用产品侧外部原因「未能配售」——资金来源审查属入金环节职责（充值凭证核验已覆盖），
+    // 申购环节不再二次审查（职责越界）；撤销类理由与 cancelFundOrder 的「已撤销」状态语义混淆；
+    // 「产品方调整募集安排」与派生冻结（申购解锁资金）的语义自洽（2026-11-02 定稿）
+    const rejCreated = hoursAgoStamp(50);
+    const rejAt = hoursAgoStamp(46);
+    fundOrders.push({
+      id: 'fo-seed-4',
+      type: 'subscribe',
+      fundId: fund3.id,
+      fundName: fund3.name,
+      userId: 'u1',
+      currency: 'HKD',
+      amount: 2000000,
+      feeRate: FUND_FEE_RATE.subscribe,
+      status: FUND_ORDER_STATUS.REJECTED,
+      rejectReason: '产品方调整募集安排，本笔申购未能配售',
+      confirmedBy: '财务专员',
+      createdAt: rejCreated,
+      updatedAt: rejAt,
+      history: [
+        { type: 'submitted', timestamp: rejCreated, actor: 'user', note: '提交申购申请（余额冻结）' },
+        { type: 'rejected', timestamp: rejAt, actor: '财务专员', note: '产品方调整募集安排，本笔申购未能配售' },
+      ],
+    });
+  }
+
+  // 待确认赎回：u1 的 AIDC 持仓（26 个月前买入，24 个月锁定期已过），冻结对应份额
+  const holdingForRedeem = fundHoldings.find(h => h.id === 'fh-seed-1');
+  const redeemPendingShares = 100000;
+  if (holdingForRedeem && holdingForRedeem.shares >= redeemPendingShares) {
+    const redeemAt = hoursAgoStamp(26);
+    const redeemNav = latestNav(fund);
+    holdingForRedeem.frozenShares = r4((holdingForRedeem.frozenShares || 0) + redeemPendingShares);
+    fundOrders.push({
+      id: 'fo-seed-5',
+      type: 'redeem',
+      fundId: fund.id,
+      fundName: fund.name,
+      userId: 'u1',
+      holdingId: holdingForRedeem.id,
+      currency: holdingForRedeem.currency,
+      shares: redeemPendingShares,
+      nav: redeemNav,
+      amount: r2(redeemPendingShares * redeemNav),
+      feeRate: FUND_FEE_RATE.redeem,
+      status: FUND_ORDER_STATUS.PENDING,
+      createdAt: redeemAt,
+      updatedAt: redeemAt,
+      history: [{ type: 'submitted', timestamp: redeemAt, actor: 'user', note: `提交赎回申请（冻结 ${redeemPendingShares} 份）` }],
+    });
+  }
 })();
 
 // 待确认申购冻结额（按币种；不传 currency 返回该用户全部，按 HKD 不折算）
@@ -1557,18 +2041,30 @@ export function getFundFrozen(userId = currentUser.id, currency = null) {
     .reduce((s, o) => s + o.amount, 0);
 }
 
-// 可用余额 = 账户余额 - 冻结（冻结实时派生）
+// 在途提现冻结（2026-11-02 口径 B：提现申请即冻结，审核通过转实扣、拒绝自动释放——派生值不落库）
+export function getWithdrawFrozen(userId = currentUser.id, currency = null) {
+  return withdrawRequests
+    .filter(r => r.userId === userId
+      && r.status === 'pending'
+      && (!currency || r.currency === String(currency).toUpperCase()))
+    .reduce((s, r) => s + r.amount, 0);
+}
+
+// 可用余额 = 账户余额 - 待确认申购冻结 - 在途提现（冻结全部实时派生，不落库）
+// 恒等式：可用 + 申购冻结 + 在途提现 ≡ 余额；提现审核通过时余额与在途同减 amount，恒等式保持
 export function getAvailableCash(currency, userId = currentUser.id) {
   const acc = walletAccountOf(currency);
   if (!acc) return 0;
-  return Math.max(0, acc.balance - getFundFrozen(userId, currency));
+  return Math.max(0, acc.balance - getFundFrozen(userId, currency) - getWithdrawFrozen(userId, currency));
 }
 
 // 提交申购（余额冻结式：不扣款，确认时才扣；驳回/撤销只是释放派生冻结）
 export function submitFundOrder({ fundId, currency, amount }) {
   const fund = funds.find(f => f.id === fundId);
   if (!fund) return { ok: false, error: '基金不存在' };
-  if (!fund.openForSubscription) return { ok: false, error: '该基金暂不开放申购' };
+  // 闸门只认 status（2026-10-29 收敛）：此前 status 与 openForSubscription 是两套值，
+  // 于是「status=closed 但 openForSubscription=true」的产品仍能下单——两套值必然有一天不一致。
+  if (fund.status !== 'open') return { ok: false, error: '该基金暂不开放申购' };
   const cur = String(currency || '').toUpperCase();
   if (!(fund.currency || []).includes(cur)) return { ok: false, error: '该基金不支持此币种' };
   const amt = Number(amount);
@@ -1689,7 +2185,7 @@ export function confirmFundOrder(orderId, { nav = null, operator = '运营专员
     reference: order.id,
   });
 
-  logAudit({ operator, category: 'fund', action: '确认基金申购', target: order.fundName, targetId: order.id, note: `${order.currency} ${order.amount.toLocaleString()} → ${shares} 份 @ ${confirmNav}` });
+  logAudit({ operator, category: 'fundProduct', action: '确认基金申购', target: order.fundName, targetId: order.id, note: `${order.currency} ${order.amount.toLocaleString()} → ${shares} 份 @ ${confirmNav}` });
   pushNotification({
     type: 'fund',
     title: '申购已确认',
@@ -1892,7 +2388,7 @@ export function confirmRedemptionOrder(orderId, { nav = null, operator = '运营
   });
 
   logAudit({
-    operator, category: 'fund', action: '确认基金赎回', target: order.fundName, targetId: order.id,
+    operator, category: 'fundProduct', action: '确认基金赎回', target: order.fundName, targetId: order.id,
     note: `${shares} 份 @ ${confirmNav} → 回款 ${order.currency} ${formatExactAmount(netAmount)}`,
   });
   pushNotification({
@@ -1926,7 +2422,7 @@ export function rejectFundOrder(orderId, reason = '', operator = '运营专员')
   order.history = [...(order.history || []), { type: 'rejected', timestamp: now, actor: operator, note: reason || '驳回' }];
   releaseRedemptionFreeze(order);
   const isRedeem = order.type === 'redeem';
-  logAudit({ operator, category: 'fund', action: isRedeem ? '驳回基金赎回' : '驳回基金申购', target: order.fundName, targetId: order.id, note: reason });
+  logAudit({ operator, category: 'fundProduct', action: isRedeem ? '驳回基金赎回' : '驳回基金申购', target: order.fundName, targetId: order.id, note: reason });
   pushNotification({
     type: 'fund',
     title: isRedeem ? '赎回未通过' : '申购未通过',
@@ -2884,6 +3380,8 @@ export const transactions = [
     status: 'completed',
     createdAt: '2026-06-20',
     method: '银行转账',
+    bank: '汇丰银行',
+    cardNo: '6222 0234 5678 4567',
     reference: 'T21-202606200900',
   },
   {
@@ -2895,6 +3393,8 @@ export const transactions = [
     status: 'completed',
     createdAt: '2026-06-25',
     method: '银行转账',
+    bank: '汇丰银行',
+    cardNo: '6222 0234 5678 4567',
     reference: 'T22-202606251430',
   },
   {
@@ -2906,6 +3406,8 @@ export const transactions = [
     status: 'completed',
     createdAt: '2026-07-05',
     method: '银行转账',
+    bank: '汇丰银行',
+    cardNo: '6222 0234 5678 4567',
     reference: 'T1-202607051000',
     // 合规标记（2026-08-26 新增）
     amlFlags: ['large_amount'],
@@ -2934,18 +3436,9 @@ export const transactions = [
     status: 'completed',
     createdAt: '2026-07-15',
     method: '跨境电汇',
+    bank: '星展银行（香港）',
+    cardNo: '7810 4523 0091 2345',
     reference: 'T3-202607151400',
-  },
-  {
-    id: 't4',
-    orderNo: genOrderNo('TX', '2026-07-16 11:20:00'),
-    type: 'exchange',
-    amount: 780000,
-    currency: 'HKD',
-    status: 'completed',
-    createdAt: '2026-07-16',
-    method: 'USD→HKD',
-    reference: 'T4-202607161120',
   },
   {
     id: 't5',
@@ -2956,6 +3449,8 @@ export const transactions = [
     status: 'completed',
     createdAt: '2026-07-18',
     method: '银行转账',
+    bank: '汇丰银行',
+    cardNo: '6222 0234 5678 4567',
     reference: 'T5-202607181645',
   },
   {
@@ -2967,6 +3462,8 @@ export const transactions = [
     status: 'completed',
     createdAt: '2026-07-20',
     method: '银行转账',
+    bank: '汇丰银行',
+    cardNo: '6222 0234 5678 4567',
     reference: 'T6-202607201015',
   },
   {
@@ -2995,17 +3492,6 @@ export const transactions = [
     amlNote: '大额退出，需确认资金来源',
   },
   {
-    id: 't9',
-    orderNo: genOrderNo('TX', '2026-07-26 09:50:00'),
-    type: 'exchange',
-    amount: 300000,
-    currency: 'HKD',
-    status: 'completed',
-    createdAt: '2026-07-26',
-    method: 'CNY→HKD',
-    reference: 'T9-202607260950',
-  },
-  {
     id: 't10',
     orderNo: genOrderNo('TX', '2026-07-28 17:20:00'),
     type: 'deposit',
@@ -3014,6 +3500,8 @@ export const transactions = [
     status: 'completed',
     createdAt: '2026-07-28',
     method: '银行转账',
+    bank: '汇丰银行',
+    cardNo: '6222 0234 5678 4567',
     reference: 'T10-202607281720',
     // 合规标记（2026-08-26 新增）
     amlFlags: ['large_amount'],
@@ -3039,6 +3527,8 @@ export const transactions = [
     status: 'completed',
     createdAt: '2026-08-01',
     method: '银行转账',
+    bank: '汇丰银行',
+    cardNo: '6222 0234 5678 4567',
     reference: 'T12-202608011410',
   },
   {
@@ -3050,21 +3540,12 @@ export const transactions = [
     status: 'completed',
     createdAt: '2026-08-03',
     method: '跨境电汇',
+    bank: '星展银行（香港）',
+    cardNo: '7810 4523 0091 2345',
     reference: 'T13-202608030925',
     // 合规标记（2026-08-26 新增）
     amlFlags: ['cross_border', 'suspicious'],
     amlNote: '跨境电汇，来源国高风险，需进一步调查',
-  },
-  {
-    id: 't14',
-    orderNo: genOrderNo('TX', '2026-08-04 16:30:00'),
-    type: 'exchange',
-    amount: 200000,
-    currency: 'HKD',
-    status: 'completed',
-    createdAt: '2026-08-04',
-    method: 'USD→HKD',
-    reference: 'T14-202608041630',
   },
   {
     id: 't15',
@@ -3097,6 +3578,8 @@ export const transactions = [
     status: 'completed',
     createdAt: '2026-08-08',
     method: '银行转账',
+    bank: '汇丰银行',
+    cardNo: '6222 0234 5678 4567',
     reference: 'T17-202608081020',
   },
   {
@@ -3108,6 +3591,8 @@ export const transactions = [
     status: 'completed',
     createdAt: '2026-08-10',
     method: '银行转账',
+    bank: '汇丰银行',
+    cardNo: '6222 0234 5678 4567',
     reference: 'T18-202608101340',
     // 合规标记（2026-08-26 新增）
     amlFlags: ['structure_break'],
@@ -3123,17 +3608,6 @@ export const transactions = [
     createdAt: '2026-08-12',
     projectName: 'MediConnect Health',
     reference: 'T19-202608120955',
-  },
-  {
-    id: 't20',
-    orderNo: genOrderNo('TX', '2026-08-13 16:05:00'),
-    type: 'exchange',
-    amount: 150000,
-    currency: 'HKD',
-    status: 'completed',
-    createdAt: '2026-08-13',
-    method: 'CNY→HKD',
-    reference: 'T20-202608131605',
   },
 ];
 
@@ -4507,6 +4981,7 @@ function toHkd(currency, amount) {
   const rate = exchangeRates[`${currency.toLowerCase()}-hkd`];
   return rate ? amount * rate.rate : amount;
 }
+export { toHkd };
 
 function updateLatestTotal(deltaHkd) {
   const last = assetHistory[assetHistory.length - 1];
@@ -4624,36 +5099,55 @@ export const businessContact = {
 
 // ========== 平台资金账户（后台系统配置页可维护；充值入金/提现出金的账户载体，接后端为必要配置） ==========
 // 2026-08-19 老板确认：未来业务银行统一使用星展银行（DBS）
+// 2026-10-29：收款账户补齐国际电汇字段（bankNameEn / swift / bankCode / bankAddress）。
+// 依据：用户的下一步动作是照着这张卡去填「另一家银行的汇款单」，字段集由汇款单决定，
+// 不由我们的内部数据模型决定——少一个 SWIFT，用户就填不到底。
+// 户名同时改为 HighBlock 客户资金账户口径（旧 HKBTC Limited 为 2.0 代号，品牌已定版）。
 export const platformAccounts = {
-  deposit: { bank: '星展银行（香港）', accountName: 'HKBTC Limited', accountNo: '016-456-000-1234', currency: 'HKD' },
-  withdraw: { bank: '星展银行（香港）', accountName: 'HKBTC Limited', accountNo: '016-456-000-1234', currency: 'HKD' },
+  deposit: {
+    bank: '星展银行（香港）',
+    bankNameEn: 'DBS Bank (Hong Kong) Limited',
+    accountName: 'HighBlock Securities Limited Client AC',
+    accountNo: '016-456-000-1234',
+    currency: 'HKD',
+    bankCode: '016',
+    swift: 'DHBKHKHH',
+    bankAddress: "11/F, 248 Queen's Road East, Wan Chai, Hong Kong",
+  },
+  withdraw: { bank: '星展银行（香港）', accountName: 'HighBlock Securities Limited', accountNo: '016-456-000-1234', currency: 'HKD' },
 };
 
-// EDDA 授权状态（2026-08-19 老板确认：香港本土 eDDA 快捷入金通道）
-// status: 'authorized' | 'unauthorized' —— 授权后充值可走 eDDA 通道（简化演示：一键模拟授权）
-export const eddaAuth = {
-  status: 'unauthorized',
-  bank: '中国银行（香港）',
-  accountMasked: '**** 8901',
-  authorizedAt: null,
-};
-
-export function authorizeEdda() {
-  eddaAuth.status = 'authorized';
-  eddaAuth.authorizedAt = formatNow();
-  pushNotification({
-    type: 'wallet',
-    title: 'eDDA 授权成功',
-    body: `已授权从 ${eddaAuth.bank}（${eddaAuth.accountMasked}）快捷扣款入金。`,
-  });
-  logAudit({ operator: currentUser.name || '投资人', category: 'fund', action: 'apply', target: 'eDDA 授权', targetId: '', note: 'eDDA 快捷入金授权（模拟完成）' });
-  Storage.save();
-  return true;
+// 入金参考代码（2026-10-29）：用户在汇款备注里必须填写、财务据此把银行入账对上账户的 6 位代码。
+// 由 userId 稳定派生（FNV-1a 播种 + LCG 展开）：不落库、不随会话/设备变化——
+// 若每次进页面随机生成，用户第二次进来看到的码和已汇出去的那笔不一致，等于没有参考代码。
+// 字母表去掉 I/O/0/1：银行备注栏手抄时这几个字符最容易认错。
+const REF_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+export function depositRefCode(userId) {
+  const seed = String(userId || currentUser.id || currentUser.name || 'highblock');
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i += 1) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  let out = '';
+  for (let i = 0; i < 6; i += 1) {
+    h = (Math.imul(h, 1664525) + 1013904223) >>> 0;
+    out += REF_ALPHABET[h % REF_ALPHABET.length];
+  }
+  return out;
 }
+
+// 2026-10-29 二轮（产品口径）：首期只有银行转账，eDDA 快捷入金整条链路下线——
+// eddaAuth 授权状态 / authorizeEdda / 页面入口 / 种子单据 dr8 一并移除。
 
 export function updatePlatformAccounts(kind, account, operator) {
   if (!platformAccounts[kind]) return { ok: false, error: '未知账户类型' };
   const clean = { bank: String(account.bank || '').trim(), accountName: String(account.accountName || '').trim(), accountNo: String(account.accountNo || '').trim(), currency: account.currency || 'HKD' };
+  // 电汇字段只对已存在的键做保留（收款账户有、打款账户没有）：normalize 是白名单重建，
+  // 漏掉这几个键的话后台保存一次就会把 SWIFT / 银行地址静默清空。
+  ['bankNameEn', 'bankCode', 'swift', 'bankAddress'].forEach((k) => {
+    if (account[k] !== undefined) clean[k] = String(account[k] || '').trim();
+  });
   if (!clean.bank || !clean.accountName || !clean.accountNo) return { ok: false, error: '请完整填写银行 / 户名 / 账号' };
   platformAccounts[kind] = clean;
   logAudit({ operator, category: 'config', action: 'update', target: '平台资金账户', targetId: kind, note: `更新${kind === 'deposit' ? '收款' : '打款'}账户：${clean.bank} ${clean.accountNo}（${clean.currency}）` });
@@ -4716,8 +5210,10 @@ export const ADMIN_MENUS = [
   // 前者是交易域（钱换份额），后者是资金域（银行 ↔ 平台），两者不合并。
   // 基金产品（2026-10-28）：条款/文件/净值的填写入口。与 fund-trades（成交确认）分属不同动作，
   // 也不并入 funds（资金审核）——三者常被混为「基金后台」，实际是三件事。
-  { key: 'fund-products', label: '基金产品', hash: '#admin/fund-products', group: '项目' },
-  { key: 'fund-trades', label: '基金交易', hash: '#admin/fund-trades', group: '项目' },
+  // 2026-10-29 独立「基金」组：基金与项目数据零耦合（funds 无 projectId），组名须与组内容一致；
+  // 项目模块未来若下线，删「项目」组即可，基金不受牵连。
+  { key: 'fund-products', label: '基金产品', hash: '#admin/fund-products', group: '基金' },
+  { key: 'fund-trades', label: '基金交易', hash: '#admin/fund-trades', group: '基金' },
   { key: 'funds', label: '资金审核', hash: '#admin/funds', group: '资金' },
   { key: 'broadcast', label: '通知触达', hash: '#admin/broadcast', group: '运营' },
   { key: 'messages', label: '客户消息', hash: '#admin/messages', group: '运营' }, // 客服工作台（2026-08-24）：响应式 1v1 咨询，与广播（主动触达）相邻成对；service+super
@@ -4949,7 +5445,8 @@ export function getMenuBadges(role, admin) {
   const now = Date.now();
 
   const pendingKyc = kycSubmissions.filter(k => k.status === 'PENDING_REVIEW').length;
-  const pendingDeposits = depositRequests.filter(r => r.status === 'pending').length;
+  // 待办含 requires_evidence（2026-11-02：待补凭证同样是「球在财务侧跟进」的待办，不再只认 pending）
+  const pendingDeposits = depositRequests.filter(r => r.status === 'pending' || r.status === 'requires_evidence').length;
   const pendingWithdraws = withdrawRequests.filter(r => r.status === 'pending').length;
   const pendingExits = exitEvents.filter(r => r.status === 'announced' || r.status === 'paying').length; // 退出分配待办（待确认 + 打款中）
   const pendingDividends = dividendRequests.filter(r => r.status === 'pending').length;
@@ -5997,6 +6494,9 @@ export const depositRequests = [
     bank: '汇丰银行',
     cardNo: '6222 0234 5678 4567',
     bankRef: 'BK20260812091522001',
+    refCode: depositRefCode('u1'),
+    payerRef: 'HSBC2608A0915221',
+    transferDate: '2026-08-12 09:12',
     evidence: { name: '转账凭证_20260812.png', size: '1.2 MB', uploadedAt: '2026-08-12 09:16:01', preview: makeReceiptSvg({ bank: '汇丰银行', orderNo: genOrderNo('DR', '2026-08-12 09:15:22'), refNo: 'BK20260812091522001', amount: 3000000, currency: 'HKD', time: '2026-08-12 09:15:22' }) },   // 转账凭证（2026-08-19 线下充值凭证核销）
     status: 'pending',
     createdAt: '2026-08-12 09:15:22',
@@ -6016,6 +6516,8 @@ export const depositRequests = [
     bank: '汇丰银行',
     cardNo: '6222 0234 5678 4567',
     bankRef: 'BK20260812114033001',
+    refCode: depositRefCode('u1'),
+    transferDate: '2026-08-12 11:38',
     evidence: { name: '转账凭证_20260812.png', size: '0.8 MB', uploadedAt: '2026-08-12 11:41:05', preview: makeReceiptSvg({ bank: '汇丰银行', orderNo: genOrderNo('DR', '2026-08-12 11:40:33'), refNo: 'BK20260812114033001', amount: 1500000, currency: 'HKD', time: '2026-08-12 11:40:33' }) },
     status: 'requires_evidence',   // 异常态：财务核对时凭证模糊，要求补传（2026-08-19）
     createdAt: '2026-08-12 11:40:33',
@@ -6088,6 +6590,8 @@ export const depositRequests = [
     bank: '汇丰银行',
     cardNo: '6222 0234 5678 4567',
     bankRef: 'BK20260820090841001',
+    refCode: depositRefCode('u31'),
+    transferDate: '2026-08-20 09:05',
     evidence: { name: '转账凭证_20260820.png', size: '1.8 MB', uploadedAt: '2026-08-20 09:09:12', preview: makeReceiptSvg({ bank: '汇丰银行', orderNo: genOrderNo('DR', '2026-08-20 09:08:41'), refNo: 'BK20260820090841001', amount: 5000000, currency: 'HKD', time: '2026-08-20 09:08:41' }) },
     status: 'pending',
     createdAt: '2026-08-20 09:08:41',
@@ -6107,28 +6611,10 @@ export const depositRequests = [
     bank: '中国银行（香港）',
     cardNo: '6217 8501 2345 8901',
     bankRef: 'BK20260820102215001',
+    refCode: depositRefCode('u32'),
     evidence: { name: '转账凭证_20260820.jpg', size: '0.9 MB', uploadedAt: '2026-08-20 10:22:48', preview: makeReceiptSvg({ bank: '中国银行（香港）', orderNo: genOrderNo('DR', '2026-08-20 10:22:15'), refNo: 'BK20260820102215001', amount: 150000, currency: 'USD', time: '2026-08-20 10:22:15' }) },
     status: 'pending',
     createdAt: '2026-08-20 10:22:15',
-    handledAt: null,
-    handledBy: null,
-    rejectReason: null,
-    requestEvidenceReason: null,
-  },
-  {
-    id: 'dr8',
-    orderNo: genOrderNo('DR', '2026-08-20 11:45:03'),
-    userId: 'u33',
-    userName: '王启明',
-    currency: 'HKD',
-    amount: 800000,
-    method: 'eDDA 快捷入金',   // eDDA 通道无需上传凭证
-    bank: '星展银行',
-    cardNo: '6565 9001 2345 6789',
-    bankRef: 'EDDA20260820114503001',
-    evidence: null,
-    status: 'pending',
-    createdAt: '2026-08-20 11:45:03',
     handledAt: null,
     handledBy: null,
     rejectReason: null,
@@ -6196,19 +6682,18 @@ export const depositRequests = [
 ];
 
 // 充值申请（入金）：用户线下转账到平台收款账户 → 上传凭证 → 财务核对后上账（2026-08-19 老板确认线下充值闭环）
-// 通道：① 银行转账（线下转 + 上传凭证）② eDDA 快捷入金（授权扣款，简化演示）
+// 通道：仅银行转账（2026-10-29 二轮：eDDA 整条下线）
 // 前置：付款银行卡须已过白名单验证（≥1万 HKD 或等值 USD）
-export function submitDepositRequest({ currency, amount, method, cardId, bank, cardNo, evidence, refNo }) {
+export function submitDepositRequest({ currency, amount, method, cardId, bank, cardNo, evidence, refNo, refCode, transferDate }) {
   const key = walletKeyOf(currency) || currency.toLowerCase();
   const w = wallet[key];
   if (!w || !amount || amount <= 0) return false;
   // 白名单校验：充值付款卡必须是已验证白名单卡
   const card = bankCards.find(c => c.id === cardId);
   if (!card || card.whitelistStatus !== 'verified') return false;
-  const isEdda = method === 'eDDA';
-  if (!isEdda && !(evidence && evidence.name)) return false; // 银行转账模式必须上传凭证
+  if (!(evidence && evidence.name)) return false; // 线下转账必须上传凭证
   const orderNo = genOrderNo('DR');
-  const genRef = (isEdda ? 'EDDA' : 'BK') + Date.now();   // 外部单号：银行电汇/eDDA 参考号（mock 演示值，接后端由银行回执替换）
+  const genRef = 'BK' + Date.now();   // 外部单号：银行参考号（mock 演示值，接后端由银行回执替换）
   const req = {
     id: `dr${Date.now()}`,
     orderNo,
@@ -6216,11 +6701,17 @@ export function submitDepositRequest({ currency, amount, method, cardId, bank, c
     userName: currentUser.name,
     currency,
     amount,
-    method: isEdda ? 'eDDA 快捷入金' : '银行转账',
+    method: '银行转账',
     bank: card.bank || '',
     cardNo: card.cardNo || '',   // 完整卡号（用户侧从 bankCards 选择传完整号；审核抽屉授权查看）
     bankRef: genRef,
-    evidence: isEdda ? null : (evidence ? { ...evidence, preview: makeReceiptSvg({ bank: card.bank, orderNo, refNo: genRef, amount, currency, time: formatNow() }) } : null),   // 转账凭证（eDDA 通道无需凭证；preview 为模拟回单，接后端由真实文件 URL 替换）
+    // 2026-10-29 对账三元组：refCode = 我们在页面上给出的 6 位码（用户已写进汇款备注，是最强的匹配键）；
+    // payerRef = 用户从银行回单抄来的参考号（可空，第二匹配键）；transferDate = 用户声明的汇款时间。
+    // 三者与金额一起构成财务核销时的匹配依据，此前只有金额 + 姓名 + 时间的弱信号。
+    refCode: refCode || depositRefCode(),
+    payerRef: String(refNo || '').trim(),
+    transferDate: transferDate || '',
+    evidence: evidence ? { ...evidence, preview: makeReceiptSvg({ bank: card.bank, orderNo, refNo: genRef, amount, currency, time: formatNow() }) } : null,   // 转账凭证（preview 为模拟回单，接后端由真实文件 URL 替换）
     status: 'pending',
     createdAt: formatNow(),
     handledAt: null,
@@ -6231,10 +6722,10 @@ export function submitDepositRequest({ currency, amount, method, cardId, bank, c
   depositRequests.unshift(req);
   pushNotification({
     type: 'wallet',
-    title: isEdda ? '入金申请已提交（eDDA）' : '入金申请已提交',
-    body: `${w.label}入金 ${w.symbol}${amount.toLocaleString()} 已提交，待财务核对${isEdda ? '（eDDA 扣款）' : '凭证'}后上账。`,
+    title: '入金申请已提交',
+    body: `${w.label}入金 ${w.symbol}${amount.toLocaleString()} 已提交，待财务核对凭证后上账。`,
   });
-  logAudit({ operator: currentUser.name || '投资人', category: 'fund', action: 'apply', target: '', targetId: req.id, note: `提交入金申请 ${w.symbol}${amount.toLocaleString()}（${isEdda ? 'eDDA' : '银行转账+凭证'}）` });
+  logAudit({ operator: currentUser.name || '投资人', category: 'fundProduct', action: 'apply', target: '', targetId: req.id, note: `提交入金申请 ${w.symbol}${amount.toLocaleString()}（银行转账+凭证）` });
   Storage.save();
   return true;
 }
@@ -6242,47 +6733,54 @@ export function submitDepositRequest({ currency, amount, method, cardId, bank, c
 // 后台确认到账：更新余额 + 交易记录 + 通知
 // 后台确认入金到账：实际到账金额为强制审核点（2026-08-19 会议纪要增量 → 2026-08-20 方案 B 定稿）：
 // 财务必须显式确认银行实际到账金额（UI 不预填登记金额，按银行流水/回单手工录入，配「与登记一致」快捷按钮），不允许留空兜底登记金额——防账实不符与内控空转
-export function approveDepositRequest(reqId, { actualAmount, bankRef } = {}, operator = '') {
+export function approveDepositRequest(reqId, { actualAmount, actualCurrency, bankRef } = {}, operator = '') {
   const req = depositRequests.find(r => r.id === reqId);
   if (!req || req.status !== 'pending') return false;
-  const w = walletAccountOf(req.currency);
+  // 2026-10-29：币种以财务核对的实际到账为准。用户可能汇错币种，银行换汇入账后
+  // 金额和币种都变了；只改金额不改币种，等于把钱加到用户申报的那个钱包里。
+  const cur = actualCurrency || req.currency;
+  const w = walletAccountOf(cur);
   if (!w) return false;
   const credited = Number(actualAmount);
   if (!Number.isFinite(credited) || credited <= 0) return false; // 实际到账必须为有效正数，拒绝无效/缺失值
   // 按单据归属记账：演示账户走全局钱包，其他客户只更各自账户（护栏见 applyWalletDelta）
-  const moved = applyWalletDelta(req.userId, req.currency, credited);
+  const moved = applyWalletDelta(req.userId, cur, credited);
   if (!moved.ok) return false;
-  if (moved.self) updateLatestTotal(toHkd(req.currency, credited));
+  if (moved.self) updateLatestTotal(toHkd(cur, credited));
   const ref = bankRef || `REF${Date.now()}`;
   req.actualAmount = credited;
+  req.actualCurrency = cur;
   req.bankRef = ref;
   req.status = 'approved';
   req.handledAt = formatNow();
   req.handledBy = operator || '运营后台';
-  const diffNote = credited !== req.amount ? `（登记 ${w.symbol}${req.amount.toLocaleString()} → 实际 ${w.symbol}${credited.toLocaleString()}）` : '';
+  const diffNote = credited !== req.amount || cur !== req.currency
+    ? `（登记 ${req.currency} ${req.amount.toLocaleString()} → 实际 ${cur} ${credited.toLocaleString()}）`
+    : '';
   if (moved.self) {
     transactions.unshift({
       id: `t${Date.now()}`,
       orderNo: genOrderNo('TX'),
       type: 'deposit',
       amount: credited,
-      currency: req.currency,
+      currency: cur,
       status: 'completed',
       createdAt: formatNow(),
       method: req.method,
       reference: ref,
+      reqId: req.id, // 用户侧资金明细的流水行凭此回链申请详情（已到账单据详情入口）
     });
   }
   // T10 异常检测：入金核销事件触发（R001 单笔大额入金 / R004 频繁入金）
   runAnomalyDetection(req.userId, 'deposit', { amount: credited, date: formatNow() });
   // T11 PEP 交易监控：PEP 客户入金自动标记（含跨境入金）
-  runPepMonitoring(req.userId, 'deposit', { amount: credited, currency: req.currency, crossBorder: req.method === '跨境电汇' });
+  runPepMonitoring(req.userId, 'deposit', { amount: credited, currency: cur, crossBorder: req.method === '跨境电汇' });
   pushNotification({
     type: 'wallet',
     title: '入金到账',
     body: `${w.label}入金 ${w.symbol}${credited.toLocaleString()} 已确认到账，可用资金已更新。`,
   }, req.userId);
-  logAudit({ operator: operator || '运营后台', category: 'fund', action: 'approve', target: req.userName, targetId: reqId, note: `充值确认到账 ${w.symbol}${credited.toLocaleString()}${diffNote}` });
+  logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'approve', target: req.userName, targetId: reqId, note: `充值确认到账 ${w.symbol}${credited.toLocaleString()}${diffNote}` });
   Storage.save();
   return true;
 }
@@ -6299,7 +6797,7 @@ export function rejectDepositRequest(reqId, reason, operator = '') {
     title: '入金申请未通过',
     body: `您的入金申请未通过审核：${req.rejectReason}`,
   }, req.userId);
-  logAudit({ operator: operator || '运营后台', category: 'fund', action: 'reject', target: req.userName, targetId: reqId, note: `充值申请拒绝：${req.rejectReason}` });
+  logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'reject', target: req.userName, targetId: reqId, note: `充值申请拒绝：${req.rejectReason}` });
   Storage.save();
   return true;
 }
@@ -6316,8 +6814,8 @@ export function requestDepositEvidence(reqId, reason, operator = '') {
     type: 'wallet',
     title: '入金凭证待补传',
     body: `您的入金申请需补传凭证：${req.requestEvidenceReason}`,
-  });
-  logAudit({ operator: operator || '运营后台', category: 'fund', action: 'reject', target: req.userName, targetId: reqId, note: `要求补传入金凭证：${req.requestEvidenceReason}` });
+  }, req.userId);
+  logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'reject', target: req.userName, targetId: reqId, note: `要求补传入金凭证：${req.requestEvidenceReason}` });
   Storage.save();
   return true;
 }
@@ -6336,8 +6834,8 @@ export function submitDepositEvidence(reqId, evidence) {
     type: 'wallet',
     title: '凭证已补传',
     body: `入金 ${req.currency} ${req.amount.toLocaleString()} 凭证已补传，等待财务核对。`,
-  });
-  logAudit({ operator: currentUser.name || '投资人', category: 'fund', action: 'apply', target: '', targetId: req.id, note: `补传入金凭证：${evidence.name}` });
+  }, req.userId);
+  logAudit({ operator: currentUser.name || '投资人', category: 'fundProduct', action: 'apply', target: '', targetId: req.id, note: `补传入金凭证：${evidence.name}` });
   Storage.save();
   return true;
 }
@@ -6420,7 +6918,8 @@ export function submitWithdrawRequest({ currency, amount, method, cardId, bank, 
   const key = walletKeyOf(currency) || currency.toLowerCase();
   const w = wallet[key];
   if (!w || !amount || amount <= 0) return false;
-  if (amount > w.balance) return false;
+  // 可用口径（2026-11-02 口径 B）：余额 - 申购冻结 - 在途提现；本单入队后自身计入在途提现
+  if (amount > getAvailableCash(currency)) return false;
   // 白名单校验：提现收款卡必须是已验证白名单卡
   const card = bankCards.find(c => c.id === cardId);
   if (!card || card.whitelistStatus !== 'verified') return false;
@@ -6447,7 +6946,7 @@ export function submitWithdrawRequest({ currency, amount, method, cardId, bank, 
     title: '提现申请已提交',
     body: `${w.label}提现 ${w.symbol}${amount.toLocaleString()} 已提交，待平台审核。`,
   });
-  logAudit({ operator: currentUser.name || '投资人', category: 'fund', action: 'apply', target: '', targetId: req.id, note: `提交提现申请 ${w.symbol}${amount.toLocaleString()}` });
+  logAudit({ operator: currentUser.name || '投资人', category: 'fundProduct', action: 'apply', target: '', targetId: req.id, note: `提交提现申请 ${w.symbol}${amount.toLocaleString()}` });
   Storage.save();
   return true;
 }
@@ -6461,11 +6960,21 @@ export function approveWithdrawRequest(reqId, operator = '') {
   // 余额校验按单据归属账户：其他客户不看演示账户余额；未建档客户不拦截（mock 无钱包）
   const owner = walletOwnerView(req.userId);
   const ownerBalance = owner.self ? w.balance : (owner.tracked ? (owner.account?.[key] ?? 0) : null);
-  if (ownerBalance !== null && req.amount > ownerBalance) {
+  // 审批校验基数 = 余额 - 申购冻结（2026-11-02 口径 B）：本单金额提交时已冻结、通过即「冻结转实扣」，
+  // 不得再减在途提现（双计会错杀手头钱足够的单）。通过后 余额' = 余额 - amount、在途' = 在途 - amount。
+  const ownerFundFrozen = getFundFrozen(req.userId, req.currency);
+  if (ownerBalance !== null && req.amount > ownerBalance - ownerFundFrozen) {
     req.status = 'rejected';
     req.rejectReason = '可用余额不足';
     req.handledAt = formatNow();
     req.handledBy = '运营后台';
+    // 自动拒绝同样通知 + 留痕（2026-11-02 修复：此前静默，用户与审计均无感知）
+    pushNotification({
+      type: 'wallet',
+      title: '提现申请未通过',
+      body: `您的提现申请未通过审核：${req.rejectReason}`,
+    }, req.userId);
+    logAudit({ operator: '运营后台', category: 'fundProduct', action: 'reject', target: req.userName, targetId: reqId, note: '提现打款失败自动拒绝：打款时可用余额不足' });
     Storage.save();
     return false;
   }
@@ -6483,6 +6992,7 @@ export function approveWithdrawRequest(reqId, operator = '') {
       createdAt: formatNow(),
       method: req.method,
       reference: `REF${Date.now()}`,
+      reqId: req.id, // 用户侧资金明细的流水行凭此回链申请详情（已打款单据详情入口）
     });
   }
   req.status = 'approved';
@@ -6495,7 +7005,7 @@ export function approveWithdrawRequest(reqId, operator = '') {
     title: '提现成功',
     body: `${w.label}提现 ${w.symbol}${req.amount.toLocaleString()} 已处理，资金将在 1-2 个工作日到账。`,
   }, req.userId);
-  logAudit({ operator: operator || '运营后台', category: 'fund', action: 'approve', target: req.userName, targetId: reqId, note: `提现打款 ${w.symbol}${req.amount.toLocaleString()}` });
+  logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'approve', target: req.userName, targetId: reqId, note: `提现打款 ${w.symbol}${req.amount.toLocaleString()}` });
   Storage.save();
   return true;
 }
@@ -6512,7 +7022,7 @@ export function rejectWithdrawRequest(reqId, reason, operator = '') {
     title: '提现申请未通过',
     body: `您的提现申请未通过审核：${req.rejectReason}`,
   }, req.userId);
-  logAudit({ operator: operator || '运营后台', category: 'fund', action: 'reject', target: req.userName, targetId: reqId, note: `提现申请拒绝：${req.rejectReason}` });
+  logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'reject', target: req.userName, targetId: reqId, note: `提现申请拒绝：${req.rejectReason}` });
   Storage.save();
   return true;
 }
@@ -6520,30 +7030,15 @@ export function rejectWithdrawRequest(reqId, reason, operator = '') {
 // ========== 换汇申请（2026-08-19 老板确认：换汇由人工在银行内处理，不对客承诺时效与汇率） ==========
 // 流程：用户提交申请（记录参考汇率）→ 后台确认银行换汇完成（按实际成交汇率上账）
 // 提交时冻结卖出金额；处理完成解冻并划转；拒绝则解冻
-export const exchangeRequests = [
-  {
-    id: 'er1',
-    orderNo: genOrderNo('ER', '2026-08-12 15:20:11'),
-    userId: 'u1',
-    userName: '张三',
-    fromCurrency: 'USD',
-    toCurrency: 'HKD',
-    amount: 100000,          // 卖出金额
-    refRate: 7.81,           // 申请时参考汇率（1 USD = 7.81 HKD）
-    expectedAmount: 781000,  // 按参考汇率估算（仅供参考，非承诺）
-    actualRate: null,        // 银行实际成交汇率（后台处理时录入）
-    actualAmount: null,      // 实际到账金额（后台处理时生成）
-    bankRef: null,           // 银行换汇参考号
-    status: 'pending',
-    createdAt: '2026-08-12 15:20:11',
-    handledAt: null,
-    handledBy: null,
-    rejectReason: null,
-  },
-];
+// 换汇申请（2026-10-29 二轮：首期不做换汇，APP 与后台入口均已隐藏；数组留空，
+// 二期恢复只需把入口接回并补演示数据，处理函数与汇率表保持可用）
+export const exchangeRequests = [];
 
 // 提交换汇申请：校验卖出余额 + 冻结卖出金额（换汇处理中不得重复动用）
 export function submitExchangeRequest({ from, to, amount }) {
+  // 2026-11-02 口径收口（资金审查 A）：首期不做换汇——用户入口（Wallet）与路由（router case）已摘，
+  // 数据层兜底拦截。二期接回：恢复入口与路由后移除本行，并补齐「资金明细收单 / 冻结入显示 / 监控方向」三断点。
+  return false;
   const fk = walletKeyOf(from) || String(from).toLowerCase();
   const tk = walletKeyOf(to) || String(to).toLowerCase();
   const wf = wallet[fk];
@@ -6577,7 +7072,7 @@ export function submitExchangeRequest({ from, to, amount }) {
     title: '换汇申请已提交',
     body: `${from.toUpperCase()} ${amount.toLocaleString()} → ${to.toUpperCase()} 换汇申请已提交，由人工在银行内处理，以实际成交汇率上账。`,
   });
-  logAudit({ operator: currentUser.name || '投资人', category: 'fund', action: 'apply', target: '', targetId: req.id, note: `提交换汇申请 ${from.toUpperCase()} ${amount.toLocaleString()} → ${to.toUpperCase()}` });
+  logAudit({ operator: currentUser.name || '投资人', category: 'fundProduct', action: 'apply', target: '', targetId: req.id, note: `提交换汇申请 ${from.toUpperCase()} ${amount.toLocaleString()} → ${to.toUpperCase()}` });
   Storage.save();
   return true;
 }
@@ -6634,7 +7129,7 @@ export function approveExchangeRequest(reqId, { actualRate, bankRef }, operator 
     title: '换汇已完成',
     body: `${req.fromCurrency} ${req.amount.toLocaleString()} → ${req.toCurrency} ${actual.toLocaleString()} 已按银行实际成交汇率上账。`,
   });
-  logAudit({ operator: operator || '运营后台', category: 'fund', action: 'approve', target: req.userName, targetId: reqId, note: `换汇完成：${req.fromCurrency} ${req.amount.toLocaleString()} → ${req.toCurrency} ${actual.toLocaleString()}（汇率 ${rate}）` });
+  logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'approve', target: req.userName, targetId: reqId, note: `换汇完成：${req.fromCurrency} ${req.amount.toLocaleString()} → ${req.toCurrency} ${actual.toLocaleString()}（汇率 ${rate}）` });
   Storage.save();
   return true;
 }
@@ -6654,7 +7149,7 @@ export function rejectExchangeRequest(reqId, reason, operator = '') {
     title: '换汇申请未通过',
     body: `您的换汇申请未通过：${req.rejectReason}`,
   });
-  logAudit({ operator: operator || '运营后台', category: 'fund', action: 'reject', target: req.userName, targetId: reqId, note: `换汇申请拒绝：${req.rejectReason}` });
+  logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'reject', target: req.userName, targetId: reqId, note: `换汇申请拒绝：${req.rejectReason}` });
   Storage.save();
   return true;
 }
@@ -6665,7 +7160,7 @@ export const verificationRequests = [
   {
     id: 'vr1',
     orderNo: genOrderNo('VR', '2026-08-12 13:00:00'),
-    userId: 'u13',
+    userId: 'u6',   // 吴世昌（用户档案 INV-0006 = u6；2026-11-02 对齐：原种子写 u13 幽灵 id，卡片归档/通知对不上人）
     userName: '吴世昌',
     cardId: 'bc9',
     bank: '星展银行',
@@ -6705,6 +7200,8 @@ export function submitCardVerification({ cardId, currency, amount, remark }) {
   const card = bankCards.find(c => c.id === cardId);
   if (!card || card.whitelistStatus === 'verified') return false;
   if (!amount || amount <= 0) return false;
+  // 验证款最低门槛：≥1万 HKD 等值（与 BankCards 弹层文案承诺一致；低于门槛财务无从核对白名单归属）
+  if (toHkd(currency, amount) < 10000) return false;
   const req = {
     id: `vr${Date.now()}`,
     orderNo: genOrderNo('VR'),
@@ -6730,7 +7227,7 @@ export function submitCardVerification({ cardId, currency, amount, remark }) {
     title: '白名单验证已提交',
     body: `${card.bank}（${card.maskedNo}）白名单验证已提交，请转账 ${currency} ${amount.toLocaleString()} 至平台收款账户并注明附言，财务核对到账后生效。`,
   });
-  logAudit({ operator: currentUser.name || '投资人', category: 'fund', action: 'apply', target: '银行卡白名单', targetId: req.id, note: `发起白名单验证：${card.bank}（${card.maskedNo}）${currency} ${amount.toLocaleString()}` });
+  logAudit({ operator: currentUser.name || '投资人', category: 'fundProduct', action: 'apply', target: '银行卡白名单', targetId: req.id, note: `发起白名单验证：${card.bank}（${card.maskedNo}）${currency} ${amount.toLocaleString()}` });
   Storage.save();
   return true;
 }
@@ -6741,35 +7238,40 @@ export function approveCardVerification(reqId, operator = '') {
   if (!req || req.status !== 'pending') return false;
   const card = bankCards.find(c => c.id === req.cardId);
   if (!card) return false;
-  const key = walletKeyOf(req.currency || 'HKD') || 'hkd';
-  const w = wallet[key];
+  const cur = req.currency || 'HKD';
+  const w = walletAccountOf(cur);
   if (!w) return false;
-  w.balance += req.amount;
-  if (currentUser.account[key] !== undefined) currentUser.account[key] = w.balance;
-  updateLatestTotal(toHkd(req.currency, req.amount));
+  // 按单据归属记账（2026-11-02 修复：此前直接写全局 wallet/currentUser，审核别人的验证款会
+  // 加到当前登录演示账户——与 approveDepositRequest 同型护栏，统一走 applyWalletDelta；
+  // 未建档客户 ok:true+tracked:false，单据照常流转只是不记余额，接后端补钱包）
+  const moved = applyWalletDelta(req.userId, cur, req.amount);
+  if (!moved.ok) return false;
+  if (moved.self) updateLatestTotal(toHkd(cur, req.amount));
   card.whitelistStatus = 'verified';
   card.verifiedAt = formatNow();
   card.verifiedAmount = req.amount;
-  transactions.unshift({
-    id: `t${Date.now()}`,
-    orderNo: genOrderNo('TX'),
-    type: 'deposit',
-    amount: req.amount,
-    currency: req.currency,
-    status: 'completed',
-    createdAt: formatNow(),
-    method: '白名单验证入金',
-    reference: req.bankRef,
-  });
+  if (moved.self) {
+    transactions.unshift({
+      id: `t${Date.now()}`,
+      orderNo: genOrderNo('TX'),
+      type: 'deposit',
+      amount: req.amount,
+      currency: cur,
+      status: 'completed',
+      createdAt: formatNow(),
+      method: '白名单验证入金',
+      reference: req.bankRef,
+    });
+  }
   req.status = 'approved';
   req.handledAt = formatNow();
   req.handledBy = operator || '运营后台';
   pushNotification({
     type: 'wallet',
     title: '白名单验证通过',
-    body: `${card.bank}（${card.maskedNo}）已加入资金白名单，验证款 ${w.symbol}${req.amount.toLocaleString()} 已计入可用余额。`,
-  });
-  logAudit({ operator: operator || '运营后台', category: 'fund', action: 'approve', target: card.bank, targetId: reqId, note: `白名单验证通过：${card.maskedNo}（${w.symbol}${req.amount.toLocaleString()} 计入余额）` });
+    body: `${card.bank}（${card.maskedNo}）已加入资金白名单，验证款 ${w.symbol}${formatExactAmount(req.amount)} 已计入可用余额。`,
+  }, req.userId);
+  logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'approve', target: req.userName || card.bank, targetId: reqId, note: `白名单验证通过：${card.maskedNo}（${w.symbol}${formatExactAmount(req.amount)} 计入余额）` });
   Storage.save();
   return true;
 }
@@ -6787,8 +7289,42 @@ export function rejectCardVerification(reqId, reason, operator = '') {
     type: 'wallet',
     title: '白名单验证未通过',
     body: `${card ? card.bank : ''}（${req.maskedNo}）白名单验证未通过：${req.rejectReason}`,
+  }, req.userId);
+  logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'reject', target: req.userName, targetId: reqId, note: `白名单验证拒绝：${req.rejectReason}` });
+  Storage.save();
+  return true;
+}
+
+// 新增银行卡（2026-11-02 收口：BankCards 页此前直接 push 且不落快照，刷新即回滚；
+// 收口为数据层单口：冻结兜底（INV-5「增」=出金能力变更）+ 归属当前用户 + 快照提交）
+export function addBankCard({ bank, branch, holder, cardNo, type, currency } = {}) {
+  if (getFreezeState().frozen) return false;
+  const digits = String(cardNo || '').replace(/\D/g, '');
+  if (!bank || !holder || digits.length < 8) return false;
+  bankCards.push({
+    id: `bc${Date.now()}`,
+    userId: currentUser.id,
+    bank,
+    branch: branch || '香港',
+    holder,
+    maskedNo: `**** ${digits.slice(-4)}`,
+    cardNo: String(cardNo).trim(),
+    type: type || '香港账户',
+    currency: currency || 'HKD',
+    whitelistStatus: 'unverified',
+    verifiedAt: null,
+    verifiedAmount: null,
   });
-  logAudit({ operator: operator || '运营后台', category: 'fund', action: 'reject', target: req.userName, targetId: reqId, note: `白名单验证拒绝：${req.rejectReason}` });
+  Storage.save();
+  return true;
+}
+
+// 解绑银行卡（INV-5「删」：冻结期数据层兜底；页级横幅拦截照旧）
+export function removeBankCard(cardId) {
+  if (getFreezeState().frozen) return false;
+  const idx = bankCards.findIndex(c => c.id === cardId);
+  if (idx < 0) return false;
+  bankCards.splice(idx, 1);
   Storage.save();
   return true;
 }
@@ -7012,7 +7548,7 @@ export function submitDividendRequest({ projectId, perShare, currency = 'HKD' },
     bankRef: `BK${Date.now()}`,   // 外部单号：分红发放银行参考号（mock 演示值）
   };
   dividendRequests.unshift(req);
-  logAudit({ operator: operator || '运营后台', category: 'fund', action: 'apply', target: projectName, targetId: req.id, note: `发起分红（每份 HK$ ${per.toLocaleString()}）` });
+  logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'apply', target: projectName, targetId: req.id, note: `发起分红（每份 HK$ ${per.toLocaleString()}）` });
   Storage.save();
   return true;
 }
@@ -7055,7 +7591,7 @@ export function approveDividendRequest(reqId, operator = '') {
     title: '分红到账',
     body: `${req.projectName} 分红 HK$${due.toLocaleString()} 已发放至资金账户。`,
   });
-  logAudit({ operator: operator || '运营后台', category: 'fund', action: 'approve', target: req.projectName, targetId: reqId, note: `分红发放：每份 HK$ ${req.perShare.toLocaleString()} × ${holders.reduce((s, h) => s + (h.shares || 0), 0)} 份 = HK$ ${due.toLocaleString()}` });
+  logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'approve', target: req.projectName, targetId: reqId, note: `分红发放：每份 HK$ ${req.perShare.toLocaleString()} × ${holders.reduce((s, h) => s + (h.shares || 0), 0)} 份 = HK$ ${due.toLocaleString()}` });
   Storage.save();
   return true;
 }
@@ -7072,7 +7608,7 @@ export function rejectDividendRequest(reqId, reason, operator = '') {
     title: '分红发放未通过',
     body: `${req.projectName} 分红发放未通过审核：${req.rejectReason}`,
   });
-  logAudit({ operator: operator || '运营后台', category: 'fund', action: 'reject', target: req.projectName, targetId: reqId, note: `分红发放拒绝：${req.rejectReason}` });
+  logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'reject', target: req.projectName, targetId: reqId, note: `分红发放拒绝：${req.rejectReason}` });
   Storage.save();
   return true;
 }
@@ -8331,7 +8867,25 @@ export function submitSubscription({ project, amount, currency = 'HKD' }) {
 // 44：2026-10-22 牌照范围 9 类 → 1/4/9 类（正式风险披露声明载明 Type 1/4/9，platformBrand 属快照范围须升版）
 // 43：2026-10-22 问卷档位定版（仅保留 无意向 / 100万 / 500万 / 自定义，删 1000 万档）
 //     ——amountPresets 属快照恢复范围，必须升版，否则老会话（42）恢复旧五档数组，界面仍显示 1000 万
-const STATE_VERSION = 44;
+// 45：2026-10-29 充值页重构——platformAccounts 增国际电汇字段（bankNameEn/swift/bankCode/bankAddress），
+//     户名改客户资金账户口径；入金申请增对账三元组（refCode/payerRef/transferDate）。
+//     ——platformAccounts 属快照恢复范围，不升版则老会话（44）恢复成只有 4 个字段的账户，
+//     APP 侧 SWIFT / 银行地址渲染为「—」（与 v36 牌照号复活同类事故）
+// 47：2026-10-29 资金明细归并（资金申请页并入资金记录 → 「资金明细」；同一笔钱只出一次：
+//     未成功的申请单走申请形态、已记账走流水形态）+ 首期下线换汇（exchangeRequests 清空、
+//     4 条 exchange 流水移除、后台换汇 tab 摘除）
+//     ——exchangeRequests / transactions 均属快照恢复范围，不升版老快照会复活换汇单与流水
+// 48：2026-11-02 bankCards 补 bc9（吴世昌 ****7711，vr1 白名单验证单引用的卡）+ 白名单抽屉批准校验返回值。
+//     ——bankCards 属快照恢复范围（本日刚入快照），升版前旧快照（无 bc9）恢复后 vr1 审批仍因找不到卡静默失败
+// 49：2026-11-02 vr1/bc9 归属 u13 → u6（吴世昌用户档案 INV-0006 = u6；u13 为种子幽灵 id，用户页银行卡归档与
+//     定向通知按 userId 过滤时对不上人）——verificationRequests/bankCards 属快照恢复范围，须升版
+const STATE_VERSION = 53;
+// 49→50（2026-11-02）：资金流水新增 reqId（审批流水 → 用户侧资金申请详情回链）；旧快照的流水无该字段，升版重置业务数据使新链路生效（语言/登录态保留）
+// 50→51（2026-11-02）：fo-seed-4 驳回理由改现行流程口径（合规复核未通过）；fundOrders 属快照恢复范围，不升版旧快照保留旧文案
+// 51→52（2026-11-02）：fo-seed-4 驳回理由定稿「产品方调整募集安排，本笔申购未能配售」（资金来源审查归入金环节、
+//     申购不再二审；撤销类理由与 cancelFundOrder 的「已撤销」状态语义混淆）；fundOrders 属快照恢复范围
+// 52→53（2026-11-02）：历史导入流水（deposit/withdraw 共 11 条）补 bank/cardNo，TransactionDetail 加「付款/收款账户」行
+//     与申请单页公共字段对齐——transactions 属快照恢复范围，不升版旧快照的流水无该字段，账户行不显示
 const STORAGE_KEY = 'zhifu-app-state';
 
 /**
@@ -8357,6 +8911,9 @@ export const Storage = {
         // 基金产品（2026-10-28）：后台「基金产品管理」改了条款/文件/净值必须刷新保留。
         // 只存产品本体，不存由它派生的展示文案（那边已经改成按数字生成）。
         funds: funds,
+        // 删过的产品 id（2026-10-29）：删除必须让「下次 load 不再复活」，
+        // 又不能为了删除把合并规则改成「集合以快照为准」（那会抹掉代码新增的条目）
+        deletedFundIds_arr: Array.from(deletedFundIds),
         holdings: holdings,
         transactions: transactions,
         notifications: notifications,
@@ -8367,7 +8924,8 @@ export const Storage = {
         withdrawRequests: withdrawRequests,
         exchangeRequests: exchangeRequests,       // 换汇申请（2026-08-19 人工换汇）
         verificationRequests: verificationRequests, // 银行卡白名单验证（2026-08-19）
-        eddaAuth: eddaAuth,                       // eDDA 快捷入金授权状态（2026-08-19）
+        bankCards: bankCards,                    // 银行卡持久化（2026-11-02 修复：此前缺键，加卡/解绑刷新即回滚；
+                                                 // 旧快照缺此键时恢复守卫跳过、保留代码默认值，故无需升快照版本）
         exitEvents: exitEvents,                   // 持仓退出·事件驱动分配（2026-08-21 重构，替代 exitRequests）
         dividendRequests: dividendRequests,   // 投后分红（2026-08-14）
         agreementRecords: agreementRecords,   // 协议签署留痕（2026-09-15 · 注册/KYC/PI/银行卡/条款重同意）
@@ -8459,15 +9017,31 @@ export const Storage = {
         fundStatements.length = 0;
         data.fundStatements.forEach(s => fundStatements.push(s));
       }
-      // 基金产品（2026-10-28）：**按 id 合并**，不做整表替换。
+      // 基金产品（2026-10-28 / 10-29）：**按 id 叠加**，不做整表替换。
       // 理由（项目规则「持久化快照只叠加不重建」）：代码以后给产品新增字段时，
       // 整表替换会让老快照把它抹掉，且只在「有旧快照」的浏览器里复现。
-      // 快照里没有的产品 id 保持代码默认值（本模块不提供新增/删除产品）。
+      //
+      // 新增/删除落地后，「快照里没有」有两种含义，必须分开处理：
+      //   ①代码里也没有 → 后台新建的产品，补进来（以 FUND_DEFAULTS 打底，防旧版本快照缺字段）
+      //   ②代码里有、墓碑里也有 → 被删除的产品，合并后滤掉
+      // 只按「保持代码默认」处理的话，删掉的种子产品每次刷新都会复活。
+      if (Array.isArray(data.deletedFundIds_arr)) {
+        deletedFundIds.clear();
+        data.deletedFundIds_arr.forEach(id => { if (id) deletedFundIds.add(id); });
+      }
       if (Array.isArray(data.funds)) {
         data.funds.forEach(sf => {
           if (!sf || !sf.id) return;
           const target = funds.find(f => f.id === sf.id);
-          if (!target) return;
+          if (!target) {
+            funds.push({
+              ...FUND_DEFAULTS,
+              ...sf,
+              navSeries: Array.isArray(sf.navSeries) ? sf.navSeries : [],
+              navMeta: { ...FUND_DEFAULTS.navMeta, ...(sf.navMeta || {}) },
+            });
+            return;
+          }
           Object.keys(sf).forEach(k => {
             if (k === 'id') return;
             // 默认值是数组、快照却不是数组 → 跳过。这条兜底专治「数组被对象展开后存进快照」
@@ -8476,6 +9050,10 @@ export const Storage = {
             target[k] = sf[k];
           });
         });
+      }
+      // 墓碑最后生效（原地删除，各页面 import 的是同一个数组引用）
+      for (let i = funds.length - 1; i >= 0; i -= 1) {
+        if (deletedFundIds.has(funds[i].id)) funds.splice(i, 1);
       }
       // transactions
       if (Array.isArray(data.transactions)) {
@@ -8525,9 +9103,9 @@ export const Storage = {
         verificationRequests.length = 0;
         data.verificationRequests.forEach(r => verificationRequests.push(r));
       }
-      if (data.eddaAuth) {
-        eddaAuth.status = data.eddaAuth.status || 'unauthorized';
-        eddaAuth.authorizedAt = data.eddaAuth.authorizedAt || null;
+      if (Array.isArray(data.bankCards)) {
+        bankCards.length = 0;
+        data.bankCards.forEach(c => bankCards.push(c));
       }
       if (Array.isArray(data.exitEvents)) {
         exitEvents.length = 0;
@@ -8716,13 +9294,13 @@ function migrateContactKeys() {
 // action:   create/update/delete/approve/reject/checkin/allocate/forfeit/promote/sign/assign/disable/enable/submit/register...
 export const auditCategoryLabels = {
   project: '项目', event: '路演', registration: '报名', lead: '客户线索', kyc: '认证',
-  pi: 'PI 认证', fund: '资金', subscription: '申购', exit: '退出', user: '用户', admin: '后台账号', service: '客服服务', config: '系统配置',
+  pi: 'PI 认证', fund: '资金', fundProduct: '基金产品', subscription: '申购', exit: '退出', user: '用户', admin: '后台账号', service: '客服服务', config: '系统配置',
 };
 
 // 预置 mock 日志（覆盖各类型供演示筛选；接后端由真实操作记录替换）
 export const auditLogs = [
   { id: 'a1', at: '2026-08-12 09:15:22', operator: '王运营', category: 'kyc', action: 'approve', target: '陈美琪', targetId: 'k1', note: 'KYC 审核通过（专业投资者认证）' },
-  { id: 'a2', at: '2026-08-12 10:05:47', operator: '李合规', category: 'fund', action: 'approve', target: '张三', targetId: 'dr1', note: '充值确认到账 HK$ 300万' },
+  { id: 'a2', at: '2026-08-12 10:05:47', operator: '李合规', category: 'fundProduct', action: 'approve', target: '张三', targetId: 'dr1', note: '充值确认到账 HK$ 300万' },
   { id: 'a3', at: '2026-08-12 11:30:00', operator: '系统管理员', category: 'project', action: 'update', target: 'QuantumCore Technologies', targetId: 'p1', note: '编辑项目资料（估值/上市计划）' },
   { id: 'a4', at: '2026-08-12 14:20:15', operator: '王运营', category: 'subscription', action: 'allocate', target: 'SkyNet Robotics', targetId: 's2', note: '转客户经理跟进（线下协调）' },
   { id: 'a5', at: '2026-08-12 16:45:00', operator: '张客服', category: 'lead', action: 'update', target: '吴世昌', targetId: 'u9', note: '客户跟进：新线索 → 已联系' },
