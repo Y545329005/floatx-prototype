@@ -413,6 +413,15 @@ export default function AdminConfig({ admin }) {
                 </select>
               </div>
             </div>
+            {/* 2026-10-29：国际电汇字段——APP 充值页的「国际电汇需填」折叠区读的就是这三个值 */}
+            <div className="form-row">
+              {accountField('deposit', '银行名称（英文）', 'bankNameEn', '如：DBS Bank (Hong Kong) Limited')}
+              {accountField('deposit', 'SWIFT 代码', 'swift', '如：DHBKHKHH')}
+            </div>
+            <div className="form-row">
+              {accountField('deposit', '银行编号', 'bankCode', '如：016')}
+              {accountField('deposit', '银行地址（英文）', 'bankAddress', '如：11/F, 248 Queen\'s Road East, Wan Chai, Hong Kong')}
+            </div>
             <div className="admin-form-actions">
               <button className="btn btn-primary btn-md" onClick={() => handleAccountSave('deposit')}><Save size={15} /> 保存收款账户</button>
             </div>

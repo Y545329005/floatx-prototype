@@ -11,7 +11,6 @@ const TX_FILTERS = [
   { key: 'deposit', label: '充值' },
   { key: 'withdraw', label: '提现' },
   { key: 'subscription', label: '问卷' },
-  { key: 'exchange', label: '换汇' },
   { key: 'exit', label: '退出' },
 ];
 const TX_RANGES = [

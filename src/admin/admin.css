@@ -1076,11 +1076,17 @@
   color: var(--warning-text);
   font-weight: 600;
 }
+/* 2026-11-02：白名单/换汇两个变体漏写列模板——7 列塌成单列竖排（设计系统 A-1 硬约束），
+   四类单据统一补成同一组模板；新增变体时必须把 header/row 成对加进本组 */
 .admin-table--deposits .admin-table-header,
 .admin-table--deposits .admin-table-row,
 .admin-table--withdraws .admin-table-header,
-.admin-table--withdraws .admin-table-row {
-  /* 充值/提现审核 7 列（2026-08-14 加申请单号；同日 二改列宽贴合；同日 六改：时间列中性化 + 新增处理人列——已处理记录时间=处理时间、处理人独立字段，消除双行歧义）
+.admin-table--withdraws .admin-table-row,
+.admin-table--exchanges .admin-table-header,
+.admin-table--exchanges .admin-table-row,
+.admin-table--verifications .admin-table-header,
+.admin-table--verifications .admin-table-row {
+  /* 四类单据 7 列（2026-08-14 加申请单号；同日 二改列宽贴合；同日 六改：时间列中性化 + 新增处理人列——已处理记录时间=处理时间、处理人独立字段，消除双行歧义）
      贴合（内容最宽 + 边距）：单号150/申请人90/金额120/时间160/处理人90/状态96/操作64；fr ∝ min 等比放大
      申请人/金额/处理人/状态 = 固定宽（短内容固定，防 fr 放大留白过大）；时间列居中 = 消除"金额右对齐 + 时间左对齐相邻 8px 紧贴" */
   grid-template-columns: minmax(150px, 15fr) 90px 120px minmax(160px, 16fr) 90px 96px 64px;
@@ -1088,11 +1094,15 @@
   cursor: pointer;
 }
 .admin-table--deposits .col-date,
-.admin-table--withdraws .col-date {
+.admin-table--withdraws .col-date,
+.admin-table--exchanges .col-date,
+.admin-table--verifications .col-date {
   text-align: center;
 }
 .admin-table--deposits .col-handler,
-.admin-table--withdraws .col-handler {
+.admin-table--withdraws .col-handler,
+.admin-table--exchanges .col-handler,
+.admin-table--verifications .col-handler {
   color: var(--text-secondary);
 }
 /* 可点行键盘可达（2026-08-24 a11y 整改）：--users/--tickets 等行有 onClick 却无 pointer，补齐 */
@@ -2545,6 +2555,11 @@
   border-color: var(--success);
   color: var(--success);
 }
+/* 白名单抽屉底部说明（2026-11-02 从用户侧 styles.css 迁入——后台专属类归 admin.css） */
+.admin-fund-hint {
+  margin: 0 0 var(--space-3);
+  line-height: 1.5;
+}
 
 /* 资金流水时间范围 select（2026-08-14 流水查询：类型筛选 + 时间范围 + 搜索 + 分页）
    admin-view-row 内限宽，与搜索框同行（select 左 + 搜索右） */
@@ -3363,19 +3378,18 @@
   }
 }
 
-/* ===== 基金产品（2026-10-28）：列表 9 列 + 表单抽屉 =====
-   列宽原则同其他表：minmax(贴合内容, fr)，fr 权重 ∝ min，宽视口等比放大、无右侧空洞 */
+/* ===== 基金产品（2026-10-28）：列表 + 表单抽屉 =====
+   2026-10-29 列表列合并 9 → 6：类型/风险降为产品名副行、净值日降为净值副行。
+   9 列时产品名被徽标挤到截断（「亚洲基建收益基金（新加坡资管…」），且列宽把页面切碎；
+   副行让每列只回答一个问题。列宽原则同其他表：minmax(贴合内容, fr)，fr ∝ min。 */
 .admin-table--fund-products .admin-table-header,
 .admin-table--fund-products .admin-table-row {
   grid-template-columns:
-    minmax(200px, 20fr)
+    minmax(300px, 30fr)
+    minmax(110px, 12fr)
     minmax(88px, 9fr)
-    minmax(80px, 8fr)
-    minmax(104px, 10fr)
-    minmax(76px, 8fr)
-    minmax(80px, 8fr)
     minmax(100px, 10fr)
-    minmax(66px, 7fr)
+    minmax(70px, 7fr)
     minmax(48px, 5fr);
   gap: 16px;
 }
@@ -3387,18 +3401,41 @@
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
-.admin-table--fund-products .col-risk {
-  color: var(--text-secondary);
+/* 产品名行：名称 + 来源/状态徽标同行（徽标不再把行撑成两三层） */
+.fund-product-name-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
-.admin-table--fund-products .col-date {
-  font-variant-numeric: tabular-nums;
-  color: var(--text-secondary);
-  font-size: var(--text-sm);
+.fund-product-name-line strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-/* 产品名下面的来源徽章：.status-badge 本身只有颜色，不需要额外布局 */
-.admin-table--fund-products .col-name .status-badge {
-  align-self: flex-start;
+.fund-product-name-line .status-badge {
+  flex-shrink: 0;
   font-size: var(--text-xs);
+}
+/* 来源徽标：自营/代售是事实标签，不是风险也不是待办——
+   借 success/warning 语义色会让「代售」比「在售」更抢眼（2026-10-29 评审发现）。 */
+.status-badge.fund-source-self { color: var(--text-secondary); }
+.status-badge.fund-source-external { color: var(--primary); }
+/* 产品名副行：类型 · 风险等级（原独立两列） */
+.fund-product-subline {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+/* 净值列：数值为主、最后净值日为副 */
+.fund-product-nav-value { display: block; }
+.fund-product-nav-date {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
 }
 
 /* 表单抽屉加宽：这页是后台字段最多的表单（5 张卡、三列一行的文件行），520px 会挤成两行 */
@@ -3483,3 +3520,240 @@
   color: var(--text-secondary);
   white-space: nowrap;
 }
+
+/* 批量导入区：与上方「追加净值」拉开一段，否则两个净值入口看起来是同一个表单 */
+.fund-product-import { margin-top: var(--space-3); }
+
+/* ===== 基金产品抽屉四段分栏（2026-10-29） =====
+   编辑态拆段：资料 / 条款 / 净值 / 文件与机构。理由 = 三层操作频率差一个数量级，
+   净值（每周）不该埋在条款表单的第四屏。页签用下划线而非胶囊：
+   胶囊是「并列视图」（申购/赎回那种），下划线是「同一表单的不同段落」。 */
+.fund-product-head-badge { margin-left: 10px; vertical-align: middle; }
+
+.admin-drawer-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-3) var(--space-6);
+  background: var(--bg);
+  border-bottom: 1px solid var(--border-light);
+  flex-shrink: 0;
+}
+.fund-product-meta-item {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.fund-product-meta-item strong { color: var(--text); font-weight: 600; }
+.fund-product-meta-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 500;
+}
+.fund-product-meta-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+.fund-product-meta-actions .btn { height: 34px; padding: 0 var(--space-3); font-size: var(--text-sm); }
+.fund-product-meta-hint {
+  margin: 0;
+  padding: var(--space-2) var(--space-6);
+  flex-shrink: 0;
+}
+.fund-product-confirm--meta {
+  margin: 0 var(--space-6);
+  flex-shrink: 0;
+}
+.fund-product-status-msg {
+  margin: 0;
+  padding: var(--space-2) var(--space-6) 0;
+  flex-shrink: 0;
+}
+
+.fund-drawer-tabs {
+  padding: 0 var(--space-6);
+  gap: var(--space-5);
+  border-bottom: 1px solid var(--border-light);
+  flex-shrink: 0;
+  margin-bottom: 0;
+}
+.fund-drawer-tabs .admin-tab {
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: none;
+  margin-bottom: -1px;
+  padding: 12px 8px;
+  font-size: var(--text-md);
+  color: var(--text-secondary);
+}
+.fund-drawer-tabs .admin-tab:hover { color: var(--text); background: none; }
+.fund-drawer-tabs .admin-tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  background: none;
+}
+
+/* 抽屉标题行：名称过长时只截名称，状态徽标/单号不被挤出（h3 默认 nowrap+ellipsis 会连徽标一起裁） */
+.admin-page--fund-products .admin-drawer-head h3,
+.admin-page--fund-trades .admin-drawer-head h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.fund-product-head-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 批量导入的「导入」按钮：.form-group 是纵向 flex，按钮默认会被拉成整行宽 */
+.fund-product-import > .btn { align-self: flex-start; }
+/* 批量导入的 textarea：.form-input 的固定 44px 高度会把 rows={4} 压成 2.6 行，
+   占位示例第三行被拦腰切断（2026-10-29 评审发现）。文本域高度交给行数。 */
+.fund-product-import textarea.form-input {
+  height: auto;
+  min-height: 96px;
+  resize: vertical;
+}
+
+/* ===== 基金交易（2026-10-29 重构：决策队列） =====
+   页头主数字 = 待确认总笔数（Single Number Rule）；列表行给等待时长信号；
+   抽屉按「申请信息 → 成交预览 → 操作」的决策顺序排列。 */
+.fund-trade-queue {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+.fund-trade-queue-num {
+  font-size: var(--text-4xl);
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.fund-trade-queue-text { font-size: var(--text-sm); color: var(--text-secondary); }
+/* 队列的第二个数字：最久等待。决策队列里「谁等最久」比「一共几笔」更催人动手。 */
+.fund-trade-queue-oldest {
+  font-size: var(--text-sm);
+  color: var(--warning-text);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.fund-tabs { display: inline-flex; gap: var(--space-2); margin-bottom: var(--space-4); }
+.fund-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: var(--text-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.fund-tab:hover { color: var(--primary); border-color: var(--primary-border); }
+.fund-tab.active { background: var(--primary); border-color: var(--primary); color: var(--bg-card); }
+.fund-tab-count {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-xl);
+  background: var(--danger);
+  color: var(--bg-card);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+}
+.fund-tab.active .fund-tab-count { background: var(--bg-card); color: var(--primary); }
+
+.admin-table--fund-trades .admin-table-header,
+.admin-table--fund-trades .admin-table-row {
+  grid-template-columns:
+    minmax(120px, 12fr)
+    minmax(96px, 9fr)
+    minmax(200px, 22fr)
+    minmax(150px, 15fr)
+    minmax(130px, 12fr)
+    minmax(84px, 8fr)
+    minmax(56px, 5fr);
+  gap: 16px;
+}
+.admin-table--fund-trades .col-amount {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.fund-trade-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.fund-trade-time { display: block; font-size: var(--text-sm); color: var(--text-secondary); }
+.fund-trade-wait {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  font-size: var(--text-xs);
+  color: var(--warning-text);
+}
+
+.fund-trade-head-badge { margin-left: 8px; vertical-align: middle; }
+/* 处理完成回执：确认/驳回后留在抽屉顶部，直到运营自己关掉（不可逆动作不能点完就消失） */
+.fund-trade-done {
+  margin-bottom: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--success-light);
+  color: var(--success);
+  font-size: var(--text-md);
+  line-height: 1.6;
+}
+.fund-trade-nav-row { display: flex; align-items: center; gap: var(--space-3); }
+.fund-trade-nav-row .form-input { max-width: 180px; }
+.fund-trade-nav-hint { font-size: var(--text-sm); color: var(--text-secondary); }
+/* 成交预览：决策变量（净值）之下的后果条。数值等宽右对齐——运营核对的是数字本身，
+   不是「费率」这类标签。最后一行（预计入账/回款）是决策的最终后果，加底色提权。 */
+.fund-trade-consequence {
+  margin-top: var(--space-3);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.fund-trade-consequence-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 10px var(--space-4);
+  border-bottom: 1px solid var(--border-light);
+  font-size: var(--text-md);
+}
+.fund-trade-consequence-row:last-child { border-bottom: none; }
+.fund-trade-consequence-row span { color: var(--text-secondary); }
+.fund-trade-consequence-row strong { font-variant-numeric: tabular-nums; font-weight: 600; }
+.fund-trade-consequence-row--total { background: var(--bg); }
+.fund-trade-consequence-row--total strong { font-size: var(--text-lg); color: var(--primary); }
+.fund-trade-impact { margin: var(--space-3) 0 0; font-size: var(--text-sm); color: var(--text-secondary); line-height: 1.6; }
+
+.fund-trade-history { display: flex; flex-direction: column; }
+.fund-trade-history-row {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border-light);
+  font-size: var(--text-sm);
+}
+.fund-trade-history-row:last-child { border-bottom: none; }
+.fund-trade-history-time { color: var(--text-tertiary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fund-trade-history-note { color: var(--text-secondary); }
