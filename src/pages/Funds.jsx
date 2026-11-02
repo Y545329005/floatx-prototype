@@ -30,7 +30,8 @@ const prettyReturn = (v) => String(v).replace(/(\d)-(\d)/g, '$1–$2');
 export default function Funds({ navigate }) {
   const { t, lang } = useLang();
   const piOk = getPiStatusForUser(currentUser.id) === PI_STATUS.APPROVED;
-  const list = piOk ? funds : [];
+  // 只列在售产品（2026-10-29）：此前完全不看 status，草稿与已下架产品一样会出现在投资人列表里。
+  const list = piOk ? funds.filter(f => f.status === 'open') : [];
   // 持仓标识：手里的产品 vs 陌生的产品，是列表页最强的决策信号（getHoldings 只返回本人正份额）
   const heldFundIds = new Set(getHoldings().map(h => h.fundId));
 

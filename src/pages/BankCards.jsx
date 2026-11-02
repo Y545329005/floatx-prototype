@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ArrowLeft, Plus, CreditCard, Trash2, X, ShieldCheck, ShieldQuestion, Zap, Check } from 'lucide-react';
-import { bankCards, platformAccounts, eddaAuth, authorizeEdda, submitCardVerification, recordAgreement, getFreezeState, formatExactAmount } from '../mock/data';
+import { ArrowLeft, Plus, CreditCard, Trash2, X, ShieldCheck, ShieldQuestion, Check } from 'lucide-react';
+import { bankCards, platformAccounts, submitCardVerification, recordAgreement, getFreezeState, formatExactAmount, toHkd, addBankCard, removeBankCard, currentUser } from '../mock/data';
 import { useLang } from '../i18n';
 import AgreementModal from '../components/AgreementModal';
 
@@ -13,33 +13,36 @@ const whitelistMeta = {
 // 验证款建议金额：HKD ≥ 1万；USD/CNY 按等值换算（1万 HKD ≈ 1282 USD ≈ 9346 CNY）
 const suggestAmount = (currency) => (currency === 'USD' ? 1300 : currency === 'CNY' ? 9500 : 10000);
 
-// 银行卡管理（2026-08-19 白名单机制：出入金仅限已验证白名单卡；新增 eDDA 授权入口）
+// 银行卡管理（2026-08-19 白名单机制：出入金仅限已验证白名单卡；2026-10-29 eDDA 通道整条下线）
 // 白名单验证：向平台收款账户转账 ≥1万 HKD（或等值 USD）→ 财务核对到账 → 卡片置白名单
 export default function BankCards({ navigate, goBack }) {
   const { t } = useLang();
   // 冻结拦截提示（INV-5：银行卡页无 setToast prop，用错误条演示）
   const [freezeBlocked, setFreezeBlocked] = useState(false);
-  const [cards, setCards] = useState(bankCards.map(c => ({ ...c })));
+  // 只看本人卡（2026-11-02 修复：此前全量展示 bankCards，能看见其他客户的卡）
+  const ownedCards = () => bankCards.filter(c => c.userId === currentUser.id).map(c => ({ ...c }));
+  const [cards, setCards] = useState(ownedCards);
+  // 新增卡表单（2026-11-02 修复：此前 select/input 全部未受控，提交硬编码一张演示卡）
+  const [addForm, setAddForm] = useState({ bank: '星展银行', currency: 'HKD', cardNo: '' });
+  const [addError, setAddError] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(null);
   const [verifyingCard, setVerifyingCard] = useState(null); // 发起验证的卡（id）
   const [verifyForm, setVerifyForm] = useState({ currency: 'HKD', amount: '', remark: '' });
   const [verifyError, setVerifyError] = useState('');
-  const [eddaReady, setEddaReady] = useState(eddaAuth.status === 'authorized'); // eddaAuth 非 React state，本地镜像驱动渲染
   // 新增卡协议勾选（2026-09-15 · 对齐公司实践场景③"白名单地址协议"：添加白名单卡必须勾选协议）
   const [addAgreed, setAddAgreed] = useState(false);
   const [viewingDoc, setViewingDoc] = useState(null);
 
   const removeCard = (id) => {
-    // INV-5 凡动必冻：冻结期内阻断出金账户（银行卡）解绑（数据层无对应函数，UI 层拦截）
+    // INV-5 凡动必冻：冻结期内阻断解绑（页级拦截出横幅；数据层 removeBankCard 同口径兜底）
     if (getFreezeState().frozen) {
       setConfirmRemove(null);
       setFreezeBlocked(true);
       return;
     }
-    const idx = bankCards.findIndex(c => c.id === id);
-    if (idx >= 0) bankCards.splice(idx, 1);
-    setCards(cards.filter(c => c.id !== id));
+    if (!removeBankCard(id)) return;
+    setCards(ownedCards());
     setConfirmRemove(null);
   };
 
@@ -66,6 +69,8 @@ export default function BankCards({ navigate, goBack }) {
     }
     const amount = parseFloat(verifyForm.amount) || 0;
     if (amount <= 0) { setVerifyError(t('请输入有效的验证转账金额')); return; }
+    // 与弹层文案承诺同口径：≥1万 HKD 等值（数据层 submitCardVerification 有同款兜底）
+    if (toHkd(verifyForm.currency, amount) < 10000) { setVerifyError(t('验证款最低 1万 HKD 或等值金额')); return; }
     const ok = submitCardVerification({
       cardId: verifyingCard,
       currency: verifyForm.currency,
@@ -73,7 +78,7 @@ export default function BankCards({ navigate, goBack }) {
       remark: verifyForm.remark,
     });
     if (!ok) { setVerifyError(t('该卡已通过验证或提交失败')); return; }
-    setCards(bankCards.map(c => ({ ...c }))); // 同步真实数据源状态
+    setCards(ownedCards()); // 同步真实数据源状态
     setVerifyingCard(null);
   };
 
@@ -151,7 +156,7 @@ export default function BankCards({ navigate, goBack }) {
     <div className="page bank-cards-page">
       <div className="subpage-sticky">
         <div className="page-header">
-          <button className="back-btn" onClick={() => goBack('#wallet')}><ArrowLeft size={20} /></button>
+          <button className="back-btn" onClick={() => goBack('#asset')}><ArrowLeft size={20} /></button>
           <h1>{t('银行卡管理')}</h1>
         </div>
       </div>
@@ -168,27 +173,6 @@ export default function BankCards({ navigate, goBack }) {
       <p className="text-muted text-sm bank-cards-note">
         {t('出入金仅限「白名单」银行卡。新卡需通过转账验证（≥1万 HKD 或等值 USD）后方可用于资金往来。')}
       </p>
-
-      {/* eDDA 快捷入金授权 */}
-      <div className="card edda-auth-card">
-        <div className="edda-auth-head">
-          <div className="edda-auth-title">
-            <Zap size={16} />
-            <span>{t('eDDA 快捷入金')}</span>
-          </div>
-          {eddaAuth.status === 'authorized'
-            ? <span className="tag tag-success">{t('已授权')}</span>
-            : <span className="tag tag-neutral">{t('未授权')}</span>}
-        </div>
-        <p className="text-muted text-sm">
-          {(eddaReady ? `${t('已授权从')} ${eddaAuth.bank}（${eddaAuth.accountMasked}）${t('快捷扣款入金')}${eddaAuth.authorizedAt ? ` · ${eddaAuth.authorizedAt}` : ''}` : t('授权后充值可直接选择 eDDA 快捷入金通道（香港本土）。'))}
-        </p>
-        {!eddaReady && (
-          <button className="btn btn-outline btn-full edda-auth-btn" onClick={() => { authorizeEdda(); setEddaReady(true); }}>
-            {t('模拟完成 eDDA 授权')}
-          </button>
-        )}
-      </div>
 
       {cards.length === 0 && (
         <div className="bank-cards-empty">
@@ -251,7 +235,11 @@ export default function BankCards({ navigate, goBack }) {
             <div className="bank-card-add-form">
               <div className="form-group">
                 <label className="form-label">{t('银行')}</label>
-                <select className="form-input">
+                <select
+                  className="form-input"
+                  value={addForm.bank}
+                  onChange={e => { setAddForm(f => ({ ...f, bank: e.target.value })); setAddError(''); }}
+                >
                   <option>星展银行</option>
                   <option>汇丰银行</option>
                   <option>中国银行（香港）</option>
@@ -261,7 +249,11 @@ export default function BankCards({ navigate, goBack }) {
               </div>
               <div className="form-group">
                 <label className="form-label">{t('账户币种')}</label>
-                <select className="form-input">
+                <select
+                  className="form-input"
+                  value={addForm.currency}
+                  onChange={e => { setAddForm(f => ({ ...f, currency: e.target.value })); setAddError(''); }}
+                >
                   <option>HKD 港币</option>
                   <option>USD 美元</option>
                   <option>CNY 人民币</option>
@@ -269,7 +261,13 @@ export default function BankCards({ navigate, goBack }) {
               </div>
               <div className="form-group">
                 <label className="form-label">{t('银行卡号')}</label>
-                <input className="form-input" placeholder={t('请输入银行卡号')} inputMode="numeric" />
+                <input
+                  className="form-input"
+                  placeholder={t('请输入银行卡号')}
+                  inputMode="numeric"
+                  value={addForm.cardNo}
+                  onChange={e => { setAddForm(f => ({ ...f, cardNo: e.target.value })); setAddError(''); }}
+                />
               </div>
               {/* 协议：必须勾选（2026-09-15 · 对齐公司实践场景③：未勾选时下一步禁用） */}
               <div
@@ -296,33 +294,33 @@ export default function BankCards({ navigate, goBack }) {
                 style={{ opacity: addAgreed ? 1 : 0.45 }}
                 onClick={() => {
                   if (!addAgreed) return;
-                  // INV-5 凡动必冻：新增出金账户在冻结期内阻断
+                  // INV-5 凡动必冻：新增出金账户在冻结期内阻断（数据层 addBankCard 同口径兜底）
                   if (getFreezeState().frozen) {
                     setShowAdd(false);
                     setFreezeBlocked(true);
                     return;
                   }
+                  const digits = addForm.cardNo.replace(/\D/g, '');
+                  if (digits.length < 8) { setAddError(t('请输入有效的银行卡号（至少 8 位数字）')); return; }
                   // 协议签署留痕（版本固化 + 审计日志）
                   recordAgreement({ type: 'bank-card', agreementIds: ['bank-card-service'] });
-                  // 演示阶段：新增卡加入真实数据源（unverified），以便演示白名单验证流程
-                  bankCards.push({
-                    id: `bc${Date.now()}`,
-                    userId: bankCards[0]?.userId || 'u1',
-                    bank: '星展银行',
+                  // 数据层单口入库（unverified），真实字段按表单提交——后续走白名单验证流程
+                  const ok = addBankCard({
+                    bank: addForm.bank,
                     branch: '香港',
-                    holder: 'ZHANG SAN',
-                    maskedNo: '**** 8888',
-                    cardNo: '6222 3456 7890 8888',
+                    holder: currentUser.name || '—',
+                    cardNo: addForm.cardNo.trim(),
                     type: '香港账户',
-                    currency: 'HKD',
-                    whitelistStatus: 'unverified',
-                    verifiedAt: null,
-                    verifiedAmount: null,
+                    currency: addForm.currency,
                   });
-                  setCards(bankCards.map(c => ({ ...c })));
+                  if (!ok) { setAddError(t('添加失败，请检查填写内容后重试')); return; }
+                  setCards(ownedCards());
                   setShowAdd(false);
                   setAddAgreed(false); // 下次打开默认重置（每次添加需重新明示同意）
+                  setAddForm({ bank: '星展银行', currency: 'HKD', cardNo: '' });
+                  setAddError('');
                 }}>{t('提交（待白名单验证）')}</button>
+              {addError && <div className="form-error">{addError}</div>}
             </div>
           </div>
         </>

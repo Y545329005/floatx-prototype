@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { clickable } from '../lib';
 import { ArrowLeft, Upload } from 'lucide-react';
-import { depositRequests, withdrawRequests, exchangeRequests, walletAccountOf, formatCurrency, submitDepositEvidence, getEvidencePreview } from '../mock/data';
+import { depositRequests, withdrawRequests, exchangeRequests, walletAccountOf, formatCurrency, submitDepositEvidence, getEvidencePreview, currentUser } from '../mock/data';
 import { useLang } from '../i18n';
 import ImageLightbox from '../components/ImageLightbox';
 
@@ -36,13 +36,15 @@ export default function FundRequestDetail({ id, navigate, goBack }) {
   const [previewOpen, setPreviewOpen] = useState(false); // 2026-08-20 凭证放大预览
   const fileRef = useRef(null);
   let req = findRequest(id);
+  // 归属校验（2026-11-02 修复：此前任何人可凭 id 深链打开他人申请单）；无归属字段的存量数据放行
+  if (req && req.userId && req.userId !== currentUser.id) req = null;
 
   if (!req) {
     return (
       <div className="page">
         <div className="subpage-sticky">
           <div className="page-header">
-            <button className="back-btn" onClick={() => goBack('#fund-requests')}><ArrowLeft size={20} /></button>
+            <button className="back-btn" onClick={() => goBack('#transactions')}><ArrowLeft size={20} /></button>
             <h1>{t('资金申请')}</h1>
           </div>
         </div>
@@ -69,7 +71,7 @@ export default function FundRequestDetail({ id, navigate, goBack }) {
     <div className="page fund-request-detail-page">
       <div className="subpage-sticky">
         <div className="page-header">
-          <button className="back-btn" onClick={() => goBack('#fund-requests')}><ArrowLeft size={20} /></button>
+          <button className="back-btn" onClick={() => goBack('#transactions')}><ArrowLeft size={20} /></button>
           <h1>{t(isExchange ? '换汇申请详情' : isDeposit ? '充值申请详情' : '提现申请详情')}</h1>
         </div>
       </div>
@@ -132,6 +134,19 @@ export default function FundRequestDetail({ id, navigate, goBack }) {
               <span className="text-muted">{t('币种')}</span>
               <strong>{req.currency}</strong>
             </div>
+            {/* 2026-10-29：参考代码回显——用户汇款备注里写的就是它，详情页要能核对（否则提交后无从复查） */}
+            {isDeposit && req.refCode && (
+              <div className="subscription-info-row">
+                <span className="text-muted">{t('参考代码')}</span>
+                <strong className="date-iso">{req.refCode}</strong>
+              </div>
+            )}
+            {isDeposit && req.transferDate && (
+              <div className="subscription-info-row">
+                <span className="text-muted">{t('转账日期')}</span>
+                <strong>{req.transferDate}</strong>
+              </div>
+            )}
             <div className="subscription-info-row">
               <span className="text-muted">{t(isDeposit ? '付款账户' : '收款账户')}</span>
               <strong>{req.bank || '—'} {req.cardNo || ''}</strong>

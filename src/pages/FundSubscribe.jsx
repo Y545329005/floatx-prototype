@@ -12,18 +12,22 @@ import { useLang } from '../i18n';
 // 余额申购模式不变：页面不出现基金收款账户，钱的进出统一由「资金」模块承担。
 export default function FundSubscribe({ id, navigate, goBack, setToast }) {
   const { t } = useLang();
-  const fund = funds.find(f => f.id === id) || funds[0];
+  // 不用 funds[0] 兜底（2026-10-29）：非法 id / 草稿产品会因此显示成 f1，
+  // 而且申购单会真的提交到 f1——「构建绿灯、动作打错人」比报错危险得多。
+  const fund = funds.find(f => f.id === id) || null;
+  const closed = !fund || fund.status !== 'open';
   // 币种固定为基金主币种（2026-10-28 五轮）：原来给了 HKD/USD/CNH 三选，
   // 但净值只有一条且标的是 HKD 份额——选 USD 会用 HKD 净值算份额，等于算错；
   // 且 USD/CNH 余额都不到起投额。多币种份额属二期，届时每个币种要有自己的净值序列。
-  const currency = fund.navMeta?.currency || fund.currency?.[0] || 'HKD';
+  const currency = fund?.navMeta?.currency || fund?.currency?.[0] || 'HKD';
   // 默认空：预填任何一个金额都是在替用户做决定
   const [amount, setAmount] = useState('');
   const [error, setError] = useState('');
   const [confirming, setConfirming] = useState(false);
 
-  const available = getAvailableCash(currency);
-  const nav = latestNav(fund);
+  const available = fund ? getAvailableCash(currency) : 0;
+  const nav = fund ? latestNav(fund) : 0;
+  const minInvestment = fund?.minInvestment || 0;
   const amountNum = Number(amount) || 0;
   const feeAmount = Math.round(amountNum * FUND_FEE_RATE.subscribe);
   const netAmount = amountNum - feeAmount;
@@ -32,10 +36,10 @@ export default function FundSubscribe({ id, navigate, goBack, setToast }) {
   const estShares = netAmount > 0 && nav > 0 ? Math.round((netAmount / nav) * 10000) / 10000 : 0;
   const afterBalance = Math.max(0, available - amountNum);
   const shortfall = amountNum > available ? amountNum - available : 0;
-  const belowMin = amountNum > 0 && amountNum < fund.minInvestment;
-  const canSubmit = amountNum > 0 && shortfall === 0 && !belowMin && fund.openForSubscription !== false;
+  const belowMin = amountNum > 0 && amountNum < minInvestment;
+  const canSubmit = !closed && amountNum > 0 && shortfall === 0 && !belowMin;
   // 可用余额本身不够起投时，「全部」只会一键生成一个必然失败的状态——不给这个按钮，直接说差多少
-  const minTopUp = available < fund.minInvestment ? fund.minInvestment - available : 0;
+  const minTopUp = available < minInvestment ? minInvestment - available : 0;
   const cashGap = Math.max(shortfall, minTopUp);
 
   const onAmount = (e) => { applyNumberInput(e, setAmount); setError(''); };
@@ -51,6 +55,24 @@ export default function FundSubscribe({ id, navigate, goBack, setToast }) {
     setToast && setToast(t('申购申请已提交，资金已冻结，等待财务确认'));
     navigate('#fund-orders');
   };
+
+  // 未上架 / 不存在：不可进入申购流程（数据层 submitFundOrder 也拦 status）
+  if (closed) {
+    return (
+      <div className="page p-fund-trade">
+        <div className="subpage-sticky">
+          <div className="page-header">
+            <button className="back-btn" onClick={() => goBack('#funds')}><ArrowLeft size={20} /></button>
+            <h1>{t('申购申请')}</h1>
+          </div>
+        </div>
+        <div className="card reports-note">
+          <p className="text-muted text-sm">{t('该产品暂未开放，或已下架。如需了解详情请联系客户经理。')}</p>
+          <button className="btn btn-outline btn-sm" onClick={() => navigate('#funds')}>{t('查看其他产品')}</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page p-fund-trade">

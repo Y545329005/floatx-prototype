@@ -49,13 +49,28 @@ const fmtYm = (ms) => {
 };
 
 // 区间收益取自详情页同一处口径（fundRangeReturns），这里只负责着色，不重算
-const signClass = (v) => (String(v).trim().startsWith('-') ? 'neg' : 'pos');
+// '—' 是「点数不足」的占位，不是正收益——不加这条会被涂成绿色
+const signClass = (v) => (v == null || v === '—' ? '' : String(v).trim().startsWith('-') ? 'neg' : 'pos');
 
 export default function NavChart({ navSeries, ranges, currency = 'HKD', cadence = 'weekly', lastNavDate = null }) {
   const { t } = useLang();
   const [range, setRange] = useState('1Y');
   const n = RANGES.find(r => r.key === range)?.n ?? 52;
-  const pts = navSeries.slice(-n);
+  const series = Array.isArray(navSeries) ? navSeries : [];
+  const pts = series.slice(-n);
+
+  // 少于两个点画不出走势：单点会被 navScale 当成零跨度，图上只剩一个点，
+  // 而区间收益三个格会全部显示「+0.0%」——那是假数据，不如直接说明还没有净值。
+  if (pts.length < 2) {
+    return (
+      <div className="nav-chart">
+        <div className="nav-chart-empty">
+          <span className="nav-chart-empty-title">{t('暂无净值走势')}</span>
+          <span className="nav-chart-empty-hint">{t('该产品还没有足够的净值记录，披露后在此展示。')}</span>
+        </div>
+      </div>
+    );
+  }
   const first = pts[0];
   const last = pts[pts.length - 1];
   const scale = navScale(pts, W, H, PAD);
@@ -77,11 +92,26 @@ export default function NavChart({ navSeries, ranges, currency = 'HKD', cadence 
   // 日期轴：末点 = 最后一条净值的实际日期（navMeta.lastNavDate），逐点倒推 7 天。
   // 不能用 Date.now()：后台「追加净值」允许录入今天以前某天的净值，
   // 若图上永远标今天，录入日期与图上日期就对不上（图会替数据说谎）。
-  const weekly = cadence === 'weekly';
+  // 日期轴只在已知频率下绘制；未知频率退回净值轴——宁可不标，也不标错
+  const hasCadence = cadence === 'weekly' || cadence === 'monthly';
   const lastMs = lastNavDate ? new Date(`${lastNavDate}T00:00:00`).getTime() : NaN;
   const endMs = Number.isFinite(lastMs) ? lastMs : Date.now();
-  const startMs = endMs - (pts.length - 1) * 7 * DAY;
-  const midMs = endMs - Math.round((pts.length - 1) / 2) * 7 * DAY;
+  // 日期轴按披露频率倒推。月频必须「逐月回退」而不是减 30 天：
+  // 3 个点时 09-30 往前减两次 30 天得到 08-01 与 08-31，首末两个刻度会重复标成「2026-08」。
+  const shiftMonths = (ms, n) => {
+    const d = new Date(ms);
+    const day = d.getDate();
+    d.setDate(1);
+    d.setMonth(d.getMonth() - n);
+    const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    d.setDate(Math.min(day, lastDay));
+    return d.getTime();
+  };
+  const monthsBack = (n) => shiftMonths(endMs, n);
+  const startMs = cadence === 'monthly' ? monthsBack(pts.length - 1) : endMs - (pts.length - 1) * 7 * DAY;
+  const midMs = cadence === 'monthly'
+    ? monthsBack(Math.round((pts.length - 1) / 2))
+    : endMs - Math.round((pts.length - 1) / 2) * 7 * DAY;
   const baseY = scale.y(first);
 
   return (
@@ -144,7 +174,7 @@ export default function NavChart({ navSeries, ranges, currency = 'HKD', cadence 
       </div>
 
       <div className="p-fund-detail-axis" aria-hidden="true">
-        {weekly ? (
+        {hasCadence ? (
           <>
             <span>{fmtYm(startMs)}</span>
             <span>{fmtYm(midMs)}</span>
