@@ -922,12 +922,6 @@ export const en = {
   '关闭': 'Close',
 
   // 品牌名 HighBlock 三语同文，t() 回退返回 key，无需字典条目
-  '内部演示环境': 'Internal Demo Environment',
-  '私募股权信息平台原型 · 凭口令访问': 'Private equity platform prototype · Access by invite code',
-  '请输入访问口令': 'Enter access code',
-  '口令不正确，请重试': 'Incorrect code, please try again',
-  '进入': 'Enter',
-  '本原型仅供内部演示，请勿对外转发链接': 'Internal demo only. Do not share this link externally.',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——
   '6位验证码': '6-digit code',
   // —— 2FA 双重验证体系 + 登录/出金页补漏（2026-09-22）——

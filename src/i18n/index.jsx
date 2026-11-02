@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { platformBrand } from '../mock/data';
 
 const LanguageContext = createContext({ lang: 'zh-CN', setLang: () => {}, t: k => k });
 
@@ -46,6 +47,12 @@ export function LanguageProvider({ children }) {
     if (typeof key !== 'string' || !key) return key;
     return dict[key] || key;
   }, [dict]);
+
+  // 浏览器标题随语言切换（2026-09-21 品牌多语言适配；原在 AccessGate，2026-11-02 口令层移除后迁入此）。
+  // Provider 为两套入口（独立原型/嵌入壳）最外层常驻组件，须置于 t 定义之后（deps 引用 t）。
+  useEffect(() => {
+    document.title = platformBrand.nameZh;
+  }, [t]);
 
   return (
     <LanguageContext.Provider value={{ lang, setLang: changeLang, t }}>

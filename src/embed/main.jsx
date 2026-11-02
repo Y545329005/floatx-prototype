@@ -8,8 +8,8 @@ import '../styles.css';
 import EmbedApp from './EmbedApp.jsx';
 import { LanguageProvider } from '../i18n';
 // 嵌入形态入口（2026-10-09 嵌入集团 APP 方案·方案A）：
-// 与独立原型（src/main.jsx）完全分离的启动文件——无 AccessGate 口令层（宿主环境已过鉴权）、
-// 无 admin 代码（后台保持独立 Web）。身份由宿主 SSO 注入（EmbedApp 内 ?uid= 模拟）。
+// 与独立原型（src/main.jsx）完全分离的启动文件——无 admin 代码（后台保持独立 Web）。
+// 身份由宿主 SSO 注入（EmbedApp 内 ?uid= 模拟）。
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <LanguageProvider>
