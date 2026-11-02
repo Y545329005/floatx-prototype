@@ -40,7 +40,7 @@ export default function AssetTrend({ navigate, goBack }) {
     <div className="page asset-trend-page">
       <div className="subpage-sticky">
         <div className="page-header">
-          <button className="back-btn" onClick={() => goBack('#assets')}><ArrowLeft size={20} /></button>
+          <button className="back-btn" onClick={() => goBack('#asset')}><ArrowLeft size={20} /></button>
           <h1>{t('资产走势')}</h1>
         </div>
       </div>

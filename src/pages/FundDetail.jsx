@@ -55,22 +55,26 @@ const OPEN_FREQ = {
 
 export default function FundDetail({ id, navigate, goBack }) {
   const { t, lang } = useLang();
-  const fund = funds.find(f => f.id === id) || funds[0];
+  const fund = funds.find(f => f.id === id) || null;
   const pi = getPiStatusForUser(currentUser.id);
-  const isSelf = fund.source === 'self';
-  const closed = fund.openForSubscription === false || fund.status !== 'open';
+  // 赎回入口只认「有没有持仓」，与 PI / 申购开放状态无关——PI 过期不该锁住卖出。
+  // 同一个道理：已持有的产品即使下架也照常展示，否则持有人无法查看、无法赎回。
+  const holding = fund ? (getHoldings().find(h => h.fundId === fund.id) || null) : null;
+  const unavailable = !fund || (fund.status !== 'open' && !holding);
+  const isSelf = fund?.source === 'self';
+  const closed = !fund || fund.status !== 'open';
   const canSubscribe = pi === PI_STATUS.APPROVED && !closed;
-  // 赎回入口只认「有没有持仓」，与 PI / 申购开放状态无关——PI 过期不该锁住卖出
-  const holding = getHoldings().find(h => h.fundId === fund.id) || null;
   const redeemInfo = holding ? getHoldingRedeemInfo(holding) : null;
   const canRedeem = !!holding && redeemInfo.redeemable > 0;
-  const ranges = fundRangeReturns(fund.navSeries);
+  const ranges = fundRangeReturns(fund?.navSeries);
   // 首屏双数字（学富途）：左=目标回报（承诺口径），右=单位净值。
   // 净值日期只到「月」——私募是周/月估值，写到「日」是假精度。
-  const lastNav = fund.navSeries[fund.navSeries.length - 1];
-  const now = new Date();
-  const navYm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const navCurrency = fund.navMeta?.currency || 'HKD';
+  // 年月取最后一条净值日，不能用「今天」：净值通常上周才披露，跨月就会标错月份。
+  const series = Array.isArray(fund?.navSeries) ? fund.navSeries : [];
+  const lastNav = series.length ? series[series.length - 1] : null;
+  const lastNavDate = fund?.navMeta?.lastNavDate || null;
+  const navYm = lastNavDate ? lastNavDate.slice(0, 7) : null;
+  const navCurrency = fund?.navMeta?.currency || 'HKD';
 
   // 基金文件直接打开全文（应用市场审核会逐份点开，这是硬要求）；
   // 文档 type 与协议 id 有一处不同名，需映射
@@ -82,9 +86,31 @@ export default function FundDetail({ id, navigate, goBack }) {
   // 不套第二层折叠——两层折叠叠在一起，用户不知道点哪个才能找到文件。
   const [archiveOpen, setArchiveOpen] = useState(false);
   // 换基金时收起：路由只是换参数，组件实例不重建，不清的话 f1 展开的条款会带到 f3
-  useEffect(() => { setTermsOpen(false); setArchiveOpen(false); }, [fund.id]);
+  useEffect(() => { setTermsOpen(false); setArchiveOpen(false); }, [fund?.id]);
   const LEGAL_ID = { 'terms-of-use': 'user-agreement', 'privacy-policy': 'privacy-policy', 'risk-disclosure': 'risk-disclosure' };
   const openLegal = (type) => setLegalDoc(LEGAL_ID[type] || type);
+
+  // 草稿 / 已下架且当前用户没有持仓 → 整页不可见。
+  // 直链能看到草稿产品，等于把「还没定稿的资料」提前发给投资人；
+  // 但已持仓的人必须继续看到（上面的 unavailable 已把这种情况排除）。
+  if (unavailable) {
+    return (
+      <div className="page fund-detail-page">
+        <div className="subpage-sticky">
+          <div className="page-header">
+            <button className="back-btn" aria-label={t('返回')} onClick={() => goBack('#funds')}>
+              <ArrowLeft size={20} />
+            </button>
+            <h1>{t('基金详情')}</h1>
+          </div>
+        </div>
+        <div className="card reports-note">
+          <p className="text-muted text-sm">{t('该产品暂未开放，或已下架。如需了解详情请联系客户经理。')}</p>
+          <button className="btn btn-outline btn-sm" onClick={() => navigate('#funds')}>{t('查看其他产品')}</button>
+        </div>
+      </div>
+    );
+  }
 
   const parties = fund.parties || {};
   const dealing = fund.dealing || {};
@@ -130,8 +156,8 @@ export default function FundDetail({ id, navigate, goBack }) {
           </div>
           <div className="p-fund-detail-nav">
             <span className="p-fund-detail-nav-label">{t('单位净值')} · {navCurrency} {t('份额')}</span>
-            <span className="p-fund-detail-nav-value">{lastNav.toFixed(3)}</span>
-            <span className="p-fund-detail-nav-date">{t('截至')} {navYm}</span>
+            <span className="p-fund-detail-nav-value">{lastNav == null ? '—' : lastNav.toFixed(3)}</span>
+            {navYm && <span className="p-fund-detail-nav-date">{t('截至')} {navYm}</span>}
           </div>
         </div>
 
@@ -315,8 +341,13 @@ export default function FundDetail({ id, navigate, goBack }) {
 
       {/* 底部操作条：一切只允许一个主操作。
           申购可用 → 申购为主、赎回为次；否则可赎 → 赎回为主；
-          否则已结束 → 不可点；否则 → PI 引导（文案区分「审核中」与「未认证」）。 */}
+          否则已结束 → 不可点；否则 → PI 引导（文案区分「审核中」与「未认证」）。
+          锁定期内持仓（2026-11-02）：赎回入口不隐藏而是置灰——动作区少一个按钮又无解释，
+          用户会以为入口丢了（标注：锁定期持仓点进来只有申购）；解锁日期在持仓行里。 */}
       <div className="bottom-action-bar p-fund-detail-cta">
+        {holding && !canRedeem && !closed && (
+          <button className="btn btn-outline" disabled>{t('锁定期内不可赎回')}</button>
+        )}
         {canSubscribe && canRedeem && (
           <button className="btn btn-outline" onClick={() => navigate(`#fund-redeem/${holding.id}`)}>
             {t('赎回')}
@@ -338,7 +369,9 @@ export default function FundDetail({ id, navigate, goBack }) {
           </button>
         )}
         {closed && !canRedeem && (
-          <button className="btn btn-outline" disabled>{t('已结束')}</button>
+          <button className="btn btn-outline" disabled>
+            {holding ? t('锁定期内不可赎回') : t('已结束')}
+          </button>
         )}
       </div>
     </div>
