@@ -5,6 +5,7 @@ import {
   sectors, exchangeRates, businessContact,
   projects, amountPresets, addAmountPreset, removeAmountPreset,
   platformAccounts, updatePlatformAccounts, resetExchangeRates,
+  withdrawalFeeConfig, updateWithdrawalFeeConfig,
   platformBrand, updatePlatformBrand, logAudit, Storage,
   termsState, bumpTermsVersion,
   agreements, updateAgreementSections,
@@ -18,6 +19,7 @@ const CONFIG_ITEMS = [
   { key: 'presets', name: '申购金额档位', icon: Coins, desc: '用户侧申购弹框的快捷金额档位', summary: () => `${amountPresets.length} 档 · ${amountPresets[0].label} ~ ${amountPresets[amountPresets.length - 1].label}` },
   { key: 'sectors', name: '行业分类', icon: Tags, desc: '项目 / 路演的行业分类选项', summary: () => `${sectors.length} 个` },
   { key: 'rates', name: '汇率配置', icon: ArrowLeftRight, desc: '法币换汇参考汇率', summary: () => `${Object.keys(exchangeRates).length} 对 · ${exchangeRates['hkd-usd'].from}↔${exchangeRates['hkd-usd'].to} ${exchangeRates['hkd-usd'].rate}` },
+  { key: 'withdrawFee', name: '出金费率', icon: Landmark, desc: '本地/跨境两档费率与最低出金门槛（用户端公示）', summary: () => `本地 ${withdrawalFeeConfig.localRate}% · 跨境 ${withdrawalFeeConfig.crossRate}% · 门槛 HKD ${withdrawalFeeConfig.minAmount.HKD} / USD ${withdrawalFeeConfig.minAmount.USD}` },
   { key: 'contact', name: '商务联系方式', icon: Mail, desc: '对外 BD 联系（登录页 / 路演列表）', summary: () => businessContact.email },
   { key: 'faq', name: '帮助 FAQ', icon: HelpCircle, desc: '用户侧帮助中心的常见问题（简/繁/英三语）', summary: () => `${faqItems.length} 条` },
   { key: 'accounts', name: '平台资金账户', icon: Landmark, desc: '充值入金收款 + 提现出金打款账户', summary: () => `收款+打款 · ${platformAccounts.deposit.bank}`, sensitive: true },
@@ -44,6 +46,14 @@ export default function AdminConfig({ admin }) {
   const [sectorErr, setSectorErr] = useState('');
   const [rates, setRates] = useState(() => Object.keys(exchangeRates).map(k => ({ key: k, ...exchangeRates[k] })));
   const [ratesErr, setRatesErr] = useState('');
+  const [feeForm, setFeeForm] = useState(() => ({
+    localRate: String(withdrawalFeeConfig.localRate),
+    crossRate: String(withdrawalFeeConfig.crossRate),
+    minHKD: String(withdrawalFeeConfig.minAmount.HKD),
+    minUSD: String(withdrawalFeeConfig.minAmount.USD),
+    minCNH: String(withdrawalFeeConfig.minAmount.CNH ?? ''),
+  }));
+  const [feeErr, setFeeErr] = useState('');
   const [contact, setContact] = useState({ ...businessContact });
   const [contactErr, setContactErr] = useState('');
   const [accounts, setAccounts] = useState(() => ({ deposit: { ...platformAccounts.deposit }, depositUsd: { ...(platformAccounts.depositUsd || {}) }, withdraw: { ...platformAccounts.withdraw }, withdrawUsd: { ...(platformAccounts.withdrawUsd || {}) } }));
@@ -85,6 +95,13 @@ export default function AdminConfig({ admin }) {
     // 打开时重置编辑 state（组件常驻，需从共享数据回读最新值）
     if (key === 'sectors') setSectorList([...sectors]);
     if (key === 'rates') setRates(Object.keys(exchangeRates).map(k => ({ key: k, ...exchangeRates[k] })));
+    if (key === 'withdrawFee') setFeeForm({
+      localRate: String(withdrawalFeeConfig.localRate),
+      crossRate: String(withdrawalFeeConfig.crossRate),
+      minHKD: String(withdrawalFeeConfig.minAmount.HKD),
+      minUSD: String(withdrawalFeeConfig.minAmount.USD),
+      minCNH: String(withdrawalFeeConfig.minAmount.CNH ?? ''),
+    });
     if (key === 'contact') setContact({ ...businessContact });
     if (key === 'accounts') setAccounts({ deposit: { ...platformAccounts.deposit }, depositUsd: { ...(platformAccounts.depositUsd || {}) }, withdraw: { ...platformAccounts.withdraw }, withdrawUsd: { ...(platformAccounts.withdrawUsd || {}) } });
     if (key === 'brand') setBrand({ ...platformBrand });
@@ -158,6 +175,19 @@ export default function AdminConfig({ admin }) {
     resetExchangeRates(operator);
     setRates(Object.keys(exchangeRates).map(k => ({ key: k, ...exchangeRates[k] })));
     flash('rates');
+  };
+
+  // ---- 出金费率抽屉（2026-11-04 会议纪要：后台可配；改费率只影响新单，历史单已快照）----
+  const handleFeeSave = () => {
+    const res = updateWithdrawalFeeConfig({
+      localRate: feeForm.localRate,
+      crossRate: feeForm.crossRate,
+      minHKD: feeForm.minHKD,
+      minUSD: feeForm.minUSD,
+      minCNH: feeForm.minCNH,
+    }, operator);
+    if (!res.ok) { setFeeErr(res.error); return; }
+    setFeeErr(''); flash('withdrawFee'); closeEdit();
   };
 
   // ---- 商务联系抽屉 ----
@@ -325,6 +355,35 @@ export default function AdminConfig({ admin }) {
               ))}
             </div>
             {ratesErr && <p className="form-error">{ratesErr}</p>}
+          </>
+        );
+      case 'withdrawFee':
+        return (
+          <>
+            <div className="admin-config-list">
+              <div className="admin-config-row">
+                <span><strong>本地出金费率（%）</strong><br /><span className="text-muted text-sm">香港开户卡；0 = 不收</span></span>
+                <input type="number" step="0.01" min="0" className="form-input admin-config-rate" value={feeForm.localRate} onChange={e => { setFeeForm(f => ({ ...f, localRate: e.target.value })); setFeeErr(''); }} />
+              </div>
+              <div className="admin-config-row">
+                <span><strong>跨境汇款费率（%）</strong><br /><span className="text-muted text-sm">31 个合资格司法管辖区开户卡</span></span>
+                <input type="number" step="0.01" min="0" className="form-input admin-config-rate" value={feeForm.crossRate} onChange={e => { setFeeForm(f => ({ ...f, crossRate: e.target.value })); setFeeErr(''); }} />
+              </div>
+              <div className="admin-config-row">
+                <span><strong>最低出金 HKD</strong></span>
+                <input type="number" step="1" min="0" className="form-input admin-config-rate" value={feeForm.minHKD} onChange={e => { setFeeForm(f => ({ ...f, minHKD: e.target.value })); setFeeErr(''); }} />
+              </div>
+              <div className="admin-config-row">
+                <span><strong>最低出金 USD</strong></span>
+                <input type="number" step="1" min="0" className="form-input admin-config-rate" value={feeForm.minUSD} onChange={e => { setFeeForm(f => ({ ...f, minUSD: e.target.value })); setFeeErr(''); }} />
+              </div>
+              <div className="admin-config-row">
+                <span><strong>最低出金 CNH</strong></span>
+                <input type="number" step="1" min="0" className="form-input admin-config-rate" value={feeForm.minCNH} onChange={e => { setFeeForm(f => ({ ...f, minCNH: e.target.value })); setFeeErr(''); }} />
+              </div>
+            </div>
+            {feeErr && <p className="form-error">{feeErr}</p>}
+            <p className="admin-form-hint">费率按卡的开户地区分本地/跨境两档；手续费从提现金额中扣除，用户端提现页实时公示。费率修改只影响新提交的出金单（历史单按下单时费率快照对账）。集团真实粒度是「汇出行 × 渠道 × 币种」，通道接入后按集团口径细化。</p>
           </>
         );
       case 'faq':
@@ -647,6 +706,7 @@ export default function AdminConfig({ admin }) {
   const isPresetsLike = editKey === 'presets' || editKey === 'sectors' || editKey === 'faq'; // 即时写回型（"完成"关闭）
   const isAccounts = editKey === 'accounts'; // 内部两个保存按钮，抽屉"完成"关闭
   const isRates = editKey === 'rates';       // 保存 + 恢复默认
+  const isWithdrawFee = editKey === 'withdrawFee'; // 保存
   const hasSaveAction = editKey === 'contact' || editKey === 'brand';
 
   // 页内分级（2026-10-19）：sensitive 配置（资金账户/品牌）与条款发布仅 super 可见；
@@ -749,6 +809,12 @@ export default function AdminConfig({ admin }) {
               <>
                 <button className="btn btn-md btn-secondary" onClick={handleRatesReset}><RotateCcw size={15} /> 恢复默认</button>
                 <button className="btn btn-md btn-primary" onClick={handleRatesSave}><Save size={15} /> 保存汇率</button>
+              </>
+            )}
+            {isWithdrawFee && (
+              <>
+                <button className="btn btn-md btn-secondary" onClick={closeEdit}>取消</button>
+                <button className="btn btn-md btn-primary" onClick={handleFeeSave}><Save size={15} /> 保存费率</button>
               </>
             )}
             {isAccounts && <button className="btn btn-md btn-primary" onClick={closeEdit}>完成</button>}

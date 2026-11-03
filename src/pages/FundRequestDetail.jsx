@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { clickable } from '../lib';
 import { ArrowLeft, Upload } from 'lucide-react';
-import { depositRequests, withdrawRequests, exchangeRequests, walletAccountOf, formatCurrency, submitDepositEvidence, getEvidencePreview, currentUser } from '../mock/data';
+import { depositRequests, withdrawRequests, exchangeRequests, walletAccountOf, formatCurrency, formatExactAmount, submitDepositEvidence, getEvidencePreview, currentUser, cancelWithdrawRequest } from '../mock/data';
 import { useLang } from '../i18n';
 import ImageLightbox from '../components/ImageLightbox';
 
@@ -25,15 +25,17 @@ const statusLabel = (req) => {
     return '已完成';
   }
   if (req.status === 'rejected') return '已拒绝';
+  if (req.status === 'cancelled') return '已撤销';
   return '处理中';
 };
 const statusCls = (req) =>
-  req.status === 'approved' ? 'tag-success' : req.status === 'rejected' ? 'tag-danger' : 'tag-warning';
+  req.status === 'approved' ? 'tag-success' : (req.status === 'rejected' || req.status === 'cancelled') ? 'tag-danger' : 'tag-warning';
 
 export default function FundRequestDetail({ id, navigate, goBack }) {
   const { t } = useLang();
   const [, force] = useState(0); // 补传凭证后强制重渲染（mock 数组变更不触发 React）
   const [previewOpen, setPreviewOpen] = useState(false); // 2026-08-20 凭证放大预览
+  const [confirmCancel, setConfirmCancel] = useState(false); // 2026-11-04 出金撤单二次确认
   const fileRef = useRef(null);
   let req = findRequest(id);
   // 归属校验（2026-11-02 修复：此前任何人可凭 id 深链打开他人申请单）；无归属字段的存量数据放行
@@ -157,6 +159,23 @@ export default function FundRequestDetail({ id, navigate, goBack }) {
                 <strong>{req.method}</strong>
               </div>
             )}
+            {/* 出金费用（2026-11-04）：费率按下单时快照展示，手续费从金额内扣 */}
+            {!isDeposit && !isExchange && req.feeRate != null && (
+              <>
+                <div className="subscription-info-row">
+                  <span className="text-muted">{t('出金费率')}</span>
+                  <strong>{req.feeRate}% · {req.isCrossBorder ? t('跨境汇款') : t('本地出金')}</strong>
+                </div>
+                <div className="subscription-info-row">
+                  <span className="text-muted">{t('手续费')}</span>
+                  <strong>{symbol}{formatExactAmount(req.feeAmount || 0)}</strong>
+                </div>
+                <div className="subscription-info-row">
+                  <span className="text-muted">{t('实际到账')}</span>
+                  <strong>{symbol}{formatExactAmount(req.netAmount != null ? req.netAmount : req.amount)}</strong>
+                </div>
+              </>
+            )}
             {req.bankRef && (
               <div className="subscription-info-row">
                 <span className="text-muted">{t('银行参考号')}</span>
@@ -220,6 +239,25 @@ export default function FundRequestDetail({ id, navigate, goBack }) {
           </>
         )}
       </div>
+      {/* 出金撤单（2026-11-04 · 集团 FR-05「审批通过前可撤单」）：仅待处理单、仅本人；撤销即时释放冻结 */}
+      {!isDeposit && !isExchange && req.status === 'pending' && (
+        confirmCancel ? (
+          <div className="card fund-detail-card">
+            <p className="text-muted text-sm">{t('撤销后本单将终止，冻结金额立即释放。确认撤销？')}</p>
+            <div className="bank-card-confirm-actions">
+              <button className="btn btn-outline btn-full" onClick={() => setConfirmCancel(false)}>{t('取消')}</button>
+              <button
+                className="btn btn-danger btn-full"
+                onClick={() => {
+                  if (cancelWithdrawRequest(req.id)) { setConfirmCancel(false); force(n => n + 1); }
+                }}
+              >{t('确认撤销')}</button>
+            </div>
+          </div>
+        ) : (
+          <button className="btn btn-outline btn-full" onClick={() => setConfirmCancel(true)}>{t('撤销提现申请')}</button>
+        )
+      )}
       {previewOpen && req.evidence && (
         <ImageLightbox src={getEvidencePreview(req)} title={`${t('转账凭证')} · ${req.evidence.name}`} onClose={() => setPreviewOpen(false)} />
       )}

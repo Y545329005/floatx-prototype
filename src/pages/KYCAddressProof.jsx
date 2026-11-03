@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ArrowLeft, Upload, Check, AlertCircle, Globe } from "lucide-react";
 import { useLang } from "../i18n";
-import { currentUser, updateKycProfile, submitKyc } from "../mock/data";
+import { currentUser, updateKycProfile } from "../mock/data";
 
 export default function KYCAddressProof({ navigate, goBack, setIsLoggedIn }) {
   const { t } = useLang();
@@ -121,19 +121,18 @@ export default function KYCAddressProof({ navigate, goBack, setIsLoggedIn }) {
   const handleSubmit = () => {
     if (!validateForm()) return;
     // 纯 CDD 提交（2026-09-15 裁决：KYC 内声明/电子签署模块移除——签署责任由注册（协议成立）/PI（认定程序）/SPV（交易签署）三节点承担）
-    updateKycProfile({
-      addressProofType: addressDocType,
-      addressProof: addressFile,
-      employmentStatus,
-      incomeSources,
-      taxResidencies: taxResidencies,
-      taxDetails: taxDetails,
-      crsDeclared: crsDeclared,
-    });
-    // 提交认证（IN_PROGRESS/REJECTED → PENDING_REVIEW）
-    const ok = submitKyc();
-    if (!ok) return; // 数据校验优先于 UI 反馈：入队失败不展示「审核中」页
-    navigate("kyc-submitted");
+      updateKycProfile({
+        addressProofType: addressDocType,
+        addressProof: addressFile,
+        employmentStatus,
+        incomeSources,
+        taxResidencies: taxResidencies,
+        taxDetails: taxDetails,
+        crsDeclared: crsDeclared,
+      });
+      // 2026-11-04 KYC 第 4 步（银行转账认证）：地址证明之后进入首充认证页，
+      // 由该页完成首卡创建 + 首充登记 + submitKyc() 提交（集团《个人KYC-银行转账认证》）。
+      navigate("kyc-bank-transfer");
   };
 
   return (

@@ -30,6 +30,7 @@ const STATUS_FILTERS = [
   { key: 'pending', labelKey: '处理中' },
   { key: 'requires_evidence', labelKey: '待补凭证' },
   { key: 'rejected', labelKey: '未通过' },
+  { key: 'cancelled', labelKey: '已撤销' },
   { key: 'completed', labelKey: '已完成' },
 ];
 
@@ -52,6 +53,7 @@ const STATUS_META = {
   pending: { labelKey: '处理中', cls: 'tag-warning' },
   requires_evidence: { labelKey: '待补凭证', cls: 'tag-danger' },
   rejected: { labelKey: '未通过', cls: 'tag-neutral' },
+  cancelled: { labelKey: '已撤销', cls: 'tag-neutral' },
 };
 
 export default function Transactions({ navigate, goBack }) {

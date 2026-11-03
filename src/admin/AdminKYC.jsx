@@ -49,6 +49,7 @@ export default function AdminKYC({ navigate, detailId, admin }) {
   const [action, setAction] = useState(null);
   const [reason, setReason] = useState('');
   const [reasonError, setReasonError] = useState(false);   // 原因必填内联报错（按钮始终可点，空原因点击 → 内联报错，非 disabled 静默）
+  const [approveError, setApproveError] = useState('');    // 2026-11-04：首卡首充未确认时开户被拒的原因
   const reasonFormRef = useRef(null);                      // 原因表单 ref：空原因点击时滚动到表单让报错可见
   const [filter, setFilter] = useState(KYC_STATUS.PENDING_REVIEW);
   const [keyword, setKeyword] = useState('');
@@ -99,10 +100,15 @@ export default function AdminKYC({ navigate, detailId, admin }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawerOpen]);
 
-  const closeDrawer = () => { setAction(null); setReason(''); setReasonError(false); goList(); };
+  const closeDrawer = () => { setAction(null); setReason(''); setReasonError(false); setApproveError(''); goList(); };
 
   const handleApprove = (kid) => {
-    approveKycSubmission(kid, admin?.name || '系统');
+    const res = approveKycSubmission(kid, admin?.name || '系统');
+    if (res && res.ok === false) {
+      // 2026-11-04：首卡首充未确认时禁止开户——数据层拒绝必须让操作者看到原因（不静默关抽屉）
+      setApproveError(res.error || '审核未执行');
+      return;
+    }
     refresh();
     closeDrawer();
   };
@@ -472,6 +478,8 @@ export default function AdminKYC({ navigate, detailId, admin }) {
                 )}
               </div>
               {sel.status === KYC_STATUS.PENDING_REVIEW && (
+                <>
+                  {approveError && <div className="form-error" style={{ padding: '0 16px 8px' }}>{approveError}</div>}
                 <div className="admin-drawer-actions">
                   {action ? (
                     <>
@@ -493,6 +501,7 @@ export default function AdminKYC({ navigate, detailId, admin }) {
                     <CheckCircle size={16} /> 通过认证
                   </button>
                 </div>
+                </>
               )}
         </div>
       )}

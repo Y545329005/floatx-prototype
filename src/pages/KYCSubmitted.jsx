@@ -1,12 +1,19 @@
 import { ArrowLeft, CheckCircle, Clock, ShieldCheck, XCircle, RefreshCcw, Info } from "lucide-react";
 import { useLang } from "../i18n";
-import { currentUser, KYC_STATUS } from "../mock/data";
+import { currentUser, KYC_STATUS, bankCards, BANK_CARD_STATUS } from "../mock/data";
 
 // KYC 流程提交后状态页：进度条 3 步 done + 按审核状态三态渲染（审核中/已通过/已拒绝+原因）
 // 状态由 currentUser.kyc_status 动态读取——后台审核通过/拒绝后回流同步（userId 关联），重访本页即显示最新状态
+// 2026-11-04：开户 = 身份审核 + 首卡转账验证两步（KYC 第 4 步），本页展示两步进度
 export default function KYCSubmitted({ navigate, goBack }) {
   const { t } = useLang();
   const status = currentUser.kyc_status;
+  const firstCard = (currentUser.kyc_profile?.firstCardId && bankCards.find(c => c.id === currentUser.kyc_profile.firstCardId))
+    || bankCards.find(c => c.userId === currentUser.id && c.firstCard);
+  const firstCardVerified = !!firstCard && firstCard.whitelistStatus === BANK_CARD_STATUS.VERIFIED;
+  const firstCardLabel = firstCardVerified
+    ? t('已完成 · 卡已加入白名单')
+    : firstCard ? t('财务确认首充到账中') : t('待完成');
 
   const renderState = () => {
     if (status === KYC_STATUS.APPROVED) {
@@ -30,6 +37,12 @@ export default function KYCSubmitted({ navigate, goBack }) {
           <div className="kyc-success-desc">
             {t('实名认证已通过，可进行专业投资者认证。')}
           </div>
+          {firstCard && (
+            <div className="kyc-review-row" style={{ marginTop: 'var(--space-3)' }}>
+              <span>{t('首卡（开户绑定）')}</span>
+              <strong>{firstCard.bank}（{firstCard.maskedNo}）· {firstCardVerified ? t('已加入白名单') : t('待首充确认')}</strong>
+            </div>
+          )}
           <div className="kyc-actions-inline">
             <button className="kyc-btn kyc-btn-primary" onClick={() => navigate(primaryAction.target)}>
               {primaryAction.label}
@@ -137,6 +150,13 @@ export default function KYCSubmitted({ navigate, goBack }) {
             <br />
             {t('审核期间即可同步提交 PI 认证资料，两项审核并行推进。')}
           </span>
+        </div>
+
+        {/* 开户进度（2026-11-04）：身份审核 + 首卡转账验证两步 */}
+        <div className="kyc-card" style={{ marginTop: 'var(--space-4)', textAlign: 'left' }}>
+          <div className="kyc-card-title">{t('开户进度')}</div>
+          <div className="kyc-review-row"><span>{t('① 身份资料审核')}</span><strong>{t('审核中')}</strong></div>
+          <div className="kyc-review-row"><span>{t('② 首卡转账验证')}</span><strong>{firstCardLabel}</strong></div>
         </div>
 
         {/* 审核流程说明 */}

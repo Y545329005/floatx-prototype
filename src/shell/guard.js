@@ -20,13 +20,13 @@ export function parseHash(hash) {
 
 // KYC 流程路由（已通过用户重访时重定向走，#kyc-submitted 状态页例外）
 export const KYC_PATHS = new Set([
-  'kyc-start', 'kyc-id-upload', 'kyc-address-proof', 'kyc-submitted',
+  'kyc-start', 'kyc-id-upload', 'kyc-address-proof', 'kyc-bank-transfer', 'kyc-submitted',
 ]);
 
 // 合规门槛期白名单（2026-10-16 拍板「PI 认证通过才能浏览资讯」）：
 // KYC 未过 / PI 未过的用户仅可访问认证流程页与个人页（退出登录用）
 export const COMPLIANCE_PATHS = new Set([
-  'kyc-start', 'kyc-id-upload', 'kyc-address-proof', 'kyc-submitted',
+  'kyc-start', 'kyc-id-upload', 'kyc-address-proof', 'kyc-bank-transfer', 'kyc-submitted',
   'kyc-pi', 'pi-submitted',
   'login', 'register', 'forgot-password', 'reset-password',
   'profile',

@@ -1,154 +1,113 @@
 import { useState } from 'react';
-import { ArrowLeft, Plus, CreditCard, Trash2, X, ShieldCheck, ShieldQuestion, Check } from 'lucide-react';
-import { bankCards, platformAccounts, platformDepositAccount, submitCardVerification, recordAgreement, getFreezeState, formatExactAmount, toHkd, addBankCard, removeBankCard, currentUser } from '../mock/data';
+import { ArrowLeft, Plus, CreditCard, Trash2, X, ShieldCheck, ShieldQuestion, Check, Upload, Ban, RotateCcw } from 'lucide-react';
+import {
+  bankCards, BANK_CARD_STATUS, CARD_REVIEW_STATUS, CARD_QUOTA_PER_CURRENCY,
+  JURISDICTIONS, jurisdictionLabel, countActiveCards,
+  recordAgreement, getFreezeState, formatExactAmount,
+  addBankCard, removeBankCard, setBankCardDisabled, currentUser,
+} from '../mock/data';
 import { useLang } from '../i18n';
 import AgreementModal from '../components/AgreementModal';
 
-const whitelistMeta = {
-  verified: { label: '白名单 · 已验证', cls: 'tag-success' },
-  verifying: { label: '验证中', cls: 'tag-warning' },
-  unverified: { label: '未验证', cls: 'tag-neutral' },
+// 用户侧四态 + 后台审核子态（2026-11-04 · 对齐集团《统一法币出入金整体方案》§5.5）
+// 待验证里再分「卡审核中」与「审核通过、待首充」——两者用户都要等，但动作不同：
+// 审核中不能充值，审核通过后要用该卡首充 ≥1万 HKD 等值才加白。
+const cardStatusMeta = {
+  [BANK_CARD_STATUS.VERIFIED]: { label: '已验证 · 白名单', cls: 'tag-success' },
+  [BANK_CARD_STATUS.UNVERIFIED]: { label: '待验证', cls: 'tag-warning' },
+  [BANK_CARD_STATUS.DISABLED]: { label: '已停用', cls: 'tag-neutral' },
+  [BANK_CARD_STATUS.REJECTED]: { label: '已拒绝', cls: 'tag-danger' },
 };
 
-// 验证款建议金额：HKD ≥ 1万；USD/CNY 按等值换算（1万 HKD ≈ 1282 USD ≈ 9346 CNY）
-const suggestAmount = (currency) => (currency === 'USD' ? 1300 : currency === 'CNY' ? 9500 : 10000);
+const CURRENCIES = [
+  { key: 'HKD', label: 'HKD 港币' },
+  { key: 'USD', label: 'USD 美元' },
+  { key: 'CNH', label: 'CNH 离岸人民币' },
+];
 
-// 银行卡管理（2026-08-19 白名单机制：出入金仅限已验证白名单卡；2026-10-29 eDDA 通道整条下线）
-// 白名单验证：向平台收款账户转账 ≥1万 HKD（或等值 USD）→ 财务核对到账 → 卡片置白名单
+// 银行卡管理（2026-11-04 重构）
+// 链路：添加卡（个人单名 + 开户地区 + 卡照/开户证明）→ 后台卡审核 → 待验证
+//       → 用该卡充值 ≥1万 HKD 等值 → 财务确认到账时自动加白（独立白名单验证单已下线）
 export default function BankCards({ navigate, goBack }) {
-  const { t } = useLang();
-  // 冻结拦截提示（INV-5：银行卡页无 setToast prop，用错误条演示）
+  const { t, lang } = useLang();
   const [freezeBlocked, setFreezeBlocked] = useState(false);
-  // 只看本人卡（2026-11-02 修复：此前全量展示 bankCards，能看见其他客户的卡）
   const ownedCards = () => bankCards.filter(c => c.userId === currentUser.id).map(c => ({ ...c }));
   const [cards, setCards] = useState(ownedCards);
-  // 新增卡表单（2026-11-02 修复：此前 select/input 全部未受控，提交硬编码一张演示卡）
-  const [addForm, setAddForm] = useState({ bank: '星展银行', currency: 'HKD', cardNo: '' });
+
+  // 新增卡表单（2026-11-04：账户类型 + 开户地区 + 凭证三项补齐）
+  const [addForm, setAddForm] = useState({ bank: '星展银行', currency: 'HKD', cardNo: '', accountType: 'personal', region: 'HK' });
+  const [addProof, setAddProof] = useState('');
   const [addError, setAddError] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(null);
-  const [verifyingCard, setVerifyingCard] = useState(null); // 发起验证的卡（id）
-  const [verifyForm, setVerifyForm] = useState({ currency: 'HKD', amount: '', remark: '' });
-  const [verifyError, setVerifyError] = useState('');
-  // 新增卡协议勾选（2026-09-15 · 对齐公司实践场景③"白名单地址协议"：添加白名单卡必须勾选协议）
   const [addAgreed, setAddAgreed] = useState(false);
   const [viewingDoc, setViewingDoc] = useState(null);
 
+  const refresh = () => setCards(ownedCards());
+
   const removeCard = (id) => {
-    // INV-5 凡动必冻：冻结期内阻断解绑（页级拦截出横幅；数据层 removeBankCard 同口径兜底）
     if (getFreezeState().frozen) {
       setConfirmRemove(null);
       setFreezeBlocked(true);
       return;
     }
-    if (!removeBankCard(id)) return;
-    setCards(ownedCards());
+    const res = removeBankCard(id);
+    if (!res.ok) { setAddError(res.error); setConfirmRemove(null); return; }
+    refresh();
     setConfirmRemove(null);
+    setAddError('');
   };
 
-  // 发起白名单验证：转账验证款 → 财务核对 → 置白名单
-  const startVerification = (cardId) => {
-    // INV-5 凡动必冻：置白名单 = 出金账户能力变更，冻结期内连同入口一起阻断
-    if (getFreezeState().frozen) {
-      setFreezeBlocked(true);
-      return;
-    }
-    const card = cards.find(c => c.id === cardId);
-    if (!card) return;
-    setVerifyingCard(cardId);
-    setVerifyForm({ currency: card.currency || 'HKD', amount: String(suggestAmount(card.currency || 'HKD')), remark: `卡片白名单验证（${card.maskedNo}）` });
-    setVerifyError('');
+  const toggleDisabled = (card) => {
+    if (getFreezeState().frozen) { setFreezeBlocked(true); return; }
+    const res = setBankCardDisabled(card.id, card.whitelistStatus !== BANK_CARD_STATUS.DISABLED);
+    if (!res.ok) { setAddError(res.error); return; }
+    refresh();
+    setAddError('');
   };
 
-  const submitVerification = () => {
-    // INV-5 凡动必冻：Sheet 打开期间冻结生效的兜底（正常路径已在入口拦截）
-    if (getFreezeState().frozen) {
-      setVerifyingCard(null);
-      setFreezeBlocked(true);
-      return;
-    }
-    const amount = parseFloat(verifyForm.amount) || 0;
-    if (amount <= 0) { setVerifyError(t('请输入有效的验证转账金额')); return; }
-    // 与弹层文案承诺同口径：≥1万 HKD 等值（数据层 submitCardVerification 有同款兜底）
-    if (toHkd(verifyForm.currency, amount) < 10000) { setVerifyError(t('验证款最低 1万 HKD 或等值金额')); return; }
-    const ok = submitCardVerification({
-      cardId: verifyingCard,
-      currency: verifyForm.currency,
-      amount,
-      remark: verifyForm.remark,
+  const submitCard = () => {
+    if (!addAgreed) return;
+    if (getFreezeState().frozen) { setShowAdd(false); setFreezeBlocked(true); return; }
+    const digits = addForm.cardNo.replace(/\D/g, '');
+    if (digits.length < 8) { setAddError(t('请输入有效的银行卡号（至少 8 位数字）')); return; }
+    if (!addProof) { setAddError(t('请上传银行卡照片或开户证明')); return; }
+    const res = addBankCard({
+      bank: addForm.bank,
+      branch: addForm.region === 'HK' ? '香港' : jurisdictionLabel(addForm.region, lang),
+      holder: currentUser.name || '—',
+      cardNo: addForm.cardNo.trim(),
+      type: addForm.region === 'HK' ? '香港账户' : '海外账户',
+      currency: addForm.currency,
+      accountType: addForm.accountType,
+      region: addForm.region,
+      proofImage: addProof,
     });
-    if (!ok) { setVerifyError(t('该卡已通过验证或提交失败')); return; }
-    setCards(ownedCards()); // 同步真实数据源状态
-    setVerifyingCard(null);
+    if (!res.ok) { setAddError(res.error || t('添加失败，请检查填写内容后重试')); return; }
+    recordAgreement({ type: 'bank-card', agreementIds: ['bank-card-service'] });
+    refresh();
+    setShowAdd(false);
+    setAddAgreed(false);
+    setAddForm({ bank: '星展银行', currency: 'HKD', cardNo: '', accountType: 'personal', region: 'HK' });
+    setAddProof('');
+    setAddError('');
   };
 
-  const renderVerificationSheet = () => {
-    const card = cards.find(c => c.id === verifyingCard);
-    if (!card) return null;
-    const acc = platformDepositAccount(verifyForm.currency) || platformAccounts.deposit;
-    return (
-      <>
-        <div className="sheet-mask" onClick={() => setVerifyingCard(null)} />
-        <div className="sheet">
-          <div className="sheet-header">
-            <h3>{t('白名单验证')} · {card.bank}（{card.maskedNo}）</h3>
-            <button className="btn-icon" onClick={() => setVerifyingCard(null)}><X size={18} /></button>
-          </div>
-          <p className="text-muted text-sm sheet-sub">
-            {t('请向平台收款账户转账验证款（≥1万 HKD 或等值 USD），财务核对到账后该卡生效，可用于出入金。验证款将计入可用余额。')}
-          </p>
-          <div className="bank-verify-account">
-            <div className="bank-verify-account-row"><span className="text-muted">{t('收款银行')}</span><strong>{acc.bank}</strong></div>
-            <div className="bank-verify-account-row"><span className="text-muted">{t('户名')}</span><strong>{acc.accountName}</strong></div>
-            <div className="bank-verify-account-row"><span className="text-muted">{t('账号')}</span><strong className="date-iso">{acc.accountNo}</strong></div>
-          </div>
-          <div className="bank-card-add-form">
-            <div className="form-group">
-              <label className="form-label">{t('验证款币种')}</label>
-              <select
-                className="form-input"
-                value={verifyForm.currency}
-                onChange={e => {
-                  const cur = e.target.value;
-                  setVerifyForm(f => ({ ...f, currency: cur, amount: String(suggestAmount(cur)) }));
-                  setVerifyError('');
-                }}
-              >
-                <option value="HKD">HKD 港币</option>
-                <option value="USD">USD 美元</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label className="form-label">{t('验证转账金额')}</label>
-              <div className="input-group">
-                <span className="input-symbol">{verifyForm.currency === 'USD' ? '$' : verifyForm.currency === 'CNY' ? '¥' : 'HK$'}</span>
-                <input
-                  className="form-input"
-                  type="number"
-                  value={verifyForm.amount}
-                  onChange={e => { setVerifyForm(f => ({ ...f, amount: e.target.value })); setVerifyError(''); }}
-                  inputMode="decimal"
-                />
-              </div>
-              <p className="text-muted text-sm">
-                {t('最低 1万 HKD 或等值 USD；请务必填写转账附言以便核对归属')}
-              </p>
-            </div>
-            <div className="form-group">
-              <label className="form-label">{t('转账附言')}</label>
-              <input
-                className="form-input"
-                value={verifyForm.remark}
-                onChange={e => { setVerifyForm(f => ({ ...f, remark: e.target.value })); setVerifyError(''); }}
-                placeholder={t('如：卡片白名单验证（卡号后四位）')}
-              />
-            </div>
-            {verifyError && <p className="form-error">{verifyError}</p>}
-            <button className="btn btn-primary btn-full" onClick={submitVerification}>{t('提交验证')}</button>
-          </div>
-        </div>
-      </>
-    );
+  const renderStatus = (c) => {
+    const meta = cardStatusMeta[c.whitelistStatus] || cardStatusMeta[BANK_CARD_STATUS.UNVERIFIED];
+    if (c.whitelistStatus === BANK_CARD_STATUS.UNVERIFIED) {
+      if (c.reviewStatus === CARD_REVIEW_STATUS.PENDING) {
+        return <><ShieldQuestion size={14} /> <span>{meta.label} · {t('资料审核中')}</span></>;
+      }
+      return <><ShieldQuestion size={14} /> <span>{meta.label} · {t('首充 ≥1万 HKD 等值后加白')}</span></>;
+    }
+    if (c.whitelistStatus === BANK_CARD_STATUS.VERIFIED) {
+      return <><ShieldCheck size={14} className="wl-ok" /> <span>{meta.label}{c.verifiedAmount ? ` · ${c.currency} ${formatExactAmount(c.verifiedAmount)}` : ''}</span></>;
+    }
+    if (c.whitelistStatus === BANK_CARD_STATUS.REJECTED) {
+      return <><Ban size={14} /> <span>{meta.label}{c.reviewReason ? ` · ${c.reviewReason}` : ''}</span></>;
+    }
+    return <><Ban size={14} /> <span>{meta.label}</span></>;
   };
 
   return (
@@ -160,7 +119,6 @@ export default function BankCards({ navigate, goBack }) {
         </div>
       </div>
 
-      {/* 凡动必冻横幅（INV-5：出金账户变更冻结） */}
       {getFreezeState().frozen && (
         <div className="sc-freeze-banner">
           <ShieldCheck size={16} />
@@ -170,7 +128,7 @@ export default function BankCards({ navigate, goBack }) {
       {freezeBlocked && <div className="sc-freeze-banner">{t('安全冻结生效中：安全项变更后 24 小时内无法变更出金账户')}</div>}
 
       <p className="text-muted text-sm bank-cards-note">
-        {t('出入金仅限「白名单」银行卡。新卡需通过转账验证（≥1万 HKD 或等值 USD）后方可用于资金往来。')}
+        {t('出入金仅限「已验证」银行卡：添加卡 → 专员审核资料 → 用该卡首充 ≥1万 HKD 等值 → 自动加入白名单。每个币种最多 3 张。')}
       </p>
 
       {cards.length === 0 && (
@@ -179,46 +137,47 @@ export default function BankCards({ navigate, goBack }) {
         </div>
       )}
 
-      {cards.map(c => {
-        const meta = whitelistMeta[c.whitelistStatus] || whitelistMeta.unverified;
-        return (
-          <div key={c.id} className="card bank-card">
-            <div className="bank-card-top">
-              <div className="bank-card-brand">
-                <CreditCard size={18} />
-                <div>
-                  <strong>{c.bank}</strong>
-                  <span className="text-muted text-sm">{c.branch} · {c.type}</span>
-                </div>
+      {cards.map(c => (
+        <div key={c.id} className="card bank-card">
+          <div className="bank-card-top">
+            <div className="bank-card-brand">
+              <CreditCard size={18} />
+              <div>
+                <strong>{c.bank}</strong>
+                <span className="text-muted text-sm">{jurisdictionLabel(c.region, lang)} · {c.type}</span>
               </div>
-              <button className="btn-icon" onClick={() => setConfirmRemove(c)}>
+            </div>
+            <div className="bank-card-actions">
+              {(c.whitelistStatus === BANK_CARD_STATUS.VERIFIED || c.whitelistStatus === BANK_CARD_STATUS.DISABLED) && (
+                <button className="btn-icon" title={c.whitelistStatus === BANK_CARD_STATUS.DISABLED ? t('启用') : t('停用')} onClick={() => toggleDisabled(c)}>
+                  {c.whitelistStatus === BANK_CARD_STATUS.DISABLED ? <RotateCcw size={16} /> : <Ban size={16} />}
+                </button>
+              )}
+              <button className="btn-icon" title={t('删除')} onClick={() => setConfirmRemove(c)}>
                 <Trash2 size={16} />
               </button>
             </div>
-            <div className="bank-card-masked">{c.maskedNo}</div>
-            <div className="bank-card-bottom">
-              <span className="text-muted text-sm">{c.holder}</span>
-              <span className="tag tag-currency">{c.currency}</span>
-            </div>
-            <div className="bank-card-whitelist">
-              {c.whitelistStatus === 'verified' ? (
-                <><ShieldCheck size={14} className="wl-ok" /> <span>{meta.label}{c.verifiedAmount ? ` · ${c.currency} ${formatExactAmount(c.verifiedAmount)}` : ''}</span></>
-              ) : c.whitelistStatus === 'verifying' ? (
-                <><ShieldQuestion size={14} /> <span>{meta.label} · {t('财务核对中')}</span></>
-              ) : (
-                <><ShieldQuestion size={14} /> <span>{meta.label} · {t('不能用于出入金')}</span></>
-              )}
-            </div>
-            {c.whitelistStatus !== 'verified' && (
-              <button className="btn btn-outline btn-full bank-verify-btn" onClick={() => startVerification(c.id)}>
-                {c.whitelistStatus === 'verifying' ? t('查看/重新验证') : t('发起白名单验证')}
-              </button>
-            )}
           </div>
-        );
-      })}
+          <div className="bank-card-masked">{c.maskedNo}</div>
+          <div className="bank-card-bottom">
+            <span className="text-muted text-sm">{c.holder}</span>
+            <span className="tag tag-currency">{c.currency}</span>
+          </div>
+          <div className="bank-card-whitelist">{renderStatus(c)}</div>
+          {c.whitelistStatus === BANK_CARD_STATUS.UNVERIFIED && c.reviewStatus === CARD_REVIEW_STATUS.APPROVED && (
+            <button className="btn btn-outline btn-full bank-verify-btn" onClick={() => navigate('#fund-operation/deposit')}>
+              {t('去充值验证')}
+            </button>
+          )}
+        </div>
+      ))}
 
-      <button className="btn btn-outline btn-full bank-cards-add" onClick={() => setShowAdd(true)}>
+      {addError && <p className="form-error">{addError}</p>}
+
+      <button
+        className="btn btn-outline btn-full bank-cards-add"
+        onClick={() => { setAddError(''); setShowAdd(true); }}
+      >
         <Plus size={16} /> {t('添加银行卡')}
       </button>
 
@@ -230,7 +189,7 @@ export default function BankCards({ navigate, goBack }) {
               <h3>{t('添加银行卡')}</h3>
               <button className="btn-icon" onClick={() => setShowAdd(false)}><X size={18} /></button>
             </div>
-            <p className="text-muted text-sm sheet-sub">{t('新卡添加后需通过白名单验证（≥1万 HKD 转账）方可处理出入金。')}</p>
+            <p className="text-muted text-sm sheet-sub">{t('仅接受个人单名账户；联名账户不可用于出入金。提交后由专员审核资料。')}</p>
             <div className="bank-card-add-form">
               <div className="form-group">
                 <label className="form-label">{t('银行')}</label>
@@ -247,16 +206,40 @@ export default function BankCards({ navigate, goBack }) {
                 </select>
               </div>
               <div className="form-group">
+                <label className="form-label">{t('账户类型')}</label>
+                <select
+                  className="form-input"
+                  value={addForm.accountType}
+                  onChange={e => { setAddForm(f => ({ ...f, accountType: e.target.value })); setAddError(''); }}
+                >
+                  <option value="personal">{t('个人单名账户')}</option>
+                  <option value="joint" disabled>{t('联名账户（不支持）')}</option>
+                </select>
+                <p className="fund-field-hint">{t('只接受与实名一致的个人账户；联名账户转账视为非同名人转账，不予入账。')}</p>
+              </div>
+              <div className="form-group">
+                <label className="form-label">{t('开户国家 / 地区')}</label>
+                <select
+                  className="form-input"
+                  value={addForm.region}
+                  onChange={e => { setAddForm(f => ({ ...f, region: e.target.value })); setAddError(''); }}
+                >
+                  {JURISDICTIONS.map(j => (
+                    <option key={j.code} value={j.code}>{jurisdictionLabel(j.code, lang)}</option>
+                  ))}
+                </select>
+                <p className="fund-field-hint">{t('仅接受证监会合资格司法管辖区（含香港）开立的银行账户。')}</p>
+              </div>
+              <div className="form-group">
                 <label className="form-label">{t('账户币种')}</label>
                 <select
                   className="form-input"
                   value={addForm.currency}
                   onChange={e => { setAddForm(f => ({ ...f, currency: e.target.value })); setAddError(''); }}
                 >
-                  <option>HKD 港币</option>
-                  <option>USD 美元</option>
-                  <option>CNY 人民币</option>
+                  {CURRENCIES.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
                 </select>
+                <p className="fund-field-hint">{t('该币种已有 {n} / {max} 张有效卡').replace('{n}', String(countActiveCards(addForm.currency, currentUser.id))).replace('{max}', String(CARD_QUOTA_PER_CURRENCY))}</p>
               </div>
               <div className="form-group">
                 <label className="form-label">{t('银行卡号')}</label>
@@ -268,7 +251,34 @@ export default function BankCards({ navigate, goBack }) {
                   onChange={e => { setAddForm(f => ({ ...f, cardNo: e.target.value })); setAddError(''); }}
                 />
               </div>
-              {/* 协议：必须勾选（2026-09-15 · 对齐公司实践场景③：未勾选时下一步禁用） */}
+              <div className="form-group">
+                <label className="form-label">{t('银行卡照片 / 开户证明')}</label>
+                <label className="fund-evidence-box" style={{ display: 'block' }}>
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    style={{ display: 'none' }}
+                    onChange={e => {
+                      const f = e.target.files && e.target.files[0];
+                      // 演示：记录文件名，审核抽屉展示演示占位图（接后端替换为真实上传 URL）
+                      setAddProof(f ? 'images/demo-bank-card.jpg' : '');
+                      setAddError('');
+                    }}
+                  />
+                  {addProof ? (
+                    <div className="fund-evidence-done">
+                      <Upload size={18} />
+                      <div><strong>{t('已上传')}</strong><span className="text-muted text-sm"> · {t('点击重新上传')}</span></div>
+                    </div>
+                  ) : (
+                    <div className="fund-evidence-empty">
+                      <Upload size={20} />
+                      <strong>{t('点击上传')}</strong>
+                      <span className="text-muted text-sm">{t('用于核对账户姓名与卡号')}</span>
+                    </div>
+                  )}
+                </label>
+              </div>
               <div
                 className="form-checkbox-group"
                 onClick={() => setAddAgreed(!addAgreed)}
@@ -291,34 +301,8 @@ export default function BankCards({ navigate, goBack }) {
                 className="btn btn-primary btn-full"
                 disabled={!addAgreed}
                 style={{ opacity: addAgreed ? 1 : 0.45 }}
-                onClick={() => {
-                  if (!addAgreed) return;
-                  // INV-5 凡动必冻：新增出金账户在冻结期内阻断（数据层 addBankCard 同口径兜底）
-                  if (getFreezeState().frozen) {
-                    setShowAdd(false);
-                    setFreezeBlocked(true);
-                    return;
-                  }
-                  const digits = addForm.cardNo.replace(/\D/g, '');
-                  if (digits.length < 8) { setAddError(t('请输入有效的银行卡号（至少 8 位数字）')); return; }
-                  // 协议签署留痕（版本固化 + 审计日志）
-                  recordAgreement({ type: 'bank-card', agreementIds: ['bank-card-service'] });
-                  // 数据层单口入库（unverified），真实字段按表单提交——后续走白名单验证流程
-                  const ok = addBankCard({
-                    bank: addForm.bank,
-                    branch: '香港',
-                    holder: currentUser.name || '—',
-                    cardNo: addForm.cardNo.trim(),
-                    type: '香港账户',
-                    currency: addForm.currency,
-                  });
-                  if (!ok) { setAddError(t('添加失败，请检查填写内容后重试')); return; }
-                  setCards(ownedCards());
-                  setShowAdd(false);
-                  setAddAgreed(false); // 下次打开默认重置（每次添加需重新明示同意）
-                  setAddForm({ bank: '星展银行', currency: 'HKD', cardNo: '' });
-                  setAddError('');
-                }}>{t('提交（待白名单验证）')}</button>
+                onClick={submitCard}
+              >{t('提交审核')}</button>
               {addError && <div className="form-error">{addError}</div>}
             </div>
           </div>
@@ -330,23 +314,20 @@ export default function BankCards({ navigate, goBack }) {
           <div className="sheet-mask" onClick={() => setConfirmRemove(null)} />
           <div className="sheet">
             <div className="sheet-header">
-              <h3>{t('解绑银行卡')}</h3>
+              <h3>{t('删除银行卡')}</h3>
               <button className="btn-icon" onClick={() => setConfirmRemove(null)}><X size={18} /></button>
             </div>
             <p className="text-muted text-sm sheet-sub">
-              {t('确认解绑')} {confirmRemove.bank}（{confirmRemove.maskedNo}）？{t('解绑后该账户将无法用于资金往来')}
+              {t('确认删除')} {confirmRemove.bank}（{confirmRemove.maskedNo}）？{t('删除后释放名额；有在途提现的卡不能删除')}
             </p>
             <div className="bank-card-confirm-actions">
               <button className="btn btn-outline btn-full" onClick={() => setConfirmRemove(null)}>{t('取消')}</button>
-              <button className="btn btn-danger btn-full" onClick={() => removeCard(confirmRemove.id)}>{t('确认解绑')}</button>
+              <button className="btn btn-danger btn-full" onClick={() => removeCard(confirmRemove.id)}>{t('确认删除')}</button>
             </div>
           </div>
         </>
       )}
 
-      {renderVerificationSheet()}
-
-      {/* 银行卡服务协议弹窗 */}
       {viewingDoc && <AgreementModal agreementId={viewingDoc} onClose={() => setViewingDoc(null)} />}
     </div>
   );

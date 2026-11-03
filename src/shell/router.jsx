@@ -27,6 +27,7 @@ const ChangeEmail = lazy(() => import('../pages/ChangeEmail'));
 const KYCStart = lazy(() => import('../pages/KYCStart'));
 const KYCIdUpload = lazy(() => import('../pages/KYCIdUpload'));
 const KYCAddressProof = lazy(() => import('../pages/KYCAddressProof'));
+const KYCBankTransfer = lazy(() => import('../pages/KYCBankTransfer'));
 const KYCSubmitted = lazy(() => import('../pages/KYCSubmitted'));
 const KYCPI = lazy(() => import('../pages/KYCPI'));
 const PISubmitted = lazy(() => import('../pages/PISubmitted'));
@@ -147,6 +148,9 @@ export function renderAppPage(path, param, ctx) {
       return <KYCIdUpload navigate={navigate} goBack={goBack} setIsLoggedIn={setIsLoggedIn} />;
     case 'kyc-address-proof':
       return <KYCAddressProof navigate={navigate} goBack={goBack} setIsLoggedIn={setIsLoggedIn} />;
+    // KYC 第 4 步（2026-11-04）：银行转账认证 → 首卡创建 + 首充登记 + 提交 KYC
+    case 'kyc-bank-transfer':
+      return <KYCBankTransfer navigate={navigate} goBack={goBack} />;
     case 'kyc-submitted':
       return <KYCSubmitted navigate={navigate} goBack={goBack} />;
     case 'kyc-pi':

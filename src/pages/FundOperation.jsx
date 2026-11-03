@@ -5,9 +5,10 @@ import {
   AlertTriangle, ReceiptText, X,
 } from 'lucide-react';
 import {
-  wallet, walletAccountOf, bankCards, platformAccounts, platformDepositAccount,
+  wallet, walletAccountOf, bankCards, BANK_CARD_STATUS, CARD_REVIEW_STATUS, platformAccounts, platformDepositAccount,
   depositRequests, withdrawRequests, submitDepositRequest, submitWithdrawRequest,
   getAvailableCash, getFreezeState, depositRefCode, formatExactAmount,
+  getWithdrawQuote, getMinWithdraw, currentUser,
 } from '../mock/data';
 import { useLang } from '../i18n';
 
@@ -18,9 +19,6 @@ const currencyOptions = [
   { key: 'USD', label: 'USD 美元', symbol: '$' },
   { key: 'CNH', label: 'CNH 离岸人民币', symbol: '¥' },
 ];
-
-// 白名单卡（出入金前置：≥1万 HKD 或等值 USD 转账白名单验证，2026-08-19）
-const whitelistedCards = bankCards.filter(c => c.whitelistStatus === 'verified');
 
 // 本地时间 yyyy-MM-ddThh:mm（datetime-local 的入参格式；用 toISOString 会按 UTC 少 8 小时）
 function nowLocalInput() {
@@ -58,7 +56,7 @@ export default function FundOperation({ mode, navigate, goBack }) {
   const isDeposit = mode === 'deposit';
   const [currency, setCurrency] = useState('HKD');
   const [amount, setAmount] = useState('');
-  const [bankCard, setBankCard] = useState(whitelistedCards[0]?.id || '');
+  const [bankCard, setBankCard] = useState('');
   const [evidenceName, setEvidenceName] = useState('');
   const [payerRef, setPayerRef] = useState('');
   const [transferDate, setTransferDate] = useState(nowLocalInput());
@@ -86,6 +84,14 @@ export default function FundOperation({ mode, navigate, goBack }) {
   const freeze = getFreezeState();
   const acc = platformDepositAccount(activeCurrency) || platformAccounts.deposit;
   const refCode = depositRefCode();
+  // 2026-11-04：充值付款卡放开到「本人全部有效卡」——未验证卡正是首充验证的对象
+  // （此前只列已验证卡，导致「先验证才能充值」的顺序与会议纪要/集团口径相反）。
+  // 出金仍只允许已验证卡（白名单硬约束），且按币种匹配，不做跨币种打款。
+  const myCards = bankCards.filter(c => c.userId === currentUser.id
+    && c.whitelistStatus !== BANK_CARD_STATUS.DISABLED
+    && c.whitelistStatus !== BANK_CARD_STATUS.REJECTED
+    && c.reviewStatus !== CARD_REVIEW_STATUS.PENDING); // 卡审核中的卡不能充（资料还没核过）
+  const whitelistedCards = myCards.filter(c => c.whitelistStatus === BANK_CARD_STATUS.VERIFIED);
 
   useEffect(() => () => clearTimeout(copyTimer.current), []);
 
@@ -142,9 +148,16 @@ export default function FundOperation({ mode, navigate, goBack }) {
     const bc = selectedCard;
     if (!bc) {
       setError(isDeposit
-        ? t('请选择已通过白名单验证的付款银行卡')
+        ? t('请选择付款银行卡（可用本人名下银行卡首充验证）')
         : t('请先添加并验证一张 {cur} 收款银行卡').replace('{cur}', activeCurrency));
       return;
+    }
+    if (!isDeposit) {
+      const min = getMinWithdraw(activeCurrency);
+      if (amountNum < min) {
+        setError(t('最低提现金额为 {amount}').replace('{amount}', `${cur.symbol}${formatExactAmount(min)}`));
+        return;
+      }
     }
     if (!isDeposit && freeze.frozen) { // 凡动必冻拦截
       setError(t('安全冻结生效中：安全项变更后 24 小时内无法提现'));
@@ -176,7 +189,7 @@ export default function FundOperation({ mode, navigate, goBack }) {
       ok = submitWithdrawRequest(opts);
     }
     if (!ok) {
-      setError(isDeposit ? t('入金申请提交失败，请检查付款卡与凭证') : t('可用余额不足或收款卡未通过验证'));
+      setError(isDeposit ? t('入金申请提交失败，请检查付款卡与凭证') : t('可用余额不足、未达最低提现金额或收款卡未通过验证'));
       return;
     }
     // 提交成功 → 跳转资金申请详情页（新申请 unshift 到头部，取最新一条）
@@ -252,6 +265,22 @@ export default function FundOperation({ mode, navigate, goBack }) {
         )}
 
         {renderAmountField(t('请输入金额'))}
+
+        {/* 费用与到账（2026-11-04 会议纪要 + 集团 FR-13）：金额输入即展示费率/手续费/预计到账；
+            费率按卡的开户地区分本地/跨境两档，后台可配；手续费从提现金额中扣除。 */}
+        {(() => {
+          const quote = getWithdrawQuote(activeCurrency, amountNum, selectedCard);
+          const min = getMinWithdraw(activeCurrency);
+          return (
+            <div className="card fund-operation-card">
+              <h3 className="card-title">{t('费用与到账')}</h3>
+              <div className="kyc-review-row"><span>{t('出金费率')}</span><strong>{quote.rate}% · {quote.isCross ? t('跨境汇款') : t('本地出金')}</strong></div>
+              <div className="kyc-review-row"><span>{t('手续费')}</span><strong>{cur.symbol}{formatExactAmount(quote.fee)}</strong></div>
+              <div className="kyc-review-row"><span>{t('预计到账')}</span><strong>{cur.symbol}{formatExactAmount(quote.net > 0 ? quote.net : 0)}</strong></div>
+              <p className="fund-field-hint">{t('最低提现金额 {amount}；手续费从提现金额中扣除。').replace('{amount}', `${cur.symbol}${formatExactAmount(min)}`)}</p>
+            </div>
+          );
+        })()}
 
         <div className="form-group">
           <label className="form-label">{t('收款银行卡（白名单）')}</label>
@@ -421,11 +450,9 @@ export default function FundOperation({ mode, navigate, goBack }) {
     </>
   );
 
-  // 选卡弹层：充值「从」行与提现「收款银行卡」共用同一份白名单卡与选中态。
-  // 触发器各自保留原位（充值是行内右对齐，提现是表单全宽），选项列表统一走底部 sheet。
-  // 出金按币种筛卡（2026-11-03）：美元只能提到美元账户，否则等于让银行做一次换汇。
-  // 充值不筛：港币账户购汇后汇美元是真实场景，由付款行处理，平台只登记实际汇出币种。
-  const cardOptions = isDeposit ? whitelistedCards : whitelistedCards.filter(c => c.currency === activeCurrency);
+  // 选卡弹层：充值「从」行与提现「收款银行卡」共用同一份卡与选中态。
+  // 2026-11-04：充值列本人全部有效卡（未验证卡标注「首充 ≥1万加白」）；出金只列已验证卡。
+  const cardOptions = isDeposit ? myCards : whitelistedCards.filter(c => c.currency === activeCurrency);
   const selectedCard = cardOptions.find(c => c.id === bankCard) || cardOptions[0] || null;
   const pickCard = (id) => {
     setBankCard(id);
@@ -443,7 +470,7 @@ export default function FundOperation({ mode, navigate, goBack }) {
         {cardOptions.length === 0 ? (
           <p className="text-muted text-sm sheet-sub">
             {isDeposit
-              ? t('暂无白名单银行卡，请先完成白名单验证')
+              ? t('暂无可用银行卡，请先添加银行卡')
               : t('暂无 {cur} 白名单银行卡，请先完成验证').replace('{cur}', activeCurrency)}
           </p>
         ) : (
@@ -452,7 +479,7 @@ export default function FundOperation({ mode, navigate, goBack }) {
               <button key={c.id} type="button" className={`fund-card-option${c.id === selectedCard?.id ? ' selected' : ''}`} onClick={() => pickCard(c.id)}>
                 <span className="fund-card-option-main">
                   <strong>{c.bank}</strong>
-                  <span className="text-muted text-sm">{c.maskedNo} · {c.currency}</span>
+                  <span className="text-muted text-sm">{c.maskedNo} · {c.currency}{c.whitelistStatus !== BANK_CARD_STATUS.VERIFIED ? ` · ${t('首充验证')}` : ''}</span>
                 </span>
                 {c.id === selectedCard?.id && <Check size={18} className="fund-card-option-check" />}
               </button>
@@ -488,15 +515,15 @@ export default function FundOperation({ mode, navigate, goBack }) {
 
       {!isDeposit && renderWithdraw()}
 
-      {isDeposit && whitelistedCards.length === 0 && (
+      {isDeposit && myCards.length === 0 && (
         <div className="card fund-empty-card">
-          <p>{t('暂无白名单银行卡，请先完成白名单验证')}</p>
-          <p className="text-muted text-sm">{t('出入金仅限「白名单」银行卡。新卡需通过转账验证（≥1万 HKD 或等值 USD）后方可用于资金往来。')}</p>
-          <button className="btn btn-outline btn-sm" onClick={() => navigate('#bank-cards')}>{t('去验证')}</button>
+          <p>{t('暂无可用银行卡，请先添加银行卡')}</p>
+          <p className="text-muted text-sm">{t('卡片审核通过后，用该卡首充 ≥1万 HKD 等值即可自动加入白名单。')}</p>
+          <button className="btn btn-outline btn-sm" onClick={() => navigate('#bank-cards')}>{t('去添加')}</button>
         </div>
       )}
 
-      {isDeposit && whitelistedCards.length > 0 && (
+      {isDeposit && myCards.length > 0 && (
         <>
           <div className="fund-pay-row">
             <span className="fund-pay-label">{t('从')}</span>

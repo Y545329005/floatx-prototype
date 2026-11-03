@@ -369,9 +369,82 @@ export function convertToHKD(amount, currency) {
   return amount * (FX_TO_HKD[String(currency || '').toUpperCase()] || 1);
 }
 
-// 银行卡白名单（2026-08-19 老板确认）：出入金只允许「已验证」卡。
-// 验证门槛：向平台指定账户转账 ≥ 1万 HKD（或等值 USD），后台核对到账后置白名单。
-// whitelistStatus: 'verified'(白名单) | 'verifying'(验证中) | 'unverified'(未验证)
+// ========== 开户国家 / 地区（2026-11-04 · SFC 合资格司法管辖区） ==========
+// 依据：SFC《透過遙距程序與海外個人客戶建立業務關係的合資格司法管轄區名單》
+// https://www.sfc.hk/TC/Rules-and-standards/Account-opening/List-of-eligible-jurisdictions-for-remote-onboarding-of-overseas-individual-clients
+// 最后更新 2025-05-30。该名单约束的是「客户在这些司法管辖区开立的银行户口」，
+// 香港本地账户不在名单上（本地开户无需遥距名单）——因此下拉 = 香港 + 31 个司法管辖区，共 32 项。
+// 存 ISO code 而非中文名：切语言时展示走 jurisdictionLabel()，数据层不因语言漂移。
+// 名单剔除某司法管辖区不具追溯效力（官网原文），故只影响新增卡，不回溯校验历史卡。
+export const JURISDICTIONS = [
+  { code: 'HK', zh: '香港', zhHK: '香港', en: 'Hong Kong', local: true },
+  { code: 'AR', zh: '阿根廷', zhHK: '阿根廷', en: 'Argentina' },
+  { code: 'AU', zh: '澳大利亚', zhHK: '澳洲', en: 'Australia' },
+  { code: 'AT', zh: '奥地利', zhHK: '奧地利', en: 'Austria' },
+  { code: 'BE', zh: '比利时', zhHK: '比利時', en: 'Belgium' },
+  { code: 'BR', zh: '巴西', zhHK: '巴西', en: 'Brazil' },
+  { code: 'CA', zh: '加拿大', zhHK: '加拿大', en: 'Canada' },
+  { code: 'FR', zh: '法国', zhHK: '法國', en: 'France' },
+  { code: 'DE', zh: '德国', zhHK: '德國', en: 'Germany' },
+  { code: 'GR', zh: '希腊', zhHK: '希臘', en: 'Greece' },
+  { code: 'IN', zh: '印度', zhHK: '印度', en: 'India' },
+  { code: 'ID', zh: '印尼', zhHK: '印尼', en: 'Indonesia' },
+  { code: 'IE', zh: '爱尔兰', zhHK: '愛爾蘭', en: 'Ireland' },
+  { code: 'IL', zh: '以色列', zhHK: '以色列', en: 'Israel' },
+  { code: 'IT', zh: '意大利', zhHK: '意大利', en: 'Italy' },
+  { code: 'JP', zh: '日本', zhHK: '日本', en: 'Japan' },
+  { code: 'KR', zh: '韩国', zhHK: '韓國', en: 'South Korea' },
+  { code: 'LU', zh: '卢森堡', zhHK: '盧森堡', en: 'Luxembourg' },
+  { code: 'MY', zh: '马来西亚', zhHK: '馬來西亞', en: 'Malaysia' },
+  { code: 'NL', zh: '荷兰', zhHK: '荷蘭', en: 'Netherlands' },
+  { code: 'NZ', zh: '新西兰', zhHK: '新西蘭', en: 'New Zealand' },
+  { code: 'NO', zh: '挪威', zhHK: '挪威', en: 'Norway' },
+  { code: 'PT', zh: '葡萄牙', zhHK: '葡萄牙', en: 'Portugal' },
+  { code: 'SA', zh: '沙特阿拉伯', zhHK: '沙特阿拉伯', en: 'Saudi Arabia' },
+  { code: 'SG', zh: '新加坡', zhHK: '新加坡', en: 'Singapore' },
+  { code: 'ZA', zh: '南非', zhHK: '南非', en: 'South Africa' },
+  { code: 'ES', zh: '西班牙', zhHK: '西班牙', en: 'Spain' },
+  { code: 'SE', zh: '瑞典', zhHK: '瑞典', en: 'Sweden' },
+  { code: 'CH', zh: '瑞士', zhHK: '瑞士', en: 'Switzerland' },
+  { code: 'TR', zh: '土耳其', zhHK: '土耳其', en: 'Turkey' },
+  { code: 'GB', zh: '英国', zhHK: '英國', en: 'United Kingdom' },
+  { code: 'US', zh: '美国', zhHK: '美國', en: 'United States' },
+];
+
+export const JURISDICTION_CODES = new Set(JURISDICTIONS.map(j => j.code));
+
+export function jurisdictionLabel(code, lang = 'zh-CN') {
+  const j = JURISDICTIONS.find(x => x.code === code);
+  if (!j) return code || '—';
+  if (lang === 'en') return j.en;
+  if (lang === 'zh-HK') return j.zhHK;
+  return j.zh;
+}
+
+// ========== 银行卡状态机（2026-11-04 · 对齐集团《统一法币出入金整体方案》§5.5 + 白名单数量限制） ==========
+// 用户侧四态（whitelistStatus）：待验证 / 已验证 / 已停用 / 已拒绝。
+// 后台审核子态（reviewStatus）：待审核 / 已通过 / 已拒绝——「待验证」需要区分「卡审核中」与
+// 「审核通过、等首充」，只靠四态会把已通过待首充的卡也列进审核队列（对抗审查发现）。
+// 名额口径：每币种「待验证 + 已验证」≤ 3（集团默认总量 3，本项目按会议纪要 per-currency，做成常量）。
+// 「已停用 / 已拒绝」释放名额；有在途出金的卡不可删除/停用。
+export const BANK_CARD_STATUS = {
+  UNVERIFIED: 'unverified',
+  VERIFIED: 'verified',
+  DISABLED: 'disabled',
+  REJECTED: 'rejected',
+};
+export const CARD_REVIEW_STATUS = {
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
+};
+export const CARD_QUOTA_PER_CURRENCY = 3;
+// 首充加白门槛：≥ 10,000 HKD 或等值（会议纪要 + 集团《法币银行账户白名单数量限制后端逻辑处理》）
+export const CARD_VERIFY_THRESHOLD_HKD = 10000;
+
+const DEMO_CARD_PROOF = 'images/demo-bank-card.jpg';
+const DEMO_BANK_PROOF = 'images/demo-bank-proof.jpg';
+
 export const bankCards = [
   {
     id: 'bc1',
@@ -382,8 +455,12 @@ export const bankCards = [
     maskedNo: '**** 4567',
     cardNo: '6222 0234 5678 4567',  // 完整卡号（mock 演示值，接后端由真实账户体系提供；用户侧展示用 maskedNo，审核抽屉授权查看 cardNo）
     type: '香港账户',
+    accountType: 'personal',       // 个人单名账户（联名账户不接受，会议纪要）
+    region: 'HK',                  // 开户国家/地区（ISO code，SFC 合资格名单）
+    proofImage: DEMO_CARD_PROOF,   // 卡照/开户证明（演示占位图）
     currency: 'HKD',
     whitelistStatus: 'verified',   // 已通过白名单验证（演示预置）
+    reviewStatus: 'approved',
     verifiedAt: '2026-07-28 10:22:00',
     verifiedAmount: 10000,
   },
@@ -395,9 +472,13 @@ export const bankCards = [
     holder: 'ZHANG SAN',
     maskedNo: '**** 8901',
     cardNo: '6217 8501 2345 8901',
-    type: '香港账户',
+    type: '海外账户',
+    accountType: 'personal',
+    region: 'HK',
+    proofImage: DEMO_CARD_PROOF,
     currency: 'USD',
     whitelistStatus: 'verified',
+    reviewStatus: 'approved',
     verifiedAt: '2026-07-28 10:30:00',
     verifiedAmount: 2000,          // 2000 USD 等值 ≥1万 HKD
   },
@@ -410,29 +491,130 @@ export const bankCards = [
     maskedNo: '**** 3312',
     cardNo: '6278 9920 1456 3312',
     type: '香港账户',
+    accountType: 'personal',
+    region: 'HK',
+    proofImage: DEMO_BANK_PROOF,
     currency: 'HKD',
-    whitelistStatus: 'unverified', // 新增卡未验证（演示白名单流程）
+    whitelistStatus: 'unverified', // 审核通过、待首充（演示「去充值验证」分支）
+    reviewStatus: 'approved',
     verifiedAt: null,
     verifiedAmount: null,
   },
   {
-    // 吴世昌（u13）的验证卡——vr1 白名单验证单的 cardId 指向它。
-    // 2026-11-02 修复：此前种子缺 bc9，approveCardVerification 找不到卡一律 return false，
-    // 而 VerificationDrawer 不看返回值直接关抽屉 → vr1 审批「假成功」静默丢失（实测复现后补种子）
+    // 吴世昌（u6）的卡——2026-11-02 曾作为白名单验证单 vr1 的 cardId 种子。
+    // 验证单已并入充值链路（2026-11-04），此卡保留为「待验证」种子：后台卡审核通过后等首充加白。
     id: 'bc9',
-    userId: 'u6',   // 与 vr1 归属对齐（吴世昌 = 用户档案 u6；2026-11-02 同上）
+    userId: 'u6',
     bank: '星展银行',
     branch: '香港',
     holder: 'NG SAI CHEONG',
     maskedNo: '**** 7711',
-    cardNo: '6222 1420 8830 7711', // 完整卡号（mock 演示值）
+    cardNo: '6222 1420 8830 7711',
     type: '香港账户',
+    accountType: 'personal',
+    region: 'HK',
+    proofImage: DEMO_CARD_PROOF,
     currency: 'HKD',
-    whitelistStatus: 'unverified', // 随 vr1 审批通过置 verified（演示白名单流程）
+    whitelistStatus: 'unverified',
+    reviewStatus: 'approved',
+    verifiedAt: null,
+    verifiedAmount: null,
+  },
+  {
+    // 当前登录账户（u1）待后台审核的卡——演示「银行卡审核」队列（基本信息 / 审核资料 / 结果）
+    id: 'bc11',
+    userId: 'u1',
+    bank: '恒生银行',
+    branch: '香港',
+    holder: 'ZHANG SAN',
+    maskedNo: '**** 2208',
+    cardNo: '6222 6611 4520 2208',
+    type: '香港账户',
+    accountType: 'personal',
+    region: 'HK',
+    proofImage: DEMO_CARD_PROOF,
+    currency: 'USD',
+    whitelistStatus: 'unverified',
+    reviewStatus: 'pending',
+    verifiedAt: null,
+    verifiedAmount: null,
+  },
+  {
+    // 已停用的已验证卡——演示「停用释放名额 / 启用前校验名额」；不占每币种 3 张名额
+    id: 'bc12',
+    userId: 'u1',
+    bank: '渣打银行',
+    branch: '香港',
+    holder: 'ZHANG SAN',
+    maskedNo: '**** 6620',
+    cardNo: '6222 8841 0031 6620',
+    type: '香港账户',
+    accountType: 'personal',
+    region: 'HK',
+    proofImage: DEMO_BANK_PROOF,
+    currency: 'HKD',
+    whitelistStatus: 'disabled',
+    reviewStatus: 'approved',
+    verifiedAt: '2026-07-20 09:15:00',
+    verifiedAmount: 12000,
+    disabledAt: '2026-09-02 11:00:00',
+  },
+  {
+    // 跨境已验证卡（新加坡开户）——演示「本地/跨境两档出金费率」：
+    // 香港卡走本地（0%），此卡走跨境（0.5%）；同时它把 HKD 有效卡凑满 3 张，可演示名额上限。
+    id: 'bc14',
+    userId: 'u1',
+    bank: '星展银行（新加坡）',
+    branch: '新加坡',
+    holder: 'ZHANG SAN',
+    maskedNo: '**** 9012',
+    cardNo: '6222 7701 8890 9012',
+    type: '海外账户',
+    accountType: 'personal',
+    region: 'SG',
+    proofImage: DEMO_CARD_PROOF,
+    currency: 'HKD',
+    whitelistStatus: 'verified',
+    reviewStatus: 'approved',
+    verifiedAt: '2026-08-01 15:40:00',
+    verifiedAmount: 15000,
+  },
+  {
+    // 卡审核被拒的卡——演示「已拒绝」终态（用户需重新添加；后台不可改用户数据）
+    id: 'bc13',
+    userId: 'u6',
+    bank: '中国银行（香港）',
+    branch: '香港',
+    holder: 'NG SAI CHEONG',
+    maskedNo: '**** 4488',
+    cardNo: '6217 8890 1120 4488',
+    type: '香港账户',
+    accountType: 'personal',
+    region: 'SG',
+    proofImage: DEMO_CARD_PROOF,
+    currency: 'USD',
+    whitelistStatus: 'rejected',
+    reviewStatus: 'rejected',
+    reviewReason: '开户证明与持卡人不一致',
     verifiedAt: null,
     verifiedAmount: null,
   },
 ];
+
+// 名额统计：每币种「待验证 + 已验证」计数（停用/拒绝不占位）
+export function countActiveCards(currency, userId = currentUser.id) {
+  return bankCards.filter(c => c.userId === userId
+    && c.currency === String(currency || '').toUpperCase()
+    && c.whitelistStatus !== 'disabled'
+    && c.whitelistStatus !== 'rejected').length;
+}
+
+// 该卡是否有在途出金（有则不可删除 / 不可停用）
+export function hasPendingWithdrawOnCard(card) {
+  if (!card) return false;
+  return withdrawRequests.some(r => r.status === 'pending'
+    && (r.cardId === card.id || (r.cardNo && card.cardNo && r.cardNo === card.cardNo)));
+}
 
 export const exchangeRates = {
   'hkd-usd': { from: 'HKD', to: 'USD', rate: 0.128, updatedAt: '2026-07-30 09:00' },
@@ -6491,7 +6673,14 @@ export function getPendingKyc() {
 
 export function approveKycSubmission(kid, operator = '系统') {
   const k = kycSubmissions.find(x => x.id === kid);
-  if (!k || k.status !== KYC_STATUS.PENDING_REVIEW) return false;
+  if (!k || k.status !== KYC_STATUS.PENDING_REVIEW) return { ok: false, error: '单据状态已变化' };
+  // 2026-11-04 开户闭环（会议纪要「KYC 最后一步转账验证，开户成功时首卡可用」）：
+  // 有首卡但未完成首充加白时，不允许开户成功——否则用户开户后没有可用出入金卡，
+  // 与 RO 口径矛盾。系统校验，不靠演示顺序兜底。
+  const firstCard = bankCards.find(c => c.userId === k.userId && c.firstCard);
+  if (firstCard && firstCard.whitelistStatus !== BANK_CARD_STATUS.VERIFIED) {
+    return { ok: false, error: '首卡首充尚未确认到账，暂不能完成开户（请先在资金审核确认首充）' };
+  }
   k.status = KYC_STATUS.APPROVED;
   k.history = k.history || [];
   k.history.push({ at: formatNow(), operator, action: 'approved', note: '审核通过' });
@@ -6507,7 +6696,7 @@ export function approveKycSubmission(kid, operator = '系统') {
   });
   logAudit({ operator, category: 'kyc', action: 'approve', target: k.name, targetId: kid, note: 'KYC 审核通过（专业投资者认证）' });
   Storage.save();
-  return true;
+  return { ok: true };
 }
 
 export function rejectKycSubmission(kid, reason, operator = '系统') {
@@ -6822,14 +7011,19 @@ export const depositRequests = [
 
 // 充值申请（入金）：用户线下转账到平台收款账户 → 上传凭证 → 财务核对后上账（2026-08-19 老板确认线下充值闭环）
 // 通道：仅银行转账（2026-10-29 二轮：eDDA 整条下线）
-// 前置：付款银行卡须已过白名单验证（≥1万 HKD 或等值 USD）
+// 2026-11-04 验证并入充值（会议纪要「首次充值 1万…专员确认到账后加白」+ 集团白名单数量限制文档）：
+//   - 付款卡不再要求「已验证」：未验证卡正是用首充完成验证的对象（此前先去验证才能充值，顺序相反）；
+//   - 付款卡只需属于本人且未停用/未拒绝；
+//   - 首充 ≥1万 HKD 等值 → 财务确认到账时自动加白（见 approveDepositRequest）；
+//   - 独立「白名单验证单」下线，验证款 = 充值款（本来就是上账的，只是换了单据形态）。
 export function submitDepositRequest({ currency, amount, method, cardId, bank, cardNo, evidence, refNo, refCode, transferDate }) {
   const key = walletKeyOf(currency) || currency.toLowerCase();
   const w = wallet[key];
   if (!w || !amount || amount <= 0) return false;
-  // 白名单校验：充值付款卡必须是已验证白名单卡
-  const card = bankCards.find(c => c.id === cardId);
-  if (!card || card.whitelistStatus !== 'verified') return false;
+  // 付款卡校验：本人 + 非停用/拒绝（未验证可充，首充即验证）
+  const card = bankCards.find(c => c.id === cardId && c.userId === currentUser.id);
+  if (!card || card.whitelistStatus === BANK_CARD_STATUS.DISABLED || card.whitelistStatus === BANK_CARD_STATUS.REJECTED) return false;
+  if (card.reviewStatus === CARD_REVIEW_STATUS.PENDING) return false; // 资料未审核通过前不能用于充值
   if (!(evidence && evidence.name)) return false; // 线下转账必须上传凭证
   const orderNo = genOrderNo('DR');
   const genRef = 'BK' + Date.now();   // 外部单号：银行参考号（mock 演示值，接后端由银行回执替换）
@@ -6838,6 +7032,7 @@ export function submitDepositRequest({ currency, amount, method, cardId, bank, c
     orderNo,
     userId: currentUser.id,
     userName: currentUser.name,
+    cardId: card.id,             // 2026-11-04：首充加白要回链到卡；卡号仍存快照（后台核对）
     currency,
     amount,
     method: '银行转账',
@@ -6881,10 +7076,20 @@ export function approveDepositRequest(reqId, { actualAmount, actualCurrency, ban
   const w = walletAccountOf(cur);
   if (!w) return false;
   const credited = Number(actualAmount);
-  if (!Number.isFinite(credited) || credited <= 0) return false; // 实际到账必须为有效正数，拒绝无效/缺失值
+  if (!Number.isFinite(credited) || credited <= 0) return { ok: false, error: '实际到账金额无效' }; // 实际到账必须为有效正数，拒绝无效/缺失值
+  // 2026-11-04 首充加白（会议纪要 + 集团白名单数量限制）：
+  // 未验证卡的首充是验证动作本身——≥1万 HKD 等值 → 确认到账时自动加白；
+  // 不足门槛 → 不确认上账（PRD：异常充值流程，退款），由财务走拒绝=原路退回。
+  const depositCard = req.cardId
+    ? bankCards.find(c => c.id === req.cardId)
+    : bankCards.find(c => c.userId === req.userId && c.cardNo && c.cardNo === req.cardNo);
+  const pendingVerify = depositCard && depositCard.whitelistStatus === BANK_CARD_STATUS.UNVERIFIED;
+  if (pendingVerify && toHkd(cur, credited) < CARD_VERIFY_THRESHOLD_HKD) {
+    return { ok: false, error: `该卡首次充值未达加白门槛（≥1万 HKD 或等值），请拒绝并原路退回` };
+  }
   // 按单据归属记账：演示账户走全局钱包，其他客户只更各自账户（护栏见 applyWalletDelta）
   const moved = applyWalletDelta(req.userId, cur, credited);
-  if (!moved.ok) return false;
+  if (!moved.ok) return { ok: false, error: '记账失败' };
   if (moved.self) updateLatestTotal(toHkd(cur, credited));
   const ref = bankRef || `REF${Date.now()}`;
   req.actualAmount = credited;
@@ -6893,6 +7098,20 @@ export function approveDepositRequest(reqId, { actualAmount, actualCurrency, ban
   req.status = 'approved';
   req.handledAt = formatNow();
   req.handledBy = operator || '运营后台';
+  // 首充加白：钱已上账，卡置白名单（单据与卡双向留痕）
+  let cardVerified = false;
+  if (pendingVerify) {
+    depositCard.whitelistStatus = BANK_CARD_STATUS.VERIFIED;
+    depositCard.verifiedAt = formatNow();
+    depositCard.verifiedAmount = credited;
+    cardVerified = true;
+    if (depositCard.reviewStatus !== CARD_REVIEW_STATUS.APPROVED) depositCard.reviewStatus = CARD_REVIEW_STATUS.APPROVED;
+    pushNotification({
+      type: 'wallet',
+      title: '首充验证通过 · 卡已加白',
+      body: `${depositCard.bank}（${depositCard.maskedNo}）已加入资金白名单，可用于出入金。`,
+    }, req.userId);
+  }
   const diffNote = credited !== req.amount || cur !== req.currency
     ? `（登记 ${req.currency} ${req.amount.toLocaleString()} → 实际 ${cur} ${credited.toLocaleString()}）`
     : '';
@@ -6919,9 +7138,9 @@ export function approveDepositRequest(reqId, { actualAmount, actualCurrency, ban
     title: '入金到账',
     body: `${w.label}入金 ${w.symbol}${credited.toLocaleString()} 已确认到账，可用资金已更新。`,
   }, req.userId);
-  logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'approve', target: req.userName, targetId: reqId, note: `充值确认到账 ${w.symbol}${credited.toLocaleString()}${diffNote}` });
+  logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'approve', target: req.userName, targetId: reqId, note: `充值确认到账 ${w.symbol}${credited.toLocaleString()}${diffNote}${cardVerified ? `；首充加白 ${depositCard.maskedNo}` : ''}` });
   Storage.save();
-  return true;
+  return { ok: true, cardVerified };
 }
 
 export function rejectDepositRequest(reqId, reason, operator = '') {
@@ -6986,8 +7205,14 @@ export const withdrawRequests = [
     orderNo: genOrderNo('WR', '2026-08-12 10:05:47'),
     userId: 'u1',
     userName: '张三',
+    cardId: 'bc1',
+    region: 'HK',
     currency: 'HKD',
     amount: 500000,
+    feeRate: 0,
+    feeAmount: 0,
+    netAmount: 500000,
+    isCrossBorder: false,
     method: '银行转账',
     bank: '汇丰银行',
     cardNo: '6222 0234 5678 4567',
@@ -7007,8 +7232,14 @@ export const withdrawRequests = [
     orderNo: genOrderNo('WR', '2026-11-03 11:20:15'),
     userId: 'u1',
     userName: '张三',
+    cardId: 'bc2',
+    region: 'HK',
     currency: 'USD',
     amount: 20000,
+    feeRate: 0,
+    feeAmount: 0,
+    netAmount: 20000,
+    isCrossBorder: false,
     method: '银行转账',
     bank: '中国银行（香港）',
     cardNo: '6217 8501 2345 8901',
@@ -7070,7 +7301,102 @@ export const withdrawRequests = [
     handledBy: '系统管理员',
     rejectReason: '收款账户信息不符',
   },
+  {
+    // 2026-11-04 跨境费率演示：新加坡开户卡（bc14）× HKD 100,000 → 0.5% 手续费 500，净到账 99,500。
+    // 本地卡（bc1）费率 0，同一份后台配置下两种口径都能在审核抽屉里看到。
+    id: 'wr7',
+    orderNo: genOrderNo('WR', '2026-11-04 09:30:00'),
+    userId: 'u1',
+    userName: '张三',
+    cardId: 'bc14',
+    region: 'SG',
+    currency: 'HKD',
+    amount: 100000,
+    feeRate: 0.5,
+    feeAmount: 500,
+    netAmount: 99500,
+    isCrossBorder: true,
+    method: '跨境电汇',
+    bank: '星展银行（新加坡）',
+    cardNo: '6222 7701 8890 9012',
+    bankRef: 'BK20261104093000001',
+    status: 'pending',
+    createdAt: '2026-11-04 09:30:00',
+    handledAt: null,
+    handledBy: null,
+    rejectReason: null,
+  },
+  {
+    // 2026-11-04：已撤单种子——撤单是终态，冻结按 pending 派生所以自动释放；
+    // 没有这条数据，「已撤销」筛选与用户端撤单结果在演示里永远看不到。
+    id: 'wr6',
+    orderNo: genOrderNo('WR', '2026-11-01 14:05:00'),
+    userId: 'u1',
+    userName: '张三',
+    cardId: 'bc1',
+    region: 'HK',
+    currency: 'HKD',
+    amount: 60000,
+    feeRate: 0,
+    feeAmount: 0,
+    netAmount: 60000,
+    isCrossBorder: false,
+    method: '银行转账',
+    bank: '汇丰银行',
+    cardNo: '6222 0234 5678 4567',
+    bankRef: 'BK20261101140500001',
+    status: 'cancelled',
+    createdAt: '2026-11-01 14:05:00',
+    cancelledAt: '2026-11-01 14:20:00',
+    handledAt: '2026-11-01 14:20:00',
+    handledBy: '张三',
+    rejectReason: null,
+  },
 ];
+
+// ========== 出金费用（2026-11-04 会议纪要 + 集团 FR-13） ==========
+// 会议纪要：本地出金（如港币）少收/不收，跨境汇款高收；后台可配置固定费率，出金时从金额中扣除；
+// 最低出金门槛 HKD 100 / USD 10；费率对用户公示。
+// 本地/跨境判定按卡的开户地区：香港 = 本地清算，其他 31 个合资格司法管辖区 = 跨境汇款。
+// 集团真实粒度是「汇出行 × 渠道 × 币种」+ 平台/渠道两段费率；原型无银行账户体系，
+// 收敛为两档百分比（可配置），通道接入后按集团口径细化。
+export const withdrawalFeeConfig = {
+  localRate: 0,      // 本地（香港卡）费率 %，0 = 不收（会议纪要「本地可少收或不收」）
+  crossRate: 0.5,    // 跨境（31 地区卡）费率 %
+  minAmount: { HKD: 100, USD: 10, CNH: 100 }, // 最低出金金额（CNH 为等值 10 USD 取整，待财务确认）
+};
+
+// 出金报价：费率 / 手续费 / 净到账 / 是否跨境。费率版本化在单据快照（feeRate/feeAmount），
+// 后台改费率只影响新单，在途单按下单时版本计算（集团 FR-13）。
+export function getWithdrawQuote(currency, amount, card) {
+  const cur = String(currency || '').toUpperCase();
+  const isCross = (card?.region || 'HK') !== 'HK';
+  const rate = isCross ? Number(withdrawalFeeConfig.crossRate) || 0 : Number(withdrawalFeeConfig.localRate) || 0;
+  const num = Number(amount) || 0;
+  const fee = Math.round(num * rate) / 100; // rate 是百分数：0.5 → 0.5%
+  return { isCross, rate, fee: Math.round(fee * 100) / 100, net: Math.round((num - fee) * 100) / 100 };
+}
+
+export function getMinWithdraw(currency) {
+  return withdrawalFeeConfig.minAmount[String(currency || '').toUpperCase()] ?? 0;
+}
+
+// 后台配置出金费率（ops+ 可见，与汇率配置同级；改费率只影响新单，历史单已快照）
+export function updateWithdrawalFeeConfig({ localRate, crossRate, minHKD, minUSD, minCNH }, operator = '') {
+  const lr = Number(localRate);
+  const cr = Number(crossRate);
+  const hk = Number(minHKD);
+  const us = Number(minUSD);
+  const cn = Number(minCNH);
+  if (![lr, cr, hk, us, cn].every(n => Number.isFinite(n) && n >= 0)) return { ok: false, error: '费率与门槛需为不小于 0 的数字' };
+  if (lr > 100 || cr > 100) return { ok: false, error: '费率需在 0~100 之间（百分数）' };
+  withdrawalFeeConfig.localRate = lr;
+  withdrawalFeeConfig.crossRate = cr;
+  withdrawalFeeConfig.minAmount = { HKD: hk, USD: us, CNH: cn };
+  logAudit({ operator, category: 'config', action: 'update', target: '出金费率配置', targetId: '', note: `本地 ${lr}% / 跨境 ${cr}%；门槛 HKD ${hk} / USD ${us} / CNH ${cn}` });
+  Storage.save();
+  return { ok: true };
+}
 
 // 提现申请（出金）：用户申请 → 后台审核 → 打款（2026-08-19 白名单前置：收款卡须已过白名单验证）
 export function submitWithdrawRequest({ currency, amount, method, cardId, bank, cardNo }) {
@@ -7080,16 +7406,26 @@ export function submitWithdrawRequest({ currency, amount, method, cardId, bank, 
   if (!w || !amount || amount <= 0) return false;
   // 可用口径（2026-11-02 口径 B）：余额 - 申购冻结 - 在途提现；本单入队后自身计入在途提现
   if (amount > getAvailableCash(currency)) return false;
+  // 最低出金门槛（2026-11-04）：按申请金额校验（不是净到账）
+  if (Number(amount) < getMinWithdraw(currency)) return false;
   // 白名单校验：提现收款卡必须是已验证白名单卡
   const card = bankCards.find(c => c.id === cardId);
-  if (!card || card.whitelistStatus !== 'verified') return false;
+  if (!card || card.whitelistStatus !== BANK_CARD_STATUS.VERIFIED) return false;
+  // 费用从金额内扣（集团 FR-13）：冻结/扣减均为申请全额，净到账 = 全额 - 手续费
+  const quote = getWithdrawQuote(currency, amount, card);
   const req = {
     id: `wr${Date.now()}`,
     orderNo: genOrderNo('WR'),
     userId: currentUser.id,
     userName: currentUser.name,
+    cardId: card.id,
+    region: card.region || 'HK',
     currency,
     amount,
+    feeRate: quote.rate,           // 下单时费率快照（后台改费率不回改历史单）
+    feeAmount: quote.fee,
+    netAmount: quote.net,
+    isCrossBorder: quote.isCross,
     method: method || '银行转账',
     bank: card.bank || '',
     cardNo: card.cardNo || '',
@@ -7147,6 +7483,8 @@ export function approveWithdrawRequest(reqId, operator = '') {
       orderNo: genOrderNo('TX'),
       type: 'withdraw',
       amount: req.amount,
+      feeAmount: req.feeAmount || 0,
+      netAmount: req.netAmount != null ? req.netAmount : req.amount,
       currency: req.currency,
       status: 'completed',
       createdAt: formatNow(),
@@ -7163,9 +7501,9 @@ export function approveWithdrawRequest(reqId, operator = '') {
   pushNotification({
     type: 'wallet',
     title: '提现成功',
-    body: `${w.label}提现 ${w.symbol}${req.amount.toLocaleString()} 已处理，资金将在 1-2 个工作日到账。`,
+    body: `${w.label}提现 ${w.symbol}${req.amount.toLocaleString()} 已处理，手续费 ${w.symbol}${formatExactAmount(req.feeAmount || 0)}，实际到账 ${w.symbol}${formatExactAmount(req.netAmount != null ? req.netAmount : req.amount)}，1-2 个工作日到账。`,
   }, req.userId);
-  logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'approve', target: req.userName, targetId: reqId, note: `提现打款 ${w.symbol}${req.amount.toLocaleString()}` });
+  logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'approve', target: req.userName, targetId: reqId, note: `提现打款 ${w.symbol}${req.amount.toLocaleString()}（手续费 ${w.symbol}${formatExactAmount(req.feeAmount || 0)}）` });
   Storage.save();
   return true;
 }
@@ -7183,6 +7521,27 @@ export function rejectWithdrawRequest(reqId, reason, operator = '') {
     body: `您的提现申请未通过审核：${req.rejectReason}`,
   }, req.userId);
   logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'reject', target: req.userName, targetId: reqId, note: `提现申请拒绝：${req.rejectReason}` });
+  Storage.save();
+  return true;
+}
+
+// 用户撤销出金（2026-11-04 · 集团 FR-05「审批通过前可撤单」）：
+// 仅本人、仅 pending；终态 cancelled 释放全部冻结（冻结按 pending 实时派生，无需手工释放）。
+// 守恒：撤销前后总资产不变（本单从未实扣）。
+export function cancelWithdrawRequest(reqId) {
+  const req = withdrawRequests.find(r => r.id === reqId);
+  if (!req || req.userId !== currentUser.id) return false;
+  if (req.status !== 'pending') return false;
+  req.status = 'cancelled';
+  req.cancelledAt = formatNow();
+  req.handledAt = formatNow();
+  req.handledBy = currentUser.name || '投资人';
+  pushNotification({
+    type: 'wallet',
+    title: '提现申请已撤销',
+    body: `${req.currency} ${formatExactAmount(req.amount)} 提现申请已撤销，冻结金额已释放。`,
+  }, req.userId);
+  logAudit({ operator: currentUser.name || '投资人', category: 'fundProduct', action: 'cancel', target: req.userName, targetId: reqId, note: `用户撤销提现申请 ${req.currency} ${formatExactAmount(req.amount)}` });
   Storage.save();
   return true;
 }
@@ -7316,154 +7675,25 @@ export function rejectExchangeRequest(reqId, reason, operator = '') {
 
 // ========== 银行卡白名单验证（2026-08-19 老板确认：≥1万 HKD 或等值 USD 转账白名单前置） ==========
 // 用户向平台收款账户转账验证款（附言标记）→ 财务核对到账 → 卡片置白名单（验证款计入可用余额）
-export const verificationRequests = [
-  {
-    id: 'vr1',
-    orderNo: genOrderNo('VR', '2026-08-12 13:00:00'),
-    userId: 'u6',   // 吴世昌（用户档案 INV-0006 = u6；2026-11-02 对齐：原种子写 u13 幽灵 id，卡片归档/通知对不上人）
-    userName: '吴世昌',
-    cardId: 'bc9',
-    bank: '星展银行',
-    maskedNo: '**** 7711',
-    cardNo: '6222 1420 8830 7711',   // 完整卡号快照（对齐充值/出金单：审核抽屉明文核对，用户侧仍 maskedNo）
-    currency: 'HKD',
-    amount: 10000,
-    remark: '卡片白名单验证',
-    bankRef: 'BK20260812130000001',
-    status: 'pending',
-    createdAt: '2026-08-12 13:00:00',
-    handledAt: null,
-    handledBy: null,
-    rejectReason: null,
-  },
-  {
-    id: 'vr2',
-    orderNo: genOrderNo('VR', '2026-08-11 10:15:00'),
-    userId: 'u17',
-    userName: '刘倩',
-    cardId: 'bc10',
-    bank: '渣打银行',
-    maskedNo: '**** 8834',
-    cardNo: '6222 9073 1120 8834',   // 完整卡号快照（虚构演示值；bc10 卡已不在 bankCards，单据自带快照兜底）
-    currency: 'USD',
-    amount: 2000,
-    remark: '白名单验证 USD',
-    bankRef: 'BK20260811101500001',
-    status: 'approved',
-    createdAt: '2026-08-11 10:15:00',
-    handledAt: '2026-08-11 10:42:20',
-    handledBy: '系统管理员',
-    rejectReason: null,
-  },
-];
+// ========== 银行卡管理（2026-11-04 重构：四态 + 卡审核 + 首充加白） ==========
+// 链路：添加卡（账户类型仅个人 + 开户地区 + 卡照/开户证明）→ 后台卡审核 →
+//       审核通过 = 待验证 → 用该卡充值 ≥1万 HKD 等值 → 财务确认到账时自动加白。
+// 独立白名单验证单已下线：验证款就是充值款（见 submitDepositRequest / approveDepositRequest）。
 
-export function submitCardVerification({ cardId, currency, amount, remark }) {
-  if (getFreezeState().frozen) return false; // INV-5 凡动必冻：冻结期内阻断出金账户（白名单）变更
-  const card = bankCards.find(c => c.id === cardId);
-  if (!card || card.whitelistStatus === 'verified') return false;
-  if (!amount || amount <= 0) return false;
-  // 验证款最低门槛：≥1万 HKD 等值（与 BankCards 弹层文案承诺一致；低于门槛财务无从核对白名单归属）
-  if (toHkd(currency, amount) < 10000) return false;
-  const req = {
-    id: `vr${Date.now()}`,
-    orderNo: genOrderNo('VR'),
-    userId: currentUser.id,
-    userName: currentUser.name,
-    cardId: card.id,
-    bank: card.bank,
-    maskedNo: card.maskedNo,
-    cardNo: card.cardNo || '',   // 完整卡号快照（对齐充值/出金单：审核抽屉授权查看，用户侧仍 maskedNo）
-    currency,
-    amount,
-    remark: remark || '卡片白名单验证',
-    bankRef: `BK${Date.now()}`,
-    status: 'pending',
-    createdAt: formatNow(),
-    handledAt: null,
-    handledBy: null,
-    rejectReason: null,
-  };
-  verificationRequests.unshift(req);
-  card.whitelistStatus = 'verifying';
-  pushNotification({
-    type: 'wallet',
-    title: '白名单验证已提交',
-    body: `${card.bank}（${card.maskedNo}）白名单验证已提交，请转账 ${currency} ${amount.toLocaleString()} 至平台收款账户并注明附言，财务核对到账后生效。`,
-  });
-  logAudit({ operator: currentUser.name || '投资人', category: 'fundProduct', action: 'apply', target: '银行卡白名单', targetId: req.id, note: `发起白名单验证：${card.bank}（${card.maskedNo}）${currency} ${amount.toLocaleString()}` });
-  Storage.save();
-  return true;
-}
-
-// 财务确认验证款到账 → 卡片置白名单 + 验证款计入可用余额（2026-08-19 用户拍板方案：验证通过后计入余额）
-export function approveCardVerification(reqId, operator = '') {
-  const req = verificationRequests.find(r => r.id === reqId);
-  if (!req || req.status !== 'pending') return false;
-  const card = bankCards.find(c => c.id === req.cardId);
-  if (!card) return false;
-  const cur = req.currency || 'HKD';
-  const w = walletAccountOf(cur);
-  if (!w) return false;
-  // 按单据归属记账（2026-11-02 修复：此前直接写全局 wallet/currentUser，审核别人的验证款会
-  // 加到当前登录演示账户——与 approveDepositRequest 同型护栏，统一走 applyWalletDelta；
-  // 未建档客户 ok:true+tracked:false，单据照常流转只是不记余额，接后端补钱包）
-  const moved = applyWalletDelta(req.userId, cur, req.amount);
-  if (!moved.ok) return false;
-  if (moved.self) updateLatestTotal(toHkd(cur, req.amount));
-  card.whitelistStatus = 'verified';
-  card.verifiedAt = formatNow();
-  card.verifiedAmount = req.amount;
-  if (moved.self) {
-    transactions.unshift({
-      id: `t${Date.now()}`,
-      orderNo: genOrderNo('TX'),
-      type: 'deposit',
-      amount: req.amount,
-      currency: cur,
-      status: 'completed',
-      createdAt: formatNow(),
-      method: '白名单验证入金',
-      reference: req.bankRef,
-    });
-  }
-  req.status = 'approved';
-  req.handledAt = formatNow();
-  req.handledBy = operator || '运营后台';
-  pushNotification({
-    type: 'wallet',
-    title: '白名单验证通过',
-    body: `${card.bank}（${card.maskedNo}）已加入资金白名单，验证款 ${w.symbol}${formatExactAmount(req.amount)} 已计入可用余额。`,
-  }, req.userId);
-  logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'approve', target: req.userName || card.bank, targetId: reqId, note: `白名单验证通过：${card.maskedNo}（${w.symbol}${formatExactAmount(req.amount)} 计入余额）` });
-  Storage.save();
-  return true;
-}
-
-export function rejectCardVerification(reqId, reason, operator = '') {
-  const req = verificationRequests.find(r => r.id === reqId);
-  if (!req || req.status !== 'pending') return false;
-  const card = bankCards.find(c => c.id === req.cardId);
-  if (card) card.whitelistStatus = 'unverified';
-  req.status = 'rejected';
-  req.handledAt = formatNow();
-  req.handledBy = operator || '运营后台';
-  req.rejectReason = reason || '未查询到验证款到账';
-  pushNotification({
-    type: 'wallet',
-    title: '白名单验证未通过',
-    body: `${card ? card.bank : ''}（${req.maskedNo}）白名单验证未通过：${req.rejectReason}`,
-  }, req.userId);
-  logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'reject', target: req.userName, targetId: reqId, note: `白名单验证拒绝：${req.rejectReason}` });
-  Storage.save();
-  return true;
-}
-
-// 新增银行卡（2026-11-02 收口：BankCards 页此前直接 push 且不落快照，刷新即回滚；
-// 收口为数据层单口：冻结兜底（INV-5「增」=出金能力变更）+ 归属当前用户 + 快照提交）
-export function addBankCard({ bank, branch, holder, cardNo, type, currency } = {}) {
-  if (getFreezeState().frozen) return false;
+// 添加银行卡：数据层单口（冻结兜底 + 归属当前用户 + 四条校验 + 快照提交）
+// 校验：①仅个人单名账户（联名拒绝）②开户地区在 SFC 合资格名单（含香港）
+//       ③每币种「待验证+已验证」≤ 3 ④卡照/开户证明必传
+export function addBankCard({ bank, branch, holder, cardNo, type, currency, accountType, region, proofImage } = {}) {
+  if (getFreezeState().frozen) return { ok: false, error: '安全冻结生效中，暂不能变更出金账户' };
   const digits = String(cardNo || '').replace(/\D/g, '');
-  if (!bank || !holder || digits.length < 8) return false;
+  if (!bank || !holder || digits.length < 8) return { ok: false, error: '请填写有效的银行卡信息' };
+  if (accountType !== 'personal') return { ok: false, error: '仅接受个人单名账户，联名账户不支持' };
+  if (!JURISDICTION_CODES.has(region)) return { ok: false, error: '开户国家/地区不在合资格名单内' };
+  if (!proofImage) return { ok: false, error: '请上传银行卡照片或开户证明' };
+  const cur = String(currency || 'HKD').toUpperCase();
+  if (countActiveCards(cur, currentUser.id) >= CARD_QUOTA_PER_CURRENCY) {
+    return { ok: false, error: `每个币种最多 ${CARD_QUOTA_PER_CURRENCY} 张银行卡，请先停用或删除旧卡` };
+  }
   bankCards.push({
     id: `bc${Date.now()}`,
     userId: currentUser.id,
@@ -7472,24 +7702,160 @@ export function addBankCard({ bank, branch, holder, cardNo, type, currency } = {
     holder,
     maskedNo: `**** ${digits.slice(-4)}`,
     cardNo: String(cardNo).trim(),
-    type: type || '香港账户',
-    currency: currency || 'HKD',
-    whitelistStatus: 'unverified',
+    type: type || (region === 'HK' ? '香港账户' : '海外账户'),
+    accountType: 'personal',
+    region,
+    proofImage,
+    currency: cur,
+    whitelistStatus: BANK_CARD_STATUS.UNVERIFIED,
+    reviewStatus: CARD_REVIEW_STATUS.PENDING, // 先进后台卡审核队列
     verifiedAt: null,
     verifiedAmount: null,
   });
+  pushNotification({
+    type: 'wallet',
+    title: '银行卡已提交审核',
+    body: `${bank}（**** ${digits.slice(-4)}）已提交，审核通过后用该卡充值 ≥1万 HKD 等值即可加入白名单。`,
+  });
+  logAudit({ operator: currentUser.name || '投资人', category: 'fundProduct', action: 'apply', target: '银行卡', targetId: '', note: `添加银行卡：${bank}（**** ${digits.slice(-4)}）· ${region} · ${cur}` });
+  Storage.save();
+  return { ok: true };
+}
+
+// 后台卡审核：通过 → 待验证（可首充）；拒绝 → 已拒绝（卡作废，需重新添加；后台不改用户数据）
+export function reviewBankCard(cardId, decision, operator = '', reason = '') {
+  const card = bankCards.find(c => c.id === cardId);
+  if (!card || card.reviewStatus !== CARD_REVIEW_STATUS.PENDING) return false;
+  if (decision === 'approve') {
+    card.reviewStatus = CARD_REVIEW_STATUS.APPROVED;
+    card.whitelistStatus = BANK_CARD_STATUS.UNVERIFIED;
+    card.reviewedAt = formatNow();
+    card.reviewedBy = operator || '运营后台';
+    pushNotification({
+      type: 'wallet',
+      title: '银行卡审核通过',
+      body: `${card.bank}（${card.maskedNo}）资料审核通过。请用该卡转账 ≥1万 HKD 等值并在平台登记，财务确认到账后加入白名单。`,
+    }, card.userId);
+    logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'approve', target: card.holder, targetId: card.id, note: `银行卡审核通过：${card.bank} ${card.maskedNo}` });
+  } else {
+    card.reviewStatus = CARD_REVIEW_STATUS.REJECTED;
+    card.whitelistStatus = BANK_CARD_STATUS.REJECTED;
+    card.reviewedAt = formatNow();
+    card.reviewedBy = operator || '运营后台';
+    card.reviewReason = reason || '资料不符';
+    pushNotification({
+      type: 'wallet',
+      title: '银行卡审核未通过',
+      body: `${card.bank}（${card.maskedNo}）未通过审核：${card.reviewReason}。请核对后重新添加。`,
+    }, card.userId);
+    logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'reject', target: card.holder, targetId: card.id, note: `银行卡审核拒绝：${card.reviewReason}` });
+  }
   Storage.save();
   return true;
 }
 
-// 解绑银行卡（INV-5「删」：冻结期数据层兜底；页级横幅拦截照旧）
-export function removeBankCard(cardId) {
-  if (getFreezeState().frozen) return false;
-  const idx = bankCards.findIndex(c => c.id === cardId);
-  if (idx < 0) return false;
-  bankCards.splice(idx, 1);
+// 停用 / 启用（PRD §5.5 四态：停用释放名额、保留记录；启用前校验同币种名额）
+export function setBankCardDisabled(cardId, disabled) {
+  const card = bankCards.find(c => c.id === cardId && c.userId === currentUser.id);
+  if (!card) return { ok: false, error: '卡片不存在' };
+  if (disabled) {
+    if (card.whitelistStatus === BANK_CARD_STATUS.DISABLED) return { ok: true };
+    if (hasPendingWithdrawOnCard(card)) return { ok: false, error: '该卡有在途提现，暂不能停用' };
+    card.prevStatus = card.whitelistStatus;
+    card.whitelistStatus = BANK_CARD_STATUS.DISABLED;
+    card.disabledAt = formatNow();
+    logAudit({ operator: currentUser.name || '投资人', category: 'fundProduct', action: 'update', target: '银行卡', targetId: card.id, note: `停用银行卡：${card.bank} ${card.maskedNo}` });
+  } else {
+    if (card.whitelistStatus !== BANK_CARD_STATUS.DISABLED) return { ok: true };
+    if (countActiveCards(card.currency, card.userId) >= CARD_QUOTA_PER_CURRENCY) {
+      return { ok: false, error: `该币种已有 ${CARD_QUOTA_PER_CURRENCY} 张有效卡，请先停用或删除其他卡` };
+    }
+    card.whitelistStatus = card.verifiedAt ? BANK_CARD_STATUS.VERIFIED : BANK_CARD_STATUS.UNVERIFIED;
+    card.disabledAt = null;
+    logAudit({ operator: currentUser.name || '投资人', category: 'fundProduct', action: 'update', target: '银行卡', targetId: card.id, note: `启用银行卡：${card.bank} ${card.maskedNo}` });
+  }
   Storage.save();
-  return true;
+  return { ok: true };
+}
+
+// 解绑银行卡（INV-5「删」：冻结期数据层兜底；有在途出金的卡不可删除，PRD §5.5）
+export function removeBankCard(cardId) {
+  if (getFreezeState().frozen) return { ok: false, error: '安全冻结生效中，暂不能变更出金账户' };
+  const idx = bankCards.findIndex(c => c.id === cardId && c.userId === currentUser.id);
+  if (idx < 0) return { ok: false, error: '卡片不存在' };
+  if (hasPendingWithdrawOnCard(bankCards[idx])) return { ok: false, error: '该卡有在途提现，暂不能删除' };
+  const card = bankCards[idx];
+  bankCards.splice(idx, 1);
+  logAudit({ operator: currentUser.name || '投资人', category: 'fundProduct', action: 'update', target: '银行卡', targetId: card.id, note: `删除银行卡：${card.bank} ${card.maskedNo}` });
+  Storage.save();
+  return { ok: true };
+}
+
+// ========== KYC 第 4 步：银行转账认证（2026-11-04 · 集团《个人KYC-银行转账认证》） ==========
+// 交易所口径：KYC 末步用本人借记账户首充 ≥1万 HKD → 首充卡自动加白，开户完成即可出入金。
+// 原型实现：创建首卡（审核直通——KYC 材料已背书，等同集团「人工审核」校验方式）→ 创建首充单
+// （待财务确认到账）→ 提交 KYC 进入审核。财务确认首充时走 approveDepositRequest 的自动加白。
+export function submitKycBankTransfer({ currency, accountType, region, bank, cardNo, proofImage, amount, evidence, refNo, transferDate } = {}) {
+  if (getFreezeState().frozen) return { ok: false, error: '安全冻结生效中' };
+  const cur = String(currency || 'HKD').toUpperCase();
+  if (!['HKD', 'USD'].includes(cur)) return { ok: false, error: '首充币种仅支持 HKD / USD' };
+  const regionCode = accountType === 'overseas' ? region : 'HK';
+  if (!JURISDICTION_CODES.has(regionCode)) return { ok: false, error: '开户国家/地区不在合资格名单内' };
+  if (!proofImage) return { ok: false, error: '请上传银行卡照片或开户证明' };
+  const digits = String(cardNo || '').replace(/\D/g, '');
+  if (digits.length < 8) return { ok: false, error: '请输入有效的银行卡号' };
+  const num = Number(amount) || 0;
+  if (num <= 0) return { ok: false, error: '请输入首充金额' };
+  if (toHkd(cur, num) < CARD_VERIFY_THRESHOLD_HKD) {
+    return { ok: false, error: '首充需 ≥1万 HKD 或等值美元' };
+  }
+  if (countActiveCards(cur, currentUser.id) >= CARD_QUOTA_PER_CURRENCY) {
+    return { ok: false, error: `每个币种最多 ${CARD_QUOTA_PER_CURRENCY} 张银行卡` };
+  }
+  const card = {
+    id: `bc${Date.now()}`,
+    userId: currentUser.id,
+    bank: bank || '汇丰银行',
+    branch: regionCode === 'HK' ? '香港' : jurisdictionLabel(regionCode),
+    holder: currentUser.name || '—',
+    maskedNo: `**** ${digits.slice(-4)}`,
+    cardNo: String(cardNo).trim(),
+    type: regionCode === 'HK' ? '香港账户' : '海外账户',
+    accountType: 'personal',
+    region: regionCode,
+    proofImage,
+    currency: cur,
+    whitelistStatus: BANK_CARD_STATUS.UNVERIFIED,
+    reviewStatus: CARD_REVIEW_STATUS.APPROVED, // KYC 首卡：材料已随开户提交，直通待首充
+    firstCard: true,
+    verifiedAt: null,
+    verifiedAmount: null,
+  };
+  bankCards.push(card);
+  const ok = submitDepositRequest({
+    currency: cur,
+    amount: num,
+    method: '银行转账',
+    cardId: card.id,
+    bank: card.bank,
+    cardNo: card.cardNo,
+    evidence: evidence || { name: 'KYC 首充声明', size: '—', uploadedAt: '' },
+    refNo,
+    transferDate,
+  });
+  if (!ok) {
+    bankCards.splice(bankCards.findIndex(c => c.id === card.id), 1);
+    return { ok: false, error: '首充登记提交失败' };
+  }
+  // 标记 KYC 第 4 步完成（KYCSubmitted 页据此展示开户进度）
+  if (currentUser.kyc_profile) {
+    currentUser.kyc_profile.bankTransferSubmitted = true;
+    currentUser.kyc_profile.firstCardId = card.id;
+  }
+  const submitted = submitKyc();
+  if (!submitted) return { ok: false, error: 'KYC 提交失败（可能已在审核中）' };
+  Storage.save();
+  return { ok: true, cardId: card.id };
 }
 
 // 退出申请（持仓）：前台提交申请 → 后台审批 → 回款
@@ -9060,7 +9426,12 @@ export function submitSubscription({ project, amount, currency = 'HKD' }) {
 // 56→57（2026-11-03）：白名单验证单补 cardNo 完整卡号快照（vr1/vr2 + submitCardVerification），
 //     验证抽屉「卡号」对齐充值/出金单显示明文——此前只有验证单显示脱敏 ****，审核口径不一致；
 //     verificationRequests 属快照恢复范围，不升版旧快照的验证单无该字段，抽屉兜底回退 maskedNo。
-const STATE_VERSION = 57;
+// 57→58（2026-11-04）：银行卡四态 + 卡审核 + 首充加白 + 出金费用 + 撤单。
+//     bankCards 新增 accountType/region/proofImage/reviewStatus（属快照恢复范围，旧快照缺字段会让
+//     地区空白、名额计数异常、审核列表错乱）；verificationRequests 下线（验证并入充值链路）；
+//     withdrawRequests 新增 feeRate/feeAmount/netAmount/cardId/region 快照与 cancelled 终态。
+//     load 时为旧快照逐条补默认字段（「默认值为底 + 快照覆盖」不作废）。
+const STATE_VERSION = 58;
 const STORAGE_KEY = 'zhifu-app-state';
 
 /**
@@ -9098,7 +9469,7 @@ export const Storage = {
         depositRequests: depositRequests,
         withdrawRequests: withdrawRequests,
         exchangeRequests: exchangeRequests,       // 换汇申请（2026-08-19 人工换汇）
-        verificationRequests: verificationRequests, // 银行卡白名单验证（2026-08-19）
+        withdrawalFeeConfig: withdrawalFeeConfig, // 出金费率配置（2026-11-04：后台可配，刷新保留）
         bankCards: bankCards,                    // 银行卡持久化（2026-11-02 修复：此前缺键，加卡/解绑刷新即回滚；
                                                  // 旧快照缺此键时恢复守卫跳过、保留代码默认值，故无需升快照版本）
         exitEvents: exitEvents,                   // 持仓退出·事件驱动分配（2026-08-21 重构，替代 exitRequests）
@@ -9275,13 +9646,26 @@ export const Storage = {
         exchangeRequests.length = 0;
         data.exchangeRequests.forEach(r => exchangeRequests.push(r));
       }
-      if (Array.isArray(data.verificationRequests)) {
-        verificationRequests.length = 0;
-        data.verificationRequests.forEach(r => verificationRequests.push(r));
+      // 出金费率配置（2026-11-04）：只覆盖存在的字段，代码新增的门槛币种不被旧快照抹掉
+      if (data.withdrawalFeeConfig) {
+        const f = data.withdrawalFeeConfig;
+        if (Number.isFinite(Number(f.localRate))) withdrawalFeeConfig.localRate = Number(f.localRate);
+        if (Number.isFinite(Number(f.crossRate))) withdrawalFeeConfig.crossRate = Number(f.crossRate);
+        if (f.minAmount && typeof f.minAmount === 'object') {
+          withdrawalFeeConfig.minAmount = { ...withdrawalFeeConfig.minAmount, ...f.minAmount };
+        }
       }
       if (Array.isArray(data.bankCards)) {
         bankCards.length = 0;
-        data.bankCards.forEach(c => bankCards.push(c));
+        // 2026-11-04 字段迁移：旧快照的卡没有四态/地区/审核字段——按「默认值为底」补齐，
+        // 否则已白卡会以 undefined 状态出现在列表、名额计数与审核队列。
+        data.bankCards.forEach(c => bankCards.push({
+          accountType: 'personal',
+          region: 'HK',
+          proofImage: 'images/demo-bank-card.jpg',
+          reviewStatus: 'approved', // 历史卡：加审核流之前已存在，视为已通过（否则已白卡会落进审核队列）
+          ...c,
+        }));
       }
       if (Array.isArray(data.exitEvents)) {
         exitEvents.length = 0;
