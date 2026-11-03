@@ -1780,4 +1780,9 @@ export const en = {
   // 2026-11-04 银行卡页改版（补缺词）
   '操作未执行，请重试': "Action was not completed. Please try again.",
   '请上传银行卡照片或开户证明': "Please upload a card photo or account opening proof.",
+
+  // 2026-11-04 银行卡按币种 tab
+  '有待验证的银行卡': "A card is pending verification",
+  '暂无 {cur} 银行卡': "No {cur} card yet",
+  '该币种还可添加 {n} 张': "You can add {n} more for this currency",
 };

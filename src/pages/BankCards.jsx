@@ -29,6 +29,14 @@ const CURRENCIES = [
   { key: 'CNH', label: 'CNH 离岸人民币' },
 ];
 
+// 列表内排序权重（币种 tab 内）：待验证 → 已拒绝 → 已验证 → 已停用
+const CARD_ORDER = {
+  [BANK_CARD_STATUS.UNVERIFIED]: 0,
+  [BANK_CARD_STATUS.REJECTED]: 1,
+  [BANK_CARD_STATUS.VERIFIED]: 2,
+  [BANK_CARD_STATUS.DISABLED]: 3,
+};
+
 // 银行卡管理（2026-11-04 重构）
 // 链路：添加卡（个人单名 + 开户地区 + 卡照/开户证明）→ 后台卡审核 → 待验证
 //       → 用该卡充值 ≥1万 HKD 等值 → 财务确认到账时自动加白（独立白名单验证单已下线）
@@ -42,6 +50,18 @@ export default function BankCards({ navigate, goBack }) {
   const [freezeBlocked, setFreezeBlocked] = useState(false);
   const ownedCards = () => bankCards.filter(c => c.userId === currentUser.id).map(c => ({ ...c }));
   const [cards, setCards] = useState(ownedCards);
+
+  // 默认落在「最需要处理」的币种：有待首充加白 → 有卡 → HKD。
+  // 按币种分 tab 后每屏最多 3 张，页长被名额规则本身锁死，不随加卡增长。
+  const [activeCurrency, setActiveCurrency] = useState(() => {
+    const mine = bankCards.filter(c => c.userId === currentUser.id);
+    const todo = CURRENCIES.find(cur => mine.some(c => c.currency === cur.key
+      && c.whitelistStatus === BANK_CARD_STATUS.UNVERIFIED
+      && c.reviewStatus === CARD_REVIEW_STATUS.APPROVED));
+    if (todo) return todo.key;
+    const withCard = CURRENCIES.find(cur => mine.some(c => c.currency === cur.key));
+    return withCard ? withCard.key : 'HKD';
+  });
 
   // 新增卡表单（2026-11-04：账户类型 + 开户地区 + 凭证三项补齐）
   const [addForm, setAddForm] = useState({ bank: '星展银行', currency: 'HKD', cardNo: '', accountType: 'personal', region: 'HK' });
@@ -67,6 +87,17 @@ export default function BankCards({ navigate, goBack }) {
   const quotaOf = (currency) => countActiveCards(currency, currentUser.id);
   const allQuotaFull = CURRENCIES.every(c => quotaOf(c.key) >= CARD_QUOTA_PER_CURRENCY);
 
+  // 该币种是否有「卡审核已通过、等着用首充加白」的卡——这是用户唯一能动手的一步，
+  // tab 上用一个小圆点提示，避免卡藏在别的币种 tab 里被漏掉。
+  const hasVerifyTodo = (currency) => cards.some(c => c.currency === currency
+    && c.whitelistStatus === BANK_CARD_STATUS.UNVERIFIED
+    && c.reviewStatus === CARD_REVIEW_STATUS.APPROVED);
+
+  const activeCards = cards
+    .filter(c => c.currency === activeCurrency)
+    // 列表内按「需要用户处理的先后」排：待验证 → 已拒绝 → 已验证 → 已停用
+    .sort((a, b) => (CARD_ORDER[a.whitelistStatus] ?? 9) - (CARD_ORDER[b.whitelistStatus] ?? 9));
+
   // 列表动作失败提示统一在页顶（操作点是页头「+」与卡片「···」，提示落到页尾等于没说）
   const showPageError = (msg) => {
     setPageError(msg || t('操作未执行，请重试'));
@@ -76,9 +107,11 @@ export default function BankCards({ navigate, goBack }) {
   const openAdd = () => {
     const firstOpen = CURRENCIES.find(c => quotaOf(c.key) < CARD_QUOTA_PER_CURRENCY);
     setAddError(allQuotaFull ? t('三个币种的名额都已用满，请先停用或删除旧卡。') : '');
-    // 默认币种已满时切到第一个还有名额的币种，避免一打开就落在禁用选项上
-    if (firstOpen && quotaOf(addForm.currency) >= CARD_QUOTA_PER_CURRENCY) {
-      setAddForm(f => ({ ...f, currency: firstOpen.key }));
+    // 预填当前 tab 的币种（用户就在这个列表里点「+」）；该币种已满时切到还有名额的币种，
+    // 避免一打开就落在禁用选项上。
+    const preferred = quotaOf(activeCurrency) < CARD_QUOTA_PER_CURRENCY ? activeCurrency : firstOpen?.key;
+    if (preferred && preferred !== addForm.currency) {
+      setAddForm(f => ({ ...f, currency: preferred }));
     }
     setShowAdd(true);
   };
@@ -162,6 +195,27 @@ export default function BankCards({ navigate, goBack }) {
             </button>
           </div>
         </div>
+
+        {/* 币种 tab：每屏只列一个币种，条数被「每币种 3 张」的名额锁死，页长不再随加卡增长。
+            tab 上带名额用量与待办圆点，跨币种总览不丢。 */}
+        <div className="bank-currency-tabs" role="tablist">
+          {CURRENCIES.map(cur => {
+            const active = cur.key === activeCurrency;
+            return (
+              <button
+                key={cur.key}
+                role="tab"
+                aria-selected={active}
+                className={`bank-currency-tab${active ? ' active' : ''}`}
+                onClick={() => { setActiveCurrency(cur.key); setPageError(''); }}
+              >
+                <span className="bank-currency-label">{cur.key}</span>
+                <span className="bank-currency-count">{quotaOf(cur.key)}/{CARD_QUOTA_PER_CURRENCY}</span>
+                {hasVerifyTodo(cur.key) && <span className="bank-currency-dot" aria-label={t('有待验证的银行卡')} />}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {getFreezeState().frozen && (
@@ -180,7 +234,16 @@ export default function BankCards({ navigate, goBack }) {
         </div>
       )}
 
-      {cards.map(c => {
+      {/* 该币种下没有卡：给的是「加这个币种的卡」而不是全局空态（其他币种可能有卡） */}
+      {cards.length > 0 && activeCards.length === 0 && (
+        <div className="bank-cards-empty">
+          <p className="text-muted">{t('暂无 {cur} 银行卡').replace('{cur}', activeCurrency)}</p>
+          <p className="text-muted text-sm">{t('该币种还可添加 {n} 张').replace('{n}', String(CARD_QUOTA_PER_CURRENCY - quotaOf(activeCurrency)))}</p>
+          <button className="btn btn-outline btn-sm" onClick={openAdd}>{t('添加银行卡')}</button>
+        </div>
+      )}
+
+      {activeCards.map(c => {
         const meta = cardStatusMeta[c.whitelistStatus] || cardStatusMeta[BANK_CARD_STATUS.UNVERIFIED];
         const off = isDisabledCard(c);
         return (

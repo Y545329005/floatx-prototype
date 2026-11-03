@@ -4314,6 +4314,66 @@ input, select, textarea {
   flex-shrink: 0;
 }
 
+/* 币种 tab（2026-11-04）：每屏只列一个币种，列表条数被每币种 3 张名额锁死 */
+.bank-currency-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.bank-currency-tab {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 7px 4px;
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  color: var(--text-secondary);
+  transition: background 0.15s, color 0.15s;
+}
+
+.bank-currency-tab.active {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+/* 键盘焦点用内描边：外描边会与「已选中」的填充色打架，看起来像两个 tab 同时选中 */
+.bank-currency-tab:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+.bank-currency-label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.bank-currency-count {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--text-tertiary);
+}
+
+.bank-currency-tab.active .bank-currency-count {
+  color: var(--primary);
+  opacity: 0.75;
+}
+
+/* 该币种有「等首充加白」的卡：小圆点提示，避免卡藏在别的 tab 里被漏掉 */
+.bank-currency-dot {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--warning);
+}
+
 .bank-card {
   margin-bottom: var(--space-2);
 }
