@@ -38,7 +38,7 @@ const prettyReturn = (v) => String(v).replace(/(\d)-(\d)/g, '$1–$2');
 // 费率一律两位小数：`rate ? ... : '0%'` 会让 0% 逃出格式，同一行出现「1.00% · 0%」
 const pct = (rate) => (rate == null ? '-' : `${(rate * 100).toFixed(2)}%`);
 // 起投额是金额，走全站金额口径（2 位小数）；否则与申购页的「HKD 1,000,000.00」两种写法
-const hkd = (amount) => `HK$ ${formatExactAmount(amount)}`;
+const money = (amount, currency) => `${String(currency || 'HKD').toUpperCase() === 'USD' ? 'US$' : 'HK$'} ${formatExactAmount(amount)}`;
 // 参与方：填了值的逐行展示，缺值的收成一行「详见基金文件」（逐个重复同一句占位＝空区块）
 const PARTY_ROWS = [
   { key: 'custodian', label: '托管人' },
@@ -163,7 +163,7 @@ export default function FundDetail({ id, navigate, goBack }) {
 
         <div className="p-fund-detail-facts">
           <div><span>{t('锁定期')}</span><strong>{fundMonthsLabel(fund.lockMonths, t)}</strong></div>
-          <div><span>{t('起投')}</span><strong>{hkd(fund.minInvestment)}</strong></div>
+          <div><span>{t('起投')}</span><strong>{money(fund.minInvestment, navCurrency)}</strong></div>
           <div><span>{t('期限')}</span><strong>{fundMonthsLabel(fund.termMonths, t)}</strong></div>
         </div>
 
@@ -207,7 +207,7 @@ export default function FundDetail({ id, navigate, goBack }) {
             细则（币种、管理费、开放日、确认日、通知期、风险全文）收进折叠，但不进页签、不跳转。 */}
         <dl className="p-fund-detail-rows">
           <div><dt>{t('锁定期')}</dt><dd>{fundMonthsLabel(fund.lockMonths, t)}</dd></div>
-          <div><dt>{t('起投')}</dt><dd>{hkd(fund.minInvestment)}</dd></div>
+          <div><dt>{t('起投')}</dt><dd>{money(fund.minInvestment, navCurrency)}</dd></div>
           <div>
             <dt>{t('费率')}</dt>
             <dd>{t('认购费')} {pct(FUND_FEE_RATE.subscribe)} · {t('赎回费')} {pct(FUND_FEE_RATE.redeem)}</dd>

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ArrowLeft, ClipboardList, ChevronRight, CreditCard, Download, Eye, EyeOff, FileText, History, Upload } from 'lucide-react';
 import { keyed } from '../lib';
 import {
-  getFundPortfolio, myFundOrders, formatExactAmount, formatShares, CURRENCY_META, convertToHKD,
+  getFundPortfolio, myFundOrders, formatExactAmount, formatShares, CURRENCY_META,
 } from '../mock/data';
 import { useLang } from '../i18n';
 
@@ -47,6 +47,9 @@ export default function AssetOverview({ navigate, goBack, embed = false }) {
   const p = getFundPortfolio();
   const pendingCount = myFundOrders().filter(o => o.status === 'pending_confirm').length;
   const holdingCount = p.rows.length;
+  // 现金构成（2026-11-03 多币种）：只列「可用 > 0」的币种，且至少两种才显示。
+  // 不显示的话，美元余额会变成总资产里一块「看不到的折合金额」（10-28 踩过）。
+  const cashSplit = p.cash.filter(c => c.available > 0);
   const mask = '••••';
   // 累计收益率 = 累计收益（含已实现）/ 成本；与显示金额同一口径，
   // 不能沿用 p.pnlPct（那只是未实现/成本，会出现金额与括号百分比对不上）。
@@ -123,6 +126,14 @@ export default function AssetOverview({ navigate, goBack, embed = false }) {
             </div>
           ))}
         </div>
+        {cashSplit.length > 1 && (
+          <p className="asset-cash-split">
+            <span className="asset-cash-split-k">{t('现金构成')}</span>
+            {cashSplit.map(c => (
+              <span key={c.currency}>{c.symbol} {hidden ? mask : formatExactAmount(c.available)}</span>
+            ))}
+          </p>
+        )}
       </div>
 
       {/* 操作：入金 / 出金 / 资金明细 / 银行卡 / 我的交易 / 基金结单（2026-10-29 3×2）
@@ -179,7 +190,9 @@ export default function AssetOverview({ navigate, goBack, embed = false }) {
             </div>
             <div className="asset-hold-list">
               {p.rows.map(h => {
-                const totalPnl = convertToHKD(h.pnl, h.currency);
+                // 行内收益与金额、百分比同币种（2026-11-03）：此前折 HKD 后不带符号，
+                // 美元持仓会出现「$1,000 金额 + 假设是港币的收益」——同一行两种币种。
+                const totalPnl = h.pnl;
                 // 括号里的百分比与金额同口径：累计收益（含已实现）/ 成本
                 const pct = h.costAmount > 0 ? (h.pnl / h.costAmount) * 100 : 0;
                 return (

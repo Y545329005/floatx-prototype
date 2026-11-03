@@ -47,6 +47,7 @@ const STATUS_LABEL = { draft: '草稿', open: '在售', closed: '已下架' };
 const STATUS_BADGE = { draft: 'admin-status-pending', open: 'admin-status-approved', closed: 'admin-status-closed' };
 const CADENCE_LABEL = { weekly: '周频', monthly: '月频' };
 const CADENCE_OPTIONS = FUND_OPTIONS.cadences.map(v => ({ value: v, label: CADENCE_LABEL[v] || v }));
+const ccySymbol = (c) => (String(c || 'HKD').toUpperCase() === 'USD' ? 'US$' : 'HK$');
 
 // 值真源在 data.js（FUND_OPTIONS），这里只挂中文标签；标签缺失时退回原值而不是空白
 const toOptions = (values, labels = {}) => values.map(v => ({ value: v, label: labels[v] || v }));
@@ -58,6 +59,9 @@ const TYPE_OPTIONS = toOptions(FUND_OPTIONS.types);
 const RISK_OPTIONS = toOptions(FUND_OPTIONS.riskLevels);
 const RETURN_LABEL_OPTIONS = toOptions(FUND_OPTIONS.returnLabels);
 const RETURN_NOTE_OPTIONS = toOptions(FUND_OPTIONS.returnNotes);
+// 计价币种（2026-11-03）：只给「冲提两端都有落点」的币种，与 APP 入金币种同一份来源。
+const CURRENCY_LABEL = { HKD: 'HKD 港币', USD: 'USD 美元' };
+const CURRENCY_OPTIONS = toOptions(FUND_OPTIONS.currencies, CURRENCY_LABEL);
 
 // 编辑态四段：顺序 = 运营的心智顺序（是什么 → 怎么交易 → 怎么定价 → 谁背书）
 const TABS = [
@@ -81,6 +85,7 @@ const EMPTY_FORM = {
   description: '', manager: '', managerNote: '',
   returnLabel: '目标回报', returnValue: '', returnNote: '非保证',
   minInvestment: '1000000', lockMonths: '12', minHoldMonths: '6', termMonths: '24',
+  currency: 'HKD',
   inceptionDate: '', fundSizeYi: '', redemptionDays: '15', redemptionMode: 'manual',
   managementFeePct: '', performanceFeePct: '',
   openFrequency: '', confirmDays: '', redemptionNoticeDays: '',
@@ -108,6 +113,8 @@ function toForm(fund) {
     returnValue: fund.returnValue || '',
     returnNote: fund.returnNote || '',
     minInvestment: fund.minInvestment == null ? '' : String(fund.minInvestment),
+    // 币种取产品自身，缺失时退回净值币种（两者数据层保证同源，这里只做兜底）
+    currency: fund.currency?.[0] || fund.navMeta?.currency || 'HKD',
     lockMonths: fund.lockMonths == null ? '' : String(fund.lockMonths),
     minHoldMonths: fund.minHoldMonths == null ? '' : String(fund.minHoldMonths),
     termMonths: fund.termMonths == null ? '' : String(fund.termMonths),
@@ -147,6 +154,9 @@ function toPatch(form) {
     returnValue: form.returnValue,
     returnNote: form.returnNote,
     minInvestment: num(form.minInvestment),
+    // update 端白名单不含 currency（FUND_EDITABLE_KEYS），这里带上只为新建；
+    // 编辑态不会静默改掉币种，数据层也不会接受。
+    currency: form.currency,
     lockMonths: num(form.lockMonths),
     minHoldMonths: num(form.minHoldMonths),
     termMonths: num(form.termMonths),
@@ -301,7 +311,7 @@ export default function AdminFundProducts({ admin, detailId, navigate }) {
         name: form.name, source: form.source, type: form.type, riskLevel: form.riskLevel,
         description: form.description, manager: form.manager, managerNote: form.managerNote,
         returnLabel: form.returnLabel, returnValue: form.returnValue, returnNote: form.returnNote,
-        minInvestment: form.minInvestment,
+        minInvestment: form.minInvestment, currency: form.currency,
         lockMonths: form.lockMonths, minHoldMonths: form.minHoldMonths, termMonths: form.termMonths,
         inceptionDate: form.inceptionDate, fundSizeYi: form.fundSizeYi,
         redemptionDays: form.redemptionDays, redemptionMode: form.redemptionMode,
@@ -458,8 +468,25 @@ export default function AdminFundProducts({ admin, detailId, navigate }) {
           </div>
         </div>
         <div className="form-group">
-          <label>起投额（HKD）</label>
+          <label>计价币种</label>
+          <select
+            className="form-input"
+            value={form.currency}
+            onChange={e => set('currency', e.target.value)}
+            disabled={!isNew}
+          >
+            {CURRENCY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+          <div className="admin-form-hint">
+            {isNew
+              ? '创建后不可改：净值序列、起投额、订单与持仓都按这个币种记账。另一种币请另建一只产品（如「美元份额」）。'
+              : '币种创建时定版、之后只读。要换币种只能新建一只产品，改它等于把历史净值换了个单位。'}
+          </div>
+        </div>
+        <div className="form-group">
+          <label>起投额（{form.currency}）</label>
           <input className="form-input" type="number" value={form.minInvestment} onChange={e => set('minInvestment', e.target.value)} />
+          <div className="admin-form-hint">按{form.currency}计，APP 端按该币种符号展示（{ccySymbol(form.currency)}）。</div>
         </div>
         <div className="form-group">
           <label>锁定期（月）</label>
@@ -479,14 +506,24 @@ export default function AdminFundProducts({ admin, detailId, navigate }) {
           <input className="form-input" type="month" value={form.inceptionDate} onChange={e => set('inceptionDate', e.target.value)} />
           <div className="admin-form-hint">档案展示用。净值走势图的时间跨度由净值序列本身决定，不由此字段推算。</div>
         </div>
-        <div className="form-group">
-          <label>基金规模（亿港元）</label>
-          <div className="fund-product-suffix">
-            <input className="form-input" type="number" step="0.1" min="0" value={form.fundSizeYi} onChange={e => set('fundSizeYi', e.target.value)} placeholder="2.4" />
-            <span className="fund-product-suffix-unit">亿港元</span>
+        {form.currency === 'HKD' ? (
+          <div className="form-group">
+            <label>基金规模（亿港元）</label>
+            <div className="fund-product-suffix">
+              <input className="form-input" type="number" step="0.1" min="0" value={form.fundSizeYi} onChange={e => set('fundSizeYi', e.target.value)} placeholder="2.4" />
+              <span className="fund-product-suffix-unit">亿港元</span>
+            </div>
+            <div className="admin-form-hint">只填数字：中文显示「HK$ 2.4亿」、英文「HK$240M」由系统生成，不再手写单位。</div>
           </div>
-          <div className="admin-form-hint">只填数字：中文显示「HK$ 2.4亿」、英文「HK$240M」由系统生成，不再手写单位。</div>
-        </div>
+        ) : (
+          <div className="form-group">
+            <label>基金规模</label>
+            <div className="admin-form-hint">
+              美元份额不单独披露规模：规模属基金主份额（港币口径），在美元产品页显示 HK$ 金额会误导。
+              需要展示时由主份额页面承担。
+            </div>
+          </div>
+        )}
         <div className="form-group">
           <label>赎回到账</label>
           <div className="fund-product-inline">
@@ -535,7 +572,7 @@ export default function AdminFundProducts({ admin, detailId, navigate }) {
 
   const renderNavCard = () => (
     <div className="card">
-      <div className="card-title">净值</div>
+      <div className="card-title">净值（{selected.currency?.[0] || selected.navMeta?.currency || 'HKD'} 份额）</div>
       <div className="kyc-review-row"><span>当前净值</span><strong>
         {Array.isArray(selected.navSeries) && selected.navSeries.length ? latestNav(selected).toFixed(3) : '—'}
       </strong></div>
@@ -689,11 +726,17 @@ export default function AdminFundProducts({ admin, detailId, navigate }) {
               </span>
               <span className="fund-product-subline">{fund.type} · {fund.riskLevel}</span>
             </span>
-            <span className="col-amount">{formatExactAmount(fund.minInvestment)}</span>
+            <span className="col-amount col-amount--stack">
+              <span>{formatExactAmount(fund.minInvestment)}</span>
+              <span className="col-amount-sub">{fund.currency?.[0] || fund.navMeta?.currency || 'HKD'}</span>
+            </span>
             <span className="col-months">{fund.lockMonths} 个月</span>
             <span className="col-nav">
               <span className="fund-product-nav-value">{nav == null ? '—' : nav.toFixed(3)}</span>
-              {fund.navMeta?.lastNavDate && <span className="fund-product-nav-date">{fund.navMeta.lastNavDate}</span>}
+              <span className="fund-product-nav-date">
+                {fund.currency?.[0] || fund.navMeta?.currency || 'HKD'}
+                {fund.navMeta?.lastNavDate ? ` · ${fund.navMeta.lastNavDate}` : ''}
+              </span>
             </span>
             <span className="col-count">{holdings}</span>
             <span className="col-actions">
@@ -728,7 +771,7 @@ export default function AdminFundProducts({ admin, detailId, navigate }) {
             <>
               <div className="admin-drawer-meta">
                 <span className="fund-product-meta-item">编号 <strong className="fund-product-meta-id">{selected.id}</strong></span>
-                <span className="fund-product-meta-item">币种 <strong>HKD</strong></span>
+                <span className="fund-product-meta-item">币种 <strong>{selected.currency?.join(' · ') || selected.navMeta?.currency || 'HKD'}</strong></span>
                 <span className="fund-product-meta-item">费率 <strong>认购 {(FUND_FEE_RATE.subscribe * 100).toFixed(2)}% · 赎回 {(FUND_FEE_RATE.redeem * 100).toFixed(2)}%</strong></span>
                 <div className="fund-product-meta-actions">
                   {selected.status !== 'open' && (
@@ -747,7 +790,7 @@ export default function AdminFundProducts({ admin, detailId, navigate }) {
                 </div>
               </div>
               <p className="admin-form-hint fund-product-meta-hint">
-                费率与币种由全局配置统一管理，不在此页修改。
+                费率由全局配置统一管理，不在此页修改；计价币种在创建时选定、之后只读（要换币种请另建产品）。
               </p>
               {pendingDelete && (
                 <div className="fund-product-confirm fund-product-confirm--meta">

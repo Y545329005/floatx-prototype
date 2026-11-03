@@ -5,7 +5,7 @@ import {
   AlertTriangle, ReceiptText, X,
 } from 'lucide-react';
 import {
-  wallet, walletAccountOf, bankCards, platformAccounts,
+  wallet, walletAccountOf, bankCards, platformAccounts, platformDepositAccount,
   depositRequests, withdrawRequests, submitDepositRequest, submitWithdrawRequest,
   getAvailableCash, getFreezeState, depositRefCode, formatExactAmount,
 } from '../mock/data';
@@ -69,11 +69,22 @@ export default function FundOperation({ mode, navigate, goBack }) {
   const fileRef = useRef(null);
   const copyTimer = useRef(null);
 
-  const cur = walletAccountOf(currency) || wallet.hkd;
+  // 出金币种 = 港币 + 美元 + 任何「有可用余额」的币种（2026-11-03）：
+  // 港币/美元是产品支持的币种，必须始终可见——否则「入金能选 USD、出金看不到 USD」会被读成功能没做；
+  // 余额为 0 的币种置灰并说明原因，不是死选项，也不需要写死一份只有余额的名单。
+  // 额外保留「有余额的其它币种」出口：历史/异常入账（如 CNH）仍能提走。
+  const withdrawCurrencies = currencyOptions.filter(c => c.key === 'HKD' || c.key === 'USD' || getAvailableCash(c.key) > 0);
+  const hasEmptyWithdrawCurrency = withdrawCurrencies.some(c => c.key !== 'HKD' && getAvailableCash(c.key) <= 0);
+  // 入金币种只列「有收款账户」的币种：没有账户的币种不给选项，避免用户汇出去却没有落点
+  const depositCurrencies = currencyOptions.filter(c => !!platformDepositAccount(c.key));
+  const activeCurrency = isDeposit
+    ? currency
+    : (withdrawCurrencies.some(c => c.key === currency && (c.key === 'HKD' || getAvailableCash(c.key) > 0)) ? currency : 'HKD');
+  const cur = walletAccountOf(activeCurrency) || wallet.hkd;
   const amountNum = parseFloat(amount) || 0;
   // INV-5 凡动必冻：安全冻结期内阻断出金（UI 层前置拦截 + 数据层兜底）
   const freeze = getFreezeState();
-  const acc = platformAccounts.deposit;
+  const acc = platformDepositAccount(activeCurrency) || platformAccounts.deposit;
   const refCode = depositRefCode();
 
   useEffect(() => () => clearTimeout(copyTimer.current), []);
@@ -109,6 +120,7 @@ export default function FundOperation({ mode, navigate, goBack }) {
     `${t('收款银行（英文）')}: ${acc.bankNameEn || acc.bank}`,
     `${t('户名')}: ${acc.accountName}`,
     `${t('账号')}: ${acc.accountNo}`,
+    `${t('币种')}: ${acc.currency}`,
     `SWIFT: ${acc.swift || '—'}`,
     `${t('银行编号')}: ${acc.bankCode || '—'}`,
     `${t('银行地址')}: ${acc.bankAddress || '—'}`,
@@ -127,9 +139,11 @@ export default function FundOperation({ mode, navigate, goBack }) {
       setError(t('请输入有效金额'));
       return;
     }
-    const bc = bankCards.find(b => b.id === bankCard);
+    const bc = selectedCard;
     if (!bc) {
-      setError(isDeposit ? t('请选择已通过白名单验证的付款银行卡') : t('请选择已通过白名单验证的收款银行卡'));
+      setError(isDeposit
+        ? t('请选择已通过白名单验证的付款银行卡')
+        : t('请先添加并验证一张 {cur} 收款银行卡').replace('{cur}', activeCurrency));
       return;
     }
     if (!isDeposit && freeze.frozen) { // 凡动必冻拦截
@@ -137,7 +151,7 @@ export default function FundOperation({ mode, navigate, goBack }) {
       return;
     }
     const opts = {
-      currency: currency,
+      currency: activeCurrency,
       amount: amountNum,
       method: '银行转账',
       cardId: bc.id,
@@ -171,19 +185,26 @@ export default function FundOperation({ mode, navigate, goBack }) {
     navigate(`#fund-request/${req.id}`);
   };
 
-  // 币种选择（充值按「入账币种」，提现按「出金币种」）
-  const renderCurrencyChips = () => (
+  // 币种选择（充值按「汇款币种」= 用户实际汇出什么；提现按「出金币种」= 账上真有的钱）
+  const renderCurrencyChips = (list, opts = {}) => (
     <div className="fund-method-chips">
-      {currencyOptions.map(c => (
-        <button
-          key={c.key}
-          type="button"
-          className={`chip ${currency === c.key ? 'active' : ''}`}
-          onClick={() => { setCurrency(c.key); setError(''); }}
-        >
-          {c.key}
-        </button>
-      ))}
+      {list.map(c => {
+        // 提现：非港币且可用为 0 → 置灰。仍然把币种列出来，用户才知道「有这个币种、只是还没钱」，
+        // 而不是以为平台不支持。
+        const empty = opts.disableEmpty && c.key !== 'HKD' && getAvailableCash(c.key) <= 0;
+        return (
+          <button
+            key={c.key}
+            type="button"
+            className={`chip ${currency === c.key ? 'active' : ''}`}
+            disabled={empty}
+            title={empty ? t('该币种暂无可提余额') : undefined}
+            onClick={() => { setCurrency(c.key); setError(''); }}
+          >
+            {c.key}
+          </button>
+        );
+      })}
     </div>
   );
 
@@ -209,7 +230,7 @@ export default function FundOperation({ mode, navigate, goBack }) {
     <>
       <p className="text-muted text-sm fund-operation-note">
         {/* 可用口径（2026-11-02 口径 B）：余额 - 申购冻结 - 在途提现；金额按定版口径 formatExactAmount */}
-        {`${t('当前可用')} ${cur.label} ${cur.symbol}${formatExactAmount(getAvailableCash(currency))}`}
+        {`${t('当前可用')} ${cur.label} ${cur.symbol}${formatExactAmount(getAvailableCash(activeCurrency))}`}
       </p>
 
       {freeze.frozen && (
@@ -220,10 +241,15 @@ export default function FundOperation({ mode, navigate, goBack }) {
       )}
 
       <div className="card fund-operation-form">
-        <div className="form-group">
-          <label className="form-label">{t('币种')}</label>
-          {renderCurrencyChips()}
-        </div>
+        {withdrawCurrencies.length > 1 && (
+          <div className="form-group">
+            <label className="form-label">{t('币种')}</label>
+            {renderCurrencyChips(withdrawCurrencies, { disableEmpty: true })}
+            {hasEmptyWithdrawCurrency && (
+              <p className="fund-field-hint">{t('灰色币种暂无可提余额；对应币种入金到账后即可选择。')}</p>
+            )}
+          </div>
+        )}
 
         {renderAmountField(t('请输入金额'))}
 
@@ -233,16 +259,16 @@ export default function FundOperation({ mode, navigate, goBack }) {
           <button
             type="button"
             className="form-input fund-card-trigger"
-            onClick={() => whitelistedCards.length > 0 && setCardPickerOpen(true)}
+            onClick={() => cardOptions.length > 0 && setCardPickerOpen(true)}
             aria-label={t('收款银行卡（白名单）')}
           >
             <span className={selectedCard ? '' : 'text-muted'}>
-              {selectedCard ? `${selectedCard.bank} ${selectedCard.maskedNo} · ${selectedCard.currency}` : t('暂无白名单银行卡，请先完成白名单验证')}
+              {selectedCard ? `${selectedCard.bank} ${selectedCard.maskedNo} · ${selectedCard.currency}` : t('暂无 {cur} 白名单银行卡，请先完成验证').replace('{cur}', activeCurrency)}
             </span>
             <ChevronDown size={16} className="fund-card-trigger-chevron" />
           </button>
-          {whitelistedCards.length === 0 && (
-            <p className="form-error">{t('暂无白名单银行卡，请先完成白名单验证')}</p>
+          {cardOptions.length === 0 && (
+            <p className="form-error">{t('暂无 {cur} 白名单银行卡，请先完成验证').replace('{cur}', activeCurrency)}</p>
           )}
         </div>
 
@@ -285,13 +311,13 @@ export default function FundOperation({ mode, navigate, goBack }) {
         <div className="fund-acct-head">
           <Landmark size={16} />
           <strong>{t('收款账户')}</strong>
-          {/* 多币种账户：账号只有一个，可收三种币。此前写成「星展 · HKD」，与下面让用户选 USD/CNH 自相矛盾 */}
-          <span className="fund-acct-bank">{currencyOptions.map(c => c.key).join(' · ')}</span>
         </div>
 
         <AccountRow rowKey="bankNameEn" label={t('银行名称')} value={acc.bankNameEn || acc.bank} long copiedKey={copiedKey} onCopy={copy} />
         <AccountRow rowKey="accountName" label={t('户名')} value={acc.accountName} long copiedKey={copiedKey} onCopy={copy} />
         <AccountRow rowKey="accountNo" label={t('账号')} value={acc.accountNo} mono copiedKey={copiedKey} onCopy={copy} />
+        {/* 币种是汇款单必填项（2026-11-03）：账户数据里的 currency 才是事实，页头那句「HKD · USD · CNH」是未经银行确认的断言 */}
+        <AccountRow rowKey="currency" label={t('币种')} value={acc.currency} copiedKey={copiedKey} onCopy={copy} />
 
         {moreOpen && (
           <>
@@ -314,6 +340,7 @@ export default function FundOperation({ mode, navigate, goBack }) {
           <ShieldCheck size={13} />
           <span>{t('该账户为 HighBlock 客户资金账户，与公司自有资金分开存放。')}</span>
         </p>
+        <p className="fund-field-hint">{t('请向对应币种的收款账户汇款；其他币种请联系客户经理。')}</p>
       </div>
 
       <div className="fund-step">
@@ -326,8 +353,9 @@ export default function FundOperation({ mode, navigate, goBack }) {
           {/* 语义纠正（2026-10-29 标注反馈）：这是「你汇出的是什么币」，不是「系统承诺入账什么币」。
               用户可能汇错币种，银行仍可能入账（换汇入账或挂账），所以只声明事实、由财务按实际到账核对。 */}
           <label className="form-label">{t('汇款币种')}</label>
-          {renderCurrencyChips()}
+          {renderCurrencyChips(depositCurrencies)}
           <p className="fund-field-hint">{t('按你实际汇出的币种填写；到账币种与金额以银行实际为准。')}</p>
+          <p className="fund-field-hint">{t('HKD 到账仅可申购港币份额基金；USD 到账仅可申购美元份额基金。')}</p>
         </div>
 
         {renderAmountField(t('请按银行回执填写实际转账金额'))}
@@ -395,7 +423,10 @@ export default function FundOperation({ mode, navigate, goBack }) {
 
   // 选卡弹层：充值「从」行与提现「收款银行卡」共用同一份白名单卡与选中态。
   // 触发器各自保留原位（充值是行内右对齐，提现是表单全宽），选项列表统一走底部 sheet。
-  const selectedCard = whitelistedCards.find(c => c.id === bankCard);
+  // 出金按币种筛卡（2026-11-03）：美元只能提到美元账户，否则等于让银行做一次换汇。
+  // 充值不筛：港币账户购汇后汇美元是真实场景，由付款行处理，平台只登记实际汇出币种。
+  const cardOptions = isDeposit ? whitelistedCards : whitelistedCards.filter(c => c.currency === activeCurrency);
+  const selectedCard = cardOptions.find(c => c.id === bankCard) || cardOptions[0] || null;
   const pickCard = (id) => {
     setBankCard(id);
     setError('');
@@ -409,17 +440,21 @@ export default function FundOperation({ mode, navigate, goBack }) {
           <h3>{t('选择银行卡')}</h3>
           <button className="btn-icon" onClick={() => setCardPickerOpen(false)}><X size={18} /></button>
         </div>
-        {whitelistedCards.length === 0 ? (
-          <p className="text-muted text-sm sheet-sub">{t('暂无白名单银行卡，请先完成白名单验证')}</p>
+        {cardOptions.length === 0 ? (
+          <p className="text-muted text-sm sheet-sub">
+            {isDeposit
+              ? t('暂无白名单银行卡，请先完成白名单验证')
+              : t('暂无 {cur} 白名单银行卡，请先完成验证').replace('{cur}', activeCurrency)}
+          </p>
         ) : (
           <div className="fund-card-options">
-            {whitelistedCards.map(c => (
-              <button key={c.id} type="button" className={`fund-card-option${c.id === bankCard ? ' selected' : ''}`} onClick={() => pickCard(c.id)}>
+            {cardOptions.map(c => (
+              <button key={c.id} type="button" className={`fund-card-option${c.id === selectedCard?.id ? ' selected' : ''}`} onClick={() => pickCard(c.id)}>
                 <span className="fund-card-option-main">
                   <strong>{c.bank}</strong>
                   <span className="text-muted text-sm">{c.maskedNo} · {c.currency}</span>
                 </span>
-                {c.id === bankCard && <Check size={18} className="fund-card-option-check" />}
+                {c.id === selectedCard?.id && <Check size={18} className="fund-card-option-check" />}
               </button>
             ))}
           </div>

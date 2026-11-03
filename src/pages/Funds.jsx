@@ -15,13 +15,14 @@ const HIGH_RISK = '高风险';
 
 // 起投额按语言格式化：中文「HK$ 100万」与 fundSize 的「HK$ 2.4亿」同款，英文「HK$100M」与字典里
 // fundSize 的英文值同款。直接用 toLocaleString 会在 1/3 列宽里折成两行（上一版折行的根因）。
-function formatMinInvestment(amount, lang, unitWan) {
+function formatMinInvestment(amount, lang, unitWan, currency = 'HKD') {
+  const sym = String(currency).toUpperCase() === 'USD' ? 'US$' : 'HK$';
   if (lang === 'en') {
     // 0.5M 档也要能压缩：HK$1,500,000 会把「条款带」挤成两行
-    if (amount % 100000 === 0) return `HK$${amount / 1000000}M`;
-    return `HK$${amount.toLocaleString('en-US')}`;
+    if (amount % 100000 === 0) return `${sym}${amount / 1000000}M`;
+    return `${sym}${amount.toLocaleString('en-US')}`;
   }
-  return amount % 10000 === 0 ? `HK$ ${amount / 10000}${unitWan}` : `HK$ ${amount.toLocaleString('en-US')}`;
+  return amount % 10000 === 0 ? `${sym} ${amount / 10000}${unitWan}` : `${sym} ${amount.toLocaleString('en-US')}`;
 }
 
 // 8-10% → 8–10%（区间号用 en dash，中英文都通）；其余文本不受影响
@@ -85,7 +86,7 @@ export default function Funds({ navigate }) {
             </span>
             <span className="p-funds-card-fact">
               <span className="p-funds-card-fact-k">{t('起投')}</span>
-              <span className="p-funds-card-fact-v">{formatMinInvestment(f.minInvestment, lang, t('万'))}</span>
+              <span className="p-funds-card-fact-v">{formatMinInvestment(f.minInvestment, lang, t('万'), f.navMeta?.currency || 'HKD')}</span>
             </span>
           </span>
         </button>

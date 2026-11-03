@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft, Plus, CreditCard, Trash2, X, ShieldCheck, ShieldQuestion, Check } from 'lucide-react';
-import { bankCards, platformAccounts, submitCardVerification, recordAgreement, getFreezeState, formatExactAmount, toHkd, addBankCard, removeBankCard, currentUser } from '../mock/data';
+import { bankCards, platformAccounts, platformDepositAccount, submitCardVerification, recordAgreement, getFreezeState, formatExactAmount, toHkd, addBankCard, removeBankCard, currentUser } from '../mock/data';
 import { useLang } from '../i18n';
 import AgreementModal from '../components/AgreementModal';
 
@@ -85,7 +85,7 @@ export default function BankCards({ navigate, goBack }) {
   const renderVerificationSheet = () => {
     const card = cards.find(c => c.id === verifyingCard);
     if (!card) return null;
-    const acc = platformAccounts.deposit;
+    const acc = platformDepositAccount(verifyForm.currency) || platformAccounts.deposit;
     return (
       <>
         <div className="sheet-mask" onClick={() => setVerifyingCard(null)} />
@@ -116,7 +116,6 @@ export default function BankCards({ navigate, goBack }) {
               >
                 <option value="HKD">HKD 港币</option>
                 <option value="USD">USD 美元</option>
-                <option value="CNY">CNY 人民币</option>
               </select>
             </div>
             <div className="form-group">

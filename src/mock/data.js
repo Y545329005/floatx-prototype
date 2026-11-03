@@ -299,12 +299,13 @@ export let currentUser = { ...testAccounts.approved };
 export const kycStatus = currentUser.kyc_status;
 export const kycProfileData = currentUser.kyc_profile;
 
-// 首期只做 HKD 一个币种（2026-10-28 标注反馈）：USD / CNH 余额清零，
-// 否则总资产里会有一块「页面上任何地方都看不到」的折合金额。
-// 多币种份额属二期，届时钱包、基金净值序列、起投额要一起恢复。
+// 2026-10-28 曾把 USD / CNH 清零（避免总资产里出现「页面上看不到」的折合金额）。
+// 2026-11-03 多币种闭环恢复：USD 种 150,000，其中 20,000 挂在一条待处理提现单上（wr5），
+// 所以可用 130,000 正好等于美元基金起投额——「USD 出金审核」与「满额申购」两个分支都能演示。
+// 资产页同步展示「现金构成」，钱不再隐身。CNH 暂无收款账户与基金，保持 0。
 export const wallet = {
   hkd: { label: '港币', symbol: 'HK$', balance: 9000000, frozen: 3000000 },
-  usd: { label: '美元', symbol: '$', balance: 0, frozen: 0 },
+  usd: { label: '美元', symbol: '$', balance: 150000, frozen: 0 },
   cny: { label: '人民币', symbol: '¥', balance: 0, frozen: 0 },
 };
 
@@ -797,6 +798,9 @@ export const FUND_OPTIONS = {
   // 净值披露频率：私募自营多为周频，代售第三方常见月频。日期轴与录入间隔校验都按它走，
   // 不参数化的话月频产品的三个月会被标成三周（图上日期全是错的）。
   cadences: ['weekly', 'monthly'],
+  // 计价币种（2026-11-03 多币种闭环）：币种封闭，一只基金只收一种币。
+  // CNH 暂不开放（无收款账户、无产品），加进来之前先确认冲提两端都有落点。
+  currencies: ['HKD', 'USD'],
 };
 
 export const funds = [
@@ -1038,6 +1042,47 @@ export const funds = [
       { name: '隐私政策', type: 'privacy-policy' },
     ],
   },
+  {
+    // 美元份额（2026-11-03 多币种闭环，产品规则：币种封闭，不做换汇）：
+    // 以独立基金实体承载，而不是同一基金的 share class —— 现有引擎是「一只基金一条净值」，
+    // 独立实体不需要改 latestNav/估值链路；share class 需要每币种净值，二期再升级。
+    id: 'f1-usd',
+    name: 'AIDC 基金（美元份额）',
+    source: 'self',
+    returnLabel: '目标回报',
+    returnValue: '8-10%',
+    returnNote: '非保证',
+    type: '另类投资',
+    riskLevel: '中高风险',
+    minInvestment: 130000,
+    status: 'open',
+    currency: ['USD'],
+    redemptionDays: 15,
+    redemptionMode: 'manual',
+    lockMonths: 24,
+    minHoldMonths: 12,
+    termMonths: 36,
+    inceptionDate: '2024-06',
+    fundSizeYi: 0,   // 份额类别不单独披露规模；基金规模属 HKD 主份额，避免在美元页显示 HK$
+    navSeries: makeNavSeries(211, 8.6, weeksSince('2024-06')),
+    navMeta: { cadence: 'weekly', currency: 'USD', lastNavDate: weeksAgoDate(1) },
+    economics: { managementFeePct: 1.5, performanceFeePct: 20 },
+    dealing: { openFrequency: 'quarterly-end', confirmDays: 3, redemptionNoticeDays: 30 },
+    parties: { custodian: null, administrator: null, auditor: null },
+    fundDocuments: [
+      { name: '产品资料概要', type: 'kfs', url: null },
+      { name: '要约备忘录（PPM）', type: 'ppm', url: null },
+    ],
+    manager: 'HighBlock Asset Management',
+    managerNote: '',
+    description: 'AIDC 基金的美元计价份额，仅接受美元资金申购，不与其他币种互转。',
+    riskDisclosureRef: 'risk-disclosure',
+    documents: [
+      { name: '风险披露声明及免责声明', type: 'risk-disclosure' },
+      { name: '使用条款', type: 'terms-of-use' },
+      { name: '隐私政策', type: 'privacy-policy' },
+    ],
+  },
 ];
 
 // 区间收益（2026-10-28）：与 NavChart 完全同口径（切片首尾 last/first-1），
@@ -1167,6 +1212,9 @@ const FUND_EDITABLE_KEYS = [
   'lockMonths', 'minHoldMonths', 'termMonths',
   'inceptionDate', 'fundSizeYi', 'redemptionDays', 'redemptionMode',
 ];
+// currency 刻意不在这里（2026-11-03）：净值序列、起投额、已成交订单与持仓全部按创建时的币种记账，
+// 改币种等于把历史净值换了个单位，已发出的结单会与系统对不上。需要另一种币就走「新建一只份额实体」，
+// 与净值频率（cadence）同一条规则：创建时定版，之后只读。
 
 const FUND_MONTH_KEYS = ['lockMonths', 'minHoldMonths', 'termMonths'];
 
@@ -1175,7 +1223,7 @@ const FUND_FIELD_LABELS = {
   name: '名称', source: '来源', type: '类型', riskLevel: '风险等级',
   description: '一句话描述', manager: '管理人', managerNote: '管理人披露',
   returnLabel: '收益标签', returnValue: '收益数值', returnNote: '收益口径',
-  status: '产品状态',
+  status: '产品状态', currency: '计价币种',
   minInvestment: '起投额', lockMonths: '锁定期', minHoldMonths: '最低持有期', termMonths: '存续期',
   inceptionDate: '成立时间', fundSizeYi: '基金规模',
   redemptionDays: '赎回到账天数', redemptionMode: '到账处理方式',
@@ -1250,7 +1298,7 @@ export const FUND_DEFAULTS = {
 // 新建时接受的白名单。status 不在内——新建一律草稿，发布是独立动作（见 publishFundProduct）。
 const FUND_CREATE_KEYS = [
   'name', 'source', 'type', 'riskLevel', 'description', 'manager', 'managerNote',
-  'returnLabel', 'returnValue', 'returnNote', 'minInvestment',
+  'returnLabel', 'returnValue', 'returnNote', 'minInvestment', 'currency',
   'lockMonths', 'minHoldMonths', 'termMonths',
   'inceptionDate', 'fundSizeYi', 'redemptionDays', 'redemptionMode',
 ];
@@ -1287,6 +1335,14 @@ function normalizeFundField(key, value) {
       const n = Number(value);
       if (!Number.isFinite(n) || n <= 0) return { ok: false, error: '起投额须为大于 0 的数字' };
       return { ok: true, value: Math.round(n) };
+    }
+    case 'currency': {
+      // 存成数组与 mock 的 funds[].currency 同构（UI 用 join 展示），只允许单币种。
+      const v = String(value ?? '').toUpperCase();
+      if (!FUND_OPTIONS.currencies.includes(v)) {
+        return { ok: false, error: `计价币种只能是 ${FUND_OPTIONS.currencies.join(' / ')}` };
+      }
+      return { ok: true, value: [v] };
     }
     case 'inceptionDate': {
       const v = String(value ?? '').trim();
@@ -1351,6 +1407,9 @@ export function createFundProduct(payload = {}, { operator = '运营后台' } = 
     }
     next.navMeta.cadence = payload.cadence;
   }
+  // 净值币种必须与产品计价币种同源：latestNav(fund) 只读序列、不读币种，
+  // 两处不一致时页面标 USD、净值却是港币口径，且不会有任何报错。
+  next.navMeta.currency = (Array.isArray(next.currency) && next.currency[0]) || 'HKD';
 
   // 首条净值：自营可预填 1.000（成立日净值就是 1.000，是事实不是编的）；
   // 代售常拿不到，允许留空进草稿——逼着运营填一个数，等于逼着编数据。
@@ -2484,7 +2543,11 @@ export function getFundPortfolio(userId = currentUser.id) {
 
   const cash = ['HKD', 'USD', 'CNH'].map(cur => {
     const acc = walletAccountOf(cur);
-    const frozen = getFundFrozen(userId, cur);
+    const fundFrozen = getFundFrozen(userId, cur);
+    // 在途提现也算冻结（2026-11-02 口径 B）：资产页「可用现金」此前只减申购冻结，
+    // 比出金页的「当前可用」多出在途提现那一块，同一个钱包两个数。
+    const withdrawFrozen = getWithdrawFrozen(userId, cur);
+    const frozen = fundFrozen + withdrawFrozen;
     return {
       currency: cur,
       symbol: acc?.symbol || '',
@@ -4952,6 +5015,17 @@ export function bumpTermsVersion(operator = '系统管理员') {
   return termsState.currentVersion;
 }
 
+// 协议文案维护（2026-11-03 · 后台法务维护入口原型）：按 id 原地替换 sections（保引用，用户端协议页即时可读）
+export function updateAgreementSections(id, sections, operator = '系统管理员') {
+  const doc = agreements.find(a => a.id === id);
+  if (!doc) return false;
+  doc.sections.length = 0;
+  sections.forEach(s => doc.sections.push(s));
+  logAudit({ operator, category: 'config', action: 'update', target: doc.title['zh-CN'], targetId: id, note: `更新协议文案（${doc.sections.length} 个小节，简/繁/EN 三语）` });
+  Storage.save();
+  return true;
+}
+
 export function agreeTermsUpdate(operator = '用户') {
   termsState.agreedVersion = termsState.currentVersion;
   recordAgreement({ type: 'terms-update', agreementIds: ['user-agreement', 'privacy-policy', 'risk-disclosure'] }, operator);
@@ -5114,8 +5188,41 @@ export const platformAccounts = {
     swift: 'DHBKHKHH',
     bankAddress: "11/F, 248 Queen's Road East, Wan Chai, Hong Kong",
   },
+  // 美元收款账户（2026-11-03 多币种闭环）：币种封闭，USD 资金只进美元基金，不做换汇。
+  // 账号为 mock 演示值；接后端由银行开户文件提供。
+  depositUsd: {
+    bank: '星展银行（香港）',
+    bankNameEn: 'DBS Bank (Hong Kong) Limited',
+    accountName: 'HighBlock Securities Limited Client AC',
+    accountNo: '016-456-000-5678',
+    currency: 'USD',
+    bankCode: '016',
+    swift: 'DHBKHKHH',
+    bankAddress: "11/F, 248 Queen's Road East, Wan Chai, Hong Kong",
+  },
   withdraw: { bank: '星展银行（香港）', accountName: 'HighBlock Securities Limited', accountNo: '016-456-000-1234', currency: 'HKD' },
+  // 美元打款账户（2026-11-03）：出金按币种从对应账户汇出，不做换汇。
+  // 用同一个客户资金账户的美元子账户号（mock），银行侧事实待确认。
+  withdrawUsd: { bank: '星展银行（香港）', accountName: 'HighBlock Securities Limited', accountNo: '016-456-000-5678', currency: 'USD' },
 };
+
+// 收款账户按币种取（2026-11-03）：HKD 走主账户，USD 走美元账户。
+// 没有对应账户的币种返回 null —— 页面上不出现 = 不邀请用户汇这一笔。
+export function platformDepositAccount(currency) {
+  const cur = String(currency || '').toUpperCase();
+  if (cur === 'HKD') return platformAccounts.deposit || null;
+  if (cur === 'USD') return platformAccounts.depositUsd || null;
+  return null;
+}
+
+// 打款账户按币种取（2026-11-03）：财务必须从与单据同币种的账户汇出，
+// 否则银行会在打款环节做一次换汇——金额与到账币种都不再由平台控制。
+export function platformWithdrawAccount(currency) {
+  const cur = String(currency || '').toUpperCase();
+  if (cur === 'HKD') return platformAccounts.withdraw || null;
+  if (cur === 'USD') return platformAccounts.withdrawUsd || null;
+  return null;
+}
 
 // 入金参考代码（2026-10-29）：用户在汇款备注里必须填写、财务据此把银行入账对上账户的 6 位代码。
 // 由 userId 稳定派生（FNV-1a 播种 + LCG 展开）：不落库、不随会话/设备变化——
@@ -5142,7 +5249,11 @@ export function depositRefCode(userId) {
 
 export function updatePlatformAccounts(kind, account, operator) {
   if (!platformAccounts[kind]) return { ok: false, error: '未知账户类型' };
-  const clean = { bank: String(account.bank || '').trim(), accountName: String(account.accountName || '').trim(), accountNo: String(account.accountNo || '').trim(), currency: account.currency || 'HKD' };
+  // 币种由账户类型决定，不允许后台改：deposit=HKD / depositUsd=USD / withdraw=HKD / withdrawUsd=USD。
+  // 放开改会让「账户类型」与「账户币种」出现两种事实，页面按哪边取都可能错。
+  const fixedCurrency = kind === 'deposit' || kind === 'withdraw' ? 'HKD'
+    : kind === 'depositUsd' || kind === 'withdrawUsd' ? 'USD' : null;
+  const clean = { bank: String(account.bank || '').trim(), accountName: String(account.accountName || '').trim(), accountNo: String(account.accountNo || '').trim(), currency: fixedCurrency || account.currency || 'HKD' };
   // 电汇字段只对已存在的键做保留（收款账户有、打款账户没有）：normalize 是白名单重建，
   // 漏掉这几个键的话后台保存一次就会把 SWIFT / 银行地址静默清空。
   ['bankNameEn', 'bankCode', 'swift', 'bankAddress'].forEach((k) => {
@@ -5150,7 +5261,10 @@ export function updatePlatformAccounts(kind, account, operator) {
   });
   if (!clean.bank || !clean.accountName || !clean.accountNo) return { ok: false, error: '请完整填写银行 / 户名 / 账号' };
   platformAccounts[kind] = clean;
-  logAudit({ operator, category: 'config', action: 'update', target: '平台资金账户', targetId: kind, note: `更新${kind === 'deposit' ? '收款' : '打款'}账户：${clean.bank} ${clean.accountNo}（${clean.currency}）` });
+  const label = kind === 'deposit' ? '收款（港币）'
+    : kind === 'depositUsd' ? '收款（美元）'
+      : kind === 'withdrawUsd' ? '打款（美元）' : '打款（港币）';
+  logAudit({ operator, category: 'config', action: 'update', target: '平台资金账户', targetId: kind, note: `更新${label}账户：${clean.bank} ${clean.accountNo}（${clean.currency}）` });
   Storage.save();
   return { ok: true };
 }
@@ -6679,6 +6793,31 @@ export const depositRequests = [
     rejectReason: null,
     requestEvidenceReason: null,
   },
+  {
+    // 2026-11-03 多币种闭环：当前登录账户（u1）的美元入金待核销单。
+    // 这不只是演示数据——资金审核的「币种纠错」是财务的强制动作，
+    // 没有一笔 USD 待处理单，这条分支在验收和演示里永远走不到。
+    id: 'dr12',
+    orderNo: genOrderNo('DR', '2026-11-03 10:12:08'),
+    userId: 'u1',
+    userName: '张三',
+    currency: 'USD',
+    amount: 50000,
+    method: '银行转账',
+    bank: '中国银行（香港）',
+    cardNo: '6217 8501 2345 8901',
+    bankRef: 'BK20261103101208001',
+    refCode: depositRefCode('u1'),
+    payerRef: 'BOCHK2611A1012081',
+    transferDate: '2026-11-03 10:08',
+    evidence: { name: '转账凭证_20261103.png', size: '1.1 MB', uploadedAt: '2026-11-03 10:13:40', preview: makeReceiptSvg({ bank: '中国银行（香港）', orderNo: genOrderNo('DR', '2026-11-03 10:12:08'), refNo: 'BK20261103101208001', amount: 50000, currency: 'USD', time: '2026-11-03 10:12:08' }) },
+    status: 'pending',
+    createdAt: '2026-11-03 10:12:08',
+    handledAt: null,
+    handledBy: null,
+    rejectReason: null,
+    requestEvidenceReason: null,
+  },
 ];
 
 // 充值申请（入金）：用户线下转账到平台收款账户 → 上传凭证 → 财务核对后上账（2026-08-19 老板确认线下充值闭环）
@@ -6855,6 +6994,27 @@ export const withdrawRequests = [
     bankRef: 'BK20260812100547001',
     status: 'pending',
     createdAt: '2026-08-12 10:05:47',
+    handledAt: null,
+    handledBy: null,
+    rejectReason: null,
+  },
+  {
+    // 2026-11-03 多币种闭环：当前登录账户（u1）的美元提现待处理单，20,000。
+    // 美元余额 150,000 - 本单在途 20,000 = 可用 130,000，正好等于美元基金起投额，
+    // 所以「USD 出金审核」与「满额申购」两条分支可以同时演示。
+    // 收款卡必须是美元白名单卡（bc4 · 中国银行 **** 8901）——出金按币种筛卡，不做跨币种打款。
+    id: 'wr5',
+    orderNo: genOrderNo('WR', '2026-11-03 11:20:15'),
+    userId: 'u1',
+    userName: '张三',
+    currency: 'USD',
+    amount: 20000,
+    method: '银行转账',
+    bank: '中国银行（香港）',
+    cardNo: '6217 8501 2345 8901',
+    bankRef: 'BK20261103112015001',
+    status: 'pending',
+    createdAt: '2026-11-03 11:20:15',
     handledAt: null,
     handledBy: null,
     rejectReason: null,
@@ -7165,6 +7325,7 @@ export const verificationRequests = [
     cardId: 'bc9',
     bank: '星展银行',
     maskedNo: '**** 7711',
+    cardNo: '6222 1420 8830 7711',   // 完整卡号快照（对齐充值/出金单：审核抽屉明文核对，用户侧仍 maskedNo）
     currency: 'HKD',
     amount: 10000,
     remark: '卡片白名单验证',
@@ -7183,6 +7344,7 @@ export const verificationRequests = [
     cardId: 'bc10',
     bank: '渣打银行',
     maskedNo: '**** 8834',
+    cardNo: '6222 9073 1120 8834',   // 完整卡号快照（虚构演示值；bc10 卡已不在 bankCards，单据自带快照兜底）
     currency: 'USD',
     amount: 2000,
     remark: '白名单验证 USD',
@@ -7210,6 +7372,7 @@ export function submitCardVerification({ cardId, currency, amount, remark }) {
     cardId: card.id,
     bank: card.bank,
     maskedNo: card.maskedNo,
+    cardNo: card.cardNo || '',   // 完整卡号快照（对齐充值/出金单：审核抽屉授权查看，用户侧仍 maskedNo）
     currency,
     amount,
     remark: remark || '卡片白名单验证',
@@ -8879,13 +9042,25 @@ export function submitSubscription({ project, amount, currency = 'HKD' }) {
 //     ——bankCards 属快照恢复范围（本日刚入快照），升版前旧快照（无 bc9）恢复后 vr1 审批仍因找不到卡静默失败
 // 49：2026-11-02 vr1/bc9 归属 u13 → u6（吴世昌用户档案 INV-0006 = u6；u13 为种子幽灵 id，用户页银行卡归档与
 //     定向通知按 userId 过滤时对不上人）——verificationRequests/bankCards 属快照恢复范围，须升版
-const STATE_VERSION = 53;
 // 49→50（2026-11-02）：资金流水新增 reqId（审批流水 → 用户侧资金申请详情回链）；旧快照的流水无该字段，升版重置业务数据使新链路生效（语言/登录态保留）
 // 50→51（2026-11-02）：fo-seed-4 驳回理由改现行流程口径（合规复核未通过）；fundOrders 属快照恢复范围，不升版旧快照保留旧文案
 // 51→52（2026-11-02）：fo-seed-4 驳回理由定稿「产品方调整募集安排，本笔申购未能配售」（资金来源审查归入金环节、
 //     申购不再二审；撤销类理由与 cancelFundOrder 的「已撤销」状态语义混淆）；fundOrders 属快照恢复范围
 // 52→53（2026-11-02）：历史导入流水（deposit/withdraw 共 11 条）补 bank/cardNo，TransactionDetail 加「付款/收款账户」行
 //     与申请单页公共字段对齐——transactions 属快照恢复范围，不升版旧快照的流水无该字段，账户行不显示
+// 53→54（2026-11-03）：多币种闭环——platformAccounts 增美元收款账户 depositUsd，funds 增美元份额 f1-usd。
+//     两者都在快照恢复范围；platformAccounts 的 restore 是「删光当前键再按快照重建」，
+//     不升版老快照会把 depositUsd 直接删掉，APP 侧美元入金账户消失。
+// 54→55（2026-11-03）：钱包种入美元演示余额 130,000——wallet 属快照恢复范围，
+//     不升版旧快照会把 usd.balance 读回 0，出金 USD 与美元基金仍然演示不了。
+// 55→56（2026-11-03）：后台多币种同步——platformAccounts 增 withdrawUsd（打款账户按币种取），
+//     usd 余额 130,000→150,000 并种入 USD 待处理充值单 dr12 / 提现单 wr5。
+//     platformAccounts 的 restore 是「删光当前键再按快照重建」，不升版会把 withdrawUsd 删掉；
+//     单据数组同属恢复范围，不升版旧快照里没有这两条 USD 待办，审核分支在后台恒空。
+// 56→57（2026-11-03）：白名单验证单补 cardNo 完整卡号快照（vr1/vr2 + submitCardVerification），
+//     验证抽屉「卡号」对齐充值/出金单显示明文——此前只有验证单显示脱敏 ****，审核口径不一致；
+//     verificationRequests 属快照恢复范围，不升版旧快照的验证单无该字段，抽屉兜底回退 maskedNo。
+const STATE_VERSION = 57;
 const STORAGE_KEY = 'zhifu-app-state';
 
 /**
@@ -8929,6 +9104,7 @@ export const Storage = {
         exitEvents: exitEvents,                   // 持仓退出·事件驱动分配（2026-08-21 重构，替代 exitRequests）
         dividendRequests: dividendRequests,   // 投后分红（2026-08-14）
         agreementRecords: agreementRecords,   // 协议签署留痕（2026-09-15 · 注册/KYC/PI/银行卡/条款重同意）
+        agreements: agreements,               // 协议文案（2026-11-03 · 后台法务维护协议内容，保存刷新保留）
         termsState: termsState,               // 条款版本与用户已同意版本（2026-09-15 · 条款更新重新同意）
         broadcastLogs: broadcastLogs,         // 广播台账（2026-08-14 通知触达广播台账化）
         supportTickets: supportTickets,       // 在线客服会话（2026-08-24 双端闭环）
@@ -9119,6 +9295,11 @@ export const Storage = {
       if (Array.isArray(data.agreementRecords)) {
         agreementRecords.length = 0;
         data.agreementRecords.forEach(r => agreementRecords.push(r));
+      }
+      // agreements：协议文案恢复（2026-11-03 · 后台法务维护；旧快照缺键 → 保持代码种子值，无需升版）
+      if (Array.isArray(data.agreements)) {
+        agreements.length = 0;
+        data.agreements.forEach(a => agreements.push(a));
       }
       if (data.termsState) {
         termsState.currentVersion = data.termsState.currentVersion || termsState.currentVersion;
