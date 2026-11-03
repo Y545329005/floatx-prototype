@@ -7,6 +7,7 @@ import {
   approveExchangeRequest, rejectExchangeRequest,
   approveCardVerification, rejectCardVerification,
   formatExactAmount, getEvidencePreview,
+  platformWithdrawAccount, platformDepositAccount,
 } from '../mock/data';
 import ImageLightbox from '../components/ImageLightbox';
 
@@ -288,6 +289,18 @@ function RequestDrawer({ kind, req, onClose, onApprove, onReject, onRequestEvide
   const reject = useRejectFlow();
   const meta = KIND_META[kind];
   const title = `${meta.title} #${req.id} · ${req.userName}`;
+  // 打款账户按单据币种取（2026-11-03）：出金不做换汇，财务必须从同币种账户汇出。
+  // 取不到 = 该币种没有配置打款账户，这是配置缺失，不是「随便找个账户打」。
+  const payeeAccount = kind === 'withdraw' ? platformWithdrawAccount(req.currency) : null;
+  // 入金核销的可纠错币种 = 平台真正有落点的币种（有收款账户 + 有钱包 + 有出金出口）。
+  // 此前下拉含 CNY/CNH，但两者映射同一个 cny 钱包且无对应产品与收款卡——
+  // 选了等于把钱记进一个既不能投也不能提的账本。
+  // 但单据自身的币种必须保留：历史单有 CNY（dr9），若选项里没有它，受控 select 会显示成第一个
+  // 选项而 state 仍是 CNY——财务看到 HKD、实际记 CNY，正是最不该出现的错账。
+  const creditCurrencies = Array.from(new Set([
+    ...['HKD', 'USD'].filter(c => !!platformDepositAccount(c)),
+    req.currency,
+  ]));
 
   // 2026-08-20 方案 B：打开请求时清空核销表单（不预填登记金额，避免「无脑确认」架空强制审核点；登记金额以参考行展示）
   useEffect(() => {
@@ -381,6 +394,27 @@ function RequestDrawer({ kind, req, onClose, onApprove, onReject, onRequestEvide
           {req.bankRef && <div className="kyc-review-row"><span>银行参考号</span><strong className="date-iso">{req.bankRef}</strong></div>}
         </div>
 
+        {/* ② 打款落点：出金审核的第一件事是「从哪个账户付」。放币种、账号，财务才能直接复制去打款 */}
+        {kind === 'withdraw' && (
+          <div className="card kyc-review-block admin-fund-card">
+            <div className="card-title">打款账户（{req.currency}）</div>
+            {payeeAccount ? (
+              <>
+                <div className="kyc-review-row"><span>汇出银行</span><strong>{payeeAccount.bank}</strong></div>
+                <div className="kyc-review-row"><span>户名</span><strong>{payeeAccount.accountName}</strong></div>
+                <div className="kyc-review-row"><span>账号</span><strong className="date-iso">{payeeAccount.accountNo}</strong></div>
+                <div className="kyc-review-row"><span>账户币种</span><strong>{payeeAccount.currency}</strong></div>
+              </>
+            ) : (
+              <div className="kyc-review-row"><span>状态</span><strong className="text-danger">未配置 {req.currency} 打款账户</strong></div>
+            )}
+            <p className="admin-form-hint">
+              必须从同币种账户汇出：跨币种打款会在银行端做一次换汇，到账金额与币种就不再由平台控制。
+              账户在「平台配置 → 资金账户」按币种维护。
+            </p>
+          </div>
+        )}
+
         {/* ② 凭证：转账动作之后的证据（用户手工上传），与转账前的申请快照分卡（仅充值） */}
         {kind === 'deposit' && (
           <div className="card kyc-review-block admin-fund-card">
@@ -420,8 +454,12 @@ function RequestDrawer({ kind, req, onClose, onApprove, onReject, onRequestEvide
                 value={depositForm.actualCurrency}
                 onChange={e => setDepositForm(f => ({ ...f, actualCurrency: e.target.value }))}
               >
-                {['HKD', 'USD', 'CNH', 'CNY'].map(c => <option key={c} value={c}>{c}</option>)}
+                {creditCurrencies.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
+              <div className="admin-form-hint">
+                只列平台有落点的币种：币种决定这笔钱进哪个账本，也决定它后面能买什么、能不能提走。
+                CNH/CNY 暂无收款账户与产品，提前放进来就是死胡同；单据原本的币种会保留，可改不能新增。
+              </div>
             </div>
             <div className="form-group">
               <label>实际到账金额（必填 · 按银行流水/回单录入）</label>
@@ -634,7 +672,7 @@ function VerificationDrawer({ req, onClose, onApprove, onReject }) {
       <div className="card kyc-review-block admin-fund-card">
         <div className="card-title">银行卡</div>
         <div className="kyc-review-row"><span>银行</span><strong>{req.bank || '—'}</strong></div>
-        <div className="kyc-review-row"><span>卡号</span><strong className="date-iso">{req.maskedNo || '—'}</strong></div>
+        <div className="kyc-review-row"><span>卡号</span><strong className="date-iso">{req.cardNo || req.maskedNo || '—'}</strong></div>
       </div>
       <div className="card kyc-review-block admin-fund-card">
         <div className="card-title">单据</div>
