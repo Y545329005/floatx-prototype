@@ -1758,4 +1758,26 @@ export const en = {
   '确认撤销': "Confirm cancellation",
   '已撤销': "Cancelled",
   '实际到账': "Net proceeds",
+
+  // 2026-11-04 银行卡页改版：页头说明弹层 / 动作菜单 / 名额提示
+  '已停用': "Disabled",
+  '已满': "full",
+  '关闭': "Close",
+  '更多操作': "More actions",
+  '白名单': "Whitelisted",
+  '银行卡使用说明': "How bank cards work",
+  '出入金仅限「已验证」银行卡。': "Deposits and withdrawals require a verified bank card.",
+  '添加卡 → 专员审核资料 → 用该卡首充 ≥1万 HKD 等值 → 自动加入白名单。': "Add card → officer reviews documents → first deposit of ≥HKD 10,000 equivalent with that card → automatically whitelisted.",
+  '每个币种最多 3 张有效卡（待验证 + 已验证 计入，停用 / 已拒绝不占名额）。': "Up to 3 active cards per currency (pending + verified count; disabled and rejected do not).",
+  '仅接受个人单名账户，开户地区限香港及证监会合资格司法管辖区名单。': "Personal single-name accounts only, opened in Hong Kong or an SFC eligible jurisdiction.",
+  '有在途提现的银行卡不可删除或停用。': "A card with a pending withdrawal cannot be deleted or disabled.",
+  '停用这张卡': "Disable this card",
+  '启用这张卡': "Enable this card",
+  '启用后可恢复出入金': "Enable to resume deposits and withdrawals",
+  '资料不符，请重新添加': "Details do not match — please add it again",
+  '三个币种的名额都已用满，请先停用或删除旧卡。': "All three currencies are at their card limit. Disable or delete a card first.",
+
+  // 2026-11-04 银行卡页改版（补缺词）
+  '操作未执行，请重试': "Action was not completed. Please try again.",
+  '请上传银行卡照片或开户证明': "Please upload a card photo or account opening proof.",
 };

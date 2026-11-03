@@ -2343,6 +2343,13 @@ input, select, textarea {
   margin-bottom: 18px;
 }
 
+/* 长表单弹层（添加银行卡）：内容超过一屏时内部滚动，避免标题与关闭按钮被顶出屏外 */
+.sheet-tall {
+  max-height: 88vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .sheet .form-group {
   margin-bottom: var(--space-3);
 }
@@ -4299,25 +4306,41 @@ input, select, textarea {
   background: var(--danger);
 }
 
-.bank-cards-note {
-  margin-bottom: var(--space-4);
+/* 页头右侧动作组（说明 / 添加）：标题 flex:1 撑开后自然靠右 */
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
 }
 
 .bank-card {
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.bank-cards-error {
+  margin-bottom: var(--space-2);
 }
 
 .bank-card-top {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: var(--space-4);
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.bank-card-top .btn-icon {
+  width: 32px;
+  height: 32px;
+  margin: -4px -4px 0 0;
 }
 
 .bank-card-brand {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 
 .bank-card-brand svg {
@@ -4329,24 +4352,152 @@ input, select, textarea {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
 }
 
 .bank-card-brand strong {
   font-size: var(--text-lg);
 }
 
-.bank-card-masked {
-  font-size: var(--text-3xl);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: var(--primary);
-  margin-bottom: var(--space-3);
+/* 副标题：持卡人 · 开户地区 · 账户类型（持卡人是合规核对项，不再单独占一行） */
+.bank-card-sub {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.bank-card-bottom {
+/* 卡号行：卡号左、币种右（原来卡号独占一行 + 币种在下一行，卡片过高） */
+.bank-card-number {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.bank-card-masked {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--primary);
+}
+
+/* 已停用：整卡降噪（浅底 + 细边保留卡片轮廓、无投影、卡号与图标转灰）
+   ——只靠一行「已停用」区分度不够；但若与页面同底无边框，会被误读成「不是卡片」。 */
+.bank-card-disabled {
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+  box-shadow: none;
+}
+
+.bank-card-disabled .bank-card-masked,
+.bank-card-disabled .bank-card-brand svg,
+.bank-card-disabled .bank-card-brand strong {
+  color: var(--text-tertiary);
+}
+
+.bank-card-disabled .bank-card-whitelist {
+  border-top-color: transparent;
+  padding-top: 0;
+  margin-top: var(--space-1);
+}
+
+.bank-status-chip {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 1px;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.bank-status-chip.is-ok { background: var(--success-light); color: var(--success); }
+.bank-status-chip.is-warn { background: var(--warning-light); color: var(--warning); }
+.bank-status-chip.is-off { background: var(--border); color: var(--text-secondary); }
+.bank-status-chip.is-bad { background: var(--danger-light); color: var(--compliance); }
+
+.bank-card-detail {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.45;
+  min-width: 0;
+  word-break: break-word;
+}
+
+/* 说明弹层（原常驻页顶的两行说明，2026-11-04 改按需展开） */
+.bank-card-info {
+  margin-bottom: var(--space-4);
+}
+
+.bank-card-info-lead {
+  font-size: var(--text-md);
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+}
+
+.bank-card-info-list {
+  margin: 0 0 var(--space-3);
+  padding-left: 18px;
+  list-style: disc;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  line-height: 1.7;
+}
+
+.bank-card-quota {
+  background: var(--bg);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+}
+
+.bank-card-quota-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.bank-card-quota-row + .bank-card-quota-row {
+  margin-top: var(--space-2);
+}
+
+.bank-card-quota-row strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* 卡片动作菜单：替代右上角两个裸图标 */
+.bank-card-menu {
+  margin-bottom: var(--space-3);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.bank-card-menu .menu-item {
+  width: 100%;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: var(--text-md);
+  color: var(--text-primary);
+}
+
+.bank-card-menu .menu-item-danger {
+  color: var(--compliance);
+}
+
+.bank-card-menu-no {
+  font-size: var(--text-sm);
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin-left: var(--space-2);
 }
 
 .bank-cards-empty {
@@ -4354,8 +4505,8 @@ input, select, textarea {
   padding: var(--space-10) 0;
 }
 
-.bank-cards-add {
-  margin-top: 8px;
+.bank-cards-empty .btn {
+  margin-top: var(--space-3);
 }
 
 .bank-card-add-form .form-group {
@@ -4369,19 +4520,17 @@ input, select, textarea {
 }
 
 /* ===== 银行卡白名单（2026-08-19；2026-10-29 eDDA 授权卡下线，相关样式一并移除） ===== */
+/* 状态行：徽标（状态词）+ 说明（下一步动作）。2026-11-04 起不再用裸图标表达状态。 */
 .bank-card-whitelist {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  align-items: flex-start;
+  gap: var(--space-2);
   margin-top: var(--space-3);
   padding-top: var(--space-3);
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--border-light);
   font-size: var(--text-sm);
   color: var(--text-secondary);
-}
-
-.bank-card-whitelist .wl-ok {
-  color: var(--success);
+  min-width: 0;
 }
 
 .bank-verify-btn {
