@@ -7,6 +7,7 @@ import {
   platformAccounts, updatePlatformAccounts, resetExchangeRates,
   platformBrand, updatePlatformBrand, logAudit, Storage,
   termsState, bumpTermsVersion,
+  agreements, updateAgreementSections,
   faqItems, addFaqItem, updateFaqItem, removeFaqItem,
 } from '../mock/data';
 
@@ -45,7 +46,7 @@ export default function AdminConfig({ admin }) {
   const [ratesErr, setRatesErr] = useState('');
   const [contact, setContact] = useState({ ...businessContact });
   const [contactErr, setContactErr] = useState('');
-  const [accounts, setAccounts] = useState(() => ({ deposit: { ...platformAccounts.deposit }, withdraw: { ...platformAccounts.withdraw } }));
+  const [accounts, setAccounts] = useState(() => ({ deposit: { ...platformAccounts.deposit }, depositUsd: { ...(platformAccounts.depositUsd || {}) }, withdraw: { ...platformAccounts.withdraw }, withdrawUsd: { ...(platformAccounts.withdrawUsd || {}) } }));
   const [accountErr, setAccountErr] = useState('');
   const [brand, setBrand] = useState({ ...platformBrand });
   const [brandErr, setBrandErr] = useState('');
@@ -85,8 +86,9 @@ export default function AdminConfig({ admin }) {
     if (key === 'sectors') setSectorList([...sectors]);
     if (key === 'rates') setRates(Object.keys(exchangeRates).map(k => ({ key: k, ...exchangeRates[k] })));
     if (key === 'contact') setContact({ ...businessContact });
-    if (key === 'accounts') setAccounts({ deposit: { ...platformAccounts.deposit }, withdraw: { ...platformAccounts.withdraw } });
+    if (key === 'accounts') setAccounts({ deposit: { ...platformAccounts.deposit }, depositUsd: { ...(platformAccounts.depositUsd || {}) }, withdraw: { ...platformAccounts.withdraw }, withdrawUsd: { ...(platformAccounts.withdrawUsd || {}) } });
     if (key === 'brand') setBrand({ ...platformBrand });
+    if (key === 'terms') { setLegalDocId('user-agreement'); setLegalLang('zh-CN'); loadLegalDraft('user-agreement', 'zh-CN'); setTermsTag(''); }
     if (key === 'faq') { setFaqEditing(null); setFaqForm({ ...EMPTY_FAQ_FORM }); }
     setPresetErr(''); setSectorErr(''); setRatesErr(''); setContactErr(''); setAccountErr(''); setBrandErr(''); setFaqErr('');
     setNewSector(''); setPresetWan('');
@@ -180,7 +182,7 @@ export default function AdminConfig({ admin }) {
   const accountField = (kind, label, field, placeholder) => (
     <div className="form-group">
       <label className="form-label">{label}</label>
-      <input className="form-input" value={accounts[kind][field]} placeholder={placeholder} onChange={e => handleAccountChange(kind, field, e.target.value)} />
+      <input className="form-input" value={accounts[kind][field] ?? ''} placeholder={placeholder} onChange={e => handleAccountChange(kind, field, e.target.value)} />
     </div>
   );
 
@@ -192,13 +194,72 @@ export default function AdminConfig({ admin }) {
   };
 
   // ---- 条款版本（2026-09-15 · 对齐公司实践"条款更新→重新同意"）：发布新版 → 用户端登录后弹窗重新勾选 ----
-  const [termsFlash, setTermsFlash] = useState(false);
+  // ---- 协议文案维护（2026-11-03 · 法务维护入口原型）：协议 × 语言 tab，小节标题/段落逐条编辑，保存写回 agreements ----
+  const LEGAL_DOCS = [
+    { id: 'user-agreement', name: '使用条款' },
+    { id: 'risk-disclosure', name: '风险披露' },
+    { id: 'privacy-policy', name: '隐私政策' },
+  ];
+  const LEGAL_LANGS = [
+    { key: 'zh-CN', label: '简体' },
+    { key: 'zh-HK', label: '繁體' },
+    { key: 'en', label: 'English' },
+  ];
+  const [termsTag, setTermsTag] = useState('');   // 抽屉内动作反馈（已保存 / 已发布）
   const [, setTermsTick] = useState(0);
+  const [legalDocId, setLegalDocId] = useState('user-agreement');
+  const [legalLang, setLegalLang] = useState('zh-CN');
+  const [legalDraft, setLegalDraft] = useState(''); // 当前协议 × 语言的纯文本草稿（一行一段，## 开头 = 小节标题）
+  // sections → 纯文本：小节间空行分隔，标题行加 ## 前缀（标题为空的小节只出段落）
+  const serializeLegal = (sections, lang) => sections.map(sec => [
+    sec.h[lang] ? `## ${sec.h[lang]}` : null,
+    ...sec.p.map(t => t[lang]),
+  ].filter(Boolean).join('\n')).join('\n\n');
+  const loadLegalDraft = (id, lang) => {
+    const doc = agreements.find(a => a.id === id);
+    setLegalDraft(doc ? serializeLegal(doc.sections, lang) : '');
+  };
+  // 纯文本 → sections（保存时转换）：'## ' 开头 = 新小节标题，其余非空行 = 段落；
+  // 其他两语按小节序号/段落序号从原文回填（增删行后另一语请在其页签下对照维护，保持行结构一致）
+  const parseLegalText = (text, prev, lang) => {
+    const other = ['zh-CN', 'zh-HK', 'en'].filter(l => l !== lang);
+    const prevHeads = prev.map(s => s.h);
+    const prevParas = prev.flatMap(s => s.p);
+    const out = [];
+    let cur = null;
+    let ki = 0;
+    text.split('\n').forEach(raw => {
+      const line = raw.trim();
+      if (!line) return;
+      if (line.startsWith('## ')) {
+        cur = { h: { 'zh-CN': '', 'zh-HK': '', en: '' }, p: [] };
+        cur.h[lang] = line.slice(3).trim();
+        const ph = prevHeads[out.length];
+        if (ph) other.forEach(l => { cur.h[l] = ph[l] || ''; });
+        out.push(cur);
+      } else {
+        if (!cur) { cur = { h: { 'zh-CN': '', 'zh-HK': '', en: '' }, p: [] }; out.push(cur); }
+        const t = { 'zh-CN': '', 'zh-HK': '', en: '' };
+        t[lang] = line;
+        const pt = prevParas[ki];
+        if (pt) other.forEach(l => { t[l] = pt[l] || ''; });
+        ki++;
+        cur.p.push(t);
+      }
+    });
+    return out;
+  };
   const handleBumpTerms = () => {
     if (!window.confirm(`发布新版条款（当前 ${termsState.currentVersion}）？发布后所有用户需重新确认协议。`)) return;
     bumpTermsVersion(operator);
-    setTermsFlash(true);
-    setTimeout(() => { setTermsFlash(false); setTermsTick(t => t + 1); }, 1500);
+    setTermsTag('已发布');
+    setTimeout(() => { setTermsTag(''); setTermsTick(t => t + 1); }, 1500);
+  };
+  const handleLegalSave = () => {
+    const doc = agreements.find(a => a.id === legalDocId);
+    updateAgreementSections(legalDocId, parseLegalText(legalDraft, doc?.sections || [], legalLang), operator);
+    setTermsTag('已保存');
+    setTimeout(() => { setTermsTag(''); setTermsTick(t => t + 1); }, 1500);
   };
 
   // ---- 抽屉 body 按当前 editKey 渲染 ----
@@ -399,7 +460,7 @@ export default function AdminConfig({ admin }) {
       case 'accounts':
         return (
           <>
-            <div className="admin-config-account-title">收款账户（投资人充值入金）</div>
+            <div className="admin-config-account-title">收款账户（港币入金）</div>
             <div className="form-row">
               {accountField('deposit', '银行', 'bank', '如：星展银行（香港）')}
               {accountField('deposit', '户名', 'accountName', '如：HKBTC Limited')}
@@ -408,9 +469,7 @@ export default function AdminConfig({ admin }) {
               {accountField('deposit', '账号', 'accountNo', '如：004-123456-789')}
               <div className="form-group">
                 <label className="form-label">币种</label>
-                <select className="form-input" value={accounts.deposit.currency} onChange={e => handleAccountChange('deposit', 'currency', e.target.value)}>
-                  <option value="HKD">HKD</option><option value="USD">USD</option><option value="CNY">CNY</option>
-                </select>
+                <input className="form-input" value="HKD" readOnly />
               </div>
             </div>
             {/* 2026-10-29：国际电汇字段——APP 充值页的「国际电汇需填」折叠区读的就是这三个值 */}
@@ -423,9 +482,38 @@ export default function AdminConfig({ admin }) {
               {accountField('deposit', '银行地址（英文）', 'bankAddress', '如：11/F, 248 Queen\'s Road East, Wan Chai, Hong Kong')}
             </div>
             <div className="admin-form-actions">
-              <button className="btn btn-primary btn-md" onClick={() => handleAccountSave('deposit')}><Save size={15} /> 保存收款账户</button>
+              <button className="btn btn-primary btn-md" onClick={() => handleAccountSave('deposit')}><Save size={15} /> 保存港币收款账户</button>
             </div>
-            <div className="admin-config-account-title">打款账户（投资人提现出金）</div>
+
+            {/* 2026-11-03 多币种闭环：美元收款账户独立配置。
+                APP 充值页选中 USD 时读这一组；币种固定 USD，不允许在后台改。 */}
+            <div className="admin-config-account-title">收款账户（美元入金）</div>
+            <div className="form-row">
+              {accountField('depositUsd', '银行', 'bank', '如：星展银行（香港）')}
+              {accountField('depositUsd', '户名', 'accountName', '如：HighBlock Securities Limited Client AC')}
+            </div>
+            <div className="form-row">
+              {accountField('depositUsd', '账号', 'accountNo', '如：016-456-000-5678')}
+              <div className="form-group">
+                <label className="form-label">币种</label>
+                <input className="form-input" value="USD" readOnly />
+              </div>
+            </div>
+            <div className="form-row">
+              {accountField('depositUsd', '银行名称（英文）', 'bankNameEn', '如：DBS Bank (Hong Kong) Limited')}
+              {accountField('depositUsd', 'SWIFT 代码', 'swift', '如：DHBKHKHH')}
+            </div>
+            <div className="form-row">
+              {accountField('depositUsd', '银行编号', 'bankCode', '如：016')}
+              {accountField('depositUsd', '银行地址（英文）', 'bankAddress', '如：11/F, 248 Queen\'s Road East, Wan Chai, Hong Kong')}
+            </div>
+            <div className="admin-form-actions">
+              <button className="btn btn-primary btn-md" onClick={() => handleAccountSave('depositUsd')}><Save size={15} /> 保存美元收款账户</button>
+            </div>
+
+            {/* 打款账户用途说明（2026-11-03 用户确认口径）：仅作单据展示，不驱动打款 */}
+            <p className="admin-form-hint">打款账户仅用于出金审核单据展示「本单汇出账户」，供财务线下汇出时核对；平台未对接银行 API，不驱动实际打款。</p>
+            <div className="admin-config-account-title">打款账户（港币出金）</div>
             <div className="form-row">
               {accountField('withdraw', '银行', 'bank', '如：星展银行（香港）')}
               {accountField('withdraw', '户名', 'accountName', '如：HKBTC Limited')}
@@ -434,13 +522,29 @@ export default function AdminConfig({ admin }) {
               {accountField('withdraw', '账号', 'accountNo', '如：004-123456-789')}
               <div className="form-group">
                 <label className="form-label">币种</label>
-                <select className="form-input" value={accounts.withdraw.currency} onChange={e => handleAccountChange('withdraw', 'currency', e.target.value)}>
-                  <option value="HKD">HKD</option><option value="USD">USD</option><option value="CNY">CNY</option>
-                </select>
+                <input className="form-input" value="HKD" readOnly />
               </div>
             </div>
             <div className="admin-form-actions">
-              <button className="btn btn-primary btn-md" onClick={() => handleAccountSave('withdraw')}><Save size={15} /> 保存打款账户</button>
+              <button className="btn btn-primary btn-md" onClick={() => handleAccountSave('withdraw')}><Save size={15} /> 保存港币打款账户</button>
+            </div>
+
+            {/* 2026-11-03：美元打款账户独立配置。出金审核抽屉按单据币种读这一组，
+                没配就显式报「未配置 USD 打款账户」，不会退回港币账户硬打。 */}
+            <div className="admin-config-account-title">打款账户（美元出金）</div>
+            <div className="form-row">
+              {accountField('withdrawUsd', '银行', 'bank', '如：星展银行（香港）')}
+              {accountField('withdrawUsd', '户名', 'accountName', '如：HighBlock Securities Limited')}
+            </div>
+            <div className="form-row">
+              {accountField('withdrawUsd', '账号', 'accountNo', '如：016-456-000-5678')}
+              <div className="form-group">
+                <label className="form-label">币种</label>
+                <input className="form-input" value="USD" readOnly />
+              </div>
+            </div>
+            <div className="admin-form-actions">
+              <button className="btn btn-primary btn-md" onClick={() => handleAccountSave('withdrawUsd')}><Save size={15} /> 保存美元打款账户</button>
             </div>
             {accountErr && <p className="form-error">{accountErr}</p>}
           </>
@@ -489,12 +593,57 @@ export default function AdminConfig({ admin }) {
             <div className="admin-form-hint">{'品牌信息展示于「关于」页与登录页；牌照类型/编号同时注入法务协议文本与基金名（{{BRAND}} 占位插值），改这里即全端生效。版本号须与应用市场注册版本一致。'}</div>
           </>
         );
+      case 'terms':
+        return (
+          <>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">当前版本</label>
+                <input className="form-input" value={termsState.currentVersion} readOnly />
+              </div>
+              <div className="form-group">
+                <label className="form-label">上次发布时间</label>
+                <input className="form-input date-iso" value={termsState.updatedAt || '—'} readOnly />
+              </div>
+            </div>
+
+            {/* 协议 × 语言切换（切换即从已保存版本重新载入纯文本，未保存编辑不保留） */}
+            <div className="admin-config-legal-bar">
+              <div className="admin-config-legal-tabs">
+                {LEGAL_DOCS.map(d => (
+                  <button key={d.id} className={legalDocId === d.id ? 'admin-config-legal-tab is-active' : 'admin-config-legal-tab'} onClick={() => { setLegalDocId(d.id); loadLegalDraft(d.id, legalLang); }}>{d.name}</button>
+                ))}
+              </div>
+              <div className="admin-config-legal-tabs">
+                {LEGAL_LANGS.map(l => (
+                  <button key={l.key} className={legalLang === l.key ? 'admin-config-legal-tab is-active' : 'admin-config-legal-tab'} onClick={() => { setLegalLang(l.key); loadLegalDraft(legalDocId, l.key); }}>{l.label}</button>
+                ))}
+              </div>
+            </div>
+
+            <textarea
+              className="form-input admin-config-legal-textarea"
+              rows={16}
+              value={legalDraft}
+              onChange={e => setLegalDraft(e.target.value)}
+              placeholder={'每行一段，直接编辑正文；「## 开头的行」为小节标题；空行仅作小节分隔。'}
+            />
+
+            <div className="admin-form-actions">
+              <button className="btn btn-primary btn-md" onClick={handleLegalSave}><Save size={15} /> 保存{LEGAL_DOCS.find(d => d.id === legalDocId)?.name}文案</button>
+              <button className="btn btn-md btn-outline" onClick={handleBumpTerms}><FileText size={15} /> 发布新版（演示）</button>
+              {termsTag && <span className="admin-saved-tag">{termsTag}</span>}
+            </div>
+
+            <div className="admin-form-hint">纯文本维护（原型演示法务入口，上线后迁后端可配，见执行清单 #43）：每行一段、「## 行」为小节标题；保存即写回，用户端协议页即时可读。三语行结构需保持一致（另两语在对应页签下对照维护）；发布链路：文案改定 → 「发布新版」推进版本号（二次确认）→ 用户端下次进入弹「条款已更新」重新同意。</div>
+          </>
+        );
       default:
         return null;
     }
   };
 
-  const editTitle = editKey ? CONFIG_ITEMS.find(i => i.key === editKey)?.name : '';
+  const editTitle = !editKey ? '' : editKey === 'terms' ? '条款版本' : CONFIG_ITEMS.find(i => i.key === editKey)?.name;
   const isPresetsLike = editKey === 'presets' || editKey === 'sectors' || editKey === 'faq'; // 即时写回型（"完成"关闭）
   const isAccounts = editKey === 'accounts'; // 内部两个保存按钮，抽屉"完成"关闭
   const isRates = editKey === 'rates';       // 保存 + 恢复默认
@@ -503,55 +652,76 @@ export default function AdminConfig({ admin }) {
   // 页内分级（2026-10-19）：sensitive 配置（资金账户/品牌）与条款发布仅 super 可见；
   // ops 保留 config 菜单管理日常运营参数（档位/行业/汇率/商务联系/FAQ）
   const isSuper = admin?.role === 'super';
-  const visibleItems = CONFIG_ITEMS.filter(i => !i.sensitive || isSuper);
+  const opsItems = CONFIG_ITEMS.filter(i => !i.sensitive);
+  const complianceItems = CONFIG_ITEMS.filter(i => i.sensitive);
+
+  // 抽屉保存语义标注（呈现层：4 种按钮组合统一预告「改了什么时候生效」，降低每次重学成本）
+  const isImmediateKey = k => k === 'presets' || k === 'sectors' || k === 'faq';
+  const drawerSemantics = !editKey ? '' : isImmediateKey(editKey) ? '修改即时生效'
+    : editKey === 'accounts' ? '各账户独立保存，保存后生效'
+    : editKey === 'terms' ? '文案保存后生效；发布版本即时生效（二次确认）' : '保存后生效';
+
+  // 配置卡片：图标 + 名称 + 说明 + 当前值（点卡或 [编辑] 打开抽屉）
+  const renderConfigCard = (item) => {
+    const Icon = item.icon;
+    return (
+      <div key={item.key} className="admin-config-card" onClick={() => openEdit(item.key)} {...keyed(() => openEdit(item.key))}>
+        <div className="admin-config-card-head">
+          <span className="admin-config-item-icon"><Icon size={16} /></span>
+          <strong className="admin-config-card-name">{item.name}</strong>
+          <button className="btn-icon" title={`编辑${item.name}`} onClick={e => { e.stopPropagation(); openEdit(item.key); }}><Edit3 size={15} /></button>
+        </div>
+        <p className="admin-config-card-desc">{item.desc}</p>
+        <div className="admin-config-card-value">
+          <span className="admin-config-card-value-label">当前</span>
+          <span className="admin-config-card-value-text">{item.summary()}</span>
+          {saved[item.key] && <span className="admin-saved-tag">已保存</span>}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="admin-page">
       <div className="admin-page-header">
         <h1>系统配置</h1>
-        <div className="admin-page-header-actions">
-          <span className="text-muted">共 {visibleItems.length} 项配置{!isSuper && ' · 敏感配置（资金账户/品牌/条款）仅超级管理员可见'} · 点击行或 [编辑] 修改</span>
-        </div>
       </div>
 
-      {/* 条款版本（2026-09-15 · 直操作卡）：发布新版 → 用户端登录后弹"条款已更新"重新同意；仅 super（2026-10-19 页内分级） */}
+      {/* 运营参数组（ops 及以上）：日常运营参数，分级靠分组呈现而非头部教学文案 */}
+      <section className="admin-config-group">
+        <div className="admin-config-group-head">
+          <h2 className="admin-config-group-title">运营参数</h2>
+          <span className="admin-config-group-note">日常运营可调 · {opsItems.length} 项</span>
+        </div>
+        <div className="admin-config-grid">
+          {opsItems.map(renderConfigCard)}
+        </div>
+      </section>
+
+      {/* 平台与合规组（仅 super）：敏感配置带权限徽标；条款版本并入本组，消除「直操作卡 + 清单」形态混拼 */}
       {isSuper && (
-      <div className="card kyc-review-block admin-fund-card" style={{ marginBottom: 'var(--space-4)' }}>
-        <div className="card-title"><FileText size={14} /> 条款版本</div>
-        <div className="kyc-review-row"><span>当前生效版本</span><strong className="date-iso">{termsState.currentVersion}</strong></div>
-        <div className="kyc-review-row"><span>发布时间</span><strong className="date-iso">{termsState.updatedAt || '—'}</strong></div>
-        <div className="admin-form-actions" style={{ marginTop: 'var(--space-3)', display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
-          <button className="btn btn-md btn-primary" onClick={handleBumpTerms}><FileText size={15} /> 发布新版（演示）</button>
-          {termsFlash && <span className="admin-saved-tag">已发布</span>}
-        </div>
-        <p className="admin-form-hint">发布后用户端下次进入将弹出「条款已更新」，重新勾选同意后方可继续使用；同意记录写入协议签署留痕（含版本与时间）。</p>
-      </div>
-      )}
-
-      {/* 配置项清单（一眼看到所有配置 + 当前值摘要；sensitive 项仅 super） */}
-      <div className="admin-config-list admin-config-catalog">
-        {visibleItems.map(item => {
-          const Icon = item.icon;
-          return (
-            <div key={item.key} className="admin-config-item" {...keyed(() => openEdit(item.key))}>
-              <span className="admin-config-item-icon"><Icon size={16} /></span>
-              <div className="admin-config-item-body">
-                <strong>{item.name}</strong>
-                <span className="text-muted text-sm">{item.desc}</span>
+        <section className="admin-config-group">
+          <div className="admin-config-group-head">
+            <h2 className="admin-config-group-title">平台与合规</h2>
+            <span className="admin-config-badge">仅超级管理员</span>
+          </div>
+          <div className="admin-config-grid">
+            {complianceItems.map(renderConfigCard)}
+            <div className="admin-config-card" onClick={() => openEdit('terms')} {...keyed(() => openEdit('terms'))}>
+              <div className="admin-config-card-head">
+                <span className="admin-config-item-icon"><FileText size={16} /></span>
+                <strong className="admin-config-card-name">条款版本</strong>
+                <button className="btn-icon" title="编辑条款版本" onClick={e => { e.stopPropagation(); openEdit('terms'); }}><Edit3 size={15} /></button>
               </div>
-              <span className="admin-config-item-summary">{item.summary()}</span>
-              {saved[item.key] && <span className="admin-saved-tag">已保存</span>}
-              <button
-                className="btn-icon"
-                title={`编辑${item.name}`}
-                onClick={e => { e.stopPropagation(); openEdit(item.key); }}
-              >
-                <Edit3 size={15} />
-              </button>
+              <p className="admin-config-card-desc">发布后用户端下次进入将弹出「条款已更新」，重新勾选同意后方可继续使用；同意记录写入协议签署留痕（含版本与时间）。三份协议文案（使用条款/风险披露/隐私政策，三语）由法务统一维护，后台仅发布版本号。</p>
+              <div className="admin-config-card-value">
+                <span className="admin-config-card-value-label">当前</span>
+                <span className="admin-config-card-value-text date-iso">{termsState.currentVersion}{termsState.updatedAt ? ` · ${termsState.updatedAt}` : ''}</span>
+              </div>
             </div>
-          );
-        })}
-      </div>
+          </div>
+        </section>
+      )}
 
       {/* 配置编辑抽屉（点行/编辑 → 弹出，不占页面空间） */}
       {drawerOpen && <div className="admin-drawer-mask" onClick={closeEdit} />}
@@ -562,6 +732,7 @@ export default function AdminConfig({ admin }) {
             <button className="btn-icon" title="关闭" onClick={closeEdit}><X size={18} /></button>
           </div>
           <div className="admin-drawer-body">
+            <div className="admin-config-drawer-tag">{drawerSemantics}</div>
             {renderDrawerBody()}
           </div>
           <div className="admin-drawer-actions">
@@ -581,6 +752,7 @@ export default function AdminConfig({ admin }) {
               </>
             )}
             {isAccounts && <button className="btn btn-md btn-primary" onClick={closeEdit}>完成</button>}
+            {editKey === 'terms' && <button className="btn btn-md btn-primary" onClick={closeEdit}>完成</button>}
           </div>
         </div>
       )}

@@ -52,7 +52,7 @@ export const termsOfUseSections = [
   {
     h: T("", "", ""),
     p: [
-      T("本使用条款的中文版本仅供参考。如本使用条款的中英文版本之间存在任何不一致或冲突，应以英文版本为准。", "本使用條款的中文版本僅供參考。如本使用條款的中英文版本之間存在任何不一致或衝突，應以英文版本為準。", ""),
+      T("本使用条款的中文版本仅供参考。如本使用条款的中英文版本之间存在任何不一致或冲突，应以英文版本为准。", "本使用條款的中文版本僅供參考。如本使用條款的中英文版本之間存在任何不一致或衝突，應以英文版本為準。", "The Chinese version of these Terms is for reference only. In case of any inconsistency or conflict between the Chinese and English versions of these Terms, the English version shall prevail."),
     ],
   },
 ];

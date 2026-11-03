@@ -1424,24 +1424,81 @@
 .admin-config-account-title + .admin-config-account-title {
   margin-top: var(--space-5);
 }
-/* ---- 配置项清单（目录行：icon + 名称 + 当前值摘要 + 编辑，2026-08-14 清单化） ---- */
-.admin-config-catalog {
+/* ---- 配置卡片网格（2026-11-03 重设计：分组 + 2 列卡，运营参数 / 平台与合规） ---- */
+.admin-config-group { margin-bottom: var(--space-5); }
+.admin-config-group-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin: var(--space-2) 0 var(--space-3);
+}
+.admin-config-group-title { font-size: var(--text-xl); font-weight: 600; color: var(--text); }
+.admin-config-group-note { font-size: var(--text-sm); color: var(--text-secondary); }
+.admin-config-badge {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--compliance);
+  background: var(--compliance-bg);
+  border: 1px solid var(--compliance-border);
+  border-radius: var(--radius-sm);
+  padding: 1px var(--space-2);
+}
+.admin-config-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+.admin-config-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
   background: var(--bg-card);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  padding: var(--space-2) var(--space-4);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-4);
+  cursor: pointer;
+  transition: box-shadow 0.15s ease;
 }
-.admin-config-item {
+.admin-config-card:hover { box-shadow: var(--shadow-md); }
+.admin-config-card-head { display: flex; align-items: center; gap: var(--space-3); }
+.admin-config-card-name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.admin-config-card-desc {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.admin-config-card-value {
+  margin-top: auto;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-light);
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) 0;
-  min-height: var(--min-touch-target);
-  border-bottom: 1px solid var(--border-light);
-  cursor: pointer;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
-.admin-config-item:last-child { border-bottom: none; }
-.admin-config-item:hover { background: var(--bg); }
+.admin-config-card-value-label { flex-shrink: 0; font-size: var(--text-sm); color: var(--text-secondary); }
+.admin-config-card-value-text {
+  min-width: 0;
+  font-size: var(--text-md);
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.admin-config-card-value .admin-saved-tag { font-size: var(--text-sm); }
+.admin-config-card-value .btn { margin-left: auto; flex-shrink: 0; } /* 发布新版按钮靠右（仅条款卡有） */
 .admin-config-item-icon {
   display: flex;
   align-items: center;
@@ -1449,32 +1506,24 @@
   width: 36px;
   height: 36px;
   border-radius: var(--radius-md);
-  background: rgba(0, 94, 184, 0.06);
+  background: var(--primary-bg);
   color: var(--primary);
   flex-shrink: 0;
 }
-.admin-config-item-body {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.admin-config-item-body strong { font-size: var(--text-md); font-weight: 600; }
-.admin-config-item-summary {
-  font-size: var(--text-md);
-  font-weight: 500;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  max-width: 45%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-align: right;
-}
-.admin-config-item .admin-saved-tag {
+.admin-config-drawer-tag {
+  width: fit-content;
+  margin-bottom: var(--space-3);
+  padding: var(--space-1) var(--space-2);
   font-size: var(--text-sm);
-  flex-shrink: 0;
+  color: var(--text-secondary);
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
 }
+@media (max-width: 1024px) {
+  .admin-config-grid { grid-template-columns: 1fr; }
+}
+/* 直操作卡（条款版本）：操作在卡内按钮，无抽屉——去掉可点击暗示，避免「点了没反应」 */
 
 /* ---- 申购操作历史（后台） ---- */
 .admin-history {
@@ -2343,24 +2392,45 @@
 }
 
 /* ========== 审计日志（2026-08-13 · 全局统一留痕视图） ========== */
+/* 2026-11-03 定向补齐：时间窗 / 证据可读 / 动作语义色 / 类型分组 / mono 时间戳与单号 / 导出 */
 .admin-table--audit .admin-table-header,
 .admin-table--audit .admin-table-row {
   grid-template-columns: minmax(152px, 15fr) minmax(80px, 8fr) minmax(72px, 7fr) minmax(72px, 7fr) minmax(150px, 15fr) minmax(230px, 23fr);
   gap: 16px;
 }
+/* 行距收紧（2026-11-03）：多出时间窗一行后，900 视口需保「10 行 + 分页一屏放得下」（实测验收） */
+.admin-table--audit .admin-table-row { padding: var(--space-3) var(--space-4); }
+/* 时间戳等宽（DESIGN.md「可信感来自精确——等宽单号」；与 08-14 起单号 mono 惯例同栈） */
 .admin-table--audit .col-date {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
   color: var(--text-secondary);
   white-space: nowrap;
 }
 .admin-table--audit .col-operator { color: var(--text-secondary); }
 .admin-table--audit .col-action { color: var(--text-secondary); }
+/* 危险动作语义色文字（2026-08-14「实色底 → 语义色文字」整改惯例，不引入新色相） */
+.admin-table--audit .col-action.admin-audit-action--danger { color: var(--danger); font-weight: 600; }
+.admin-table--audit .col-action.admin-audit-action--warn { color: var(--warning); font-weight: 600; }
 .admin-table--audit .col-target strong { font-size: var(--text-md); font-weight: 600; }
+/* 对象编号：mono 小字内联（不占新行，保持一屏 10 行预算） */
+.admin-audit-targetid {
+  margin-left: var(--space-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+/* 详情：两行截断（此前 nowrap+ellipsis 单行硬裁，长 note 静默丢证据；全文走 title） */
 .admin-table--audit .col-note {
   color: var(--text-secondary);
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.45;
+  white-space: normal;
 }
 .admin-audit-cat {
   display: inline-block;
@@ -2377,8 +2447,25 @@
   min-width: 130px;
   height: 40px;
 }
-.admin-view-row--audit { align-items: center; }
+.admin-view-row--audit { align-items: center; margin-bottom: var(--space-3); }
 .admin-view-row--audit .admin-search-wrap { margin-left: auto; }
+/* 时间窗行：快捷 chips 靠左 + 起止日期靠右（与上行搜索右缘对齐） */
+.admin-audit-timerow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+.admin-audit-chips { display: inline-flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.admin-audit-dates { display: inline-flex; align-items: center; gap: var(--space-2); margin-left: auto; }
+.admin-audit-date { width: 148px; height: 40px; }
+.admin-audit-date-sep { color: var(--text-tertiary); font-size: var(--text-sm); }
+/* 页头导出按钮：图标 + 文字同行（.admin-page-btn 原为纯文字按钮） */
+.admin-audit-export { display: inline-flex; align-items: center; gap: 6px; }
+/* 空态出口：给了文案必须给出路（清除全部筛选） */
+.admin-audit-clear-empty { margin-left: var(--space-3); }
+.admin-audit-clear-empty:hover { color: var(--primary); border-color: var(--primary-border); }
 
 
 /* ========== 管理员账号管理（2026-08-13 · P1 · 仅 super 菜单可见） ========== */
@@ -3757,3 +3844,37 @@
 .fund-trade-history-row:last-child { border-bottom: none; }
 .fund-trade-history-time { color: var(--text-tertiary); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .fund-trade-history-note { color: var(--text-secondary); }
+
+/* ===== 协议文案维护（2026-11-03 · 条款版本抽屉：协议 × 语言 tab + 小节段落编辑） ===== */
+.admin-config-legal-bar {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-3);
+}
+.admin-config-legal-tabs { display: flex; gap: var(--space-1); }
+.admin-config-legal-tab {
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.admin-config-legal-tab.is-active {
+  background: var(--primary-bg);
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 600;
+}
+.admin-config-legal-textarea {
+  min-height: 340px;
+  height: auto;
+  resize: vertical;
+  line-height: 1.7;
+  font-size: var(--text-sm);
+  padding: var(--space-3);
+  margin-bottom: var(--space-2);
+}
