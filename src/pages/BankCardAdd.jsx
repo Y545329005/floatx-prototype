@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Check, Upload, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Check, Upload, ShieldCheck, ChevronDown } from 'lucide-react';
 import {
   BANK_OPTIONS, CARD_QUOTA_PER_CURRENCY,
   JURISDICTIONS, jurisdictionLabel, countActiveCards,
@@ -7,12 +7,14 @@ import {
 } from '../mock/data';
 import { useLang } from '../i18n';
 import AgreementModal from '../components/AgreementModal';
+import BottomPicker from '../components/BottomPicker';
 
 // 添加银行卡（2026-11-04 由底部弹层改为独立页）
-// 原因：表单含「银行 / 开户地区 / 币种 / 卡号 / 凭证 / 协议」6 项，弹层高度已接近整屏（812px）；
+// 原因：表单含「银行 / 开户地区 / 币种 / 卡号 / 凭证」5 项，弹层高度已接近整屏；
 // 且内部还要叠协议弹窗、失败要保留已填内容——这些都是页面语义，不是弹层语义。
 // 账户类型不再是表单项：业务只接受个人单名账户，给一个只有单一选项的下拉等于让用户做无意义操作，
 // 数据层仍保留校验（防绕过）。地区选定后「香港账户 / 海外账户」由数据层按 region 推断。
+// 顶部不再写流程说明：规则在上一级页面的「?」里，重复一遍只会把表单推低。
 const CURRENCIES = [
   { key: 'HKD', label: 'HKD 港币' },
   { key: 'USD', label: 'USD 美元' },
@@ -35,6 +37,7 @@ export default function BankCardAdd({ navigate, goBack, setToast, currency }) {
   const [agreed, setAgreed] = useState(false);
   const [viewingDoc, setViewingDoc] = useState(null);
   const [error, setError] = useState('');
+  const [picker, setPicker] = useState(null);   // 'bank' | 'region' | 'currency'
 
   const allFull = CURRENCIES.every(c => quotaOf(c.key) >= CARD_QUOTA_PER_CURRENCY);
   const frozen = getFreezeState().frozen;
@@ -63,6 +66,8 @@ export default function BankCardAdd({ navigate, goBack, setToast, currency }) {
     navigate('#bank-cards');
   };
 
+  const currencyLabel = CURRENCIES.find(c => c.key === form.currency)?.label || form.currency;
+
   return (
     <div className="page bank-card-add-page">
       <div className="subpage-sticky">
@@ -83,52 +88,29 @@ export default function BankCardAdd({ navigate, goBack, setToast, currency }) {
         )}
 
         <div className="kyc-card">
-          <div className="kyc-card-desc">
-            {t('我们会核对卡片信息；核对通过后，用这张卡入金满 1 万 HKD（或等值），即可用于出入金。')}
-          </div>
-
           <div className="form-group">
             <label className="form-label">{t('银行')}</label>
-            <select
-              className="form-input"
-              value={form.bank}
-              onChange={e => { setForm(f => ({ ...f, bank: e.target.value })); setError(''); }}
-            >
-              {BANK_OPTIONS.map(b => <option key={b}>{b}</option>)}
-            </select>
+            <button className="form-input picker-trigger" onClick={() => setPicker('bank')}>
+              <span className="picker-trigger-value">{form.bank}</span>
+              <ChevronDown size={18} className="picker-caret" />
+            </button>
           </div>
 
           <div className="form-group">
             <label className="form-label">{t('开户国家 / 地区')}</label>
-            <select
-              className="form-input"
-              value={form.region}
-              onChange={e => { setForm(f => ({ ...f, region: e.target.value })); setError(''); }}
-            >
-              {JURISDICTIONS.map(j => (
-                <option key={j.code} value={j.code}>{jurisdictionLabel(j.code, lang)}</option>
-              ))}
-            </select>
+            <button className="form-input picker-trigger" onClick={() => setPicker('region')}>
+              <span className="picker-trigger-value">{jurisdictionLabel(form.region, lang)}</span>
+              <ChevronDown size={18} className="picker-caret" />
+            </button>
             <p className="fund-field-hint">{t('仅支持证监会合资格地区（含香港）开立的银行账户。')}</p>
           </div>
 
           <div className="form-group">
             <label className="form-label">{t('账户币种')}</label>
-            <select
-              className="form-input"
-              value={form.currency}
-              onChange={e => { setForm(f => ({ ...f, currency: e.target.value })); setError(''); }}
-            >
-              {CURRENCIES.map(cur => {
-                const used = quotaOf(cur.key);
-                const full = used >= CARD_QUOTA_PER_CURRENCY;
-                return (
-                  <option key={cur.key} value={cur.key} disabled={full}>
-                    {cur.label} · {used}/{CARD_QUOTA_PER_CURRENCY}{full ? `（${t('已满')}）` : ''}
-                  </option>
-                );
-              })}
-            </select>
+            <button className="form-input picker-trigger" onClick={() => setPicker('currency')}>
+              <span className="picker-trigger-value">{currencyLabel}</span>
+              <ChevronDown size={18} className="picker-caret" />
+            </button>
           </div>
 
           <div className="form-group">
@@ -204,6 +186,42 @@ export default function BankCardAdd({ navigate, goBack, setToast, currency }) {
           {t('提交审核')}
         </button>
       </div>
+
+      <BottomPicker
+        open={picker === 'bank'}
+        title={t('选择银行')}
+        value={form.bank}
+        options={BANK_OPTIONS.map(b => ({ value: b, label: b }))}
+        onSelect={v => { setForm(f => ({ ...f, bank: v })); setError(''); }}
+        onClose={() => setPicker(null)}
+      />
+
+      <BottomPicker
+        open={picker === 'region'}
+        title={t('开户国家 / 地区')}
+        value={form.region}
+        options={JURISDICTIONS.map(j => ({ value: j.code, label: jurisdictionLabel(j.code, lang) }))}
+        onSelect={v => { setForm(f => ({ ...f, region: v })); setError(''); }}
+        onClose={() => setPicker(null)}
+      />
+
+      <BottomPicker
+        open={picker === 'currency'}
+        title={t('账户币种')}
+        value={form.currency}
+        options={CURRENCIES.map(cur => {
+          const used = quotaOf(cur.key);
+          const full = used >= CARD_QUOTA_PER_CURRENCY;
+          return {
+            value: cur.key,
+            label: cur.label,
+            sub: full ? t('已达上限') : `${used}/${CARD_QUOTA_PER_CURRENCY}`,
+            disabled: full,
+          };
+        })}
+        onSelect={v => { setForm(f => ({ ...f, currency: v })); setError(''); }}
+        onClose={() => setPicker(null)}
+      />
 
       {viewingDoc && <AgreementModal agreementId={viewingDoc} onClose={() => setViewingDoc(null)} />}
     </div>

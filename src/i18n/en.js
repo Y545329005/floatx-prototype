@@ -1805,4 +1805,8 @@ export const en = {
   // 2026-11-04 添加卡文案对客化 / 条款改名
   '我们会核对卡片信息；核对通过后，用这张卡入金满 1 万 HKD（或等值），即可用于出入金。': "We will verify the card details; once approved, a deposit of HKD 10,000 (or equivalent) with this card makes it available for transfers.",
   '《银行卡及出入金条款》': " Bank Card and Transfer Terms",
+
+  // 2026-11-04 底部选择器
+  '选择银行': "Select bank",
+  '已达上限': "At limit",
 };

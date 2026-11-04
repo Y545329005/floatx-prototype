@@ -7722,6 +7722,11 @@ export function addBankCard({ bank, branch, holder, cardNo, type, currency, acco
   if (countActiveCards(cur, currentUser.id) >= CARD_QUOTA_PER_CURRENCY) {
     return { ok: false, error: `每个币种最多 ${CARD_QUOTA_PER_CURRENCY} 张银行卡，请先停用或删除旧卡` };
   }
+  // 同一张卡不允许重复绑定（2026-11-04）：重复卡会把同一笔钱记到两张卡上，
+  // 后台按卡核对首充时无法判断该给哪张加白。已停用/已拒绝的卡仍算占用，需先删除。
+  if (bankCards.some(c => c.userId === currentUser.id && String(c.cardNo || '').replace(/\D/g, '') === digits)) {
+    return { ok: false, error: '这张卡已添加过，请勿重复提交' };
+  }
   bankCards.push({
     id: `bc${Date.now()}`,
     userId: currentUser.id,
