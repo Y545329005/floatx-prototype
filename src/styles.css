@@ -4468,7 +4468,6 @@ input, select, textarea {
 .bank-status-chip {
   display: inline-flex;
   align-items: center;
-  margin-top: 1px;
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
   font-size: var(--text-xs);
@@ -4560,7 +4559,7 @@ input, select, textarea {
 /* 状态行：徽标（状态词）+ 说明（下一步动作）。2026-11-04 起不再用裸图标表达状态。 */
 .bank-card-whitelist {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-2);
   margin-top: var(--space-3);
   padding-top: var(--space-3);

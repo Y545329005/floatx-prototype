@@ -65,7 +65,11 @@ export default function BankCards({ navigate, goBack, setToast }) {
   const [removeError, setRemoveError] = useState(''); // 删除确认内就地错误
   const [showInfo, setShowInfo] = useState(false);
 
-  const refresh = () => setCards(ownedCards());
+  const refresh = () => {
+    setCards(ownedCards());
+    // 启停/删除会改变列表长度，只在页面已经滚下去时回到顶部：避免停在半截页签上
+    if (typeof window !== 'undefined' && window.scrollY > 0) window.scrollTo({ top: 0 });
+  };
   const quotaOf = (currency) => countActiveCards(currency, currentUser.id);
 
   const hasVerifyTodo = (currency) => cards.some(c => c.currency === currency

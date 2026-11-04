@@ -621,10 +621,16 @@ export function countActiveCards(currency, userId = currentUser.id) {
 }
 
 // 该卡是否有在途出金（有则不可删除 / 不可停用）
+// 该卡在途提现笔数（2026-11-04：提示里带笔数——只说「有在途提现」时，用户会以为所有卡都被拦，
+// 分不清是卡的问题还是系统的问题）
+export function countPendingWithdrawOnCard(card) {
+  if (!card) return 0;
+  return withdrawRequests.filter(r => r.status === 'pending'
+    && (r.cardId === card.id || (r.cardNo && card.cardNo && r.cardNo === card.cardNo))).length;
+}
+
 export function hasPendingWithdrawOnCard(card) {
-  if (!card) return false;
-  return withdrawRequests.some(r => r.status === 'pending'
-    && (r.cardId === card.id || (r.cardNo && card.cardNo && r.cardNo === card.cardNo)));
+  return countPendingWithdrawOnCard(card) > 0;
 }
 
 export const exchangeRates = {
@@ -5018,7 +5024,9 @@ export const agreements = [
     id: 'bank-card-service',
     version: 'v1.0',
     effectiveAt: '2026-09-01',
-    title: AG('银行卡及出入金服务协议', '銀行卡及出入金服務協議', 'Bank Card and Transfer Service Agreement'),
+    // 2026-11-04：由「服务协议」改为「条款」——原文只有三节规则，没有变更/终止/争议解决，
+    // 叫「协议」会让人以为已是法务定稿的双方合意文本。⚠️ 本文本为原型自拟，上线前必须法务确认。
+    title: AG('银行卡及出入金条款', '銀行卡及出入金條款', 'Bank Card and Transfer Terms'),
     sections: [
       { h: AG('一、白名单机制', '一、白名單機制', '1. Whitelist Mechanism'), p: AG(
         '出入金仅限您名下已通过白名单验证的银行卡。新卡须由本人账户向平台收款账户完成指定金额验证转账，经财务核对到账后方可加入白名单。',
@@ -5034,6 +5042,11 @@ export const agreements = [
         '您提供的银行卡信息仅用于出入金处理与合规核验，平台将依法加密存储并按隐私政策限制使用。',
         '您提供的銀行卡信息僅用於出入金處理與合規核驗，平台將依法加密存儲並按隱私政策限制使用。',
         'Card information is used solely for transfer processing and compliance checks, stored encrypted and used in accordance with the Privacy Policy.'
+      ) },
+      { h: AG('四、条款变更', '四、條款變更', '4. Changes'), p: AG(
+        '本平台可因监管要求或业务调整更新本条款，更新后在应用内提示；继续使用银行卡相关服务即视为接受更新后的条款。',
+        '本平台可因監管要求或業務調整更新本條款，更新後在應用內提示；繼續使用銀行卡相關服務即視為接受更新後的條款。',
+        'These Terms may be updated for regulatory or business reasons and will be notified in the app; continued use of card services constitutes acceptance of the updated Terms.'
       ) },
     ],
   },
@@ -7212,6 +7225,10 @@ export function submitDepositEvidence(reqId, evidence) {
 // 提现申请（出金）：前台提交申请 → 后台审核 → 打款
 export const withdrawRequests = [
   {
+    // 2026-11-04：由「待审核」改为「已打款」——演示数据里三张已验证卡（bc1/bc2/bc14）原本都挂着
+    // 在途提现，导致「停用」在演示时永远失败、看起来像功能坏了。把本单落为已打款历史单后：
+    // bc1 汇丰闲置（可演示停用成功），bc2 / bc14 仍各有在途单（可演示「有在途不能停用」），两条路径都走得到。
+    // HKD 待审核分支由 wr7（跨境 100,000，费率 0.5%）承担。
     id: 'wr1',
     orderNo: genOrderNo('WR', '2026-08-12 10:05:47'),
     userId: 'u1',
@@ -7228,10 +7245,10 @@ export const withdrawRequests = [
     bank: '汇丰银行',
     cardNo: '6222 0234 5678 4567',
     bankRef: 'BK20260812100547001',
-    status: 'pending',
+    status: 'approved',
     createdAt: '2026-08-12 10:05:47',
-    handledAt: null,
-    handledBy: null,
+    handledAt: '2026-08-12 15:20:00',
+    handledBy: '系统管理员',
     rejectReason: null,
   },
   {
@@ -7771,7 +7788,8 @@ export function setBankCardDisabled(cardId, disabled) {
   if (!card) return { ok: false, error: '卡片不存在' };
   if (disabled) {
     if (card.whitelistStatus === BANK_CARD_STATUS.DISABLED) return { ok: true };
-    if (hasPendingWithdrawOnCard(card)) return { ok: false, error: '该卡有在途提现，暂不能停用' };
+    const pendingW = countPendingWithdrawOnCard(card);
+    if (pendingW > 0) return { ok: false, error: `该卡有 ${pendingW} 笔在途提现，打款完成后再停用` };
     card.prevStatus = card.whitelistStatus;
     card.whitelistStatus = BANK_CARD_STATUS.DISABLED;
     card.disabledAt = formatNow();
@@ -7794,7 +7812,8 @@ export function removeBankCard(cardId) {
   if (getFreezeState().frozen) return { ok: false, error: '安全冻结生效中，暂不能变更出金账户' };
   const idx = bankCards.findIndex(c => c.id === cardId && c.userId === currentUser.id);
   if (idx < 0) return { ok: false, error: '卡片不存在' };
-  if (hasPendingWithdrawOnCard(bankCards[idx])) return { ok: false, error: '该卡有在途提现，暂不能删除' };
+  const pendingW = countPendingWithdrawOnCard(bankCards[idx]);
+  if (pendingW > 0) return { ok: false, error: `该卡有 ${pendingW} 笔在途提现，打款完成后再删除` };
   const card = bankCards[idx];
   bankCards.splice(idx, 1);
   logAudit({ operator: currentUser.name || '投资人', category: 'fundProduct', action: 'update', target: '银行卡', targetId: card.id, note: `删除银行卡：${card.bank} ${card.maskedNo}` });
@@ -9442,7 +9461,9 @@ export function submitSubscription({ project, amount, currency = 'HKD' }) {
 //     地区空白、名额计数异常、审核列表错乱）；verificationRequests 下线（验证并入充值链路）；
 //     withdrawRequests 新增 feeRate/feeAmount/netAmount/cardId/region 快照与 cancelled 终态。
 //     load 时为旧快照逐条补默认字段（「默认值为底 + 快照覆盖」不作废）。
-const STATE_VERSION = 58;
+// 58→59（2026-11-04）：wr1 由待审核改为已打款（见种子注释：三张已验证卡都挂在途单会让「停用」
+//     在演示里永远失败）。withdrawRequests 属快照恢复范围，不升版旧快照里 wr1 仍是 pending。
+const STATE_VERSION = 59;
 const STORAGE_KEY = 'zhifu-app-state';
 
 /**

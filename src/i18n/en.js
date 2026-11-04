@@ -1801,4 +1801,8 @@ export const en = {
   '银行卡已删除': "Bank card deleted",
   '银行卡已启用': "Bank card enabled",
   '银行卡已提交审核': "Bank card submitted for review",
+
+  // 2026-11-04 添加卡文案对客化 / 条款改名
+  '我们会核对卡片信息；核对通过后，用这张卡入金满 1 万 HKD（或等值），即可用于出入金。': "We will verify the card details; once approved, a deposit of HKD 10,000 (or equivalent) with this card makes it available for transfers.",
+  '《银行卡及出入金条款》': " Bank Card and Transfer Terms",
 };

@@ -84,7 +84,7 @@ export default function BankCardAdd({ navigate, goBack, setToast, currency }) {
 
         <div className="kyc-card">
           <div className="kyc-card-desc">
-            {t('提交后由专员核对资料；审核通过后，用该卡入金满 1 万 HKD（或等值）即自动加入白名单。')}
+            {t('我们会核对卡片信息；核对通过后，用这张卡入金满 1 万 HKD（或等值），即可用于出入金。')}
           </div>
 
           <div className="form-group">
@@ -185,7 +185,7 @@ export default function BankCardAdd({ navigate, goBack, setToast, currency }) {
                 href="#bank-card-service"
                 onClick={e => { e.preventDefault(); e.stopPropagation(); setViewingDoc('bank-card-service'); }}
               >
-                {t('《银行卡及出入金服务协议》')}
+                {t('《银行卡及出入金条款》')}
               </a>
             </span>
           </div>
