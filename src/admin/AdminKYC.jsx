@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { CheckCircle, XCircle, ImageIcon, MapPin, X, History, Search, Eye, ClipboardCheck, RotateCcw, ShieldCheck } from 'lucide-react';
 import {
   kycSubmissions, approveKycSubmission, rejectKycSubmission, requireKycAction, KYC_STATUS,
-  maskName,
+  maskName, bankCards, depositRequests, BANK_CARD_STATUS,
 } from '../mock/data';
 const statusMeta = {
   [KYC_STATUS.PENDING_REVIEW]: { label: '待审核', cls: 'admin-status-pending' },
@@ -186,6 +186,9 @@ export default function AdminKYC({ navigate, detailId, admin }) {
         {pageRows.map(k => {
           const meta = statusMeta[k.status];
           const docLabel = k.profile.idDocType === 'HK_ID' ? '香港身份证' : k.profile.idDocType === 'PASSPORT' ? '护照' : '内地通行证';
+          // 2026-11-05：待首充标识——首卡未加白时点「通过」会被硬门控拒绝，列表先给出原因
+          const firstCard = bankCards.find(c => c.userId === k.userId && c.firstCard);
+          const pendingWhitelist = firstCard && firstCard.whitelistStatus !== BANK_CARD_STATUS.VERIFIED;
           const openDrawer = () => { navigate(`#admin/kyc/${k.id}`); };
           return (
             <div
@@ -198,6 +201,7 @@ export default function AdminKYC({ navigate, detailId, admin }) {
             >
               <span className="col-name">
                 <strong>{maskName(k.name)}</strong>
+                {pendingWhitelist && <span className="tag tag-neutral" style={{ marginLeft: 'var(--space-2)' }}>待首充</span>}
               </span>
               <span className="col-doc">{docLabel}</span>
               <span className="col-date">{k.submittedAt}</span>
@@ -320,6 +324,43 @@ export default function AdminKYC({ navigate, detailId, admin }) {
                   );
                 })}
                 <div className="kyc-review-row"><span>CRS 声明</span><strong>{sel.profile.crsDeclared ? '已签署' : '未签署'}</strong></div>
+              </div>
+              <div className="card kyc-review-block">
+                <h4 className="card-title">银行转账认证</h4>
+                {(() => {
+                  // 2026-11-05：KYC 第 4 步（首卡 + 首充加白）审核可见性——
+                  // 开户门控是「首卡加白后才允许通过」，审核员必须能在此看到进度，
+                  // 否则点通过被拒后不知道该去哪处理。
+                  const firstCard = bankCards.find(c => c.userId === sel.userId && c.firstCard);
+                  if (!firstCard) {
+                    return <div className="kyc-review-row"><span>首卡</span><strong>未提交（非本流程提交）</strong></div>;
+                  }
+                  const dep = depositRequests.find(d => d.cardId === firstCard.id);
+                  const whitelisted = firstCard.whitelistStatus === BANK_CARD_STATUS.VERIFIED;
+                  return (
+                    <>
+                      <div className="kyc-review-row"><span>首卡</span><strong>{firstCard.bank} · {firstCard.currency} · {firstCard.maskedNo}</strong></div>
+                      <div className="kyc-review-row">
+                        <span>白名单</span>
+                        <strong style={{ color: whitelisted ? 'var(--success)' : 'var(--warning-text)' }}>
+                          {whitelisted ? '已加白（可开户）' : '待首充确认到账'}
+                        </strong>
+                      </div>
+                      {dep ? (
+                        <>
+                          <div className="kyc-review-row"><span>首充单</span><strong>{dep.orderNo}</strong></div>
+                          <div className="kyc-review-row"><span>金额</span><strong>{dep.currency} {dep.amount.toLocaleString()}</strong></div>
+                          <div className="kyc-review-row">
+                            <span>单据状态</span>
+                            <strong>{{ pending: '待确认到账', requires_evidence: '待补凭证', approved: '已到账', rejected: '已拒绝', cancelled: '已取消' }[dep.status] || dep.status}</strong>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="kyc-review-row"><span>首充单</span><strong>—</strong></div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
               <div className="card kyc-review-block">
                 <h4 className="card-title">联系与提交</h4>

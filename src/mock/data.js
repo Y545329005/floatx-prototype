@@ -7016,6 +7016,108 @@ export const depositRequests = [
   },
 ];
 
+// ========== KYC 中间态演示种子（2026-11-05） ==========
+// 银行转账认证（KYC 第 4 步）落地后，种子里没有任何「已提交 KYC + 首卡待首充」的中间态：
+// 后台 KYC 列表的「待首充」标识、抽屉的「银行转账认证」区块、以及「首卡未加白拒绝开户」
+// 这条门控分支在演示里恒空。此种子补一个完整链路：
+//   KYC 待审核（郑嘉文）→ 首卡 bc-k8 待验证 → 首充单 dr-k8 待确认到账
+// 演示路径：后台资金审核确认 dr-k8 到账 → bc-k8 自动加白 → 后台 KYC 审核可正常通过；
+// 不确认直接点通过 → 被数据层门控拒绝并给出原因。
+const KYC_MID_CARD = {
+  id: 'bc-mid',
+  userId: 'u36',
+  bank: '汇丰银行',
+  branch: '香港',
+  holder: 'CHENG KA MAN',
+  maskedNo: '**** 8821',
+  cardNo: '6222 0234 5678 8821',
+  type: '香港账户',
+  accountType: 'personal',
+  region: 'HK',
+  proofImage: DEMO_CARD_PROOF,
+  currency: 'HKD',
+  whitelistStatus: 'unverified',
+  reviewStatus: 'approved',   // KYC 首卡：材料随开户提交，直通待首充
+  firstCard: true,
+  verifiedAt: null,
+  verifiedAmount: null,
+};
+
+const KYC_MID_DEPOSIT = {
+  id: 'dr-mid',
+  orderNo: genOrderNo('DR', '2026-11-04 15:18:40'),
+  userId: 'u36',
+  userName: '郑嘉文',
+  currency: 'HKD',
+  amount: 20000,
+  method: '银行转账',
+  cardId: 'bc-mid',
+  bank: '汇丰银行',
+  cardNo: '6222 0234 5678 8821',
+  bankRef: 'BK20261104151840001',
+  refCode: 'ZK8F3Q',
+  payerRef: 'HSBC2611A151840',
+  transferDate: '2026-11-04 15:12',
+  evidence: { name: '转账凭证_20261104.png', size: '1.1 MB', uploadedAt: '2026-11-04 15:18:12', preview: makeReceiptSvg({ bank: '汇丰银行', orderNo: genOrderNo('DR', '2026-11-04 15:18:40'), refNo: 'BK20261104151840001', amount: 20000, currency: 'HKD', time: '2026-11-04 15:18:12' }) },
+  status: 'pending',
+  createdAt: '2026-11-04 15:18:40',
+  handledAt: null,
+  handledBy: null,
+  rejectReason: null,
+  requestEvidenceReason: null,
+};
+
+const KYC_MID_SUBMISSION = {
+  id: 'k10',
+  userId: 'u36',
+  name: '郑嘉文',
+  email: 'cheng.ka.man@example.com',
+  status: KYC_STATUS.PENDING_REVIEW,
+  submittedAt: '2026-11-04 15:20:11',
+  rejectReason: null,
+  history: [{ at: '2026-11-04 15:20:11', operator: '系统', action: 'submitted', note: '用户提交认证资料（含首卡与首充登记）' }],
+  profile: {
+    fullName: '郑嘉文',
+    fullNameEn: 'CHENG KA MAN',
+    gender: 'M',
+    birthDate: '1985-09-21',
+    nationality: '中国香港',
+    piType: 'asset',
+    piCertified: true,
+    piProof: 'images/demo-pi-proof.jpg',
+    idDocType: 'HK_ID',
+    idDocNumber: 'M765432(1)',
+    idDocExpiry: 'permanent',
+    idDocFront: 'images/demo-id-front.jpg',
+    idDocBack: 'images/demo-id-back.jpg',
+    idDocHandheld: 'images/demo-id-handheld.jpg',
+    ekycResult: { status: 'passed', score: 0.95, vendorRef: 'EKYC20261104151800', livenessPass: true, ocrPass: true, verifiedAt: '2026-11-04 15:18:00', failReason: null },
+    addressProofType: 'bank',
+    addressProof: 'images/demo-address.jpg',
+    addressLine: '香港九龙弥敦道 132 号',
+    submittedAt: '2026-11-04 15:20:11',
+    rejectReason: null,
+    pepDeclared: 'no',
+    pepPositionType: '',
+    pepOrganization: '',
+    pepTenure: '',
+    taxResidencies: ['HK'],
+    taxDetails: { HK: { tin: 'M765432(1)', noTinReason: '', noTinNote: '' } },
+    employmentStatus: 'employed',
+    incomeSources: ['salary', 'investment'],
+    usPerson: false,
+    tin: '',
+    crsDeclared: true,
+    // 第 4 步完成标记：首卡已提交、首充单待确认（加白前不能开户）
+    bankTransferSubmitted: true,
+    firstCardId: 'bc-mid',
+  },
+};
+
+bankCards.push(KYC_MID_CARD);
+depositRequests.push(KYC_MID_DEPOSIT);
+kycSubmissions.push(KYC_MID_SUBMISSION);
+
 // 充值申请（入金）：用户线下转账到平台收款账户 → 上传凭证 → 财务核对后上账（2026-08-19 老板确认线下充值闭环）
 // 通道：仅银行转账（2026-10-29 二轮：eDDA 整条下线）
 // 2026-11-04 验证并入充值（会议纪要「首次充值 1万…专员确认到账后加白」+ 集团白名单数量限制文档）：
@@ -7052,7 +7154,7 @@ export function submitDepositRequest({ currency, amount, method, cardId, bank, c
     refCode: refCode || depositRefCode(),
     payerRef: String(refNo || '').trim(),
     transferDate: transferDate || '',
-    evidence: evidence ? { ...evidence, preview: makeReceiptSvg({ bank: card.bank, orderNo, refNo: genRef, amount, currency, time: formatNow() }) } : null,   // 转账凭证（preview 为模拟回单，接后端由真实文件 URL 替换）
+    evidence: evidence ? { ...evidence, preview: evidence.preview || makeReceiptSvg({ bank: card.bank, orderNo, refNo: genRef, amount, currency, time: formatNow() }) } : null,   // 转账凭证：用户真实上传的 dataURL 优先保留，无预览时用模拟回单兜底（2026-11-05：KYC 首充页已接真实上传，此前无条件覆盖会让后台看不到原件）
     status: 'pending',
     createdAt: formatNow(),
     handledAt: null,
@@ -9431,7 +9533,10 @@ export function submitSubscription({ project, amount, currency = 'HKD' }) {
 // 59→60（2026-11-05）：取消「已停用」态（只留解绑），种子 bc12（已停用卡）移除。
 //     bankCards 属快照恢复范围，不升版旧快照里仍会读到 whitelistStatus='disabled' 的卡，
 //     而代码已无该状态分支——这类卡会以「未知状态」出现在列表里。
-const STATE_VERSION = 60;
+// 60→61（2026-11-05）：补 KYC 中间态演示种子（郑嘉文 k8 + 首卡 bc-k8 + 首充单 dr-k8）。
+//     kycSubmissions / bankCards / depositRequests 均属快照恢复范围，不升版旧快照里没有这条链路，
+//     后台「待首充」标识与「银行转账认证」抽屉区块在老浏览器里恒空。迁移为追加（按 id 去重），不清空现有数据。
+const STATE_VERSION = 61;
 
 // ========== 快照迁移（2026-11-05） ==========
 // 机制：load 时按版本逐级跑迁移函数，跑不到 STATE_VERSION 才整体丢弃。
@@ -9449,6 +9554,14 @@ const SNAPSHOT_MIGRATIONS = {
         ? { ...c, whitelistStatus: 'rejected', reviewStatus: 'rejected', reviewReason: '该卡已解绑（历史数据迁移）' }
         : c);
     }
+    return data;
+  },
+  // 60 → 61：追加 KYC 中间态演示种子（按 id 去重，不覆盖用户已有数据）
+  60: (data) => {
+    const addOnce = (arr, item) => (Array.isArray(arr) && !arr.some(x => x && x.id === item.id)) ? [...arr, item] : arr;
+    data.kycSubmissions = addOnce(data.kycSubmissions, KYC_MID_SUBMISSION);
+    data.bankCards = addOnce(data.bankCards, KYC_MID_CARD);
+    data.depositRequests = addOnce(data.depositRequests, KYC_MID_DEPOSIT);
     return data;
   },
 };
