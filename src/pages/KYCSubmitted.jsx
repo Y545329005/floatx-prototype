@@ -205,14 +205,16 @@ export default function KYCSubmitted({ navigate, goBack }) {
       <div className="kyc-progress">
         <div className="kyc-progress-bar">
           <div className="kyc-progress-fill" style={{ '--fill': 1, background: 'var(--success)' }} />
-          <span className="kyc-progress-dot done" style={{ left: '16.5%' }} />
-          <span className="kyc-progress-dot done" style={{ left: '50%' }} />
-          <span className="kyc-progress-dot done" style={{ left: '83.5%' }} />
+          <span className="kyc-progress-dot done" style={{ left: '12.5%' }} />
+          <span className="kyc-progress-dot done" style={{ left: '37.5%' }} />
+          <span className="kyc-progress-dot done" style={{ left: '62.5%' }} />
+          <span className="kyc-progress-dot done" style={{ left: '87.5%' }} />
         </div>
         <div className="kyc-progress-steps">
           <span className="kyc-progress-step done">1. {t('基本信息')}</span>
           <span className="kyc-progress-step done">2. {t('身份证件')}</span>
           <span className="kyc-progress-step done">3. {t('地址证明')}</span>
+          <span className="kyc-progress-step done">4. {t('银行转账认证')}</span>
         </div>
       </div>
 

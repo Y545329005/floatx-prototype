@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { ArrowLeft, Upload, Check, AlertCircle, Globe } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ArrowLeft, Upload, Check, AlertCircle, Globe, ChevronDown } from "lucide-react";
+import BottomPicker from "../components/BottomPicker";
 import { useLang } from "../i18n";
 import { currentUser, updateKycProfile } from "../mock/data";
 
@@ -42,6 +43,22 @@ export default function KYCAddressProof({ navigate, goBack, setIsLoggedIn }) {
     { value: 'not_required', label: t('税务管辖区的主管机关毋须你披露税务编号') },
     { value: 'cannot_obtain', label: t('我不能取得税务编号') },
   ];
+  const ADDRESS_DOC_TYPE_OPTIONS = [
+    { value: 'utility', label: t('水电费账单') },
+    { value: 'bank', label: t('银行月结单') },
+    { value: 'gov', label: t('其他带姓名及地址的文件') },
+  ];
+  const [picker, setPicker] = useState(null);        // 'docType'
+  const [noTinPicker, setNoTinPicker] = useState(null); // 税务居民地 code（多实例共用一个弹层）
+  const [scrollToError, setScrollToError] = useState(false);
+
+  // 提交校验失败后滚到第一个错误字段（effect 在 DOM 提交之后运行，时序可靠）
+  useEffect(() => {
+    if (!scrollToError) return;
+    const el = document.querySelector('.kyc-page .kyc-form-error');
+    if (el) el.scrollIntoView({ block: 'center' });
+    setScrollToError(false);
+  }, [scrollToError]);
   const TAX_RESIDENCY_MAX = 5;
   const COUNTRY_OPTIONS = [
     { value: 'HK', label: t('中国香港') },
@@ -119,7 +136,12 @@ export default function KYCAddressProof({ navigate, goBack, setIsLoggedIn }) {
   };
 
   const handleSubmit = () => {
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      // 校验失败：置标记，交给 effect 在 DOM 提交后滚到第一个错误字段，
+      // 避免报错在视口外看不到（同步 querySelector 拿不到未提交的 DOM；rAF/smooth 在后台标签页会被冻结，2026-11-05）
+      setScrollToError(true);
+      return;
+    }
     // 纯 CDD 提交（2026-09-15 裁决：KYC 内声明/电子签署模块移除——签署责任由注册（协议成立）/PI（认定程序）/SPV（交易签署）三节点承担）
       updateKycProfile({
         addressProofType: addressDocType,
@@ -184,15 +206,17 @@ export default function KYCAddressProof({ navigate, goBack, setIsLoggedIn }) {
 
       <div className="kyc-progress">
         <div className="kyc-progress-bar">
-          <div className="kyc-progress-fill" style={{ '--fill': 1 }} />
-          <span className="kyc-progress-dot done" style={{ left: '16.5%' }} />
-          <span className="kyc-progress-dot done" style={{ left: '50%' }} />
-          <span className="kyc-progress-dot active" style={{ left: '83.5%' }} />
+          <div className="kyc-progress-fill" style={{ '--fill': 0.625 }} />
+          <span className="kyc-progress-dot done" style={{ left: '12.5%' }} />
+          <span className="kyc-progress-dot done" style={{ left: '37.5%' }} />
+          <span className="kyc-progress-dot active" style={{ left: '62.5%' }} />
+          <span className="kyc-progress-dot" style={{ left: '87.5%' }} />
         </div>
         <div className="kyc-progress-steps">
           <span className="kyc-progress-step done">1. {t('基本信息')}</span>
           <span className="kyc-progress-step done">2. {t('身份证件')}</span>
           <span className="kyc-progress-step active">3. {t('地址证明')}</span>
+          <span className="kyc-progress-step">4. {t('银行转账认证')}</span>
         </div>
       </div>
 
@@ -207,16 +231,16 @@ export default function KYCAddressProof({ navigate, goBack, setIsLoggedIn }) {
           {/* 证明类型 */}
           <div className="kyc-form-group">
             <label className="kyc-form-label">{t('证明类型')}</label>
-            <select
-              className="kyc-form-input"
-              value={addressDocType}
-              onChange={e => setAddressDocType(e.target.value)}
-              style={{ appearance: 'none', cursor: 'pointer' }}
+            <button
+              type="button"
+              className="kyc-form-input picker-trigger"
+              onClick={() => setPicker('docType')}
             >
-              <option value="utility">{t('水电费账单')}</option>
-              <option value="bank">{t('银行月结单')}</option>
-              <option value="gov">{t('其他带姓名及地址的文件')}</option>
-            </select>
+              <span className="picker-trigger-value">
+                {(ADDRESS_DOC_TYPE_OPTIONS.find(o => o.value === addressDocType) || {}).label}
+              </span>
+              <ChevronDown size={18} className="picker-caret" />
+            </button>
             <div className="kyc-form-hint">
               {t('请上传 1 份文件')}
             </div>
@@ -377,15 +401,21 @@ export default function KYCAddressProof({ navigate, goBack, setIsLoggedIn }) {
                       onChange={e => updateTaxDetail(code, { tin: e.target.value })}
                     />
                     <div style={{ textAlign: 'center', fontSize: 'var(--text-xs)', color: 'var(--text-muted)', margin: 'var(--space-2) 0' }}>{t('或')}</div>
-                    <select
-                      className="kyc-form-input"
-                      style={{ appearance: 'none', cursor: 'pointer' }}
-                      value={d.noTinReason}
-                      onChange={e => updateTaxDetail(code, { noTinReason: e.target.value })}
+                    <button
+                      type="button"
+                      className="kyc-form-input picker-trigger"
+                      onClick={() => setNoTinPicker(code)}
                     >
-                      <option value="">{t('无税务编号？选择原因')}</option>
-                      {NO_TIN_REASONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-                    </select>
+                      <span
+                        className="picker-trigger-value"
+                        style={d.noTinReason ? undefined : { color: 'var(--text-muted)' }}
+                      >
+                        {d.noTinReason
+                          ? (NO_TIN_REASONS.find(r => r.value === d.noTinReason) || {}).label
+                          : t('无税务编号？选择原因')}
+                      </span>
+                      <ChevronDown size={18} className="picker-caret" />
+                    </button>
                     {d.noTinReason === 'cannot_obtain' && (
                       <input
                         type="text"
@@ -436,9 +466,27 @@ export default function KYCAddressProof({ navigate, goBack, setIsLoggedIn }) {
           className="kyc-btn kyc-btn-primary"
           onClick={handleSubmit}
         >
-          {t('提交认证')}
+          {t('下一步：银行转账认证')}
         </button>
       </div>
+
+      {/* 选择类字段底部弹层（2026-11-05：替代原生 select） */}
+      <BottomPicker
+        open={picker === 'docType'}
+        title={t('证明类型')}
+        options={ADDRESS_DOC_TYPE_OPTIONS}
+        value={addressDocType}
+        onSelect={v => setAddressDocType(v)}
+        onClose={() => setPicker(null)}
+      />
+      <BottomPicker
+        open={!!noTinPicker}
+        title={t('无税务编号？选择原因')}
+        options={NO_TIN_REASONS}
+        value={noTinPicker ? (taxDetails[noTinPicker] || {}).noTinReason : null}
+        onSelect={v => updateTaxDetail(noTinPicker, { noTinReason: v })}
+        onClose={() => setNoTinPicker(null)}
+      />
     </div>
   );
 }

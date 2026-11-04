@@ -11,6 +11,7 @@ import {
   getWithdrawQuote, getMinWithdraw, currentUser,
 } from '../mock/data';
 import { useLang } from '../i18n';
+import AccountRow from '../components/AccountRow';
 
 // 币种以代码为准（2026-10-28）：钱包内部键仍是 cny，换算交给 walletAccountOf，
 // 避免页面层自己维护一套 key ↔ 币种映射（基金用 CNH，钱包键 cny）
@@ -28,21 +29,6 @@ function nowLocalInput() {
 }
 
 // 汇款信息行：整行即复制目标（44px 高、比一个 16px 图标按钮好点得多），复制后短暂转绿
-function AccountRow({ rowKey, label, value, mono, long, copiedKey, onCopy }) {
-  const done = copiedKey === rowKey;
-  return (
-    <button
-      type="button"
-      className={`fund-acct-row${done ? ' copied' : ''}`}
-      onClick={() => onCopy(rowKey, value)}
-    >
-      <span className="k">{label}</span>
-      <span className={`v${mono ? ' mono' : ''}${long ? ' long' : ''}`}>{value}</span>
-      {done ? <Check size={15} /> : <Copy size={15} />}
-    </button>
-  );
-}
-
 // 充值 / 提现 独立页
 // 2026-10-29 充值页重构（对标持牌交易所入金页，第一性原理：入金页不是表单，是一次对账）：
 //   ① 转账：参考代码置顶必填 + 收款账户逐行可复制 + 国际电汇字段折叠 + 客户资金账户说明

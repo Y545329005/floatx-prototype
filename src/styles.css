@@ -6273,7 +6273,7 @@ input, select, textarea {
   transition: transform 0.3s ease;
 }
 
-/* 节点圆点（叠在进度条上，对应 3 个步骤位置：16.67% / 50% / 83.33%） */
+/* 节点圆点（叠在进度条上，对应 4 个步骤位置：12.5% / 37.5% / 62.5% / 87.5%；2026-11-05 加第 4 步「银行转账认证」） */
 .kyc-progress-dot {
   position: absolute;
   top: 50%;
@@ -6303,7 +6303,7 @@ input, select, textarea {
 
 .kyc-progress-step {
   display: inline-block;
-  width: 33.33%;
+  width: 25%;
   text-align: center;
   font-size: var(--text-xs);
   color: var(--text-tertiary);
@@ -9069,6 +9069,12 @@ input, select, textarea {
   gap: var(--space-2);
   text-align: left;
   color: var(--text);
+}
+
+/* KYC 表单里的 picker 触发器：button 套 kyc-form-input 外观，补 button 默认样式重置（2026-11-05） */
+button.kyc-form-input.picker-trigger {
+  font-family: inherit;
+  font-weight: 400;
 }
 
 .picker-trigger-value {

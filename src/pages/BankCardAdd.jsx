@@ -45,12 +45,13 @@ export default function BankCardAdd({ navigate, goBack, setToast, currency }) {
   const submit = () => {
     if (frozen) { setError(t('安全冻结生效中：安全项变更后 24 小时内无法变更出金账户')); return; }
     if (!agreed) { setError(t('请先阅读并同意服务协议')); return; }
+    if (!form.bank.trim()) { setError(t('请填写开户银行名称')); return; }
     const digits = form.cardNo.replace(/\D/g, '');
     if (digits.length < 8) { setError(t('请输入有效的银行卡号（至少 8 位数字）')); return; }
     if (!proof) { setError(t('请上传银行卡照片或开户证明')); return; }
 
     const res = addBankCard({
-      bank: form.bank,
+      bank: form.bank.trim(),
       branch: form.region === 'HK' ? '香港' : jurisdictionLabel(form.region, lang),
       holder: currentUser.name || '—',
       cardNo: form.cardNo.trim(),
@@ -89,20 +90,29 @@ export default function BankCardAdd({ navigate, goBack, setToast, currency }) {
 
         <div className="kyc-card">
           <div className="form-group">
-            <label className="form-label">{t('银行')}</label>
-            <button className="form-input picker-trigger" onClick={() => setPicker('bank')}>
-              <span className="picker-trigger-value">{form.bank}</span>
-              <ChevronDown size={18} className="picker-caret" />
-            </button>
-          </div>
-
-          <div className="form-group">
             <label className="form-label">{t('开户国家 / 地区')}</label>
             <button className="form-input picker-trigger" onClick={() => setPicker('region')}>
               <span className="picker-trigger-value">{jurisdictionLabel(form.region, lang)}</span>
               <ChevronDown size={18} className="picker-caret" />
             </button>
             <p className="fund-field-hint">{t('仅支持证监会合资格地区（含香港）开立的银行账户。')}</p>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">{t('银行')}</label>
+            {form.region === 'HK' ? (
+              <button className="form-input picker-trigger" onClick={() => setPicker('bank')}>
+                <span className="picker-trigger-value">{form.bank}</span>
+                <ChevronDown size={18} className="picker-caret" />
+              </button>
+            ) : (
+              <input
+                className="form-input"
+                value={form.bank}
+                onChange={e => { setForm(f => ({ ...f, bank: e.target.value })); setError(''); }}
+                placeholder={t('请输入开户银行全称')}
+              />
+            )}
           </div>
 
           <div className="form-group">
@@ -201,7 +211,17 @@ export default function BankCardAdd({ navigate, goBack, setToast, currency }) {
         title={t('开户国家 / 地区')}
         value={form.region}
         options={JURISDICTIONS.map(j => ({ value: j.code, label: jurisdictionLabel(j.code, lang) }))}
-        onSelect={v => { setForm(f => ({ ...f, region: v })); setError(''); }}
+        onSelect={v => {
+          // 切到海外地区时清空银行名（5 家香港银行不适用于海外）；切回香港时补默认值
+          setForm(f => ({
+            ...f,
+            region: v,
+            bank: v === 'HK'
+              ? (BANK_OPTIONS.includes(f.bank) ? f.bank : BANK_OPTIONS[0])
+              : (BANK_OPTIONS.includes(f.bank) ? '' : f.bank),
+          }));
+          setError('');
+        }}
         onClose={() => setPicker(null)}
       />
 

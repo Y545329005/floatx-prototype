@@ -1,118 +1,34 @@
 import { useState } from "react";
-import { ArrowLeft, ShieldCheck, User, Calendar, Globe, ChevronDown, X, ChevronUp, AlertCircle } from "lucide-react";
+import { ArrowLeft, ShieldCheck, User, Calendar, Globe, ChevronDown, X, AlertCircle } from "lucide-react";
 import { useLang } from "../i18n";
 import { currentUser, updateKycProfile } from "../mock/data";
-
-// 英文月份全名（iOS date picker 默认格式）
-const MONTH_NAMES_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-// 根据年月计算该月天数
-function daysInMonth( year, month ) {
-  // month 1-12；0 月表示下一年 12 月
-  const m = month === 0 ? 12 : month > 12 ? 1 : month;
-  const y = month === 0 ? year - 1 : month > 12 ? year + 1 : year;
-  return new Date(y, m, 0).getDate();
-}
-
-// iOS HIG 紧凑模式 wheel picker（三个并列 column）
-function DateWheelPicker({ value, onChange, t, lang }) {
-  // 解析当前值 YYYY-MM-DD
-  const parts = (value || '').split('-');
-  const curYear = parseInt(parts[0]) || 1980;
-  const curMonth = parseInt(parts[1]) || 5;
-  const curDay = parseInt(parts[2]) || 15;
-
-  // 年份范围：1900~今年
-  const years = Array.from({ length: 2026 - 1900 + 1 }, (_, i) => 1900 + i);
-  // 月份 1~12
-  const months = Array.from({ length: 12 }, (_, i) => i + 1);
-  // 日按当前年月动态计算
-  const days = Array.from({ length: daysInMonth(curYear, curMonth) }, (_, i) => i + 1);
-
-  const setDate = (y, m, d) => {
-    const yy = String(y).padStart(4, '0');
-    const mm = String(m).padStart(2, '0');
-    const dd = String(d).padStart(2, '0');
-    onChange(`${yy}-${mm}-${dd}`);
-  };
-
-  // 增减 helper（按钮 ▲▼ 用）
-  const adjust = (field, delta) => {
-    if (field === 'year') {
-      const newY = Math.max(1900, Math.min(2026, curYear + delta));
-      setDate(newY, curMonth, curDay);
-    } else if (field === 'month') {
-      const newM = curMonth === 12 && delta > 0 ? 1 : curMonth === 1 && delta < 0 ? 12 : curMonth + delta;
-      setDate(curYear, newM, curDay);
-    } else {
-      // 日在月份范围内循环
-      const maxDay = daysInMonth(curYear, curMonth);
-      let newD = curDay + delta;
-      if (newD > maxDay) newD = 1;
-      else if (newD < 1) newD = maxDay;
-      setDate(curYear, curMonth, newD);
-    }
-  };
-
-  // 显示值：英文月份用全名，其他直接显示数字
-  const formatDisplay = {
-    year: y => `${y}${lang === 'zh-CN' || lang === 'zh-HK' ? t('年') : ''}`,
-    month: m => lang === 'en' ? t(MONTH_NAMES_EN[m - 1]) : `${m}${t('月')}`,
-    day: d => `${d}${lang === 'zh-CN' || lang === 'zh-HK' ? t('日') : ''}`,
-  };
-
-  // 简化的 wheel column：▲ + value-wrap(select透明覆盖中间) + ▼
-  const Column = ({ field, options, current }) => (
-    <div className="kyc-date-wheel-col">
-      <button
-        type="button"
-        className="kyc-date-wheel-arrow"
-        onClick={() => adjust(field, -1)}
-        aria-label="Decrease"
-      >
-        <ChevronUp size={18} />
-      </button>
-      <div className="kyc-date-wheel-value-wrap">
-        <div className="kyc-date-wheel-value">{formatDisplay[field](current)}</div>
-        <select
-          className="kyc-date-wheel-select"
-          value={current}
-          onChange={e => {
-            const v = parseInt(e.target.value);
-            if (field === 'year') setDate(v, curMonth, curDay);
-            else if (field === 'month') setDate(curYear, v, curDay);
-            else setDate(curYear, curMonth, v);
-          }}
-        >
-          {options.map(opt => (
-            <option key={opt} value={opt}>{formatDisplay[field](opt)}</option>
-          ))}
-        </select>
-      </div>
-      <button
-        type="button"
-        className="kyc-date-wheel-arrow"
-        onClick={() => adjust(field, 1)}
-        aria-label="Increase"
-      >
-        <ChevronDown size={18} />
-      </button>
-    </div>
-  );
-
-  return (
-    <div className="kyc-date-wheels">
-      <Column field="year" options={years} current={curYear} />
-      <Column field="month" options={months} current={curMonth} />
-      <Column field="day" options={days} current={curDay} />
-    </div>
-  );
-}
+import BottomPicker from "../components/BottomPicker";
+import DateWheelPicker from "../components/DateWheelPicker";
 
 export default function KYCStart({ navigate, goBack, setIsLoggedIn }) {
   const { t, lang } = useLang();
   const profile = currentUser.kyc_profile || {};
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [picker, setPicker] = useState(null);   // 'nationality' | 'pepPosition'
+
+  // 选择类字段统一底部弹层（2026-11-05：原生 select 是网页语言，APP 用 BottomPicker）
+  const NATIONALITY_OPTIONS = [
+    { value: 'HK', label: t('中国香港') },
+    { value: 'CN', label: t('中国大陆') },
+    { value: 'MO', label: t('中国澳门') },
+    { value: 'TW', label: t('中国台湾') },
+    { value: 'GB', label: t('英国') },
+    { value: 'US', label: t('美国') },
+    { value: 'SG', label: t('新加坡') },
+    { value: 'OTHER', label: t('其他') },
+  ];
+  const PEP_POSITION_OPTIONS = [
+    { value: 'political', label: t('政治人物') },
+    { value: 'government', label: t('政府官员') },
+    { value: 'soe_executive', label: t('国有企业高管') },
+    { value: 'intl_org', label: t('国际组织负责人') },
+    { value: 'other', label: t('其他') },
+  ];
 
   // E1（2026-10-16）：英文姓名拆姓氏/名字两框；旧数据只有 name_en 时按首空格拆（香港习惯姓在前，如 CHAN Tai Man）
   const legacyName = profile.name_en || "";
@@ -231,15 +147,17 @@ const [errors, setErrors] = useState({});
       {/* 进度条（2026-09-15 收敛为 3 步：基本信息 → 身份证件 → 地址证明；KYC 内签署模块已移除） */}
       <div className="kyc-progress">
         <div className="kyc-progress-bar">
-          <div className="kyc-progress-fill" style={{ '--fill': 0.333 }} />
-          <span className="kyc-progress-dot active" style={{ left: '16.5%' }} />
-          <span className="kyc-progress-dot" style={{ left: '50%' }} />
-          <span className="kyc-progress-dot" style={{ left: '83.5%' }} />
+          <div className="kyc-progress-fill" style={{ '--fill': 0.125 }} />
+          <span className="kyc-progress-dot active" style={{ left: '12.5%' }} />
+          <span className="kyc-progress-dot" style={{ left: '37.5%' }} />
+          <span className="kyc-progress-dot" style={{ left: '62.5%' }} />
+          <span className="kyc-progress-dot" style={{ left: '87.5%' }} />
         </div>
         <div className="kyc-progress-steps">
           <span className="kyc-progress-step active">1. {t('基本信息')}</span>
           <span className="kyc-progress-step">2. {t('身份证件')}</span>
           <span className="kyc-progress-step">3. {t('地址证明')}</span>
+          <span className="kyc-progress-step">4. {t('银行转账认证')}</span>
         </div>
       </div>
 
@@ -333,22 +251,21 @@ const [errors, setErrors] = useState({});
               <Globe size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
               {t('国籍')}
             </label>
-            <select
-              className={`kyc-form-input ${errors.nationality ? 'error' : ''}`}
-              value={formData.nationality}
-              onChange={e => update('nationality', e.target.value)}
-              style={{ appearance: 'none', cursor: 'pointer' }}
+            <button
+              type="button"
+              className={`kyc-form-input picker-trigger ${errors.nationality ? 'error' : ''}`}
+              onClick={() => setPicker('nationality')}
             >
-              <option value="">{t('请选择国籍')}</option>
-              <option value="HK">{t('中国香港')}</option>
-              <option value="CN">{t('中国大陆')}</option>
-              <option value="MO">{t('中国澳门')}</option>
-              <option value="TW">{t('中国台湾')}</option>
-              <option value="GB">{t('英国')}</option>
-              <option value="US">{t('美国')}</option>
-              <option value="SG">{t('新加坡')}</option>
-              <option value="OTHER">{t('其他')}</option>
-            </select>
+              <span
+                className="picker-trigger-value"
+                style={formData.nationality ? undefined : { color: 'var(--text-muted)' }}
+              >
+                {formData.nationality
+                  ? (NATIONALITY_OPTIONS.find(o => o.value === formData.nationality) || {}).label
+                  : t('请选择国籍')}
+              </span>
+              <ChevronDown size={18} className="picker-caret" />
+            </button>
             {errors.nationality && <span className="kyc-form-error">{errors.nationality}</span>}
           </div>
 
@@ -416,19 +333,21 @@ const [errors, setErrors] = useState({});
               {/* 职务类型 */}
               <div className="kyc-form-group">
                 <label className="kyc-form-label">{t('职务类型')}</label>
-                <select
-                  className={`kyc-form-input ${errors.pep_position_type ? 'error' : ''}`}
-                  value={formData.pep_position_type}
-                  onChange={e => update('pep_position_type', e.target.value)}
-                  style={{ appearance: 'none', cursor: 'pointer' }}
+                <button
+                  type="button"
+                  className={`kyc-form-input picker-trigger ${errors.pep_position_type ? 'error' : ''}`}
+                  onClick={() => setPicker('pepPosition')}
                 >
-                  <option value="">{t('请选择职务类型')}</option>
-                  <option value="political">{t('政治人物')}</option>
-                  <option value="government">{t('政府官员')}</option>
-                  <option value="soe_executive">{t('国有企业高管')}</option>
-                  <option value="intl_org">{t('国际组织负责人')}</option>
-                  <option value="other">{t('其他')}</option>
-                </select>
+                  <span
+                    className="picker-trigger-value"
+                    style={formData.pep_position_type ? undefined : { color: 'var(--text-muted)' }}
+                  >
+                    {formData.pep_position_type
+                      ? (PEP_POSITION_OPTIONS.find(o => o.value === formData.pep_position_type) || {}).label
+                      : t('请选择职务类型')}
+                  </span>
+                  <ChevronDown size={18} className="picker-caret" />
+                </button>
                 {errors.pep_position_type && <span className="kyc-form-error">{errors.pep_position_type}</span>}
               </div>
 
@@ -495,6 +414,9 @@ const [errors, setErrors] = useState({});
                 onChange={v => update('birth_date', v)}
                 t={t}
                 lang={lang}
+                minYear={1900}
+                maxYear={2026}
+                initialYear={1980}
               />
             </div>
             <div className="sheet-footer">
@@ -505,6 +427,24 @@ const [errors, setErrors] = useState({});
           </div>
         </div>
       )}
+
+      {/* 选择类字段底部弹层（2026-11-05：替代原生 select） */}
+      <BottomPicker
+        open={picker === 'nationality'}
+        title={t('国籍')}
+        options={NATIONALITY_OPTIONS}
+        value={formData.nationality}
+        onSelect={v => update('nationality', v)}
+        onClose={() => setPicker(null)}
+      />
+      <BottomPicker
+        open={picker === 'pepPosition'}
+        title={t('职务类型')}
+        options={PEP_POSITION_OPTIONS}
+        value={formData.pep_position_type}
+        onSelect={v => update('pep_position_type', v)}
+        onClose={() => setPicker(null)}
+      />
     </div>
   );
 }

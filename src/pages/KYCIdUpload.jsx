@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { ArrowLeft, Upload, Check, AlertCircle, ShieldCheck, RotateCcw } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ArrowLeft, Upload, Check, AlertCircle, ShieldCheck, RotateCcw, ChevronDown } from "lucide-react";
+import BottomPicker from "../components/BottomPicker";
 import { useLang } from "../i18n";
 import { currentUser, updateKycProfile } from "../mock/data";
 
@@ -19,6 +20,32 @@ export default function KYCIdUpload({ navigate, goBack, setIsLoggedIn }) {
  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
 const [idType, setIdType] = useState(profile.idDocType || "HK_ID");
+const [picker, setPicker] = useState(null);   // 'idType'
+const [scrollToError, setScrollToError] = useState(false);
+
+// 提交校验失败后滚到第一个错误字段（effect 在 DOM 提交之后运行，时序可靠）
+useEffect(() => {
+  if (!scrollToError) return;
+  const el = document.querySelector('.kyc-page .kyc-form-error');
+  if (el) el.scrollIntoView({ block: 'center' });
+  setScrollToError(false);
+}, [scrollToError]);
+const ID_TYPE_OPTIONS = [
+  { value: 'HK_ID', label: t('香港身份证') },
+  { value: 'PASSPORT', label: t('护照') },
+  { value: 'CMNH', label: t('内地通行证') },
+];
+// 切换证件类型的副作用收敛为一个函数（select 与 BottomPicker 共用）
+const changeIdType = v => {
+  setIdType(v);
+  // 切换证件类型时清空已上传图片（HK ID 的图片不能证明 Passport）
+  setFrontFile(null);
+  setBackFile(null);
+  setEkycState(EKYC_STATE.IDLE);
+  setEkycResult(null);
+  if (errors.front) setErrors(prev => ({ ...prev, front: null }));
+  if (errors.back) setErrors(prev => ({ ...prev, back: null }));
+};
 // A 组（2026-10-16）：证件号码/有效期落结构化字段（此前仅存照片靠人工看图，OCR 已识别但无记录载体）
 const [idNumber, setIdNumber] = useState(profile.idDocNumber || "");
 const [idExpiry, setIdExpiry] = useState(profile.idDocExpiry === 'permanent' ? "" : (profile.idDocExpiry || ""));
@@ -111,7 +138,11 @@ const [backFile, setBackFile] = useState(null);
  };
 
  const handleSubmit = () => {
- if (!validateForm()) return;
+ if (!validateForm()) {
+ // 校验失败：置标记，交给 effect 在 DOM 提交后滚到第一个错误字段（2026-11-05）
+ setScrollToError(true);
+ return;
+ }
  // 已通过核验 → 落档证件信息并跳转步骤③
  updateKycProfile({
  idDocType: idType,
@@ -172,15 +203,17 @@ const [backFile, setBackFile] = useState(null);
 
 <div className="kyc-progress">
     <div className="kyc-progress-bar">
-      <div className="kyc-progress-fill" style={{ '--fill': 0.667 }} />
-      <span className="kyc-progress-dot done" style={{ left: '16.5%' }} />
-      <span className="kyc-progress-dot active" style={{ left: '50%' }} />
-      <span className="kyc-progress-dot" style={{ left: '83.5%' }} />
+      <div className="kyc-progress-fill" style={{ '--fill': 0.375 }} />
+      <span className="kyc-progress-dot done" style={{ left: '12.5%' }} />
+      <span className="kyc-progress-dot active" style={{ left: '37.5%' }} />
+      <span className="kyc-progress-dot" style={{ left: '62.5%' }} />
+      <span className="kyc-progress-dot" style={{ left: '87.5%' }} />
     </div>
     <div className="kyc-progress-steps">
       <span className="kyc-progress-step done">1. {t('基本信息')}</span>
       <span className="kyc-progress-step active">2. {t('身份证件')}</span>
       <span className="kyc-progress-step">3. {t('地址证明')}</span>
+      <span className="kyc-progress-step">4. {t('银行转账认证')}</span>
     </div>
  </div>
 
@@ -191,25 +224,16 @@ const [backFile, setBackFile] = useState(null);
  {/* 证件类型选择 */}
  <div className="kyc-form-group">
  <label className="kyc-form-label">{t('证件类型')}</label>
-<select
-              className="kyc-form-input"
-              value={idType}
-              onChange={e => {
-                setIdType(e.target.value);
-                // 切换证件类型时清空已上传图片（HK ID 的图片不能证明 Passport）
-                setFrontFile(null);
-                setBackFile(null);
-                setEkycState(EKYC_STATE.IDLE);
-                setEkycResult(null);
-                if (errors.front) setErrors(prev => ({ ...prev, front: null }));
-                if (errors.back) setErrors(prev => ({ ...prev, back: null }));
-              }}
-              style={{ appearance: 'none', cursor: 'pointer' }}
+<button
+              type="button"
+              className="kyc-form-input picker-trigger"
+              onClick={() => setPicker('idType')}
             >
- <option value="HK_ID">{t('香港身份证')}</option>
- <option value="PASSPORT">{t('护照')}</option>
- <option value="CMNH">{t('内地通行证')}</option>
- </select>
+              <span className="picker-trigger-value">
+                {(ID_TYPE_OPTIONS.find(o => o.value === idType) || {}).label}
+              </span>
+              <ChevronDown size={18} className="picker-caret" />
+            </button>
  <div className="kyc-form-hint">
  {idType === 'PASSPORT' ? t('请上传 1 张') : t('请上传 2 张（正面 + 背面）')}
  </div>
@@ -236,9 +260,9 @@ const [backFile, setBackFile] = useState(null);
  <div className="kyc-form-group">
  <label className="kyc-form-label">{t('证件有效期')}</label>
  {idNoExpiry ? (
- <div className="kyc-form-input" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
- <span>{t('永久有效')}</span>
- <button type="button" className="kyc-btn kyc-btn-secondary" style={{ padding: '4px 12px', fontSize: 'var(--text-xs)' }} onClick={() => setIdNoExpiry(false)}>
+ <div className="kyc-form-input" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)', color: 'var(--text-secondary)' }}>
+ <span style={{ flex: 1, whiteSpace: 'nowrap' }}>{t('永久有效')}</span>
+ <button type="button" className="kyc-btn kyc-btn-secondary" style={{ width: 'auto', height: 'auto', flexShrink: 0, padding: 'var(--space-1) var(--space-3)', fontSize: 'var(--text-xs)' }} onClick={() => setIdNoExpiry(false)}>
  {t('修改')}
  </button>
  </div>
@@ -420,6 +444,16 @@ const [backFile, setBackFile] = useState(null);
    </button>
  )}
  </div>
+
+ {/* 证件类型底部弹层（2026-11-05：替代原生 select） */}
+ <BottomPicker
+   open={picker === 'idType'}
+   title={t('证件类型')}
+   options={ID_TYPE_OPTIONS}
+   value={idType}
+   onSelect={changeIdType}
+   onClose={() => setPicker(null)}
+ />
  </div>
  );
 }
