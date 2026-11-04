@@ -4384,17 +4384,22 @@ input, select, textarea {
   margin-bottom: var(--space-2);
 }
 
-/* 卡片「···」：沿用 36px 图标按钮，热区扩到 48px；不缩小尺寸以免破坏列表节奏 */
-.bank-card-top .btn-icon {
+/* 卡片右上「解绑」：文字按钮，语义直给；热区扩到 48px（视觉 34 高） */
+.bank-card-unbind {
   position: relative;
   flex-shrink: 0;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
 }
 
-.bank-card-top .btn-icon::after {
+.bank-card-unbind::after {
   content: '';
   position: absolute;
-  inset: -6px;
-  border-radius: var(--radius-lg);
+  /* 视觉 40×25，热区 60×45（≥44）：文字按钮比图标矮，inset 要给得更多 */
+  inset: -10px -8px;
+  border-radius: var(--radius-md);
 }
 
 .bank-card-brand {
@@ -4445,26 +4450,6 @@ input, select, textarea {
   color: var(--primary);
 }
 
-/* 已停用：整卡降噪（浅底 + 细边保留卡片轮廓、无投影、卡号与图标转灰）
-   ——只靠一行「已停用」区分度不够；但若与页面同底无边框，会被误读成「不是卡片」。 */
-.bank-card-disabled {
-  background: var(--bg);
-  border: 1px solid var(--border-light);
-  box-shadow: none;
-}
-
-.bank-card-disabled .bank-card-masked,
-.bank-card-disabled .bank-card-brand svg,
-.bank-card-disabled .bank-card-brand strong {
-  color: var(--text-tertiary);
-}
-
-.bank-card-disabled .bank-card-whitelist {
-  border-top-color: transparent;
-  padding-top: 0;
-  margin-top: var(--space-1);
-}
-
 .bank-status-chip {
   display: inline-flex;
   align-items: center;
@@ -4501,43 +4486,6 @@ input, select, textarea {
   color: var(--text-secondary);
   font-size: var(--text-sm);
   line-height: 1.7;
-}
-
-/* 卡片动作菜单：替代右上角两个裸图标 */
-.bank-card-menu {
-  margin-bottom: var(--space-3);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-}
-
-.bank-card-menu .menu-item {
-  width: 100%;
-  text-align: left;
-}
-
-/* 菜单项两行：动作名 + 一句差异说明（停用可恢复 / 删除需重新验证） */
-.bank-card-menu .menu-item-label {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-/* 菜单容器 overflow:hidden 会把默认 focus ring 裁成一条线（只留下项与项之间那道蓝边），改内描边 */
-.bank-card-menu .menu-item:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: -2px;
-}
-
-.bank-card-menu .menu-item-danger {
-  color: var(--compliance);
-}
-
-.bank-card-menu-no {
-  font-size: var(--text-sm);
-  font-weight: 400;
-  color: var(--text-secondary);
-  margin-left: var(--space-2);
 }
 
 .bank-cards-empty {

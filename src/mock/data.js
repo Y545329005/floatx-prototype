@@ -432,16 +432,20 @@ export function jurisdictionLabel(code, lang = 'zh-CN') {
   return j.zh;
 }
 
-// ========== 银行卡状态机（2026-11-04 · 对齐集团《统一法币出入金整体方案》§5.5 + 白名单数量限制） ==========
-// 用户侧四态（whitelistStatus）：待验证 / 已验证 / 已停用 / 已拒绝。
+// ========== 银行卡状态机（2026-11-04，2026-11-05 收敛为三态） ==========
+// ★ 2026-11-05 业务拍板：取消「已停用」，只保留「解绑」。
+//   原因：停用与解绑在用户视角没有区分度（都释放名额、都受在途提现拦截、都不能用于出入金），
+//   两项并存只会让卡片菜单多出一个含义重叠的选项。
+// 用户侧三态（whitelistStatus）：待验证 / 已验证 / 已拒绝。
 // 后台审核子态（reviewStatus）：待审核 / 已通过 / 已拒绝——「待验证」需要区分「卡审核中」与
-// 「审核通过、等首充」，只靠四态会把已通过待首充的卡也列进审核队列（对抗审查发现）。
+// 「审核通过、等首充」，只靠状态会把已通过待首充的卡也列进审核队列（对抗审查发现）。
 // 名额口径：每币种「待验证 + 已验证」≤ 3（集团默认总量 3，本项目按会议纪要 per-currency，做成常量）。
-// 「已停用 / 已拒绝」释放名额；有在途出金的卡不可删除/停用。
+// 「已拒绝」释放名额；有在途出金的卡不可解绑。
+// ⚠️ 与集团《统一法币出入金整体方案》§5.5 的四态不一致（少了「已停用」），属本项目业务裁量，
+//    已在《资金域口径确认单》登记，待财务/RO 确认。
 export const BANK_CARD_STATUS = {
   UNVERIFIED: 'unverified',
   VERIFIED: 'verified',
-  DISABLED: 'disabled',
   REJECTED: 'rejected',
 };
 export const CARD_REVIEW_STATUS = {
@@ -551,26 +555,6 @@ export const bankCards = [
     verifiedAmount: null,
   },
   {
-    // 已停用的已验证卡——演示「停用释放名额 / 启用前校验名额」；不占每币种 3 张名额
-    id: 'bc12',
-    userId: 'u1',
-    bank: '渣打银行',
-    branch: '香港',
-    holder: 'ZHANG SAN',
-    maskedNo: '**** 6620',
-    cardNo: '6222 8841 0031 6620',
-    type: '香港账户',
-    accountType: 'personal',
-    region: 'HK',
-    proofImage: DEMO_BANK_PROOF,
-    currency: 'HKD',
-    whitelistStatus: 'disabled',
-    reviewStatus: 'approved',
-    verifiedAt: '2026-07-20 09:15:00',
-    verifiedAmount: 12000,
-    disabledAt: '2026-09-02 11:00:00',
-  },
-  {
     // 跨境已验证卡（新加坡开户）——演示「本地/跨境两档出金费率」：
     // 香港卡走本地（0%），此卡走跨境（0.5%）；同时它把 HKD 有效卡凑满 3 张，可演示名额上限。
     id: 'bc14',
@@ -612,15 +596,14 @@ export const bankCards = [
   },
 ];
 
-// 名额统计：每币种「待验证 + 已验证」计数（停用/拒绝不占位）
+// 名额统计：每币种「待验证 + 已验证」计数（已拒绝不占位）
 export function countActiveCards(currency, userId = currentUser.id) {
   return bankCards.filter(c => c.userId === userId
     && c.currency === String(currency || '').toUpperCase()
-    && c.whitelistStatus !== 'disabled'
-    && c.whitelistStatus !== 'rejected').length;
+    && c.whitelistStatus !== BANK_CARD_STATUS.REJECTED).length;
 }
 
-// 该卡是否有在途出金（有则不可删除 / 不可停用）
+// 该卡是否有在途出金（有则不可解绑）
 // 该卡在途提现笔数（2026-11-04：提示里带笔数——只说「有在途提现」时，用户会以为所有卡都被拦，
 // 分不清是卡的问题还是系统的问题）
 export function countPendingWithdrawOnCard(card) {
@@ -7046,7 +7029,7 @@ export function submitDepositRequest({ currency, amount, method, cardId, bank, c
   if (!w || !amount || amount <= 0) return false;
   // 付款卡校验：本人 + 非停用/拒绝（未验证可充，首充即验证）
   const card = bankCards.find(c => c.id === cardId && c.userId === currentUser.id);
-  if (!card || card.whitelistStatus === BANK_CARD_STATUS.DISABLED || card.whitelistStatus === BANK_CARD_STATUS.REJECTED) return false;
+  if (!card || card.whitelistStatus === BANK_CARD_STATUS.REJECTED) return false;
   if (card.reviewStatus === CARD_REVIEW_STATUS.PENDING) return false; // 资料未审核通过前不能用于充值
   if (!(evidence && evidence.name)) return false; // 线下转账必须上传凭证
   const orderNo = genOrderNo('DR');
@@ -7723,7 +7706,7 @@ export function addBankCard({ bank, branch, holder, cardNo, type, currency, acco
     return { ok: false, error: `每个币种最多 ${CARD_QUOTA_PER_CURRENCY} 张银行卡，请先停用或删除旧卡` };
   }
   // 同一张卡不允许重复绑定（2026-11-04）：重复卡会把同一笔钱记到两张卡上，
-  // 后台按卡核对首充时无法判断该给哪张加白。已停用/已拒绝的卡仍算占用，需先删除。
+  // 后台按卡核对首充时无法判断该给哪张加白。已拒绝的卡仍算占用，需先解绑。
   if (bankCards.some(c => c.userId === currentUser.id && String(c.cardNo || '').replace(/\D/g, '') === digits)) {
     return { ok: false, error: '这张卡已添加过，请勿重复提交' };
   }
@@ -7787,41 +7770,18 @@ export function reviewBankCard(cardId, decision, operator = '', reason = '') {
   return true;
 }
 
-// 停用 / 启用（PRD §5.5 四态：停用释放名额、保留记录；启用前校验同币种名额）
-export function setBankCardDisabled(cardId, disabled) {
-  const card = bankCards.find(c => c.id === cardId && c.userId === currentUser.id);
-  if (!card) return { ok: false, error: '卡片不存在' };
-  if (disabled) {
-    if (card.whitelistStatus === BANK_CARD_STATUS.DISABLED) return { ok: true };
-    const pendingW = countPendingWithdrawOnCard(card);
-    if (pendingW > 0) return { ok: false, error: `该卡有 ${pendingW} 笔在途提现，打款完成后再停用` };
-    card.prevStatus = card.whitelistStatus;
-    card.whitelistStatus = BANK_CARD_STATUS.DISABLED;
-    card.disabledAt = formatNow();
-    logAudit({ operator: currentUser.name || '投资人', category: 'fundProduct', action: 'update', target: '银行卡', targetId: card.id, note: `停用银行卡：${card.bank} ${card.maskedNo}` });
-  } else {
-    if (card.whitelistStatus !== BANK_CARD_STATUS.DISABLED) return { ok: true };
-    if (countActiveCards(card.currency, card.userId) >= CARD_QUOTA_PER_CURRENCY) {
-      return { ok: false, error: `该币种已有 ${CARD_QUOTA_PER_CURRENCY} 张有效卡，请先停用或删除其他卡` };
-    }
-    card.whitelistStatus = card.verifiedAt ? BANK_CARD_STATUS.VERIFIED : BANK_CARD_STATUS.UNVERIFIED;
-    card.disabledAt = null;
-    logAudit({ operator: currentUser.name || '投资人', category: 'fundProduct', action: 'update', target: '银行卡', targetId: card.id, note: `启用银行卡：${card.bank} ${card.maskedNo}` });
-  }
-  Storage.save();
-  return { ok: true };
-}
-
-// 解绑银行卡（INV-5「删」：冻结期数据层兜底；有在途出金的卡不可删除，PRD §5.5）
+// 解绑银行卡（2026-11-05 起唯一的下卡动作：INV-5「删」冻结期数据层兜底；有在途出金的卡不可解绑）
+// 解绑 = 从用户银行卡列表移除，历史单据仍保留卡号快照（后台可查）。
+// 名额随之释放；重新添加同一张卡需要重新走审核 + 首充加白。
 export function removeBankCard(cardId) {
   if (getFreezeState().frozen) return { ok: false, error: '安全冻结生效中，暂不能变更出金账户' };
   const idx = bankCards.findIndex(c => c.id === cardId && c.userId === currentUser.id);
   if (idx < 0) return { ok: false, error: '卡片不存在' };
   const pendingW = countPendingWithdrawOnCard(bankCards[idx]);
-  if (pendingW > 0) return { ok: false, error: `该卡有 ${pendingW} 笔在途提现，打款完成后再删除` };
+  if (pendingW > 0) return { ok: false, error: `该卡有 ${pendingW} 笔在途提现，打款完成后再解绑` };
   const card = bankCards[idx];
   bankCards.splice(idx, 1);
-  logAudit({ operator: currentUser.name || '投资人', category: 'fundProduct', action: 'update', target: '银行卡', targetId: card.id, note: `删除银行卡：${card.bank} ${card.maskedNo}` });
+  logAudit({ operator: currentUser.name || '投资人', category: 'fundProduct', action: 'update', target: '银行卡', targetId: card.id, note: `解绑银行卡：${card.bank} ${card.maskedNo}` });
   Storage.save();
   return { ok: true };
 }
@@ -9468,7 +9428,10 @@ export function submitSubscription({ project, amount, currency = 'HKD' }) {
 //     load 时为旧快照逐条补默认字段（「默认值为底 + 快照覆盖」不作废）。
 // 58→59（2026-11-04）：wr1 由待审核改为已打款（见种子注释：三张已验证卡都挂在途单会让「停用」
 //     在演示里永远失败）。withdrawRequests 属快照恢复范围，不升版旧快照里 wr1 仍是 pending。
-const STATE_VERSION = 59;
+// 59→60（2026-11-05）：取消「已停用」态（只留解绑），种子 bc12（已停用卡）移除。
+//     bankCards 属快照恢复范围，不升版旧快照里仍会读到 whitelistStatus='disabled' 的卡，
+//     而代码已无该状态分支——这类卡会以「未知状态」出现在列表里。
+const STATE_VERSION = 60;
 const STORAGE_KEY = 'zhifu-app-state';
 
 /**

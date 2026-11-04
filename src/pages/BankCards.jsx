@@ -1,22 +1,21 @@
 import { useState } from 'react';
 import {
-  ArrowLeft, Plus, CreditCard, Trash2, X, ShieldCheck, Ban, RotateCcw, HelpCircle, MoreHorizontal,
+  ArrowLeft, Plus, CreditCard, X, ShieldCheck, HelpCircle,
 } from 'lucide-react';
 import {
   bankCards, BANK_CARD_STATUS, CARD_REVIEW_STATUS, CARD_QUOTA_PER_CURRENCY,
   jurisdictionLabel, countActiveCards,
   getFreezeState, formatExactAmount,
-  removeBankCard, setBankCardDisabled, currentUser,
+  removeBankCard, currentUser,
 } from '../mock/data';
 import { useLang } from '../i18n';
 
-// 用户侧四态 + 后台审核子态（2026-11-04 · 对齐集团《统一法币出入金整体方案》§5.5）
+// 用户侧三态（2026-11-05 起「已停用」取消，只保留解绑）
 // 待验证里再分「卡审核中」与「审核通过、待首充」——两者用户都要等，但动作不同：
 // 审核中不能充值，审核通过后要用该卡首充 ≥1万 HKD 等值才加白。
 const cardStatusMeta = {
   [BANK_CARD_STATUS.VERIFIED]: { label: '已验证', cls: 'is-ok' },
   [BANK_CARD_STATUS.UNVERIFIED]: { label: '待验证', cls: 'is-warn' },
-  [BANK_CARD_STATUS.DISABLED]: { label: '已停用', cls: 'is-off' },
   [BANK_CARD_STATUS.REJECTED]: { label: '已拒绝', cls: 'is-bad' },
 };
 
@@ -26,22 +25,18 @@ const CURRENCIES = [
   { key: 'CNH', label: 'CNH 离岸人民币' },
 ];
 
-// 列表内排序权重（币种页签内）：待验证 → 已拒绝 → 已验证 → 已停用
+// 列表内排序权重（币种页签内）：待验证 → 已拒绝 → 已验证
 const CARD_ORDER = {
   [BANK_CARD_STATUS.UNVERIFIED]: 0,
   [BANK_CARD_STATUS.REJECTED]: 1,
   [BANK_CARD_STATUS.VERIFIED]: 2,
-  [BANK_CARD_STATUS.DISABLED]: 3,
 };
 
-// 银行卡管理（2026-11-04）
+// 银行卡管理（2026-11-04；2026-11-05 收敛）
 // 链路：添加卡（个人单名 + 开户地区 + 卡照/开户证明）→ 后台卡审核 → 待验证
 //       → 用该卡充值 ≥1万 HKD 等值 → 财务确认到账时自动加白
-// 2026-11-04 第三轮（验收反馈）：
-//   - 币种页签移出吸顶区：本页内容不超过一屏，吸顶页签只会长期占据 100px 却换不来导航收益
-//   - 添加卡改为独立页（#bank-card-add/:currency），弹层已装不下 6 项表单
-//   - 动作失败改为就地提示（菜单内 / 删除确认内），不再用页顶红字 + 自动消失
-//   - 说明文案只留客户要知道的：规则、门槛、限制；名额表已在页签上，删除
+// 2026-11-05：取消「停用」。它与「解绑」在用户视角没有区别（都释放名额、都受在途提现拦截、
+// 都不能用于出入金），两项并存只会让菜单多一个含义重叠的选项。卡片右上角直接给「解绑」。
 export default function BankCards({ navigate, goBack, setToast }) {
   const { t, lang } = useLang();
   const [freezeBlocked, setFreezeBlocked] = useState(false);
@@ -59,17 +54,16 @@ export default function BankCards({ navigate, goBack, setToast }) {
     return withCard ? withCard.key : 'HKD';
   });
 
-  const [menuCard, setMenuCard] = useState(null);     // 「···」动作菜单
-  const [menuError, setMenuError] = useState('');     // 菜单内就地错误
   const [confirmRemove, setConfirmRemove] = useState(null);
-  const [removeError, setRemoveError] = useState(''); // 删除确认内就地错误
+  const [removeError, setRemoveError] = useState('');
   const [showInfo, setShowInfo] = useState(false);
 
   const refresh = () => {
     setCards(ownedCards());
-    // 启停/删除会改变列表长度，只在页面已经滚下去时回到顶部：避免停在半截页签上
+    // 解绑会改变列表长度，只在页面已经滚下去时回到顶部：避免停在半截页签上
     if (typeof window !== 'undefined' && window.scrollY > 0) window.scrollTo({ top: 0 });
   };
+
   const quotaOf = (currency) => countActiveCards(currency, currentUser.id);
 
   const hasVerifyTodo = (currency) => cards.some(c => c.currency === currency
@@ -80,30 +74,19 @@ export default function BankCards({ navigate, goBack, setToast }) {
     .filter(c => c.currency === activeCurrency)
     .sort((a, b) => (CARD_ORDER[a.whitelistStatus] ?? 9) - (CARD_ORDER[b.whitelistStatus] ?? 9));
 
-  // 添加入口：带当前页签币种（该币种已满则交给新页选第一个有空位的）
   const openAdd = () => navigate(`#bank-card-add/${activeCurrency}`);
 
-  const toggleDisabled = (card) => {
-    if (getFreezeState().frozen) { setMenuCard(null); setFreezeBlocked(true); return; }
-    const res = setBankCardDisabled(card.id, card.whitelistStatus !== BANK_CARD_STATUS.DISABLED);
-    if (!res.ok) { setMenuError(res.error || t('操作未执行，请重试')); return; }
-    setMenuCard(null);
-    setMenuError('');
-    refresh();
-    if (setToast) setToast(card.whitelistStatus === BANK_CARD_STATUS.DISABLED ? t('银行卡已启用') : t('银行卡已停用'));
-  };
-
-  const removeCard = (id) => {
+  const unbindCard = (id) => {
     if (getFreezeState().frozen) { setConfirmRemove(null); setFreezeBlocked(true); return; }
     const res = removeBankCard(id);
     if (!res.ok) { setRemoveError(res.error || t('操作未执行，请重试')); return; }
     setConfirmRemove(null);
     setRemoveError('');
     refresh();
-    if (setToast) setToast(t('银行卡已删除'));
+    if (setToast) setToast(t('银行卡已解绑'));
   };
 
-  // 状态说明：徽标只给状态词，这里给「下一步该做什么 / 为什么停用」
+  // 状态说明：徽标只给状态词，这里给「下一步该做什么」
   const renderDetail = (c) => {
     if (c.whitelistStatus === BANK_CARD_STATUS.VERIFIED) {
       return <>{t('白名单')}{c.verifiedAmount ? ` · ${c.currency} ${formatExactAmount(c.verifiedAmount)}` : ''}</>;
@@ -111,12 +94,9 @@ export default function BankCards({ navigate, goBack, setToast }) {
     if (c.whitelistStatus === BANK_CARD_STATUS.UNVERIFIED) {
       return c.reviewStatus === CARD_REVIEW_STATUS.PENDING ? t('资料审核中') : t('首充 ≥1万 HKD 等值后加白');
     }
-    if (c.whitelistStatus === BANK_CARD_STATUS.DISABLED) return t('启用后可恢复出入金');
     if (c.whitelistStatus === BANK_CARD_STATUS.REJECTED) return c.reviewReason || t('资料不符，请重新添加');
     return '';
   };
-
-  const isDisabledCard = (c) => c.whitelistStatus === BANK_CARD_STATUS.DISABLED;
 
   return (
     <div className="page bank-cards-page">
@@ -181,9 +161,8 @@ export default function BankCards({ navigate, goBack, setToast }) {
 
       {activeCards.map(c => {
         const meta = cardStatusMeta[c.whitelistStatus] || cardStatusMeta[BANK_CARD_STATUS.UNVERIFIED];
-        const off = isDisabledCard(c);
         return (
-          <div key={c.id} className={`card bank-card${off ? ' bank-card-disabled' : ''}`}>
+          <div key={c.id} className="card bank-card">
             <div className="bank-card-top">
               <div className="bank-card-brand">
                 <CreditCard size={18} />
@@ -193,11 +172,10 @@ export default function BankCards({ navigate, goBack, setToast }) {
                 </div>
               </div>
               <button
-                className="btn-icon"
-                aria-label={t('更多操作')}
-                onClick={() => { setMenuCard(c); setMenuError(''); }}
+                className="bank-card-unbind"
+                onClick={() => { setConfirmRemove(c); setRemoveError(''); }}
               >
-                <MoreHorizontal size={20} />
+                {t('解绑')}
               </button>
             </div>
 
@@ -243,59 +221,21 @@ export default function BankCards({ navigate, goBack, setToast }) {
         </>
       )}
 
-      {/* 卡片动作菜单：停用 / 删除带一句差异说明——两者都释放名额，但停用可恢复、删除要重新验证 */}
-      {menuCard && (
-        <>
-          <div className="sheet-mask" onClick={() => { setMenuCard(null); setMenuError(''); }} />
-          <div className="sheet">
-            <div className="sheet-header">
-              <h3>{menuCard.bank} <span className="bank-card-menu-no">{menuCard.maskedNo}</span></h3>
-              <button className="btn-icon" onClick={() => { setMenuCard(null); setMenuError(''); }} aria-label={t('关闭')}><X size={18} /></button>
-            </div>
-            <div className="bank-card-menu">
-              {(menuCard.whitelistStatus === BANK_CARD_STATUS.VERIFIED || menuCard.whitelistStatus === BANK_CARD_STATUS.DISABLED) && (
-                <button className="menu-item" onClick={() => toggleDisabled(menuCard)}>
-                  {isDisabledCard(menuCard) ? <RotateCcw size={18} /> : <Ban size={18} />}
-                  <span className="menu-item-label">
-                    <span className="menu-item-title">{isDisabledCard(menuCard) ? t('启用这张卡') : t('停用这张卡')}</span>
-                    <span className="menu-item-sub">
-                      {isDisabledCard(menuCard) ? t('恢复出入金，重新占用该币种名额') : t('暂时不用这张卡，随时可恢复')}
-                    </span>
-                  </span>
-                </button>
-              )}
-              <button
-                className="menu-item menu-item-danger"
-                onClick={() => { setConfirmRemove(menuCard); setRemoveError(''); setMenuCard(null); setMenuError(''); }}
-              >
-                <Trash2 size={18} />
-                <span className="menu-item-label">
-                  <span className="menu-item-title">{t('删除银行卡')}</span>
-                  <span className="menu-item-sub">{t('移除后需重新添加并通过验证')}</span>
-                </span>
-              </button>
-            </div>
-            {menuError && <p className="form-error">{menuError}</p>}
-            <button className="btn btn-outline btn-full" onClick={() => { setMenuCard(null); setMenuError(''); }}>{t('取消')}</button>
-          </div>
-        </>
-      )}
-
       {confirmRemove && (
         <>
           <div className="sheet-mask" onClick={() => { setConfirmRemove(null); setRemoveError(''); }} />
           <div className="sheet">
             <div className="sheet-header">
-              <h3>{t('删除银行卡')}</h3>
+              <h3>{t('解绑银行卡')}</h3>
               <button className="btn-icon" onClick={() => { setConfirmRemove(null); setRemoveError(''); }} aria-label={t('关闭')}><X size={18} /></button>
             </div>
             <p className="text-muted text-sm sheet-sub">
-              {t('确认删除')} {confirmRemove.bank}（{confirmRemove.maskedNo}）？{t('删除后不可恢复，需重新添加并通过验证。')}
+              {t('确认解绑')} {confirmRemove.bank}（{confirmRemove.maskedNo}）？{t('解绑后将无法用于出入金，需重新添加并通过验证。')}
             </p>
             {removeError && <p className="form-error">{removeError}</p>}
             <div className="bank-card-confirm-actions">
               <button className="btn btn-outline btn-full" onClick={() => { setConfirmRemove(null); setRemoveError(''); }}>{t('取消')}</button>
-              <button className="btn btn-danger btn-full" onClick={() => removeCard(confirmRemove.id)}>{t('确认删除')}</button>
+              <button className="btn btn-danger btn-full" onClick={() => unbindCard(confirmRemove.id)}>{t('确认解绑')}</button>
             </div>
           </div>
         </>

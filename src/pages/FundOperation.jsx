@@ -88,7 +88,6 @@ export default function FundOperation({ mode, navigate, goBack }) {
   // （此前只列已验证卡，导致「先验证才能充值」的顺序与会议纪要/集团口径相反）。
   // 出金仍只允许已验证卡（白名单硬约束），且按币种匹配，不做跨币种打款。
   const myCards = bankCards.filter(c => c.userId === currentUser.id
-    && c.whitelistStatus !== BANK_CARD_STATUS.DISABLED
     && c.whitelistStatus !== BANK_CARD_STATUS.REJECTED
     && c.reviewStatus !== CARD_REVIEW_STATUS.PENDING); // 卡审核中的卡不能充（资料还没核过）
   const whitelistedCards = myCards.filter(c => c.whitelistStatus === BANK_CARD_STATUS.VERIFIED);

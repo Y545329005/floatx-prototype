@@ -1697,7 +1697,6 @@ export const en = {
   '点击上传': "Click to upload",
   '用于核对账户姓名与卡号': "Used to verify account name and card number",
   '提交审核': "Submit for review",
-  '删除银行卡': "Delete bank card",
   '确认删除': "Confirm delete",
   '删除后释放名额；有在途提现的卡不能删除': "Deleting frees a slot; cards with pending withdrawals cannot be deleted",
   '启用': "Enable",
@@ -1760,7 +1759,6 @@ export const en = {
   '实际到账': "Net proceeds",
 
   // 2026-11-04 银行卡页改版：页头说明弹层 / 动作菜单 / 名额提示
-  '已停用': "Disabled",
   '已满': "full",
   '关闭': "Close",
   '更多操作': "More actions",
@@ -1771,9 +1769,6 @@ export const en = {
   '每个币种最多 3 张有效卡（待验证 + 已验证 计入，停用 / 已拒绝不占名额）。': "Up to 3 active cards per currency (pending + verified count; disabled and rejected do not).",
   '仅接受个人单名账户，开户地区限香港及证监会合资格司法管辖区名单。': "Personal single-name accounts only, opened in Hong Kong or an SFC eligible jurisdiction.",
   '有在途提现的银行卡不可删除或停用。': "A card with a pending withdrawal cannot be deleted or disabled.",
-  '停用这张卡': "Disable this card",
-  '启用这张卡': "Enable this card",
-  '启用后可恢复出入金': "Enable to resume deposits and withdrawals",
   '资料不符，请重新添加': "Details do not match — please add it again",
   '三个币种的名额都已用满，请先停用或删除旧卡。': "All three currencies are at their card limit. Disable or delete a card first.",
 
@@ -1789,17 +1784,11 @@ export const en = {
   // 2026-11-04 添加卡独立页 / 动作菜单说明 / 就地错误
   '仅支持个人单名账户，开户地区须在香港或证监会合资格地区。': "Personal single-name accounts only, opened in Hong Kong or an SFC eligible jurisdiction.",
   '仅支持证监会合资格地区（含香港）开立的银行账户。': "Only accounts opened in an SFC eligible jurisdiction (including Hong Kong).",
-  '删除后不可恢复，需重新添加并通过验证。': "Deleting cannot be undone; you will need to add and verify the card again.",
-  '恢复出入金，重新占用该币种名额': "Resume deposits and withdrawals; takes a slot again",
   '提交后由专员核对资料；审核通过后，用该卡入金满 1 万 HKD（或等值）即自动加入白名单。': "An officer reviews the details; once approved, a deposit of HKD 10,000 (or equivalent) with this card whitelists it automatically.",
   '新卡提交后由专员审核，审核通过后用该卡入金满 1 万 HKD（或等值）即自动加入白名单。': "A new card is reviewed by an officer; once approved, a deposit of HKD 10,000 (or equivalent) with that card whitelists it automatically.",
-  '暂时不用这张卡，随时可恢复': "Keep the card unused for now; restore it anytime",
   '每个币种最多 3 张。': "Up to 3 cards per currency.",
-  '移除后需重新添加并通过验证': "You will need to add and verify the card again",
   '请先阅读并同意服务协议': "Please read and accept the service agreement first",
-  '银行卡已停用': "Bank card disabled",
   '银行卡已删除': "Bank card deleted",
-  '银行卡已启用': "Bank card enabled",
   '银行卡已提交审核': "Bank card submitted for review",
 
   // 2026-11-04 添加卡文案对客化 / 条款改名
@@ -1809,4 +1798,9 @@ export const en = {
   // 2026-11-04 底部选择器
   '选择银行': "Select bank",
   '已达上限': "At limit",
+
+  // 2026-11-05 取消停用，删除改解绑
+  '解绑': "Unbind",
+  '解绑后将无法用于出入金，需重新添加并通过验证。': "After unbinding, the card can no longer be used for transfers; you will need to add and verify it again.",
+  '银行卡已解绑': "Bank card unbound",
 };
