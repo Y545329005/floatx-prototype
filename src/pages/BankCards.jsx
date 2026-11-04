@@ -196,9 +196,9 @@ export default function BankCards({ navigate, goBack }) {
           </div>
         </div>
 
-        {/* 币种 tab：每屏只列一个币种，条数被「每币种 3 张」的名额锁死，页长不再随加卡增长。
-            tab 上带名额用量与待办圆点，跨币种总览不丢。 */}
-        <div className="bank-currency-tabs" role="tablist">
+        {/* 币种 tab：复用全站 segmented-control（路演/项目/流水/通知同一套页签语言）。
+            每屏只列一个币种，条数被「每币种 3 张」锁死；计数与待办点补回跨币种总览。 */}
+        <div className="segmented-control bank-currency-tabs" role="tablist">
           {CURRENCIES.map(cur => {
             const active = cur.key === activeCurrency;
             return (
@@ -206,12 +206,12 @@ export default function BankCards({ navigate, goBack }) {
                 key={cur.key}
                 role="tab"
                 aria-selected={active}
-                className={`bank-currency-tab${active ? ' active' : ''}`}
+                className={active ? 'active' : ''}
                 onClick={() => { setActiveCurrency(cur.key); setPageError(''); }}
               >
-                <span className="bank-currency-label">{cur.key}</span>
-                <span className="bank-currency-count">{quotaOf(cur.key)}/{CARD_QUOTA_PER_CURRENCY}</span>
-                {hasVerifyTodo(cur.key) && <span className="bank-currency-dot" aria-label={t('有待验证的银行卡')} />}
+                {cur.key}
+                <span className="segment-count">{quotaOf(cur.key)}/{CARD_QUOTA_PER_CURRENCY}</span>
+                {hasVerifyTodo(cur.key) && <span className="segment-dot" aria-label={t('有待验证的银行卡')} />}
               </button>
             );
           })}
@@ -335,7 +335,7 @@ export default function BankCards({ navigate, goBack }) {
                 <span className="menu-item-label">{t('删除银行卡')}</span>
               </button>
             </div>
-            <button className="btn btn-secondary btn-full" onClick={() => setMenuCard(null)}>{t('取消')}</button>
+            <button className="btn btn-outline btn-full" onClick={() => setMenuCard(null)}>{t('取消')}</button>
           </div>
         </>
       )}
