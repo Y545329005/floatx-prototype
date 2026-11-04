@@ -14,7 +14,10 @@ node_modules/
 .dev-server.log
 
 # 内部文档/演示页：不进公开仓库（GitHub Pages 公开托管，最小化公开面）
-docs/
+# 例外：docs/dev/ 为研发对接文档（2026-11-06 拍板入库，无站内入口、仅链接访问）
+docs/*
+!docs/dev/
+style-demo/docs/
 demo.html
 DESIGN.md
 *.tar.gz
