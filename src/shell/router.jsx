@@ -47,6 +47,7 @@ const AssetOverview = lazy(() => import('../pages/AssetOverview'));
 // hero 迷你走势是它的唯一入口，点进去不能落回资讯页。
 const AssetTrend = lazy(() => import('../pages/AssetTrend'));
 const BankCards = lazy(() => import('../pages/BankCards'));
+const BankCardAdd = lazy(() => import('../pages/BankCardAdd'));
 const Transactions = lazy(() => import('../pages/Transactions'));
 const FundOperation = lazy(() => import('../pages/FundOperation'));
 const FundRequestDetail = lazy(() => import('../pages/FundRequestDetail'));
@@ -105,6 +106,9 @@ export function renderAppPage(path, param, ctx) {
     // 换汇 2026-11-02 口径收口：入口/路由/数据层三层拦截（见上方 case 区注释）
     case 'bank-cards':
       return <BankCards navigate={navigate} goBack={goBack} setToast={setToast} />;
+    // 添加银行卡（2026-11-04）：由底部弹层改为独立页；param 传当前选中币种，如 #bank-card-add/USD
+    case 'bank-card-add':
+      return <BankCardAdd navigate={navigate} goBack={goBack} setToast={setToast} currency={param} />;
     case 'transactions':
       return <Transactions navigate={navigate} goBack={goBack} />;
     case 'fund-operation':

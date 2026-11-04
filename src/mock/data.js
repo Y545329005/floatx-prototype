@@ -413,6 +413,17 @@ export const JURISDICTIONS = [
 
 export const JURISDICTION_CODES = new Set(JURISDICTIONS.map(j => j.code));
 
+// 开户银行列表（2026-11-04）：原型硬编码香港主要零售银行。
+// 上线由后端银行主数据下发（后台维护），不让用户手填——同一家银行会出现「汇丰 / HSBC / 香港上海汇丰银行」
+// 多种写法，直接影响后台对账与费率匹配。admin 侧维护页属通道接入后二期。
+export const BANK_OPTIONS = [
+  '汇丰银行',
+  '中国银行（香港）',
+  '星展银行',
+  '渣打银行',
+  '恒生银行',
+];
+
 export function jurisdictionLabel(code, lang = 'zh-CN') {
   const j = JURISDICTIONS.find(x => x.code === code);
   if (!j) return code || '—';
