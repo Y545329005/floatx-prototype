@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { clickable } from '../lib';
 import { ArrowLeft, Upload } from 'lucide-react';
-import { depositRequests, withdrawRequests, exchangeRequests, walletAccountOf, formatCurrency, formatExactAmount, submitDepositEvidence, getEvidencePreview, currentUser, cancelWithdrawRequest } from '../mock/data';
+import { depositRequests, withdrawRequests, exchangeRequests, walletAccountOf, formatExactAmount, submitDepositEvidence, getEvidencePreview, currentUser, cancelWithdrawRequest } from '../mock/data';
 import { useLang } from '../i18n';
 import ImageLightbox from '../components/ImageLightbox';
 
@@ -81,8 +81,8 @@ export default function FundRequestDetail({ id, navigate, goBack }) {
       <div className="fund-detail-hero">
         <div className="fund-detail-hero-amount">
           {isExchange
-            ? <>{req.fromCurrency} {formatCurrency(req.amount)} → {req.toCurrency}</>
-            : <>{isDeposit ? '+' : '-'}{symbol}{formatCurrency(req.amount)}</>}
+            ? <>{req.fromCurrency} {formatExactAmount(req.amount)} → {req.toCurrency}</>
+            : <>{isDeposit ? '+' : '-'}{symbol}{formatExactAmount(req.amount)}</>}
         </div>
         <span className={`tag ${statusCls(req)}`}>{t(statusLabel(req))}</span>
       </div>
@@ -101,7 +101,7 @@ export default function FundRequestDetail({ id, navigate, goBack }) {
             </div>
             <div className="subscription-info-row">
               <span className="text-muted">{t('卖出金额')}</span>
-              <strong>{req.fromCurrency} {formatCurrency(req.amount)}</strong>
+              <strong>{req.fromCurrency} {formatExactAmount(req.amount)}</strong>
             </div>
             <div className="subscription-info-row">
               <span className="text-muted">{t('参考汇率')}</span>
@@ -109,7 +109,7 @@ export default function FundRequestDetail({ id, navigate, goBack }) {
             </div>
             <div className="subscription-info-row">
               <span className="text-muted">{t('估算到账（仅供参考）')}</span>
-              <strong>{req.toCurrency} {formatCurrency(req.expectedAmount)}</strong>
+              <strong>{req.toCurrency} {formatExactAmount(req.expectedAmount)}</strong>
             </div>
             {req.status === 'approved' && (
               <>
@@ -119,7 +119,7 @@ export default function FundRequestDetail({ id, navigate, goBack }) {
                 </div>
                 <div className="subscription-info-row">
                   <span className="text-muted">{t('实际到账')}</span>
-                  <strong>{req.toCurrency} {formatCurrency(req.actualAmount ?? req.expectedAmount)}</strong>
+                  <strong>{req.toCurrency} {formatExactAmount(req.actualAmount ?? req.expectedAmount)}</strong>
                 </div>
                 {req.bankRef && (
                   <div className="subscription-info-row">
@@ -201,7 +201,7 @@ export default function FundRequestDetail({ id, navigate, goBack }) {
         {req.status === 'approved' && isDeposit && (
           <div className="subscription-info-row">
             <span className="text-muted">{t('实际到账')}</span>
-            <strong>{symbol}{formatCurrency(req.actualAmount ?? req.amount)}</strong>
+            <strong>{symbol}{formatExactAmount(req.actualAmount ?? req.amount)}</strong>
           </div>
         )}
         {req.status === 'approved' && (
