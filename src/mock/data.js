@@ -9432,6 +9432,26 @@ export function submitSubscription({ project, amount, currency = 'HKD' }) {
 //     bankCards 属快照恢复范围，不升版旧快照里仍会读到 whitelistStatus='disabled' 的卡，
 //     而代码已无该状态分支——这类卡会以「未知状态」出现在列表里。
 const STATE_VERSION = 60;
+
+// ========== 快照迁移（2026-11-05） ==========
+// 机制：load 时按版本逐级跑迁移函数，跑不到 STATE_VERSION 才整体丢弃。
+// 目的：升版不再等于「用户数据清零」。此前 load 只比较版本号是否相等，不等就 return false——
+// 每次改种子或状态机，用户已填的 KYC、已提交的单据、协议同意记录、后台 CRUD 内容全部回到默认。
+// 边界：只给「结构变化可逆推」的版本补迁移函数；没补的版本仍按旧行为丢弃（安全兜底，
+// 宁可重来也不要用半新半旧的数据）。迁移函数必须是纯数据变换（不读写 localStorage、不 push 通知）。
+const SNAPSHOT_MIGRATIONS = {
+  // 59 → 60：取消「已停用」态（只留解绑）。
+  // 旧快照里 whitelistStatus='disabled' 的卡在新代码里没有任何分支会处理，会以未定义状态
+  // 出现在列表并继续占用名额。这类卡转为「已拒绝」（用户可见、可自行解绑重加）。
+  59: (data) => {
+    if (Array.isArray(data.bankCards)) {
+      data.bankCards = data.bankCards.map(c => (c && c.whitelistStatus === 'disabled')
+        ? { ...c, whitelistStatus: 'rejected', reviewStatus: 'rejected', reviewReason: '该卡已解绑（历史数据迁移）' }
+        : c);
+    }
+    return data;
+  },
+};
 const STORAGE_KEY = 'zhifu-app-state';
 
 /**
@@ -9516,8 +9536,17 @@ export const Storage = {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return false;
-      const data = JSON.parse(raw);
-      if (!data || data.version !== STATE_VERSION) return false;
+      let data = JSON.parse(raw);
+      if (!data || typeof data.version !== 'number') return false;
+      // 逐级迁移：有迁移函数的版本平滑升级，缺一环就整体丢弃（与旧行为一致）
+      let v = data.version;
+      let guard = 0;
+      while (v < STATE_VERSION && SNAPSHOT_MIGRATIONS[v] && guard < 20) {
+        data = SNAPSHOT_MIGRATIONS[v](data) || data;
+        v += 1;
+        guard += 1;
+      }
+      if (v !== STATE_VERSION) return false;
 
       // wallet：restore hkd.frozen（其他字段保持 JS 对象引用，mock 数据无需深拷贝）
       if (data.wallet) {
@@ -9799,6 +9828,8 @@ export const Storage = {
       }
       return true;
     } catch (e) {
+      // 静默吞错会让「数据没恢复」无从定位（本次迁移就踩了 const 重赋值被吞），至少留一条控制台记录
+      if (typeof console !== 'undefined') console.error('[storage] 快照恢复失败', e);
       return false;
     }
   },
