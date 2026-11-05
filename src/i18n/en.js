@@ -426,6 +426,11 @@ export const en = {
   // Register page
   '注册': 'Sign Up',
   '创建您的平台账号': 'Create your platform account',
+  '验证邀请码': 'Verify Invitation Code',
+  '请输入邀请码以开始注册': 'Enter your invitation code to start registration',
+  '邀请码': 'Invitation Code',
+  '请输入邀请码': 'Enter invitation code',
+  '邀请码无效，请核对后重试': 'Invalid invitation code. Please check and try again.',
   '请再次输入密码': 'Please re-enter the password',
   '我已阅读并同意': 'I have read and agree to the',
   '服务条款': 'Terms of Service',

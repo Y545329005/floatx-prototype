@@ -8810,6 +8810,23 @@ export function verifyRegisterCode(account, code) {
   return verifySceneCode(registerCodeStore, account, code);
 }
 
+// ========== 注册邀请码闸门（2026-11-05）==========
+// 前期准入闸门：仅持有效邀请码可进入注册流程（RegisterPage 首步 invite → form → success）。
+// 后期系统完善后将降级——置 INVITE_GATE_ENABLED=false 即整体跳过闸门，无需删代码。
+// ⚠️ 演示层闸门：码清单硬编码于前端源码，仅演示交互口径；真实防线必须在后端（服务端校验）。
+export const INVITE_GATE_ENABLED = true;
+export const INVITE_CODES = ['HB2026'];
+
+/**
+ * 校验注册邀请码（trim + 大小写不敏感；返回结构与 verifyRegisterCode 同构，message 为 i18n key）
+ */
+export function validateInviteCode(input) {
+  const code = String(input || '').trim().toUpperCase();
+  if (!code) return { success: false, message: '请输入邀请码' };
+  if (!INVITE_CODES.includes(code)) return { success: false, message: '邀请码无效，请核对后重试' };
+  return { success: true, message: '邀请码验证通过' };
+}
+
 // ---- mock 注册账号表：支持「注册成功 → 去登录」全链路演示 ----
 // 仅内存（刷新即失，与验证码 store 同级演示语义）；真实环境由 UC 建号，登录走 UC 登录接口
 const registeredAccounts = {}; // { account(小写): password }

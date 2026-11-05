@@ -11,6 +11,7 @@ import {
   startEmergencyLogin, completeEmergencyUnbind, finishEmergencyRebind, getEmergencyState,
   addPasskey,
   sendRegisterCode, verifyRegisterCode, registerAccount, findRegisteredAccount, isAccountRegistered,
+  validateInviteCode, INVITE_GATE_ENABLED,
 } from "../mock/data";
 
 // 账号校验：仅邮箱（邮箱单通道）
@@ -481,7 +482,21 @@ export function RegisterPage({ navigate, setIsLoggedIn, setUser, setToast }) {
   // 验证码（UC §9.2）与注册结果确认页
   const [sentCode, setSentCode] = useState(""); // Mock 模式显示验证码
   const [codeCountdown, setCodeCountdown] = useState(0);
-  const [stage, setStage] = useState('form');   // 'form' → 'success'
+  // 邀请码闸门（前期准入）：INVITE_GATE_ENABLED=false 降级时首帧直接落 form（初始化器落地，防 invite 闪现）
+  const [inviteCode, setInviteCode] = useState("");
+  const [inviteError, setInviteError] = useState("");
+  const [stage, setStage] = useState(() => INVITE_GATE_ENABLED ? 'invite' : 'form');   // 'invite' → 'form' → 'success'
+
+  const handleInviteSubmit = (e) => {
+    e.preventDefault();
+    const r = validateInviteCode(inviteCode);
+    if (!r.success) {
+      setInviteError(t(r.message));
+      return;
+    }
+    setInviteError("");
+    setStage('form');
+  };
 
   // 验证码 60s 重发倒计时
   React.useEffect(() => {
@@ -608,6 +623,45 @@ export function RegisterPage({ navigate, setIsLoggedIn, setUser, setToast }) {
             >
               {t('开始身份认证')}
             </button>
+            <p className="auth-terms-hint text-muted">
+              {t('已有账号？')}
+              <a href="#login" className="auth-footer-link">{t('去登录')}</a>
+            </p>
+          </div>
+        </div>
+        <AuthFooter>
+          <span>{t('已有账号？')}</span>
+          <a href="#login" className="auth-footer-link">{t('立即登录')}</a>
+        </AuthFooter>
+      </div>
+    );
+  }
+
+  // 邀请码闸门（2026-11-05）：仅持有效邀请码可进入注册表单；每次进入注册页均需验码（组件重挂即回闸门）
+  if (stage === 'invite') {
+    return (
+      <div className="auth-page">
+        <AuthHero compact title={t('验证邀请码')} subtitle={t('请输入邀请码以开始注册')} />
+        <div className="auth-body">
+          <div className="auth-card">
+            <form onSubmit={handleInviteSubmit}>
+              <div className="form-group">
+                <label className="form-label">{t('邀请码')}</label>
+                <div className="auth-input-wrap">
+                  <ShieldCheck size={16} />
+                  <input
+                    type="text"
+                    name="inviteCode"
+                    className={`form-input ${inviteError ? 'error' : ''}`}
+                    placeholder={t('请输入邀请码')}
+                    value={inviteCode}
+                    onChange={(e) => { setInviteCode(e.target.value); if (inviteError) setInviteError(''); }}
+                  />
+                </div>
+                {inviteError && <span className="error-text">{inviteError}</span>}
+              </div>
+              <button type="submit" className="auth-button primary">{t('验证邀请码')}</button>
+            </form>
             <p className="auth-terms-hint text-muted">
               {t('已有账号？')}
               <a href="#login" className="auth-footer-link">{t('去登录')}</a>
