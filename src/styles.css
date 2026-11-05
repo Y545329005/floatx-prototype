@@ -8286,31 +8286,184 @@ input, select, textarea {
 .text-xs { font-size: var(--text-xs); }
 
 
-/* 结单详情（2026-10-28 补齐）：这组类名此前在 CSS 里没有任何定义，
-   所以「交易类型认购」「份额966,796.88 份」全部粘成一行——不是排版选择，是缺样式。 */
-.statement-card { padding: var(--space-4); }
+/* ========== 基金结单列表（2026-11-05 第二版：年份是分组，不是装饰） ==========
+   第一版把年份做成 12px 灰字 + 一根细线，结果分组弱到看不见——细线在白卡内部
+   构不成边界。改用系统既有的分组语言：灰底页面上叠独立白卡，组标题在卡外
+   （Settings「语言设置」、资产页「基金持仓」同形），一年的结单 = 一个白块。 */
+.p-statements-group + .p-statements-group {
+  margin-top: var(--space-5);
+}
 
-.statement-header {
+.p-statements-group:first-of-type {
+  margin-top: var(--space-2);
+}
+
+.p-statements-year {
+  padding: 0 var(--space-1);
+  margin-bottom: var(--space-2);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.p-statements-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.p-statements-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 14px;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.p-statements-row + .p-statements-row { border-top: 1px solid var(--border-light); }
+.p-statements-row:active { background: var(--bg); }
+
+@media (hover: hover) {
+  .p-statements-row:hover { background: var(--bg); }
+}
+
+.p-statements-row:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+.p-statements-main {
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* 基金名独占一行：中文名 15px 在 296px 里放得下，英文名与未来更长的产品名折两行，
+   而不是被右侧金额压成「US IPO Allocation F…」 */
+.p-statements-fund {
+  min-width: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 第二行：左侧时间与类型（短、可截），右侧金额（长、不打折）。
+   两者用 space-between 分开，谁变长都不会挤压对方的名字那一行。 */
+.p-statements-line2 {
+  display: flex;
+  align-items: baseline;
   justify-content: space-between;
   gap: var(--space-3);
+  min-width: 0;
+}
+
+.p-statements-when {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.p-statements-date {
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.p-statements-kind {
+  flex: none;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.p-statements-dot {
+  flex: none;
+  color: var(--text-tertiary);
+}
+
+.p-statements-amount {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.p-statements-amount em {
+  font-style: normal;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--primary);
+}
+
+.p-statements-amount b {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.p-statements-chev {
+  align-self: center;
+  color: var(--text-tertiary);
+}
+
+.p-statements-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-10) var(--space-4);
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+}
+
+.p-statements-empty svg { color: var(--text-tertiary); }
+.p-statements-empty-title { font-weight: 600; color: var(--text); }
+.p-statements-empty-hint { font-size: var(--text-sm); color: var(--text-secondary); }
+
+/* 确认单详情（2026-11-05 第二版：一张明细表）
+   上一版是「抬头两栏（基金名 ↔ 金额）+ 明细 key-value」两套排版并置：
+   横向和纵向的列对不齐，金额还抢在标题层。现在全页一套 key-value，
+   金额作为第一行并加粗——它属于「这笔成交的数字」，不属于抬头装饰。 */
+.statement-card { padding: var(--space-4); }
+
+/* 纸面文头：只在打印时出现 */
+.statement-print-head { display: none; }
+
+.statement-head {
   padding-bottom: var(--space-3);
   margin-bottom: var(--space-2);
   border-bottom: 1px solid var(--border-light);
 }
 
 .statement-title {
-  font-size: var(--text-lg);
+  font-size: var(--text-xl);
   font-weight: 600;
+  line-height: 1.35;
 }
 
-.statement-amount {
-  flex-shrink: 0;
-  text-align: right;
-  font-size: var(--text-lg);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
+.statement-sub {
+  margin-top: 3px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
 }
 
 .statement-row {
@@ -8318,8 +8471,8 @@ input, select, textarea {
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: 6px 0;
-  font-size: var(--text-sm);
+  padding: 7px 0;
+  font-size: var(--text-base);
 }
 
 .statement-row > span:first-child {
@@ -8332,6 +8485,78 @@ input, select, textarea {
   text-align: right;
   color: var(--text);
   font-variant-numeric: tabular-nums;
+}
+
+/* 成交金额：明细里的第一行，也是唯一加粗的一行 */
+.statement-row.is-amount {
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-light);
+  margin-bottom: 2px;
+}
+
+.statement-row.is-amount > span:last-child {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--primary);
+}
+
+.statement-note {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-light);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.statement-print-note {
+  margin-top: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--warning-text);
+  text-align: center;
+}
+
+/* 打印：屏幕上的壳全部退场，只留这张凭证。
+   作用域限定在本页，不影响其它页面打印。 */
+@media print {
+  .subpage-sticky,
+  .bottom-nav,
+  .bottom-action-bar,
+  .crypto-dev-fab { display: none !important; }
+
+  html, body { background: #fff !important; }
+
+  .app-container { max-width: none; }
+  .app-content,
+  .app-content.no-bottom-pad { padding: 0; }
+
+  .fund-statement-detail-page { padding: 0; }
+
+  .statement-card {
+    box-shadow: none;
+    border: 1px solid #d9d9d9;
+    border-radius: 0;
+    padding: 24px;
+    margin: 0;
+  }
+
+  .statement-print-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #18181b;
+  }
+
+  /* 纸面凭证不带品牌色：彩色打印不必说，黑白打印时蓝值会掉成浅灰 */
+  .statement-row.is-amount > span:last-child { color: #000 !important; }
+
+  .statement-print-head strong { font-size: 16px; }
+  .statement-print-head span { font-size: 11px; color: #555; }
+
 }
 
 /* 交易单据卡（2026-10-28 结构重做）：一张「委托 → 成交」账单。
@@ -8899,13 +9124,28 @@ input, select, textarea {
 /* ===== 基金列表决策卡（2026-10-28 改版，替代 fund-card 徽章大卡）=====
    新类一律 p-funds-*：详情页仍在用 fund-card / fund-return / fund-metrics，
    两套互不影响，改列表不会牵连 FundDetail。 */
-.p-funds-head { align-items: baseline; }
-.p-funds-count {
-  flex-shrink: 0;
-  font-size: var(--text-sm);
-  color: var(--text-tertiary);
-  font-variant-numeric: tabular-nums;
+.p-funds-head { align-items: center; }
+.p-funds-head-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
+/* 基金结单入口（2026-11-05）：图标 + 文字。原 .p-funds-count 计数已删，
+   与文字按钮同处页头右侧，纯图标会被读成「文档 / 帮助」。 */
+.p-funds-statement {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 36px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: background 0.2s;
+}
+.p-funds-statement:hover { background: var(--bg); }
 
 /* 吸顶条与第一张卡之间留一口气：sticky 自带阴影，贴边会被看成「卡片被切掉」 */
 .subpage-sticky + .p-funds-card { margin-top: var(--space-2); }
@@ -9135,3 +9375,985 @@ button.kyc-form-input.picker-trigger {
   font-weight: 400;
   color: var(--text-secondary);
 }
+
+/* ============================================================
+   数字资产（2026-11-06 重做）
+   目的：把「余额 + 操作 + 每种币的状态」压进一屏，页面不解释托管怎么运作。
+   语言：沿用资产页的浅蓝估值卡与白卡列表；数字一律 tabular-nums。
+   ============================================================ */
+.crypto-page { padding-top: 0; }
+
+/* 点击不画焦点框，键盘导航仍保留可见焦点 */
+.crypto-page button:focus { outline: none; }
+.crypto-page button:focus-visible { outline: 2px solid var(--primary-border); outline-offset: 2px; }
+
+.crypto-page .mono,
+.crypto-dev-sheet code,
+.crypto-map-card code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  word-break: break-all;
+}
+
+/* 估值卡：与资产页同一套「钱＝蓝」语义，标签写「总估值」而不是「总资产」 */
+.crypto-hero {
+  background: var(--primary-light);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  margin-bottom: var(--space-3);
+}
+.crypto-hero-label {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+}
+.crypto-hero-value {
+  margin-top: var(--space-1);
+  font-size: var(--text-display-sm);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* KYC 未通过：只留一句状态 + 一个动作 */
+.crypto-gate-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--text-secondary);
+}
+.crypto-gate-main { flex: 1; min-width: 0; }
+.crypto-gate-main strong { font-size: var(--text-md); color: var(--text); }
+
+/* 操作：与资产页动作格同一形态——一张卡、等分、图标在上 */
+.crypto-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-1);
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-2);
+  margin-bottom: var(--space-3);
+  box-shadow: var(--shadow-md);
+}
+.crypto-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text);
+}
+.crypto-action-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+/* 资产列表：名称与总量一行，可提/待解锁/处理中另起一行占满整行 */
+.crypto-assets-card { padding: var(--space-1) var(--space-4); }
+
+.crypto-asset-row { padding: var(--space-3) 0; }
+.crypto-asset-row + .crypto-asset-row { border-top: 1px solid var(--border-light); }
+
+.crypto-asset-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.crypto-asset-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  border-radius: 50%;
+  color: #fff;
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.crypto-asset-id {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.crypto-asset-id strong { font-size: var(--text-lg); font-weight: 600; }
+.crypto-asset-id span {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crypto-asset-right {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-variant-numeric: tabular-nums;
+}
+.crypto-asset-right strong { font-size: var(--text-lg); font-weight: 600; }
+.crypto-asset-right span { font-size: var(--text-sm); color: var(--text-tertiary); }
+
+.crypto-asset-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px var(--space-3);
+  margin-top: 7px;
+  padding-left: 50px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.crypto-asset-sub b {
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.crypto-asset-sub .is-warn b { color: var(--warning-text); }
+.crypto-asset-sub .is-muted b { color: var(--text-secondary); }
+
+/* 资产选择：三个等分按钮，图标 + 代码 */
+.crypto-chips {
+  display: flex;
+  gap: var(--space-2);
+  margin: var(--space-1) 0 var(--space-3);
+}
+.crypto-chip-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 46px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  background: var(--bg-card);
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.crypto-chip-btn.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--text);
+}
+
+/* 网络：资产下面的一条次要选择，用蓝色实心药丸与上方区分层级 */
+.crypto-network {
+  display: flex;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+}
+.crypto-network-btn {
+  height: 32px;
+  padding: 0 var(--space-3);
+  border-radius: 999px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-card);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.crypto-network-btn.active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--text-on-dark);
+}
+.crypto-network-single {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.crypto-network-single strong { color: var(--text); }
+
+/* 充值卡：二维码 → 地址 → 复制 → 到账条件，一列到底 */
+.crypto-deposit-card {
+  margin-top: var(--space-3);
+  padding: var(--space-5) var(--space-4);
+  text-align: center;
+}
+.crypto-qr-wrap { display: flex; justify-content: center; }
+.crypto-qr {
+  width: 164px;
+  height: 164px;
+  display: block;
+  border-radius: var(--radius-md);
+}
+.crypto-deposit-chain {
+  margin-top: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.crypto-addr-text {
+  margin-top: 3px;
+  font-size: var(--text-base);
+  line-height: 1.55;
+  color: var(--text);
+}
+.crypto-copy-btn {
+  margin-top: var(--space-3);
+  height: 40px;
+  border: none;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 600;
+}
+.crypto-copy-btn.is-copied {
+  background: var(--success-light);
+  color: var(--success-text);
+}
+
+/* 键值表：标签左、值右，值永远是单个数 */
+.crypto-meta-list {
+  margin-top: var(--space-4);
+  border-top: 1px solid var(--border-light);
+  text-align: left;
+}
+.crypto-meta-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 10px 0;
+  font-size: var(--text-base);
+}
+.crypto-meta-row + .crypto-meta-row { border-top: 1px solid var(--border-light); }
+.crypto-meta-row > span { flex: none; color: var(--text-secondary); }
+.crypto-meta-row > strong {
+  min-width: 0;
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 提示行：一行说完，不做成第二个色块 */
+.crypto-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.crypto-hint svg { flex: none; margin-top: 1px; }
+.crypto-hint.is-warn { color: var(--warning-text); }
+.crypto-hint.is-info { color: var(--info-text); }
+
+/* 最近一笔入金 */
+.crypto-status-card { margin-top: var(--space-3); padding: var(--space-4); }
+.crypto-status-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.crypto-status-k {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.crypto-status-amount {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--text-xl);
+  font-variant-numeric: tabular-nums;
+}
+.crypto-status-note {
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.crypto-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border-light);
+  margin-top: var(--space-3);
+  overflow: hidden;
+}
+.crypto-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+  transition: width 0.3s ease;
+}
+
+.crypto-text-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: var(--space-3);
+  padding: 4px 0;
+  border: none;
+  background: none;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--primary);
+}
+.crypto-text-link::after {
+  content: '';
+  position: absolute;
+  inset: -10px -8px;
+}
+
+/* 地址准备中 / 失败 */
+.crypto-pending-card {
+  margin-top: var(--space-3);
+  text-align: left;
+}
+.crypto-pending-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-md);
+}
+.crypto-pending-head.is-bad { color: var(--danger); }
+.crypto-pending-reason {
+  margin: var(--space-2) 0;
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+.crypto-spin { animation: crypto-spin 1.6s linear infinite; }
+@keyframes crypto-spin { to { transform: rotate(360deg); } }
+
+/* 提现：一张卡就是一次提现的顺序 */
+.crypto-wd-card { padding: var(--space-4); }
+
+.crypto-wd-balance {
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-light);
+}
+.crypto-wd-k {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.crypto-wd-v {
+  margin-top: 2px;
+  font-size: var(--text-4xl);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.crypto-wd-v em {
+  font-style: normal;
+  font-size: var(--text-md);
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--text-secondary);
+  margin-left: 4px;
+}
+.crypto-wd-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: var(--space-5) 0 0;
+  text-align: center;
+  color: var(--text-tertiary);
+}
+.crypto-wd-empty strong { font-size: var(--text-md); color: var(--text); }
+.crypto-wd-empty p { font-size: var(--text-sm); color: var(--text-secondary); }
+.crypto-wd-empty .btn { margin-top: var(--space-2); }
+
+.crypto-wd-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px var(--space-3);
+  margin-top: 5px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.crypto-select {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) 0;
+  border: none;
+  border-bottom: 1px solid var(--border-light);
+  background: none;
+  text-align: left;
+}
+.crypto-select-k {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.crypto-select-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.crypto-select-main strong { font-size: var(--text-md); font-weight: 600; }
+.crypto-select-sub {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.crypto-select-main .is-empty { color: var(--text-tertiary); }
+.crypto-select-chev { flex: none; color: var(--text-tertiary); }
+
+.crypto-amount { padding-top: var(--space-3); }
+.crypto-amount-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.crypto-amount-head button {
+  position: relative;
+  padding: 2px 0;
+  border: none;
+  background: none;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--primary);
+}
+/* 触控目标补到 44px：文字保持 12px，热区向外扩，不改版式 */
+.crypto-amount-head button::after {
+  content: '';
+  position: absolute;
+  inset: -16px -12px 0;
+}
+.crypto-amount-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-top: 2px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-light);
+}
+.crypto-amount-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: var(--text-4xl);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.crypto-amount-input::placeholder { color: var(--text-tertiary); }
+.crypto-amount-input:focus { outline: none; }
+.crypto-amount-row:focus-within { border-bottom-color: var(--primary); }
+.crypto-amount-input::-webkit-outer-spin-button,
+.crypto-amount-input::-webkit-inner-spin-button { appearance: none; margin: 0; }
+.crypto-amount-unit {
+  flex: none;
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.crypto-amount-hint {
+  margin-top: 7px;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.crypto-amount + .btn { margin-top: var(--space-4); }
+.crypto-submit-note {
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+.crypto-wd-card .crypto-hint { margin-top: var(--space-3); }
+
+/* 提现地址选择弹层 */
+.crypto-picker-sheet .sheet-header { margin-bottom: var(--space-2); }
+.crypto-picker-list { max-height: 56vh; overflow-y: auto; }
+.crypto-picker-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) 0;
+  border: none;
+  border-top: 1px solid var(--border-light);
+  background: none;
+  text-align: left;
+}
+.crypto-picker-row:first-child { border-top: none; }
+.crypto-picker-row.disabled { opacity: 0.55; }
+.crypto-picker-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.crypto-picker-main strong { font-size: var(--text-md); font-weight: 600; }
+.crypto-picker-main span { font-size: var(--text-sm); color: var(--text-secondary); }
+.crypto-picker-side {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.crypto-picker-check { color: var(--primary); }
+.crypto-picker-left { font-size: var(--text-xs); color: var(--text-tertiary); }
+.crypto-picker-row.selected .crypto-picker-main strong { color: var(--primary); }
+
+/* 提现确认弹层 */
+.crypto-confirm-sheet .sheet-header { margin-bottom: var(--space-3); }
+.crypto-confirm-amount {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-light);
+}
+.crypto-confirm-amount strong {
+  font-size: var(--text-4xl);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.crypto-confirm-amount strong em {
+  font-style: normal;
+  font-size: var(--text-md);
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--text-secondary);
+  margin-left: 4px;
+}
+.crypto-confirm-amount span { font-size: var(--text-sm); color: var(--text-secondary); }
+.crypto-confirm-sheet .crypto-meta-list { margin-top: 0; border-top: none; }
+.crypto-code-input {
+  letter-spacing: 6px;
+  text-align: center;
+  font-size: var(--text-xl);
+}
+.crypto-code-hint {
+  margin-top: 5px;
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  text-align: center;
+}
+.crypto-code-input::placeholder {
+  letter-spacing: normal;
+  font-size: var(--text-base);
+  color: var(--text-tertiary);
+}
+.crypto-confirm-sheet .crypto-hint { margin: var(--space-3) 0; }
+.crypto-confirm-sheet .btn { margin-top: var(--space-1); }
+
+/* 地址簿 */
+.crypto-address-card { padding: var(--space-4); }
+.crypto-address-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.crypto-address-id {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.crypto-address-id strong { font-size: var(--text-lg); font-weight: 600; }
+.crypto-address-id span { font-size: var(--text-sm); color: var(--text-secondary); }
+
+.crypto-address-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  margin-top: var(--space-3);
+  padding: 8px 10px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  text-align: left;
+}
+.crypto-address-line.copied { color: var(--success-text); }
+
+.crypto-address-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.crypto-address-meta strong { font-weight: 600; color: var(--text); }
+
+.crypto-address-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+.crypto-address-state {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.crypto-address-state.is-ok { color: var(--success-text); }
+.crypto-address-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: none;
+}
+.crypto-address-actions .crypto-demo-btn { margin-top: 0; }
+.crypto-text-danger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0;
+  border: none;
+  background: none;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--danger);
+}
+.crypto-text-danger::after {
+  content: '';
+  position: absolute;
+  inset: -12px -10px;
+}
+
+/* 添加地址弹层 */
+.crypto-add-sheet .form-group { margin-top: var(--space-3); }
+.crypto-network-pick { margin: 0 0 var(--space-2); }
+
+.crypto-radio-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.crypto-radio {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  text-align: left;
+}
+.crypto-radio strong { font-size: var(--text-md); font-weight: 600; }
+.crypto-radio span { font-size: var(--text-sm); color: var(--text-secondary); }
+.crypto-radio.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+/* 记录：一张白卡，时间倒序 */
+.crypto-record-tabs { margin-top: 0; }
+.crypto-record-list {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 0 var(--space-4);
+  box-shadow: var(--shadow-md);
+  margin-bottom: var(--space-3);
+}
+.crypto-record-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) 0;
+  border: none;
+  background: none;
+  text-align: left;
+}
+.crypto-record-row + .crypto-record-row { border-top: 1px solid var(--border-light); }
+.crypto-record-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+}
+.crypto-record-icon.is-deposit { background: var(--success-light); color: var(--success-text); }
+.crypto-record-icon.is-withdraw { background: var(--primary-light); color: var(--primary); }
+.crypto-record-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.crypto-record-title { font-size: var(--text-md); font-weight: 600; }
+.crypto-record-meta {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.crypto-record-right {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.crypto-record-right strong {
+  font-size: var(--text-md);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 单据详情弹层 */
+.crypto-detail-sheet .btn + .btn { margin-top: var(--space-2); }
+.crypto-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-light);
+}
+.crypto-detail-k { font-size: var(--text-sm); color: var(--text-secondary); }
+.crypto-detail-head strong {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--text-4xl);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.crypto-detail-head strong em {
+  font-style: normal;
+  font-size: var(--text-md);
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--text-secondary);
+  margin-left: 4px;
+}
+.crypto-detail-note {
+  margin-top: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+/* 复制行（地址 / 交易号） */
+.crypto-copy-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  font-size: var(--text-sm);
+  text-align: left;
+}
+.crypto-copy-row .k { flex: none; color: var(--text-secondary); }
+.crypto-copy-row .v { flex: 1; min-width: 0; word-break: break-all; color: var(--text); }
+.crypto-copy-row.copied { color: var(--success-text); }
+
+/* 状态标签（记录 / 地址簿 / 对照页共用） */
+.crypto-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.crypto-chip.is-ok { color: var(--success-text); background: var(--success-light); }
+.crypto-chip.is-warn { color: var(--warning-text); background: var(--warning-light); }
+.crypto-chip.is-bad { color: var(--danger-text); background: var(--danger-light); }
+.crypto-chip.is-info { color: var(--info-text); background: var(--info-bg); }
+.crypto-chip.is-muted { color: var(--text-secondary); background: var(--bg); }
+
+/* 说明块（仅对照页使用） */
+.crypto-callout {
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+  font-size: var(--text-base);
+  line-height: 1.55;
+}
+.crypto-callout strong { display: block; margin-bottom: 2px; font-size: var(--text-md); }
+.crypto-callout.is-info { background: var(--info-bg); color: var(--info-text); }
+.crypto-callout.is-warn { background: var(--warning-light); color: var(--warning-text); }
+.crypto-callout.is-bad { background: var(--danger-light); color: var(--danger); }
+.crypto-callout.is-ok { background: var(--success-light); color: var(--success-text); }
+
+/* 空态：一句状态 + 一个动作，不写第二句解释 */
+.crypto-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-6) 0;
+  text-align: center;
+}
+.crypto-empty p { font-size: var(--text-base); color: var(--text-secondary); }
+
+.crypto-empty-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  color: var(--text-secondary);
+}
+.crypto-empty-card strong { font-size: var(--text-md); color: var(--text); }
+.crypto-empty-card p {
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+.crypto-empty-card .btn { margin-top: var(--space-2); }
+
+/* 演示按钮：虚线低强调，避免被当成正式动作 */
+.crypto-demo-btn {
+  border-style: dashed !important;
+  color: var(--text-secondary) !important;
+  margin-top: var(--space-2);
+}
+
+/* 接口浮层（FAB + sheet） */
+.crypto-dev-fab {
+  position: fixed;
+  /* 与 430px 应用列对齐：桌面预览时不要飘到页面最右边 */
+  right: max(var(--space-4), calc((100vw - 430px) / 2 + var(--space-4)));
+  bottom: var(--space-6);
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--bg-card);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  box-shadow: var(--shadow-lg);
+  opacity: 0.9;
+}
+.crypto-dev-sheet { max-height: 82vh; overflow-y: auto; }
+.crypto-dev-h {
+  margin: var(--space-4) 0 var(--space-2);
+  font-size: var(--text-base);
+  font-weight: 700;
+}
+.crypto-dev-calls { display: flex; flex-direction: column; gap: var(--space-2); }
+.crypto-dev-call {
+  background: var(--bg);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+}
+.crypto-dev-call-top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+.crypto-dev-call code { display: block; margin-top: 4px; font-size: var(--text-xs); color: var(--text-secondary); }
+.crypto-dev-assumptions { display: flex; flex-direction: column; gap: var(--space-2); }
+.crypto-dev-assumption { background: var(--bg); border-radius: var(--radius-md); padding: var(--space-2) var(--space-3); }
+.crypto-dev-assumption p { margin-top: 2px; font-size: var(--text-sm); line-height: 1.5; }
+.crypto-dev-caps { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.crypto-dev-cap {
+  font-size: var(--text-xs);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text-secondary);
+}
+.crypto-dev-cap.on { background: var(--success-light); color: var(--success); }
+.crypto-dev-cap.off { background: var(--warning-light); color: var(--warning-text); }
+
+/* 对照页 */
+.crypto-map-card { padding: var(--space-4); }
+.crypto-map-intro { margin: var(--space-1) 0 var(--space-3); line-height: 1.6; }
+.crypto-map-caps { display: flex; flex-direction: column; }
+.crypto-map-cap {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--border-light);
+}
+.crypto-map-cap:first-child { border-top: none; }
+.crypto-map-cap > div { flex: 1; }
+.crypto-map-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 7px; flex: none; }
+.crypto-map-dot.on { background: var(--success); }
+.crypto-map-dot.off { background: var(--warning); }
+.crypto-map-state { font-size: var(--text-xs); font-weight: 600; }
+.crypto-map-state.on { color: var(--success); }
+.crypto-map-state.off { color: var(--warning-text); }
+.crypto-map-assumption { padding: var(--space-3) 0; border-top: 1px solid var(--border-light); }
+.crypto-map-assumption:first-of-type { border-top: none; }
+.crypto-map-assumption p { margin-top: 3px; font-size: var(--text-base); line-height: 1.55; }
+.crypto-map-contract { display: flex; flex-direction: column; gap: var(--space-3); }
+.crypto-map-method { background: var(--bg); border-radius: var(--radius-md); padding: var(--space-3); }
+.crypto-map-method > code { font-size: var(--text-base); font-weight: 700; color: var(--primary); }
+.crypto-map-io { display: flex; flex-direction: column; gap: 3px; margin: var(--space-2) 0; }
+.crypto-map-io em { font-style: normal; color: var(--text-tertiary); margin-right: 6px; font-size: var(--text-xs); }
+.crypto-map-io span { font-size: var(--text-sm); line-height: 1.5; }
+.crypto-map-checklist { display: flex; flex-direction: column; gap: 6px; margin-top: var(--space-2); }
+.crypto-map-checklist span { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-sm); }
+.crypto-status-table { margin-top: var(--space-4); }
+.crypto-status-table h4 { font-size: var(--text-base); margin-bottom: var(--space-2); }
+.crypto-status-head {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  padding-bottom: var(--space-1);
+  border-bottom: 1px solid var(--border-light);
+}
+.crypto-status-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border-light);
+  font-size: var(--text-sm);
+}
+.crypto-status-row > span:first-child { display: inline-flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.crypto-status-row code { font-size: var(--text-xs); color: var(--text-tertiary); }
+.crypto-status-custody { color: var(--text-secondary); line-height: 1.4; }

@@ -52,6 +52,13 @@ const Transactions = lazy(() => import('../pages/Transactions'));
 const FundOperation = lazy(() => import('../pages/FundOperation'));
 const FundRequestDetail = lazy(() => import('../pages/FundRequestDetail'));
 const TransactionDetail = lazy(() => import('../pages/TransactionDetail'));
+// 数字资产（2026-11-04）：托管钱包对客页面由基金 APP 承担，模块可整体摘除
+const CryptoWallet = lazy(() => import('../pages/CryptoWallet'));
+const CryptoDeposit = lazy(() => import('../pages/CryptoDeposit'));
+const CryptoWithdraw = lazy(() => import('../pages/CryptoWithdraw'));
+const CryptoAddresses = lazy(() => import('../pages/CryptoAddresses'));
+const CryptoRecords = lazy(() => import('../pages/CryptoRecords'));
+const CryptoMap = lazy(() => import('../pages/CryptoMap'));
 
 // 渲染 APP 端页面（门控放行后调用）。
 // ctx: { navigate, goBack, setToast, isLoggedIn, setIsLoggedIn, embed }
@@ -113,6 +120,20 @@ export function renderAppPage(path, param, ctx) {
       return <Transactions navigate={navigate} goBack={goBack} />;
     case 'fund-operation':
       return <FundOperation mode={param || 'deposit'} navigate={navigate} goBack={goBack} />;
+    // 数字资产（2026-11-04）：全部挂在 #crypto/* 命名空间，入口在资产页；
+    // 将来收敛成外链时，删掉本组 case + Crypto* 六个文件 + 入口卡即可，不动核心页面。
+    case 'crypto':
+      return <CryptoWallet navigate={navigate} goBack={goBack} />;
+    case 'crypto-deposit':
+      return <CryptoDeposit param={param} navigate={navigate} goBack={goBack} />;
+    case 'crypto-withdraw':
+      return <CryptoWithdraw navigate={navigate} goBack={goBack} setToast={setToast} />;
+    case 'crypto-addresses':
+      return <CryptoAddresses navigate={navigate} goBack={goBack} setToast={setToast} />;
+    case 'crypto-records':
+      return <CryptoRecords navigate={navigate} goBack={goBack} />;
+    case 'crypto-map':
+      return <CryptoMap navigate={navigate} goBack={goBack} />;
     case 'fund-requests':
       // 2026-10-29：资金申请页已并入「资金明细」，旧深链落到同一页（默认筛「全部状态」即可看到在途单）
       return <Transactions navigate={navigate} goBack={goBack} />;

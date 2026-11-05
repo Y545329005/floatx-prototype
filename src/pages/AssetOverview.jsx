@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { ArrowLeft, ClipboardList, ChevronRight, CreditCard, Download, Eye, EyeOff, FileText, History, Upload } from 'lucide-react';
+import { ArrowLeft, Bitcoin, ClipboardList, ChevronRight, CreditCard, Download, Eye, EyeOff, History, Upload } from 'lucide-react';
 import { keyed } from '../lib';
 import {
-  getFundPortfolio, myFundOrders, formatExactAmount, formatShares, CURRENCY_META,
+  getFundPortfolio, myFundOrders, formatExactAmount, formatShares, CURRENCY_META, cryptoModuleEnabled,
 } from '../mock/data';
 import { useLang } from '../i18n';
 
@@ -163,15 +163,18 @@ export default function AssetOverview({ navigate, goBack, embed = false }) {
           </span>
           <span>{t('我的交易')}</span>
         </button>
-        <button className="asset-action" onClick={() => navigate('#fund-statements')}>
-          <span className="asset-action-icon"><FileText size={18} /></span>
-          <span>{t('基金结单')}</span>
-        </button>
+        {/* 数字资产替代原「基金结单」格位（2026-11-05 标注）：结单入口移到基金页右上角，
+            资产页这一格给集团钱包入口；未开放时该格不渲染。 */}
+        {cryptoModuleEnabled && (
+          <button className="asset-action" onClick={() => navigate('#crypto')}>
+            <span className="asset-action-icon"><Bitcoin size={18} /></span>
+            <span>{t('数字资产')}</span>
+          </button>
+        )}
       </div>
 
       <div className="card">
-        {/* 不再给「去基金」：底部 tab 就是基金入口，页面内的第二个跳转是重复 */}
-        <div className="card-header">
+        {/* 不再给「去基金」：底部 tab 就是基金入口，页面内的第二个跳转是重复 */}        <div className="card-header">
           <h3 className="card-title no-margin">{t('基金持仓')}</h3>
         </div>
         {holdingCount === 0 && (

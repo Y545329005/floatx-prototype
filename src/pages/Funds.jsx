@@ -1,4 +1,4 @@
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, FileText } from 'lucide-react';
 import { funds, getPiStatusForUser, PI_STATUS, currentUser, getHoldings, fundMonthsLabel } from '../mock/data';
 import { useLang } from '../i18n';
 
@@ -41,7 +41,19 @@ export default function Funds({ navigate }) {
       <div className="subpage-sticky">
         <div className="page-header p-funds-head">
           <h1>{t('基金')}</h1>
-          {piOk && <span className="p-funds-count">{t('{} 只产品').replace('{}', String(list.length))}</span>}
+          <div className="p-funds-head-right">
+            {/* 交易确认单入口（2026-11-05）：从资产页动作格移到基金页右上角。
+                带文字而不是纯图标——移动端没有 hover，「文档」图标本身读不出「结单」。
+                原「N 只产品」计数已删除：5 张卡一屏可见、页面无筛选，数字不产生信息增量。 */}
+            <button
+              type="button"
+              className="p-funds-statement"
+              onClick={() => navigate('#fund-statements')}
+            >
+              <FileText size={16} />
+              {t('确认单')}
+            </button>
+          </div>
         </div>
       </div>
 

@@ -9584,6 +9584,658 @@ const SNAPSHOT_MIGRATIONS = {
 };
 const STORAGE_KEY = 'zhifu-app-state';
 
+// ========== 数字资产钱包（2026-11-04 · 集团托管钱包接入，对客页面由基金 APP 承担） ==========
+// 定位（已定稿）：只做托管划转——充值 / 提现，不兑换、不申购。
+// 口径：
+//   · 用户账本按「资产」记（托管 §9.1 余额是币种维度），链只作为出金通道；
+//   · 状态一律以托管结果为准，UI 不自造状态；未到账的充值不进余额；
+//   · 数字资产不计入基金资产总览、不计入申购可用余额。
+// 演示说明：本段全部为 mock。五个待确认项集中在 cryptoAssumptions，
+// 页面只读开关/假设后的结果，不直接读托管字段——接口文档到位只改适配层。
+export const cryptoModuleEnabled = true;
+
+// 托管能力开关（文档 §1.1：多项「需适配 / 建设中」，开放范围以验收为准）
+export const cryptoCapabilities = [
+  { key: 'addressApi', label: '充值地址分配', available: true, note: '每个用户按链申请，地址长期使用' },
+  { key: 'depositWebhook', label: '入金 Webhook', available: true, note: '核心资金 Webhook 必发；确认中状态可能只能查询' },
+  { key: 'whitelistApi', label: '提现白名单 API', available: true, note: '受理 ≠ 启用，以启用状态为准' },
+  { key: 'withdrawApi', label: '提现 API', available: false, note: '文档标注需适配；本期演示走人工处理通道' },
+  { key: 'preExecutionConfirm', label: '执行前确认', available: false, note: '建设中，可后开' },
+  { key: 'chainLiquidity', label: '网络可出金资金查询', available: false, note: '文档只提示「可能需要整理或补充资金」' },
+];
+
+// 我们要的接口契约（反向给钱包组）：字段名待他们的接口文档确认，语义已按 §3–§6 定义
+export const cryptoApiContract = [
+  { method: 'requestDepositAddress', request: 'userId · chain', response: 'requestNo · addressId · address · status', note: '同一 requestNo 幂等' },
+  { method: 'listDepositFlows', request: 'userId · from · to · cursor', response: 'flowId · chain · asset · amount · txHash · transferIndex · status', note: '逐笔识别，同一 tx 可多笔' },
+  { method: 'getAssetBalance', request: 'asset', response: 'total · available · frozen · asOf', note: '按币种，不按网络' },
+  { method: 'applyWhitelist', request: 'addressId · chain · asset · address', response: 'applicationId · status · reason', note: '受理 ≠ 启用' },
+  { method: 'createWithdrawal', request: 'businessNo · addressId · amount · feeCap', response: 'orderNo · status', note: '同号不同内容拒绝' },
+  { method: 'queryWithdrawal', request: 'businessNo', response: 'status · custodyOrderNo · txHash · fee · reason', note: '超时只查原单' },
+];
+
+// 五个待确认项：值 = 当前假设，basis = 依据章节，impact = 答案不同会改什么
+export const cryptoAssumptions = [
+  {
+    key: 'evmAddressShared',
+    label: 'EVM 一址多币',
+    value: '假设：一个 EVM 地址同时接收 USDT 与 USDC',
+    basis: '§5.2 ETH 普通转账用不同充值地址区分归属（未明示是否按币种）',
+    impact: '若按币种分地址，地址表加 asset 维度，充值页要把「选资产」放在「取地址」之前',
+  },
+  {
+    key: 'depositHasFromAddress',
+    label: '入账带发送方地址',
+    value: '假设：不带（仅订单 / 地址 / 金额 / 流水）',
+    basis: '§5.3 要求关联订单、地址、币种网络、金额、链上转账、入账流水；未列发送方',
+    impact: '不带则来源筛查与第三方充值监控走人工/托管风控，合规方案要改',
+  },
+  {
+    key: 'networkFeeMode',
+    label: '网络费扣减方式',
+    value: '假设：从提现金额里扣（到账 = 金额 − 费）',
+    basis: '§6.4 本金、网络费、托管费、平台费分别说明；未写扣减方式',
+    impact: '若余额另扣，「全部」算法、到账金额、账本公式全变',
+  },
+  {
+    key: 'oldAddressPolicy',
+    label: '旧地址充值归属',
+    value: '假设：停用后仍识别并归属原用户',
+    basis: '§5.1 停用或替换后保留历史归属，旧地址「按约定继续识别或进入异常处理」',
+    impact: '若默认进异常，未匹配队列与客服流程要按量级设计',
+  },
+  {
+    key: 'withdrawRecall',
+    label: '提现撤回语义',
+    value: '假设：提交托管后不可撤回，取消请求不等于取消成功',
+    basis: '§6.4 取消请求也不等于取消成功；超时只能查原单',
+    impact: '决定了提现页是否给「撤回」按钮——当前设计为不给',
+  },
+];
+
+// 链配置：确认数 / 预计到账 / 最小充提 / 网络费（费用单位与资产同币种）
+export const cryptoChains = {
+  tron: {
+    id: 'tron', label: 'Tron', standard: 'TRC20', confirmations: 20, etaMin: 1,
+    minDeposit: 0.1, minWithdraw: 1, fee: 1,
+    addressPattern: /^T[1-9A-HJ-NP-Za-km-z]{33}$/,
+    addressHint: '以 T 开头的 34 位地址',
+  },
+  ethereum: {
+    id: 'ethereum', label: 'Ethereum', standard: 'ERC20', confirmations: 12, etaMin: 7,
+    minDeposit: 0.01, minWithdraw: 10, fee: 2,
+    addressPattern: /^0x[0-9a-fA-F]{40}$/,
+    addressHint: '0x 开头的 42 位地址',
+  },
+  bitcoin: {
+    id: 'bitcoin', label: 'Bitcoin', standard: 'BTC', confirmations: 3, etaMin: 40,
+    minDeposit: 0.0002, minWithdraw: 0.001, fee: 0.00005,
+    addressPattern: /^(bc1[0-9a-z]{25,62}|[13][1-9A-HJ-NP-Za-km-z]{25,34})$/,
+    addressHint: 'bc1 开头或 1/3 开头的地址',
+  },
+};
+
+// 资产：hkdRate 为「参考估值」用，接后端换行情源；chainIds 决定可在哪些链充提
+export const cryptoAssets = [
+  { code: 'USDT', name: 'Tether USD', chainIds: ['tron', 'ethereum'], hkdRate: 7.8, color: '#26A17B', glyph: '₮' },
+  { code: 'USDC', name: 'USD Coin', chainIds: ['ethereum'], hkdRate: 7.8, color: '#2775CA', glyph: '$' },
+  { code: 'BTC', name: 'Bitcoin', chainIds: ['bitcoin'], hkdRate: 620000, color: '#F7931A', glyph: '₿' },
+];
+
+// 用户余额：total = available + locked(T+1 待解锁) + frozen(在途提现)
+export const cryptoBalances = {
+  u1: {
+    USDT: { total: 12500, locked: 1500, frozen: 3500 },
+    USDC: { total: 2000, locked: 0, frozen: 0 },
+    BTC: { total: 0.15, locked: 0, frozen: 0 },
+  },
+};
+
+// 充值地址（托管下发，长期使用；status: active / requesting / failed）
+export const inboundAddresses = [
+  {
+    id: 'cia1', userId: 'u1', chain: 'tron',
+    address: 'TXk9mQ4vW2sB7nR3pL8cY6dF1gH5jK0aZe',
+    status: 'active', assignedAt: '2026-10-28 10:12:00', custodyAddressId: 'ADDR-88213', requestNo: 'REQ-20261028-01',
+  },
+  {
+    id: 'cia2', userId: 'u1', chain: 'ethereum',
+    address: '0x7a3F9c2B4d8E1f6A0b5C9d3E7f2A8b4C6d1E9f3A',
+    status: 'active', assignedAt: '2026-10-28 10:12:00', custodyAddressId: 'ADDR-88214', requestNo: 'REQ-20261028-02',
+  },
+  {
+    id: 'cia3', userId: 'u1', chain: 'bitcoin',
+    address: '', status: 'requesting', assignedAt: '2026-11-04 09:40:00',
+    custodyAddressId: '', requestNo: 'REQ-20261104-03', reason: null,
+  },
+];
+
+// 提现地址簿（白名单粒度 = 币种 × 网络 × 地址，见 §6.2）
+export const cryptoAddresses = [
+  {
+    id: 'coa1', userId: 'u1', chain: 'ethereum', address: '0x9F2b7C4d1E8a3B6c0D5f9A2e7C4b8D1f6A3e0C9b',
+    label: '我的 Ledger', status: 'active', verifyMethod: 'signature',
+    addedAt: '2026-10-20 14:22:00', verifiedAt: '2026-10-20 14:26:00', activatesAt: '2026-10-21 14:26:00',
+    whitelist: { USDT: 'active', USDC: 'active' }, whitelistId: 'WL-2291', firstCapUsed: true, lastUsedAt: '2026-10-30 11:02:00',
+  },
+  {
+    id: 'coa2', userId: 'u1', chain: 'tron', address: 'TW8nR3pL6cY1dF4gH7jK0aZe2sB5mQ9vX',
+    label: '交易所账户', status: 'cooling', verifyMethod: 'review',
+    addedAt: '2026-11-04 09:10:00', verifiedAt: null, activatesAt: cryptoStamp(18),
+    whitelist: { USDT: 'active' }, whitelistId: 'WL-2302', firstCapUsed: false, lastUsedAt: null,
+  },
+  {
+    id: 'coa3', userId: 'u1', chain: 'bitcoin', address: 'bc1q4k7m2n9p5r1s8t3u6w0y4z7a2b5c9d1e6f',
+    label: '冷钱包', status: 'whitelist_pending', verifyMethod: 'review',
+    addedAt: '2026-11-04 08:05:00', verifiedAt: null, activatesAt: null,
+    whitelist: { BTC: 'pending' }, whitelistId: 'WL-2303', firstCapUsed: false, lastUsedAt: null,
+  },
+  {
+    id: 'coa4', userId: 'u1', chain: 'ethereum', address: '0xAb3c5D7e9F1a2B4c6D8e0F2a4B6c8D0e2F4a6B8c',
+    label: '朋友的地址', status: 'rejected', verifyMethod: 'review',
+    addedAt: '2026-11-02 16:00:00', verifiedAt: null, activatesAt: null,
+    whitelist: { USDT: 'rejected' }, whitelistId: 'WL-2288', firstCapUsed: false, lastUsedAt: null,
+    reason: '地址归属说明不完整，请补充本人控制证明',
+  },
+  {
+    id: 'coa5', userId: 'u1', chain: 'tron', address: 'TQ6cY1dF4gH7jK0aZe2sB5mQ9vX8nR3pL6',
+    label: '备用钱包', status: 'active', verifyMethod: 'review',
+    addedAt: '2026-10-26 12:00:00', verifiedAt: '2026-10-26 15:20:00', activatesAt: '2026-10-27 15:20:00',
+    whitelist: { USDT: 'active' }, whitelistId: 'WL-2296', firstCapUsed: false, lastUsedAt: null,
+  },
+];
+
+// 入金记录（status: confirming / credited / reversed / unmatched / wrong_asset / under_min）
+export const cryptoDeposits = [
+  {
+    id: 'cd1', userId: 'u1', asset: 'USDT', chain: 'tron', addressId: 'cia1',
+    createdAt: cryptoStamp(-6),
+    amount: 1500, txHash: '0x8f2c1a9b4d7e3f6a0c5b2d8e1f4a7c9b3d6e0f2a8c5b1d4e7f9a2c6b0d3e8f1a',
+    transferIndex: 0, fromAddress: 'TQ8m2N5p9R3sB7vL1cY6dF4gH0jK2aZe8',
+    confirmations: 20, required: 20, status: 'credited',
+    creditedAt: cryptoStamp(-6), availableAt: cryptoStamp(18), custodyFlowId: 'FL-90012', rate: 7.8,
+  },
+  {
+    id: 'cd2', userId: 'u1', asset: 'USDT', chain: 'tron', addressId: 'cia1',
+    createdAt: cryptoStamp(-0.08),
+    amount: 1200, txHash: '0x2a7d9e4c1f6b8d3a5c0e7f2a4b9d6c1e8f3a0b5d7c2e9f4a6b1d8c3e5f0a2b7d',
+    transferIndex: 1, fromAddress: 'TX4p8L2m6N0q5R7s1B3v9C6dY4gH2jK8a',
+    confirmations: 8, required: 20, status: 'confirming',
+    creditedAt: null, availableAt: null, custodyFlowId: null, rate: 7.8,
+  },
+  {
+    id: 'cd3', userId: 'u1', asset: 'USDT', chain: 'tron', addressId: 'cia1',
+    createdAt: '2026-10-30 09:40:00',
+    amount: 8000, txHash: '0x5c1e8a3d7f2b9c4e6a0d5f1b8c3e7a2d9f4b6c1e0a5d8f2b7c3e9a4d6f1b0c5e',
+    transferIndex: 0, fromAddress: 'TQ8m2N5p9R3sB7vL1cY6dF4gH0jK2aZe8',
+    confirmations: 20, required: 20, status: 'credited',
+    creditedAt: '2026-10-30 10:20:00', availableAt: null, custodyFlowId: 'FL-90008', rate: 7.8,
+  },
+  {
+    id: 'cd4', userId: 'u1', asset: 'USDT', chain: 'tron', addressId: 'cia1',
+    createdAt: '2026-10-22 09:12:00',
+    amount: 800, txHash: '0x9d4b2e7f1a6c3e8b0d5f2a7c4e9b1d6f3a8c0e5b2d7f4a9c1e6b3d8f0a5c2e7b',
+    transferIndex: 0, fromAddress: 'TT3k7M1p5R9s2B6v0C4d8Y1gH5jK9aZe3',
+    confirmations: 20, required: 20, status: 'reversed',
+    creditedAt: '2026-10-22 09:12:00', availableAt: '2026-10-23 09:12:00', custodyFlowId: 'FL-89981', rate: 7.8,
+    reason: '托管扣回：来源核查未通过',
+  },
+  {
+    id: 'cd5', userId: 'u1', asset: 'USDT', chain: 'ethereum', addressId: 'cia2',
+    createdAt: '2026-11-03 18:40:00',
+    amount: 2000, txHash: '0x3f8a1c5e9b2d7f4a0c6e1b8d3f9a5c2e7b4d0f6a1c8e3b9d5f2a7c0e4b1d8f6a',
+    transferIndex: 0, fromAddress: '0x4B7d1F3a6C9e2B5d8F0a3C6e9B2d5F7a0C3e6B9d',
+    confirmations: 12, required: 12, status: 'unmatched',
+    creditedAt: null, availableAt: null, custodyFlowId: null, rate: 7.8,
+    reason: '来源地址无法归属，待核实',
+  },
+  {
+    id: 'cd6', userId: 'u1', asset: 'USDC', chain: 'ethereum', addressId: 'cia2',
+    createdAt: '2026-11-01 12:10:00',
+    amount: 300, txHash: '0x7b2e5f8a1c4d9e3b6f0a2c5e8b1d4f7a9c3e6b0d2f5a8c1e4b7d0f3a6c9e2b5d',
+    transferIndex: 0, fromAddress: '0x8E2c5A9f1B4d7F0a3C6e9B2d5F8a1C4e7B0d3F6a',
+    confirmations: 12, required: 12, status: 'wrong_asset',
+    creditedAt: null, availableAt: null, custodyFlowId: null, rate: 7.8,
+    reason: '收到非白名单代币，未入账',
+  },
+  {
+    id: 'cd7', userId: 'u1', asset: 'BTC', chain: 'bitcoin', addressId: 'cia3',
+    createdAt: '2026-10-26 11:30:00',
+    amount: 0.15, txHash: 'b7f2c9a4e1d8b5f0a3c6e9d2b7f4a1c8e5d0b3f6a9c2e7d4b1f8a5c0e3d6b9f2',
+    transferIndex: 0, fromAddress: 'bc1q8m2n5p9r3s7v1c6d4y0g8h2j5k9a3z6',
+    confirmations: 3, required: 3, status: 'credited',
+    creditedAt: '2026-10-26 11:30:00', availableAt: null, custodyFlowId: 'FL-90001', rate: 620000,
+  },
+];
+
+// 出金记录（status: pending_approval / manual_pending / submitted / broadcasting / confirmed / failed / returned / unknown / rejected）
+export const cryptoWithdrawals = [
+  {
+    id: 'cw1', businessNo: 'CW20261104093012', userId: 'u1', asset: 'USDT', chain: 'ethereum', addressId: 'coa1',
+    toAddress: '0x9F2b7C4d1E8a3B6c0D5f9A2e7C4b8D1f6A3e0C9b',
+    amount: 3000, fee: 2, netAmount: 2998, status: 'pending_approval',
+    frozenHeld: true,
+    createdAt: cryptoStamp(-1), approvedAt: null, custodyOrderNo: null, txHash: null, autoApproved: false,
+  },
+  {
+    id: 'cw2', businessNo: 'CW20261103164520', userId: 'u1', asset: 'USDT', chain: 'tron', addressId: 'coa5',
+    toAddress: 'TQ6cY1dF4gH7jK0aZe2sB5mQ9vX8nR3pL6',
+    amount: 500, fee: 1, netAmount: 499, status: 'manual_pending',
+    frozenHeld: true,
+    createdAt: cryptoStamp(-5), approvedAt: cryptoStamp(-4), custodyOrderNo: null, txHash: null, autoApproved: false,
+    note: '提现 API 未开放，运营在托管页面手工执行',
+  },
+  {
+    id: 'cw3', businessNo: 'CW20261030110233', userId: 'u1', asset: 'USDT', chain: 'ethereum', addressId: 'coa1',
+    toAddress: '0x9F2b7C4d1E8a3B6c0D5f9A2e7C4b8D1f6A3e0C9b',
+    amount: 1200, fee: 2, netAmount: 1198, status: 'unknown',
+    createdAt: '2026-10-30 11:02:33', approvedAt: '2026-10-30 11:05:00', custodyOrderNo: 'CW-ORD-77120', txHash: null,
+    autoApproved: false, note: '接口超时，只能查询原单',
+  },
+  {
+    id: 'cw4', businessNo: 'CW20261028101544', userId: 'u1', asset: 'USDT', chain: 'tron', addressId: 'coa5',
+    toAddress: 'TQ6cY1dF4gH7jK0aZe2sB5mQ9vX8nR3pL6',
+    amount: 800, fee: 1, netAmount: 799, status: 'failed',
+    createdAt: '2026-10-28 10:15:44', approvedAt: '2026-10-28 10:18:00', custodyOrderNo: 'CW-ORD-77088', txHash: null,
+    autoApproved: false, note: '目标网络资金不足，已退回',
+  },
+  {
+    id: 'cw5', businessNo: 'CW20261024142008', userId: 'u1', asset: 'USDT', chain: 'ethereum', addressId: 'coa4',
+    toAddress: '0xAb3c5D7e9F1a2B4c6D8e0F2a4B6c8D0e2F4a6B8c',
+    amount: 2500, fee: 2, netAmount: 2498, status: 'rejected',
+    createdAt: '2026-10-24 14:20:08', approvedAt: null, custodyOrderNo: null, txHash: null,
+    autoApproved: false, note: '收款地址未通过白名单审核',
+  },
+  {
+    id: 'cw6', businessNo: 'CW20261020150021', userId: 'u1', asset: 'USDT', chain: 'ethereum', addressId: 'coa1',
+    toAddress: '0x9F2b7C4d1E8a3B6c0D5f9A2e7C4b8D1f6A3e0C9b',
+    amount: 2000, fee: 2, netAmount: 1998, status: 'confirmed',
+    createdAt: '2026-10-20 15:00:21', approvedAt: '2026-10-20 15:04:00', custodyOrderNo: 'CW-ORD-76910',
+    txHash: '0x1c6e9a4d7f2b5c8e0a3d6f1b4c7e9a2d5f8b0c3e6a1d4f7b9c2e5a8d0f3b6c1e',
+    autoApproved: false,
+  },
+];
+
+export const CRYPTO_DEPOSIT_STATUS = {
+  CONFIRMING: 'confirming', CREDITED: 'credited', REVERSED: 'reversed',
+  UNMATCHED: 'unmatched', WRONG_ASSET: 'wrong_asset', UNDER_MIN: 'under_min',
+};
+export const CRYPTO_WITHDRAW_STATUS = {
+  PENDING_APPROVAL: 'pending_approval', MANUAL_PENDING: 'manual_pending',
+  SUBMITTED: 'submitted', BROADCASTING: 'broadcasting', CONFIRMED: 'confirmed',
+  FAILED: 'failed', RETURNED: 'returned', UNKNOWN: 'unknown', REJECTED: 'rejected',
+};
+export const CRYPTO_ADDRESS_STATUS = {
+  REVIEWING: 'reviewing', WHITELIST_PENDING: 'whitelist_pending', COOLING: 'cooling',
+  ACTIVE: 'active', REJECTED: 'rejected', DISABLED: 'disabled',
+};
+
+// 状态文案（UI 唯一来源；tone 对应 .crypto-chip 的四种底色）
+export const cryptoDepositStatusMeta = {
+  confirming: { label: '链上确认中', tone: 'warn' },
+  credited: { label: '已入账', tone: 'ok' },
+  reversed: { label: '已冲正', tone: 'bad' },
+  unmatched: { label: '待核实来源', tone: 'warn' },
+  wrong_asset: { label: '非白名单资产', tone: 'bad' },
+  under_min: { label: '低于最小充值额', tone: 'bad' },
+};
+export const cryptoWithdrawStatusMeta = {
+  pending_approval: { label: '待审批', tone: 'warn' },
+  manual_pending: { label: '人工处理中', tone: 'warn' },
+  submitted: { label: '已提交托管', tone: 'info' },
+  broadcasting: { label: '广播中', tone: 'info' },
+  confirmed: { label: '已汇出', tone: 'ok' },
+  failed: { label: '失败，已退回', tone: 'bad' },
+  returned: { label: '链上退回', tone: 'warn' },
+  unknown: { label: '结果待核实', tone: 'warn' },
+  rejected: { label: '已驳回', tone: 'bad' },
+};
+export const cryptoAddressStatusMeta = {
+  reviewing: { label: '平台审核中', tone: 'warn' },
+  whitelist_pending: { label: '托管审核中', tone: 'warn' },
+  cooling: { label: '冷却中', tone: 'info' },
+  active: { label: '已启用', tone: 'ok' },
+  rejected: { label: '已拒绝', tone: 'bad' },
+  disabled: { label: '已停用', tone: 'muted' },
+};
+
+// ---- 工具函数 ----
+function cryptoStamp(offsetHours = 0) {
+  return formatDeadlineFrom(Date.now() + offsetHours * 3600 * 1000);
+}
+
+export function cryptoTimeLeft(stamp) {
+  if (!stamp) return null;
+  const ms = new Date(String(stamp).replace(' ', 'T')).getTime() - Date.now();
+  if (!Number.isFinite(ms)) return null;
+  if (ms <= 0) return { expired: true, ms: 0, h: 0, m: 0, text: '已到期' };
+  const h = Math.floor(ms / 3600000);
+  const m = Math.max(1, Math.round((ms % 3600000) / 60000));
+  return { expired: false, ms, h, m, text: h > 0 ? `${h} 小时 ${m} 分` : `${m} 分钟` };
+}
+
+export function cryptoAssetOf(code) {
+  return cryptoAssets.find(a => a.code === String(code || '').toUpperCase()) || null;
+}
+export function cryptoChainOf(id) { return cryptoChains[id] || null; }
+export function cryptoAssetsOnChain(chainId) {
+  return cryptoAssets.filter(a => a.chainIds.includes(chainId));
+}
+export function cryptoIsChainSupported(assetCode, chainId) {
+  const a = cryptoAssetOf(assetCode);
+  return !!a && a.chainIds.includes(chainId);
+}
+
+// 余额：返回 { USDT: { total, locked, frozen, available, hkd }, ... }
+export function cryptoBalanceOf(userId = currentUser.id) {
+  const raw = cryptoBalances[userId] || {};
+  const out = {};
+  cryptoAssets.forEach(a => {
+    const b = raw[a.code] || { total: 0, locked: 0, frozen: 0 };
+    out[a.code] = {
+      ...b,
+      available: Math.max(0, Number(b.total || 0) - Number(b.locked || 0) - Number(b.frozen || 0)),
+      hkd: Number(b.total || 0) * a.hkdRate,
+    };
+  });
+  return out;
+}
+
+export function cryptoPortfolioOf(userId = currentUser.id) {
+  const balances = cryptoBalanceOf(userId);
+  const rows = cryptoAssets
+    .map(a => ({ ...a, ...balances[a.code] }))
+    .filter(r => r.total > 0);
+  return {
+    rows,
+    totalHKD: rows.reduce((s, r) => s + r.hkd, 0),
+    updatedAt: formatNow(),
+  };
+}
+
+export function inboundAddressOf(userId = currentUser.id, chain) {
+  return inboundAddresses.find(a => a.userId === userId && a.chain === chain) || null;
+}
+
+// 演示：把「申请中」的地址推进为已分配（真实环境由托管回调）
+export function simulateAssignInboundAddress(chain) {
+  const row = inboundAddressOf(currentUser.id, chain);
+  if (!row || row.status !== 'requesting') return { ok: false };
+  const demo = {
+    tron: 'TXk9mQ4vW2sB7nR3pL8cY6dF1gH5jK0aZe',
+    ethereum: '0x7a3F9c2B4d8E1f6A0b5C9d3E7f2A8b4C6d1E9f3A',
+    bitcoin: 'bc1q9x2v7k4m8n3p6r0s5t1u4w7y2z8a3b6c9d0e5f',
+  };
+  row.address = demo[chain] || row.address;
+  row.status = 'active';
+  row.assignedAt = formatNow();
+  row.custodyAddressId = `ADDR-${String(Date.now()).slice(-5)}`;
+  logCryptoCall('请求地址分配（模拟回调）', { userId: currentUser.id, chain, requestNo: row.requestNo }, '托管分配完成后回填地址');
+  Storage.save();
+  return { ok: true, address: row.address };
+}
+
+export function outboundAddressesOf(userId = currentUser.id) {
+  return cryptoAddresses.filter(a => a.userId === userId);
+}
+
+export function cryptoAddressOf(id) {
+  return cryptoAddresses.find(a => a.id === id) || null;
+}
+
+// 新增提现地址：先平台审核，再托管白名单；两边都通过才进入 24h 冷却
+export function submitCryptoAddress({ chain, address, label, verifyMethod = 'review' }) {
+  const code = String(address || '').trim();
+  const conf = cryptoChains[chain];
+  if (!conf) return { ok: false, error: '请选择网络' };
+  if (!conf.addressPattern.test(code)) return { ok: false, error: `地址格式与 ${conf.label} 不匹配` };
+  if (cryptoAddresses.some(a => a.address.toLowerCase() === code.toLowerCase() && a.userId !== currentUser.id)) {
+    return { ok: false, error: '该地址已被其他用户使用' };
+  }
+  if (cryptoAddresses.some(a => a.address.toLowerCase() === code.toLowerCase() && a.userId === currentUser.id && a.status !== 'disabled')) {
+    return { ok: false, error: '该地址已在地址簿中' };
+  }
+  const row = {
+    id: `coa${Date.now()}`,
+    userId: currentUser.id,
+    chain,
+    address: code,
+    label: String(label || '').trim() || '未命名地址',
+    status: 'reviewing',
+    verifyMethod,
+    addedAt: formatNow(),
+    verifiedAt: null,
+    activatesAt: null,
+    whitelist: {},
+    whitelistId: null,
+    firstCapUsed: false,
+    lastUsedAt: null,
+  };
+  cryptoAddresses.unshift(row);
+  logCryptoCall('提交提现地址审核', { chain, address: code, label: row.label, verifyMethod }, '平台审核 → 托管白名单申请');
+  Storage.save();
+  return { ok: true, id: row.id };
+}
+
+// 演示：推进地址状态（真实环境由运营审核 / 托管回调驱动）
+export function advanceCryptoAddress(id) {
+  const row = cryptoAddressOf(id);
+  if (!row) return { ok: false };
+  if (row.status === 'reviewing') {
+    row.status = 'whitelist_pending';
+    row.whitelist = Object.fromEntries(cryptoAssetsOnChain(row.chain).map(a => [a.code, 'pending']));
+    row.whitelistId = `WL-${String(Date.now()).slice(-4)}`;
+    logCryptoCall('申请白名单（模拟）', { addressId: row.id, chain: row.chain, assets: Object.keys(row.whitelist) }, '受理 ≠ 启用');
+  } else if (row.status === 'whitelist_pending') {
+    row.status = 'cooling';
+    row.verifiedAt = formatNow();
+    row.activatesAt = cryptoStamp(24);
+    row.whitelist = Object.fromEntries(Object.keys(row.whitelist).map(k => [k, 'active']));
+    logCryptoCall('白名单已启用（模拟）', { addressId: row.id, whitelistId: row.whitelistId }, '进入 24 小时冷却');
+  } else if (row.status === 'cooling') {
+    row.status = 'active';
+    row.activatesAt = formatNow();
+  } else {
+    return { ok: false };
+  }
+  Storage.save();
+  return { ok: true, status: row.status };
+}
+
+export function removeCryptoAddress(id) {
+  const row = cryptoAddressOf(id);
+  if (!row) return { ok: false };
+  if (cryptoWithdrawals.some(w => w.addressId === id && ['pending_approval', 'manual_pending', 'submitted', 'broadcasting'].includes(w.status))) {
+    return { ok: false, error: '该地址有在途提现，暂不能停用' };
+  }
+  row.status = 'disabled';
+  logCryptoCall('停用提现地址', { addressId: id, address: row.address }, '已发出的链上交易不能靠停用撤回');
+  Storage.save();
+  return { ok: true };
+}
+
+export function cryptoDepositsOf(userId = currentUser.id) {
+  return cryptoDeposits.filter(d => d.userId === userId);
+}
+export function cryptoWithdrawalsOf(userId = currentUser.id) {
+  return cryptoWithdrawals.filter(w => w.userId === userId);
+}
+export function latestCryptoDeposit(userId, asset, chain) {
+  // 按 createdAt 倒序：地址页的状态区要显示「最近这一笔」，而不是数组顺序
+  return cryptoDeposits
+    .filter(d => d.userId === userId && d.asset === asset && d.chain === chain)
+    .slice()
+    .sort((a, b) => String(b.createdAt || b.creditedAt || '').localeCompare(String(a.createdAt || a.creditedAt || '')))[0] || null;
+}
+
+// 提现前置校验 + 冻结（2026-11-04）：校验顺序 = 地址 → 冷却 → 冻结期 → 金额 → 首笔限额
+export function submitCryptoWithdrawal({ asset, chain, addressId, amount }) {
+  const conf = cryptoChains[chain];
+  const addr = cryptoAddressOf(addressId);
+  const a = cryptoAssetOf(asset);
+  if (!conf || !a || !a.chainIds.includes(chain)) return { ok: false, error: '资产与网络不匹配' };
+  if (!addr || addr.status !== 'active') return { ok: false, error: '请选择已启用的提现地址' };
+  if (addr.chain !== chain) return { ok: false, error: '地址与网络不匹配' };
+  const wl = addr.whitelist && addr.whitelist[asset];
+  if (wl !== 'active') return { ok: false, error: '该地址的托管白名单未启用' };
+  const left = cryptoTimeLeft(addr.activatesAt);
+  if (addr.status === 'cooling' || (left && !left.expired)) return { ok: false, error: `地址冷却中，${left ? left.text : '24 小时'}后可用` };
+  if (getFreezeState().frozen) return { ok: false, error: '安全冻结生效中：安全项变更后 24 小时内无法提现' };
+
+  const bal = cryptoBalanceOf(currentUser.id)[asset];
+  const amt = Number(amount);
+  if (!Number.isFinite(amt) || amt <= 0) return { ok: false, error: '请输入有效金额' };
+  if (amt < conf.minWithdraw) return { ok: false, error: `最小提现额 ${conf.minWithdraw} ${asset}` };
+  if (amt > bal.available) return { ok: false, error: '超出可提余额' };
+
+  // 首笔限额：未做签名验证的地址，首笔 ≤ 等值 5,000 USD（demo 口径，接后端按风控配置）
+  const firstCap = 5000;
+  if (addr.verifyMethod !== 'signature' && !addr.firstCapUsed && amt > firstCap) {
+    return { ok: false, error: `该地址首笔提现上限 ${firstCap} ${asset}，可先完成签名验证或分笔提取` };
+  }
+
+  const fee = conf.fee;
+  const row = {
+    id: `cw${Date.now()}`,
+    businessNo: `CW${formatNow().replace(/[-: ]/g, '')}`,
+    userId: currentUser.id,
+    asset, chain, addressId,
+    toAddress: addr.address,
+    amount: amt,
+    fee,
+    netAmount: Math.max(0, amt - fee),
+    status: 'pending_approval',
+    frozenHeld: true,
+    createdAt: formatNow(),
+    approvedAt: null,
+    custodyOrderNo: null,
+    txHash: null,
+    autoApproved: false,
+  };
+  cryptoWithdrawals.unshift(row);
+  const bucket = cryptoBalances[currentUser.id] && cryptoBalances[currentUser.id][asset];
+  if (bucket) bucket.frozen = Number(bucket.frozen || 0) + amt;   // 提交即冻（含费，费从金额扣）
+  logCryptoCall('创建提现单', { businessNo: row.businessNo, asset, chain, amount: amt, fee, addressId }, '等待运营审批；审批通过才签名提交');
+  pushNotification({
+    type: 'wallet',
+    title: '提现申请已提交',
+    body: `${asset} ${amt} 提现申请已提交，审核通过后提交托管执行。`,
+  });
+  Storage.save();
+  return { ok: true, id: row.id, businessNo: row.businessNo };
+}
+
+// 审批（演示：运营一人审批；大额需第二人——本期不建重复审批 UI，依赖托管风控）
+export function approveCryptoWithdrawal(id) {
+  const row = cryptoWithdrawals.find(w => w.id === id);
+  if (!row || row.status !== 'pending_approval') return { ok: false };
+  row.approvedAt = formatNow();
+  const cap = cryptoCapabilities.find(c => c.key === 'withdrawApi');
+  row.status = cap && cap.available ? 'submitted' : 'manual_pending';
+  logCryptoCall(cap && cap.available ? '签名并提交托管' : '转人工执行（API 未开放）',
+    { businessNo: row.businessNo, amount: row.amount, feeCap: row.fee },
+    '签名服务只签「审批记录与指令哈希一致」的指令');
+  Storage.save();
+  return { ok: true, status: row.status };
+}
+
+export function rejectCryptoWithdrawal(id, reason) {
+  const row = cryptoWithdrawals.find(w => w.id === id);
+  if (!row || row.status !== 'pending_approval') return { ok: false };
+  row.status = 'rejected';
+  row.note = reason || '审批未通过';
+  releaseCryptoWithdrawal(row);
+  Storage.save();
+  return { ok: true };
+}
+
+function releaseCryptoWithdrawal(row) {
+  if (!row.frozenHeld) return;
+  const bucket = cryptoBalances[row.userId] && cryptoBalances[row.userId][row.asset];
+  if (bucket) bucket.frozen = Math.max(0, Number(bucket.frozen || 0) - Number(row.amount || 0));
+  row.frozenHeld = false;
+}
+
+// 演示：推进提现状态（真实环境由审批 / 托管 Webhook 驱动）
+export function advanceCryptoWithdrawal(id) {
+  const row = cryptoWithdrawals.find(w => w.id === id);
+  if (!row) return { ok: false };
+  if (row.status === 'pending_approval') return approveCryptoWithdrawal(id);
+  if (row.status === 'manual_pending' || row.status === 'submitted') {
+    row.status = 'broadcasting';
+    row.custodyOrderNo = row.custodyOrderNo || `CW-ORD-${String(Date.now()).slice(-5)}`;
+    logCryptoCall('托管执行中', { businessNo: row.businessNo, custodyOrderNo: row.custodyOrderNo });
+  } else if (row.status === 'broadcasting' || row.status === 'unknown') {
+    row.status = 'confirmed';
+    row.txHash = `0x${String(Date.now()).padStart(16, '0')}a3f6c9e2b7d4f1a8c5e0b3d6f9a2c7e4b1d8f0a5c3e6b9d2f7a4c1e8b5d0f3a6`;
+    if (row.frozenHeld) {
+      const bucket = cryptoBalances[row.userId] && cryptoBalances[row.userId][row.asset];
+      if (bucket) {
+        bucket.frozen = Math.max(0, Number(bucket.frozen || 0) - Number(row.amount || 0));
+        bucket.total = Math.max(0, Number(bucket.total || 0) - Number(row.amount || 0));
+      }
+      row.frozenHeld = false;
+    }
+    const addr = cryptoAddressOf(row.addressId);
+    if (addr) addr.firstCapUsed = true;
+    pushNotification({ type: 'wallet', title: '提现已汇出', body: `${row.asset} ${row.netAmount} 已汇出，可在记录中查看链上交易。` });
+  } else if (row.status === 'failed') {
+    return { ok: false };
+  } else {
+    return { ok: false };
+  }
+  Storage.save();
+  return { ok: true, status: row.status };
+}
+
+// 演示：入金状态推进（真实环境由托管 Webhook 驱动）
+export function advanceCryptoDeposit(id) {
+  const row = cryptoDeposits.find(d => d.id === id);
+  if (!row) return { ok: false };
+  if (row.status === 'confirming') {
+    row.status = 'credited';
+    row.confirmations = row.required;
+    row.creditedAt = formatNow();
+    row.availableAt = cryptoStamp(24);
+    row.custodyFlowId = `FL-${String(Date.now()).slice(-5)}`;
+    const bucket = cryptoBalances[row.userId] && cryptoBalances[row.userId][row.asset];
+    if (bucket) {
+      bucket.total = Number(bucket.total || 0) + Number(row.amount || 0);
+      bucket.locked = Number(bucket.locked || 0) + Number(row.amount || 0);
+    }
+    pushNotification({ type: 'wallet', title: '入金已入账', body: `${row.asset} ${row.amount} 已入账，24 小时后可提。` });
+  } else {
+    return { ok: false };
+  }
+  Storage.save();
+  return { ok: true, status: row.status };
+}
+
+// 每日解锁（演示：进入页面时把到期的 locked 释放为 available）
+export function sweepCryptoUnlocks(userId = currentUser.id) {
+  const now = Date.now();
+  cryptoDeposits
+    .filter(d => d.userId === userId && d.status === 'credited' && d.availableAt)
+    .forEach(d => {
+      if (new Date(String(d.availableAt).replace(' ', 'T')).getTime() <= now) {
+        const bucket = cryptoBalances[userId] && cryptoBalances[userId][d.asset];
+        // 只在「这笔确实还挂在 locked 里」时释放：历史种子可能 availableAt 已过期但 locked 未计
+        if (bucket && bucket.locked > 0 && Number(d.amount) <= Number(bucket.locked)) {
+          bucket.locked = Math.max(0, Number(bucket.locked) - Number(d.amount));
+        }
+        d.availableAt = null;
+      }
+    });
+}
+
+// ---- 接口调用日志（原型演示用：让钱包组看到每一步会调什么） ----
+const cryptoCallLog = [];
+export function logCryptoCall(method, payload, note) {
+  cryptoCallLog.unshift({ at: formatNow().slice(11), method, payload, note });
+  if (cryptoCallLog.length > 20) cryptoCallLog.pop();
+}
+export function getCryptoCalls() { return cryptoCallLog.slice(); }
+
 /**
  * 持久化状态快照（不含 Set，因为 Set 不可 JSON 序列化）
  * registeredEventIds 用 Array 代替 Set
@@ -9618,6 +10270,12 @@ export const Storage = {
         leadFollowups: leadFollowups,   // 客户跟进日志（CRM 留痕持久化，2026-08-12）
         depositRequests: depositRequests,
         withdrawRequests: withdrawRequests,
+        // 数字资产（2026-11-04）：追加型实体，旧快照缺 key 时保留代码种子，无需升 STATE_VERSION
+        cryptoBalances: cryptoBalances,
+        inboundAddresses: inboundAddresses,
+        cryptoAddresses: cryptoAddresses,
+        cryptoDeposits: cryptoDeposits,
+        cryptoWithdrawals: cryptoWithdrawals,
         exchangeRequests: exchangeRequests,       // 换汇申请（2026-08-19 人工换汇）
         withdrawalFeeConfig: withdrawalFeeConfig, // 出金费率配置（2026-11-04：后台可配，刷新保留）
         bankCards: bankCards,                    // 银行卡持久化（2026-11-02 修复：此前缺键，加卡/解绑刷新即回滚；
@@ -9687,6 +10345,20 @@ export const Storage = {
         wallet.cny.balance = data.wallet.cny?.balance ?? wallet.cny.balance;
         wallet.cny.frozen = data.wallet.cny?.frozen ?? 0;   // 换汇冻结位（2026-08-19）
       }
+      // 数字资产（2026-11-04）：追加型实体，旧快照缺 key 时保留种子（无需升版本）
+      if (data.cryptoBalances && typeof data.cryptoBalances === 'object') {
+        Object.keys(cryptoBalances).forEach(k => delete cryptoBalances[k]);
+        Object.entries(data.cryptoBalances).forEach(([uid, v]) => { cryptoBalances[uid] = v; });
+      }
+      const restoreCryptoArray = (target, source) => {
+        if (!Array.isArray(source)) return;
+        target.length = 0;
+        source.forEach(item => target.push(item));
+      };
+      restoreCryptoArray(inboundAddresses, data.inboundAddresses);
+      restoreCryptoArray(cryptoAddresses, data.cryptoAddresses);
+      restoreCryptoArray(cryptoDeposits, data.cryptoDeposits);
+      restoreCryptoArray(cryptoWithdrawals, data.cryptoWithdrawals);
       // assetHistory：restore 最新 total（每月一条记录，mock 数据共 12 条）
       if (Array.isArray(data.assetHistory) && data.assetHistory.length > 0) {
         assetHistory.length = 0;
