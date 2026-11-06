@@ -1765,6 +1765,8 @@ export const en = {
   '最低提现金额 {amount}；手续费从提现金额中扣除。': "Minimum withdrawal {amount}; the fee is deducted from the withdrawal amount.",
   '最低提现金额为 {amount}': "Minimum withdrawal amount is {amount}",
   '暂无可用银行卡，请先添加银行卡': "No available bank card. Please add one first.",
+  '暂无绑定银行卡，无法提现': "No bank card bound. Withdrawal is unavailable.",
+  '提现仅支持本人已验证的白名单银行卡，绑卡并通过验证后即可发起。': "Withdrawals are supported only to your own verified whitelisted bank card. Bind and verify a card to proceed.",
   '首充验证': "First deposit verification",
   '卡片审核通过后，用该卡首充 ≥1万 HKD 等值即可自动加入白名单。': "After the card is approved, make a first deposit of ≥HKD 10,000 equivalent to be automatically whitelisted.",
   '去添加': "Add now",

@@ -77,6 +77,9 @@ export default function FundOperation({ mode, navigate, goBack }) {
     && c.whitelistStatus !== BANK_CARD_STATUS.REJECTED
     && c.reviewStatus !== CARD_REVIEW_STATUS.PENDING); // 卡审核中的卡不能充（资料还没核过）
   const whitelistedCards = myCards.filter(c => c.whitelistStatus === BANK_CARD_STATUS.VERIFIED);
+  // 2026-11-06：完全未绑卡时直接拦截提现表单（与充值侧拦截态同构）——
+  // 否则用户填完整页金额/费用，才在收款卡字段与提交时报错。有卡但未达白名单不拦，保留字段级提示。
+  const hasNoCard = !bankCards.some(c => c.userId === currentUser.id);
 
   useEffect(() => () => clearTimeout(copyTimer.current), []);
 
@@ -498,7 +501,15 @@ export default function FundOperation({ mode, navigate, goBack }) {
           : `${t('提现打款至本人白名单银行卡，财务复核后汇出。')}`}
       </p>
 
-      {!isDeposit && renderWithdraw()}
+      {!isDeposit && !hasNoCard && renderWithdraw()}
+
+      {!isDeposit && hasNoCard && (
+        <div className="card fund-empty-card">
+          <p>{t('暂无绑定银行卡，无法提现')}</p>
+          <p className="text-muted text-sm">{t('提现仅支持本人已验证的白名单银行卡，绑卡并通过验证后即可发起。')}</p>
+          <button className="btn btn-outline btn-sm" onClick={() => navigate('#bank-cards')}>{t('去添加')}</button>
+        </div>
+      )}
 
       {isDeposit && myCards.length === 0 && (
         <div className="card fund-empty-card">
