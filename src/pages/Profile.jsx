@@ -66,10 +66,10 @@ export default function Profile({ navigate, setIsLoggedIn }) {
     <div className="page profile-page">
       <div className="profile-header">
         <div className="profile-avatar">
-          {currentUser.name[0]}
+          {t(currentUser.name)[0]}
         </div>
         <div className="profile-info">
-          <h2>{currentUser.name}</h2>
+          <h2>{t(currentUser.name)}</h2>
           <p className="text-muted">{currentUser.email}</p>
           <div className="profile-badges">
             <span

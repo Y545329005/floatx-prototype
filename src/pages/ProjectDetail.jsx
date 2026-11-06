@@ -89,7 +89,7 @@ export default function ProjectDetail({ id, navigate, goBack }) {
         <div className="detail-stat-row">
           <div className="detail-stat">
             <span className="detail-stat-label">{t('上市计划')}</span>
-            <span className="detail-stat-value text-sm">{project.ipoPlan}</span>
+            <span className="detail-stat-value text-sm">{t(project.ipoPlan)}</span>
           </div>
         </div>
         {project.status === 'closed' && project.allocationDate && (
@@ -121,7 +121,7 @@ export default function ProjectDetail({ id, navigate, goBack }) {
       <div className="card card-secondary">
         <div className="card-title">{t('本轮情况')}</div>
         <div className="round-note">
-          <p className="round-note-text">{project.roundNote}</p>
+          <p className="round-note-text">{t(project.roundNote)}</p>
         </div>
       </div>
 

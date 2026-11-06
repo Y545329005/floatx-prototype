@@ -15,7 +15,7 @@ function AccountManagerCard({ onEscalate }) {
         <div className="account-manager-avatar">{am.name[0]}</div>
         <div className="account-manager-info">
           <strong>{am.name}</strong>
-          <span className="text-muted text-sm">{am.role} · {t('全程为您服务')}</span>
+          <span className="text-muted text-sm">{t(am.role)} · {t('全程为您服务')}</span>
         </div>
       </div>
       <div className="account-manager-contacts">
@@ -55,7 +55,7 @@ export default function AccountManager({ onEscalate, compact }) {
           </div>
           <div className="account-manager-row-info">
             <strong>{am.name}</strong>
-            <span className="text-muted text-sm">{am.role}</span>
+            <span className="text-muted text-sm">{t(am.role)}</span>
           </div>
           <span className="account-manager-row-hint text-muted text-sm">{t('联系专属经理')}</span>
           <ChevronRight size={16} className="text-muted" />

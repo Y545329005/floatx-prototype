@@ -86,6 +86,7 @@ export const en = {
 
   // Me
   '专属客户经理': 'Account Manager',
+  '专属顾问': 'Dedicated Advisor',
   '联系专属经理': 'Contact manager',
   '您的专属顾问': 'Your Account Manager',
   '个人信息': 'Personal Info',
@@ -1410,6 +1411,18 @@ export const en = {
   '2026 夏季私募市场展望 — 新经济赛道投资策略': '2026 Summer Private Markets Outlook — New Economy Investment Strategy',
   'Aurora FinTech — RWA 代币化如何改变私募市场': 'Aurora FinTech — How RWA Tokenization Is Changing Private Markets',
   '香港科学园 科技大道西 8 号 QuantumCore 量子计算中心 3 楼': 'Level 3, QuantumCore Quantum Computing Centre, 8 Science Park West Avenue, Hong Kong Science Park',
+  '目标港股 / 美股 IPO，预计 2028 年递交上市申请': 'Targeting a Hong Kong / US IPO, application expected in 2028',
+  '目标港股 18A 上市，预计 2027 年递交上市申请': 'Targeting a Hong Kong 18A listing, application expected in 2027',
+  '目标港股 IPO，预计 2028 年启动上市筹备': 'Targeting a Hong Kong IPO, preparation expected to start in 2028',
+  '已启动港股上市筹备，预计 2027 年递交 A1，目标港股主板': 'Hong Kong listing preparation underway; A1 filing expected in 2027, targeting the Main Board',
+  '目标港股 IPO，预计 2028-2029 年': 'Targeting a Hong Kong IPO in 2028-2029',
+  '目标港股 IPO，预计 2028 年递交上市申请': 'Targeting a Hong Kong IPO, application expected in 2028',
+  '公司释放少量老股供专业投资者参与，额度有限，以平台与项目方协调结果为准。': 'The company is releasing a small block of existing shares to professional investors; allocation is limited and subject to coordination between the platform and the project team.',
+  '公司开放少量新增份额给专业投资者，额度优先分配。': 'The company is opening a small number of new shares to professional investors, with priority allocation.',
+  '公司定向释放少量份额供专业投资者参与。': 'The company is releasing a small allocation specifically for professional investors.',
+  '本轮份额已全部完成分配，项目处于上市筹备阶段。': 'All shares in this round have been allocated; the project is in pre-IPO preparation.',
+  '本项目尚未正式开放份额，平台正在收集投资人意向，随后与项目方协调额度。': 'Allocations are not yet open; the platform is collecting investor interest and will coordinate allocation with the project team.',
+  '公司释放少量份额，优先满足已有意向的投资人。': 'The company is releasing a small allocation, prioritising investors who have already expressed interest.',
 
   // 基金模块富途式改版（2026-10-28）+ 基金一期历史欠账补齐
   '自营基金': 'Self-operated Funds',
