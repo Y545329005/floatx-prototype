@@ -10357,3 +10357,63 @@ button.kyc-form-input.picker-trigger {
 .crypto-status-row > span:first-child { display: inline-flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
 .crypto-status-row code { font-size: var(--text-xs); color: var(--text-tertiary); }
 .crypto-status-custody { color: var(--text-secondary); line-height: 1.4; }
+
+/* ========== iPad 平板断点（2026-11-05 · App Store iPad 截屏配套） ==========
+   仅 ≥768px 生效，iPhone（≤430px）布局不受影响。
+   口径：列表页（路演/项目/基金）双列网格；其余页面限宽居中；吸顶头全宽（伸到视口两侧）。 */
+@media (min-width: 768px) {
+  .app-container {
+    max-width: none;
+  }
+
+  /* 全部页面默认限宽居中（子页/详情/表单的拇指友好宽度） */
+  .page {
+    max-width: 720px;
+    margin-inline: auto;
+    width: 100%;
+  }
+
+  /* 列表页放宽到双列网格宽度 */
+  .events-page,
+  .project-market-page,
+  .funds-page {
+    max-width: 980px;
+  }
+
+  .events-page .project-list,
+  .project-market-page .project-list,
+  .funds-page .project-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+
+  .project-card {
+    margin-bottom: 0;
+  }
+
+  /* 列表尾部「即將上線 / 到底了」等分隔元素占满整行，不留空洞格子 */
+  .events-page .project-list > *:not(.project-card),
+  .project-market-page .project-list > *:not(.project-card),
+  .funds-page .project-list > *:not(.project-card) {
+    grid-column: 1 / -1;
+    align-self: center;
+  }
+
+  /* 吸顶头伸到视口两侧（经典 50% - 50vw 全宽技巧），内容宽度按所属页限宽补回 */
+  .market-sticky {
+    margin-inline: calc(50% - 50vw);
+    padding-inline: max(var(--space-4), calc(50vw - 490px + var(--space-4)));
+  }
+
+  .detail-sticky,
+  .subpage-sticky {
+    margin-inline: calc(50% - 50vw);
+    padding-inline: max(var(--space-4), calc(50vw - 360px + var(--space-4)));
+  }
+
+  /* 底部 Tab 满宽均布（iPad 全宽形态） */
+  .bottom-nav {
+    max-width: none;
+  }
+}
