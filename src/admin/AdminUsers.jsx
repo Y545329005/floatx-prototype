@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Eye, X, Search, ShieldCheck, Ban, CheckCircle, Users, UserCheck, Wallet, ChevronRight, Settings } from 'lucide-react';
+import { Eye, X, Search, ShieldCheck, Ban, CheckCircle, Users, UserCheck, Wallet, ChevronRight } from 'lucide-react';
 import {
   getInvestorUsers, assignAccountManager, toggleUserDisabled,
   accountManagers, kycSubmissions, testAccounts, subscriptions, eventRegistrationsList,
@@ -336,7 +336,7 @@ export default function AdminUsers({ navigate, detailId, admin }) {
 
             {/* 2026-08-15 银行卡卡（mock 单用户场景下展示 u1 的 2 张；其他用户空态）
                2026-08-16 重设计：分行布局（银行分行 / maskedNo · 币种），币种改中性色 */}
-            <AdminBankCards cards={selBankCards} admin={admin} variant="summary" onManage={() => setTab('actions')} />
+            <AdminBankCards cards={selBankCards} admin={admin} variant="list" onManage={() => setTab('actions')} />
 
             {/* 认证卡（2026-08-14：去胶囊改主色 600 文字 + 2026-08-15 3 字段双排，KYC/PI 同行 + PI 有效期独行） */}
             <div className="card kyc-review-block admin-kyc-review-tight">
@@ -455,59 +455,62 @@ export default function AdminUsers({ navigate, detailId, admin }) {
             {/* Tab4 操作：账户级操作（顾问分配 + 风控禁用）—— 2026-08-14 操作区从底部折叠改为 tab 化
                2026-08-15 重设计：浅橙背景操作区 + 顶部「操作区」提示，与上方资料卡群视觉区分 */}
             {tab === 'actions' && (
-              <div className="admin-action-panel">
-                <div className="admin-action-panel-head">
-                  <Settings size={14} />
-                  <span className="admin-action-panel-tip">账户级变更，操作即时生效</span>
-                </div>
-                <div className="admin-action-panel-body">
-                  <div className="admin-action-block">
-                    <h5 className="admin-action-block-title">专属顾问</h5>
-                    <div className="form-group">
-                      <label className="form-label">归属顾问（报名/问卷记录自动跟随）</label>
-                      <select
-                        className="form-input"
-                        value={mgrSelect || sel.managerId || ''}
-                        onChange={e => { setMgrSelect(e.target.value); setMgrSaved(false); }}
-                      >
-                        <option value="">未分配</option>
-                        {accountManagers.map(m => <option key={m.id} value={m.id}>{m.name}（{m.role}）</option>)}
-                      </select>
-                    </div>
-                    {mgrSaved && <p className="form-success">专属顾问已更新</p>}
-                    <button className="btn btn-md btn-primary" onClick={handleAssign}>保存分配</button>
+              <>
+                {/* 2026-11-09 排版重做：去掉橙底双层容器，改为与抽屉其他 tab 一致的卡片组；
+                    每张卡片一个职责，动作行内右对齐 */}
+                <div className="card kyc-review-block">
+                  <h4 className="card-title"><UserCheck size={14} /> 专属顾问</h4>
+                  <div className="admin-action-inline">
+                    <select
+                      className="form-input admin-action-select"
+                      aria-label="归属顾问"
+                      value={mgrSelect || sel.managerId || ''}
+                      onChange={e => { setMgrSelect(e.target.value); setMgrSaved(false); }}
+                    >
+                      <option value="">未分配</option>
+                      {accountManagers.map(m => <option key={m.id} value={m.id}>{m.name}（{m.role}）</option>)}
+                    </select>
+                    <button className="btn btn-sm btn-primary" onClick={handleAssign}>保存分配</button>
                   </div>
-                  <div className="admin-action-block">
-                    <h5 className="admin-action-block-title">风控</h5>
-                    {confirmDisable ? (
-                      <div>
-                        <p className="text-muted text-sm">
-                          {sel.disabled
-                            ? `确认恢复启用「${sel.name}」的账户？恢复后可正常登录与操作。`
-                            : `确认禁用「${sel.name}」的账户？禁用后该投资人将无法登录与使用本平台服务（风控冻结）。`}
-                        </p>
-                        <div className="admin-drawer-actions-inline">
-                          <button className="btn btn-md btn-secondary" onClick={() => setConfirmDisable(false)}>取消</button>
-                          <button className="btn btn-md btn-danger" onClick={handleToggleDisable}>
-                            {sel.disabled ? <><CheckCircle size={16} /> 确认启用</> : <><Ban size={16} /> 确认禁用</>}
-                          </button>
-                        </div>
+                  <p className="admin-action-hint">
+                    报名与问卷记录自动跟随归属顾问{mgrSaved ? <span className="form-success admin-action-saved"> · 已更新</span> : null}
+                  </p>
+                </div>
+
+                <div className="card kyc-review-block">
+                  <h4 className="card-title"><ShieldCheck size={14} /> 账户状态</h4>
+                  {confirmDisable ? (
+                    <div className="admin-action-confirm">
+                      <p className="text-muted text-sm">
+                        {sel.disabled
+                          ? `确认恢复启用「${sel.name}」的账户？恢复后可正常登录与操作。`
+                          : `确认禁用「${sel.name}」的账户？禁用后该投资人将无法登录与使用本平台服务（风控冻结）。`}
+                      </p>
+                      <div className="admin-drawer-actions-inline">
+                        <button className="btn btn-sm btn-secondary" onClick={() => setConfirmDisable(false)}>取消</button>
+                        <button className="btn btn-sm btn-danger" onClick={handleToggleDisable}>
+                          {sel.disabled ? <><CheckCircle size={14} /> 确认启用</> : <><Ban size={14} /> 确认禁用</>}
+                        </button>
                       </div>
-                    ) : (
+                    </div>
+                  ) : (
+                    <div className="admin-action-inline">
+                      <span className="admin-action-status">
+                        当前：<strong className={sel.disabled ? 'text-danger' : ''}>{sel.disabled ? '已禁用（风控冻结）' : '正常'}</strong>
+                      </span>
                       <button
-                        className={`btn btn-md ${sel.disabled ? 'btn-outline' : 'btn-danger'}`}
+                        className={`btn btn-sm admin-action-right ${sel.disabled ? 'btn-outline' : 'btn-outline admin-action-danger'}`}
                         onClick={() => setConfirmDisable(true)}
                       >
-                        <Ban size={16} /> {sel.disabled ? '恢复启用账户' : '禁用账户'}
+                        <Ban size={14} /> {sel.disabled ? '恢复启用账户' : '禁用账户'}
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
-            {/* 银行卡风控（2026-11-09）：与整户冻结同属风控职责，放在操作 tab 与「风控」并列 */}
-            {tab === 'actions' && (
-              <AdminBankCards cards={selBankCards} admin={admin} />
+
+                {/* 银行卡风控（2026-11-09）：与整户冻结同属风控职责，同列在操作 tab */}
+                <AdminBankCards cards={selBankCards} admin={admin} />
+              </>
             )}
           </div>
           {/* 操作区已迁至 tab='actions'（2026-08-14），底部 footer 移除 */}

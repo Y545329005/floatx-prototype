@@ -1,12 +1,10 @@
-// 客户详情 · 银行卡区块（2026-11-09 方案 B；同日视觉重做）
-// 位置：用户管理 / 我的客户 → 客户详情。原「资金审核 → 银行卡复核」页签已删除：
-// 加白由首充核销自动完成，后台没有「审核通过」动作；卡是否可用属于风控职责（合规/运营），
-// 对象是客户而不是资金单据，所以归入客户详情。
+// 客户详情 · 银行卡区块（2026-11-09 方案 B；同日二次迭代）
+// 分工：资料 tab = 只读列表（银行 / 卡号 / 币种 / 状态 + 加白溯源或停用原因）；
+//      操作 tab = 同一列表 + 停用/恢复动作（与账户状态并列，同属风控职责）。
 // 状态单一事实源 = whitelistStatus（待首充 / 已验证 / 已停用）。
 // 停用必填原因（进审计 + 通知用户）；恢复按 suspendedFrom 还原并校验每币种名额（数据层做）。
 // 卡片数据是模块级数组，数据层函数直接改对象属性——组件内 tick 触发重渲染即可拿到新值。
-// 视觉：每张卡一条浅纸底凭证行（不是嵌套卡片）；状态靠右、动作贴卡号行右端，
-// 加白来源 / 停用原因是次级事实，12px 单行；说明压到标题右侧一行，不占版面。
+// 视觉：紧凑行式（grid 列对齐，多行成表），停用卡整行淡红底；完整卡号点开后在第二行展示，不挤压列宽。
 import { useState } from 'react';
 import { CreditCard, ShieldAlert, RotateCcw, ShieldCheck, Eye } from 'lucide-react';
 import { BANK_CARD_STATUS, suspendBankCard, restoreBankCard, formatExactAmount, logAudit } from '../mock/data';
@@ -26,7 +24,7 @@ export default function AdminBankCards({ cards, admin, variant = 'manage', onMan
   const [acting, setActing] = useState(null);   // { cardId, mode: 'suspend' | 'restore' }
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
-  const canAct = SUSPEND_ROLES.has(admin?.role);
+  const canAct = variant === 'manage' && SUSPEND_ROLES.has(admin?.role);
   const operator = admin?.name || '运营后台';
 
   const showNo = (c) => {
@@ -45,35 +43,11 @@ export default function AdminBankCards({ cards, admin, variant = 'manage', onMan
     setTick(t => t + 1); // 模块级数组已原地更新，触发一次重渲染
   };
 
-  // 摘要形态（资料 tab）：只回答「有几张、什么状态」，动作与明细进操作 tab
-  if (variant === 'summary') {
-    const count = (st) => cards.filter(c => c.whitelistStatus === st).length;
-    return (
-      <div className="card kyc-review-block">
-        <div className="admin-bank-head-row">
-          <h4 className="card-title"><CreditCard size={14} /> 银行卡（{cards.length}）</h4>
-          {onManage && <button className="admin-bank-manage-link" onClick={onManage}>管理 ›</button>}
-        </div>
-        {cards.length === 0 ? (
-          <div className="admin-bank-empty">暂未绑定银行卡</div>
-        ) : (
-          <div className="admin-bank-summary">
-            <span className="admin-bank-sum-item"><i className="admin-bank-sum-dot is-ok" />已验证 <b className="admin-bank-sum-num">{count(BANK_CARD_STATUS.VERIFIED)}</b></span>
-            <span className="admin-bank-sum-item"><i className="admin-bank-sum-dot is-warn" />待首充 <b className="admin-bank-sum-num">{count(BANK_CARD_STATUS.UNVERIFIED)}</b></span>
-            <span className="admin-bank-sum-item"><i className="admin-bank-sum-dot is-bad" />已停用 <b className="admin-bank-sum-num">{count(BANK_CARD_STATUS.SUSPENDED)}</b></span>
-          </div>
-        )}
-      </div>
-    );
-  }
-
   return (
     <div className="card kyc-review-block" key={tick}>
       <div className="admin-bank-head-row">
         <h4 className="card-title"><CreditCard size={14} /> 银行卡（{cards.length}）</h4>
-        {cards.length > 0 && (
-          <span className="admin-bank-note">白名单由首充核销自动完成，此处只做风控停用</span>
-        )}
+        {onManage && <button className="admin-bank-manage-link" onClick={onManage}>管理 ›</button>}
       </div>
 
       {cards.length === 0 ? (
@@ -85,29 +59,23 @@ export default function AdminBankCards({ cards, admin, variant = 'manage', onMan
             const isSuspended = c.whitelistStatus === BANK_CARD_STATUS.SUSPENDED;
             const isVerified = c.whitelistStatus === BANK_CARD_STATUS.VERIFIED;
             const openThis = acting && acting.cardId === c.id;
+            const hasAct = canAct && !openThis;
             return (
-              <div className={`admin-bank-item ${isSuspended ? 'is-suspended' : ''}`} key={c.id}>
-                <div className="admin-bank-head">
-                  <div className="admin-bank-name-wrap">
-                    <strong className="admin-bank-name">{c.bank}</strong>
-                    {c.branch && <span className="admin-bank-branch">{c.branch}</span>}
-                  </div>
-                  <span className={`admin-white-badge ${meta.cls}`}>{meta.label}</span>
-                </div>
-
-                <div className="admin-bank-body">
-                  <span className="admin-bank-no">
-                    {shownNo[c.id]
-                      ? (c.cardNo || c.maskedNo)
-                      : (
-                        <button className="admin-bank-no-btn" title="点击查看完整卡号" onClick={() => showNo(c)}>
-                          {c.maskedNo}
-                          <Eye size={13} />
-                        </button>
-                      )}
-                  </span>
+              <div className={`admin-bank-row ${isSuspended ? 'is-suspended' : ''}`} key={c.id}>
+                <div className={`admin-bank-row-main ${hasAct ? 'has-act' : ''}`}>
+                  <span className="admin-bank-name" title={c.bank}>{c.bank}{c.branch ? <i className="admin-bank-branch">{c.branch}</i> : null}</span>
+                  <button
+                    className="admin-bank-no-btn"
+                    title={shownNo[c.id] ? undefined : '点击查看完整卡号'}
+                    onClick={() => { if (!shownNo[c.id]) showNo(c); }}
+                    disabled={!!shownNo[c.id]}
+                  >
+                    {c.maskedNo}
+                    {!shownNo[c.id] && <Eye size={12} />}
+                  </button>
                   <span className="admin-bank-currency">{c.currency}</span>
-                  {canAct && !openThis && (
+                  <span className={`admin-white-badge ${meta.cls}`}>{meta.label}</span>
+                  {hasAct && (
                     isSuspended ? (
                       <button className="btn btn-sm btn-outline admin-bank-act" onClick={() => start(c.id, 'restore')}>
                         <RotateCcw size={13} /> 恢复
@@ -136,6 +104,9 @@ export default function AdminBankCards({ cards, admin, variant = 'manage', onMan
                     </span>
                   </div>
                 )}
+                {shownNo[c.id] && c.cardNo && (
+                  <div className="admin-bank-meta is-mono">完整卡号 {c.cardNo}</div>
+                )}
 
                 {openThis && (
                   <div className="admin-bank-form">
@@ -162,6 +133,9 @@ export default function AdminBankCards({ cards, admin, variant = 'manage', onMan
             );
           })}
         </div>
+      )}
+      {variant === 'manage' && cards.length > 0 && (
+        <p className="admin-bank-note-foot">白名单由首充核销自动完成，此处只做风控停用 / 恢复</p>
       )}
     </div>
   );

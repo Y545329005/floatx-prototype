@@ -1206,9 +1206,9 @@
 }
 
 /* 用户抽屉：银行卡卡 2026-08-16 重设计（分行布局 + 中性色币种） */
-/* 客户详情 · 银行卡区块（2026-11-09 方案 B · 视觉重做）
-   每张卡一条浅纸底凭证行：状态贴右上，动作贴卡号行右端；
-   加白来源 / 停用原因是 12px 次级事实；说明压到标题右侧一行，不占版面。 */
+/* 客户详情 · 银行卡区块（2026-11-09 方案 B · 二次迭代：紧凑行式列表）
+   资料 tab 只读列表，操作 tab 同列表 + 停用/恢复；grid 列对齐让多行成表，
+   停用行整行淡红底；完整卡号点开后在第二行展示，不挤压列宽。 */
 .admin-bank-head-row {
   display: flex;
   align-items: baseline;
@@ -1217,129 +1217,109 @@
   margin-bottom: var(--space-3);
 }
 .admin-bank-head-row .card-title { margin: 0; }
-.admin-bank-note {
-  font-size: var(--text-xs);
-  color: var(--text-tertiary);
-  text-align: right;
-  line-height: 1.4;
+.admin-bank-manage-link {
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--primary);
+  cursor: pointer;
 }
-.admin-bank-list { display: flex; flex-direction: column; gap: var(--space-2); }
-.admin-bank-item {
-  padding: var(--space-3);
-  border: 1px solid var(--border-light);
+.admin-bank-manage-link:hover { text-decoration: underline; }
+.admin-bank-list { display: flex; flex-direction: column; }
+.admin-bank-row {
+  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
-  background: var(--bg);
+  border: 1px solid transparent;
 }
-.admin-bank-item.is-suspended {
-  border-color: var(--danger-border);
+.admin-bank-row + .admin-bank-row { margin-top: 2px; }
+.admin-bank-row.is-suspended {
   background: var(--danger-bg);
+  border-color: var(--danger-border);
 }
-.admin-bank-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-}
-.admin-bank-name-wrap { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
-.admin-bank-name { font-size: var(--text-md); font-weight: 600; color: var(--text); }
-.admin-bank-branch { font-size: var(--text-sm); color: var(--text-secondary); }
-.admin-bank-body {
-  display: flex;
+.admin-bank-row-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 76px 36px 62px;
   align-items: center;
   gap: var(--space-2);
-  margin-top: 6px;
 }
-.admin-bank-no {
-  font-size: var(--text-lg);
+.admin-bank-row-main.has-act { grid-template-columns: minmax(0, 1fr) 76px 36px 62px auto; }
+.admin-bank-name {
+  font-size: var(--text-sm);
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.3px;
   color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.admin-bank-branch {
+  margin-left: 6px;
+  font-size: var(--text-xs);
+  font-weight: 400;
+  font-style: normal;
+  color: var(--text-tertiary);
 }
 .admin-bank-no-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 0 0 1px;
+  gap: 4px;
+  padding: 0;
   border: none;
-  border-bottom: 1px solid transparent;
   background: none;
-  font: inherit;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.2px;
   color: var(--text);
   cursor: pointer;
 }
-.admin-bank-no-btn svg { color: var(--text-secondary); }
-.admin-bank-no-btn:hover { color: var(--primary); border-bottom-color: var(--primary); }
-.admin-bank-no-btn:hover svg { color: var(--primary); }
+.admin-bank-no-btn svg { color: var(--text-secondary); flex-shrink: 0; }
+.admin-bank-no-btn:hover:not(:disabled) { color: var(--primary); }
+.admin-bank-no-btn:hover:not(:disabled) svg { color: var(--primary); }
+.admin-bank-no-btn:disabled { cursor: default; }
 .admin-bank-currency {
+  justify-self: start;
   font-size: var(--text-xs);
   font-weight: 500;
-  padding: 1px 6px;
+  padding: 1px 5px;
   border-radius: var(--radius-sm);
   background: var(--card);
   color: var(--text-secondary);
   border: 1px solid var(--border-light);
 }
-.admin-bank-act { margin-left: auto; }
+.admin-bank-row-main .admin-white-badge { white-space: nowrap; justify-self: start; }
+.admin-bank-act { justify-self: end; }
 .admin-bank-meta {
   display: flex;
   align-items: flex-start;
   gap: 5px;
-  margin-top: 6px;
+  margin-top: 4px;
+  padding-left: 0;
   font-size: var(--text-xs);
   line-height: 1.5;
   color: var(--text-secondary);
 }
 .admin-bank-meta svg { flex-shrink: 0; margin-top: 2px; }
 .admin-bank-meta.is-bad { color: var(--danger); }
+.admin-bank-meta.is-mono { padding-left: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text-secondary); }
 .admin-bank-form {
-  margin-top: var(--space-3);
-  padding-top: var(--space-3);
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
   border-top: 1px solid var(--border-light);
 }
 .admin-bank-form .form-input { width: 100%; resize: vertical; }
 .admin-bank-form-hint { margin-top: 6px; font-size: var(--text-xs); color: var(--text-secondary); line-height: 1.5; }
 .admin-bank-form-btns { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-2); }
 .admin-bank-empty { padding: var(--space-4) 0; font-size: var(--text-sm); color: var(--text-tertiary); }
+.admin-bank-note-foot {
+  margin-top: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  line-height: 1.5;
+}
 
-/* 用户抽屉：操作区面板（2026-08-15：浅橙背景 + 顶部提示，与资料卡群视觉区分）
-   2026-08-16 去"操作区"标题：仅留 Settings icon + tip，tab 已是"操作"避免重复 */
-.admin-action-panel {
-  background: var(--warning-light);
-  border: 1px solid var(--warning-border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-}
-.admin-action-panel-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: var(--space-3) var(--space-5);
-  background: var(--warning-border);
-  color: var(--warning);
-  font-size: var(--text-sm);
-}
-.admin-action-panel-tip {
-  font-weight: 400;
-  color: var(--text-secondary);
-}
-.admin-action-panel-body {
-  padding: var(--space-5);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-.admin-action-block {
-  background: var(--bg-card);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-md);
-  padding: var(--space-4) var(--space-5);
-}
-.admin-action-block-title {
-  font-size: var(--text-md);
-  font-weight: 600;
-  margin-bottom: var(--space-3);
-}
 .kyc-review-doc {
   display: flex;
   gap: 10px;
@@ -4000,3 +3980,24 @@
   cursor: pointer;
 }
 .admin-bank-manage-link:hover { text-decoration: underline; }
+
+/* 操作 tab（2026-11-09 排版重做）：与抽屉其他 tab 一致的卡片组，动作行内右对齐 */
+.admin-action-inline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.admin-action-select { flex: 1; min-width: 0; }
+.admin-action-hint {
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  line-height: 1.5;
+}
+.admin-action-saved { font-size: var(--text-xs); }
+.admin-action-status { font-size: var(--text-sm); color: var(--text-secondary); }
+.admin-action-status strong { color: var(--text); font-weight: 600; }
+.admin-action-right { margin-left: auto; }
+.admin-action-danger { color: var(--danger); border-color: var(--danger-border); }
+.admin-action-danger:hover { background: var(--danger-bg); color: var(--danger); }
+.admin-action-confirm p { margin-bottom: var(--space-2); }

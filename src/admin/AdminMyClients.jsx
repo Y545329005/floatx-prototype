@@ -334,7 +334,7 @@ export default function AdminMyClients({ navigate, detailId, admin }) {
                     <div className="admin-user-info-item"><span>账户状态</span><strong className={sel.disabled ? 'text-danger' : ''}>{sel.disabled ? '已禁用（风控冻结）' : '正常'}</strong></div>
                   </div>
                 </div>
-                <AdminBankCards cards={selBankCards} admin={admin} variant="summary" />
+                <AdminBankCards cards={selBankCards} admin={admin} variant="list" />
                 <div className="card kyc-review-block admin-kyc-review-tight">
                   <h4 className="card-title"><ShieldCheck size={14} /> 认证状态</h4>
                   <div className="kyc-review-double-row">
