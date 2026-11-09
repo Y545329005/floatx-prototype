@@ -1260,25 +1260,14 @@
   font-style: normal;
   color: var(--text-tertiary);
 }
-.admin-bank-no-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0;
-  border: none;
-  background: none;
-  font-family: inherit;
+.admin-bank-no {
   font-size: var(--text-sm);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.2px;
   color: var(--text);
-  cursor: pointer;
+  white-space: nowrap;
 }
-.admin-bank-no-btn svg { color: var(--text-secondary); flex-shrink: 0; }
-.admin-bank-no-btn:hover:not(:disabled) { color: var(--primary); }
-.admin-bank-no-btn:hover:not(:disabled) svg { color: var(--primary); }
-.admin-bank-no-btn:disabled { cursor: default; }
 .admin-bank-currency {
   justify-self: start;
   font-size: var(--text-xs);
@@ -1303,7 +1292,6 @@
 }
 .admin-bank-meta svg { flex-shrink: 0; margin-top: 2px; }
 .admin-bank-meta.is-bad { color: var(--danger); }
-.admin-bank-meta.is-mono { padding-left: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text-secondary); }
 .admin-bank-form {
   margin-top: var(--space-2);
   padding-top: var(--space-2);

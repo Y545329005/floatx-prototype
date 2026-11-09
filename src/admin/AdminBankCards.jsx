@@ -6,8 +6,8 @@
 // 卡片数据是模块级数组，数据层函数直接改对象属性——组件内 tick 触发重渲染即可拿到新值。
 // 视觉：紧凑行式（grid 列对齐，多行成表），停用卡整行淡红底；完整卡号点开后在第二行展示，不挤压列宽。
 import { useState } from 'react';
-import { CreditCard, ShieldAlert, RotateCcw, ShieldCheck, Eye } from 'lucide-react';
-import { BANK_CARD_STATUS, suspendBankCard, restoreBankCard, formatExactAmount, logAudit } from '../mock/data';
+import { CreditCard, ShieldAlert, RotateCcw, ShieldCheck } from 'lucide-react';
+import { BANK_CARD_STATUS, suspendBankCard, restoreBankCard } from '../mock/data';
 
 const CARD_STATUS_META = {
   [BANK_CARD_STATUS.VERIFIED]: { label: '已验证', cls: 'is-ok' },
@@ -20,17 +20,12 @@ const SUSPEND_ROLES = new Set(['super', 'ops', 'compliance']);
 
 export default function AdminBankCards({ cards, admin, variant = 'manage', onManage }) {
   const [tick, setTick] = useState(0);
-  const [shownNo, setShownNo] = useState({});   // 卡号明文展开（逐卡，留痕）
   const [acting, setActing] = useState(null);   // { cardId, mode: 'suspend' | 'restore' }
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
   const canAct = variant === 'manage' && SUSPEND_ROLES.has(admin?.role);
   const operator = admin?.name || '运营后台';
 
-  const showNo = (c) => {
-    setShownNo(prev => ({ ...prev, [c.id]: true }));
-    logAudit({ operator, category: 'fundProduct', action: 'view', target: '银行卡号明文', targetId: c.id, note: `查看银行卡号明文：${c.maskedNo}` });
-  };
   const start = (cardId, mode) => { setActing({ cardId, mode }); setReason(''); setError(''); };
   const cancel = () => { setActing(null); setReason(''); setError(''); };
   const submit = () => {
@@ -64,15 +59,7 @@ export default function AdminBankCards({ cards, admin, variant = 'manage', onMan
               <div className={`admin-bank-row ${isSuspended ? 'is-suspended' : ''}`} key={c.id}>
                 <div className={`admin-bank-row-main ${hasAct ? 'has-act' : ''}`}>
                   <span className="admin-bank-name" title={c.bank}>{c.bank}{c.branch ? <i className="admin-bank-branch">{c.branch}</i> : null}</span>
-                  <button
-                    className="admin-bank-no-btn"
-                    title={shownNo[c.id] ? undefined : '点击查看完整卡号'}
-                    onClick={() => { if (!shownNo[c.id]) showNo(c); }}
-                    disabled={!!shownNo[c.id]}
-                  >
-                    {c.maskedNo}
-                    {!shownNo[c.id] && <Eye size={12} />}
-                  </button>
+                  <span className="admin-bank-no">{c.maskedNo}</span>
                   <span className="admin-bank-currency">{c.currency}</span>
                   <span className={`admin-white-badge ${meta.cls}`}>{meta.label}</span>
                   {hasAct && (
@@ -88,11 +75,12 @@ export default function AdminBankCards({ cards, admin, variant = 'manage', onMan
                   )}
                 </div>
 
-                {isVerified && (
+                {/* 加白追溯只在操作 tab 出现（停卡判断依据）；资料 tab 靠状态 badge 表达，不重复 */}
+                {isVerified && variant === 'manage' && (
                   <div className="admin-bank-meta">
                     <ShieldCheck size={12} />
                     <span>
-                      加白 {c.verifiedByReqId ? `首充 ${c.verifiedByReqId}` : ''}{c.verifiedBy ? ` · ${c.verifiedBy}` : ''}{c.verifiedAt ? ` · ${c.verifiedAt}` : ''}{c.verifiedAmount != null ? ` · 到账 ${c.currency} ${formatExactAmount(c.verifiedAmount)}` : ''}
+                      加白 {c.verifiedByReqId ? `首充 ${c.verifiedByReqId}` : ''}{c.verifiedBy ? ` · ${c.verifiedBy}` : ''}{c.verifiedAt ? ` · ${c.verifiedAt}` : ''}
                     </span>
                   </div>
                 )}
@@ -103,9 +91,6 @@ export default function AdminBankCards({ cards, admin, variant = 'manage', onMan
                       停用 {c.reviewReason || '风控停用'}{c.suspendedBy ? ` · ${c.suspendedBy}` : ''}{c.suspendedAt ? ` · ${c.suspendedAt}` : ''}
                     </span>
                   </div>
-                )}
-                {shownNo[c.id] && c.cardNo && (
-                  <div className="admin-bank-meta is-mono">完整卡号 {c.cardNo}</div>
                 )}
 
                 {openThis && (
