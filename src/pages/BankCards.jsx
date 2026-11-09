@@ -3,7 +3,7 @@ import {
   ArrowLeft, Plus, CreditCard, X, ShieldCheck, HelpCircle,
 } from 'lucide-react';
 import {
-  bankCards, BANK_CARD_STATUS, CARD_REVIEW_STATUS, CARD_QUOTA_PER_CURRENCY,
+  bankCards, BANK_CARD_STATUS, CARD_QUOTA_PER_CURRENCY,
   jurisdictionLabel, countActiveCards,
   getFreezeState, formatExactAmount,
   removeBankCard, currentUser,
@@ -11,8 +11,7 @@ import {
 import { useLang } from '../i18n';
 
 // 用户侧三态（2026-11-05 起「已停用」取消，只保留解绑）
-// 待验证里再分「卡审核中」与「审核通过、待首充」——两者用户都要等，但动作不同：
-// 审核中不能充值，审核通过后要用该卡首充 ≥1万 HKD 等值才加白。
+// 2026-11-09 起取消前置人工审卡：「待验证」只有一种含义——等首充加白（≥1万 HKD 等值）。
 const cardStatusMeta = {
   [BANK_CARD_STATUS.VERIFIED]: { label: '已验证', cls: 'is-ok' },
   [BANK_CARD_STATUS.UNVERIFIED]: { label: '待验证', cls: 'is-warn' },
@@ -33,8 +32,9 @@ const CARD_ORDER = {
 };
 
 // 银行卡管理（2026-11-04；2026-11-05 收敛）
-// 链路：添加卡（个人单名 + 开户地区 + 卡照/开户证明）→ 后台卡审核 → 待验证
-//       → 用该卡充值 ≥1万 HKD 等值 → 财务确认到账时自动加白
+// 银行卡管理（2026-11-04；2026-11-05 收敛；2026-11-09 链路重排）
+// 链路：添加卡（个人单名 + 开户地区 + 卡照/开户证明）→ 立即生效（可打款）
+//       → 用该卡充值 ≥1万 HKD 等值 → 财务核销核对（付款人姓名 + 卡资料）→ 自动加白
 // 2026-11-05：取消「停用」。它与「解绑」在用户视角没有区别（都释放名额、都受在途提现拦截、
 // 都不能用于出入金），两项并存只会让菜单多一个含义重叠的选项。卡片右上角直接给「解绑」。
 export default function BankCards({ navigate, goBack, setToast }) {
@@ -47,8 +47,7 @@ export default function BankCards({ navigate, goBack, setToast }) {
   const [activeCurrency, setActiveCurrency] = useState(() => {
     const mine = bankCards.filter(c => c.userId === currentUser.id);
     const todo = CURRENCIES.find(cur => mine.some(c => c.currency === cur.key
-      && c.whitelistStatus === BANK_CARD_STATUS.UNVERIFIED
-      && c.reviewStatus === CARD_REVIEW_STATUS.APPROVED));
+      && c.whitelistStatus === BANK_CARD_STATUS.UNVERIFIED));
     if (todo) return todo.key;
     const withCard = CURRENCIES.find(cur => mine.some(c => c.currency === cur.key));
     return withCard ? withCard.key : 'HKD';
@@ -67,8 +66,7 @@ export default function BankCards({ navigate, goBack, setToast }) {
   const quotaOf = (currency) => countActiveCards(currency, currentUser.id);
 
   const hasVerifyTodo = (currency) => cards.some(c => c.currency === currency
-    && c.whitelistStatus === BANK_CARD_STATUS.UNVERIFIED
-    && c.reviewStatus === CARD_REVIEW_STATUS.APPROVED);
+    && c.whitelistStatus === BANK_CARD_STATUS.UNVERIFIED);
 
   const activeCards = cards
     .filter(c => c.currency === activeCurrency)
@@ -92,7 +90,7 @@ export default function BankCards({ navigate, goBack, setToast }) {
       return <>{t('白名单')}{c.verifiedAmount ? ` · ${c.currency} ${formatExactAmount(c.verifiedAmount)}` : ''}</>;
     }
     if (c.whitelistStatus === BANK_CARD_STATUS.UNVERIFIED) {
-      return c.reviewStatus === CARD_REVIEW_STATUS.PENDING ? t('资料审核中') : t('首充 ≥1万 HKD 等值后加白');
+      return t('首充 ≥1万 HKD 等值后加白');
     }
     if (c.whitelistStatus === BANK_CARD_STATUS.REJECTED) return c.reviewReason || t('资料不符，请重新添加');
     return '';
@@ -189,7 +187,7 @@ export default function BankCards({ navigate, goBack, setToast }) {
               <span className="bank-card-detail">{renderDetail(c)}</span>
             </div>
 
-            {c.whitelistStatus === BANK_CARD_STATUS.UNVERIFIED && c.reviewStatus === CARD_REVIEW_STATUS.APPROVED && (
+            {c.whitelistStatus === BANK_CARD_STATUS.UNVERIFIED && (
               <button className="btn btn-outline btn-full bank-verify-btn" onClick={() => navigate('#fund-operation/deposit')}>
                 {t('去充值验证')}
               </button>
@@ -211,7 +209,7 @@ export default function BankCards({ navigate, goBack, setToast }) {
             <div className="bank-card-info">
               <ul className="bank-card-info-list">
                 <li>{t('出入金仅限「已验证」银行卡。')}</li>
-                <li>{t('新卡提交后由专员审核，审核通过后用该卡入金满 1 万 HKD（或等值）即自动加入白名单。')}</li>
+                <li>{t('新卡添加后立即生效，可直接用于充值打款；用该卡入金满 1 万 HKD（或等值）并经财务确认到账后自动加入白名单。')}</li>
                 <li>{t('每个币种最多 3 张。')}</li>
                 <li>{t('仅支持个人单名账户，开户地区须在香港或证监会合资格地区。')}</li>
               </ul>
@@ -230,7 +228,7 @@ export default function BankCards({ navigate, goBack, setToast }) {
               <button className="btn-icon" onClick={() => { setConfirmRemove(null); setRemoveError(''); }} aria-label={t('关闭')}><X size={18} /></button>
             </div>
             <p className="text-muted text-sm sheet-sub">
-              {t('确认解绑')} {confirmRemove.bank}（{confirmRemove.maskedNo}）？{t('解绑后将无法用于出入金，需重新添加并通过验证。')}
+              {t('确认解绑')} {confirmRemove.bank}（{confirmRemove.maskedNo}）？{t('解绑后将无法用于出入金，重新添加后需完成首充验证。')}
             </p>
             {removeError && <p className="form-error">{removeError}</p>}
             <div className="bank-card-confirm-actions">

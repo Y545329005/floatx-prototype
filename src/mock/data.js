@@ -437,8 +437,9 @@ export function jurisdictionLabel(code, lang = 'zh-CN') {
 //   原因：停用与解绑在用户视角没有区分度（都释放名额、都受在途提现拦截、都不能用于出入金），
 //   两项并存只会让卡片菜单多出一个含义重叠的选项。
 // 用户侧三态（whitelistStatus）：待验证 / 已验证 / 已拒绝。
-// 后台审核子态（reviewStatus）：待审核 / 已通过 / 已拒绝——「待验证」需要区分「卡审核中」与
-// 「审核通过、等首充」，只靠状态会把已通过待首充的卡也列进审核队列（对抗审查发现）。
+// 后台审核子态（reviewStatus）：已通过 / 已拒绝（2026-11-09 起取消前置人工审卡：新添加卡直通
+// 「已通过、待首充」，卡资料随首充核销一并核对——参考代码 + 到账付款人姓名与客户实名一致 + 卡资料）。
+// 已拒绝 = 后台事后复核切断的卡。'pending' 仅作为旧快照兼容值保留（迁移后不再产生）。
 // 名额口径：每币种「待验证 + 已验证」≤ 3（集团默认总量 3，本项目按会议纪要 per-currency，做成常量）。
 // 「已拒绝」释放名额；有在途出金的卡不可解绑。
 // ⚠️ 与集团《统一法币出入金整体方案》§5.5 的四态不一致（少了「已停用」），属本项目业务裁量，
@@ -517,7 +518,7 @@ export const bankCards = [
   },
   {
     // 吴世昌（u6）的卡——2026-11-02 曾作为白名单验证单 vr1 的 cardId 种子。
-    // 验证单已并入充值链路（2026-11-04），此卡保留为「待验证」种子：后台卡审核通过后等首充加白。
+    // 验证单已并入充值链路（2026-11-04），此卡保留为「待验证」种子：等首充加白。
     id: 'bc9',
     userId: 'u6',
     bank: '星展银行',
@@ -536,7 +537,8 @@ export const bankCards = [
     verifiedAmount: null,
   },
   {
-    // 当前登录账户（u1）待后台审核的卡——演示「银行卡审核」队列（基本信息 / 审核资料 / 结果）
+    // 当前登录账户（u1）的 USD 待首充卡——与 bc3（HKD 待首充）互补，演示「去充值验证」分支
+    //（2026-11-09 链路重排：卡审核取消，此卡由 pending 直通 approved）
     id: 'bc11',
     userId: 'u1',
     bank: '恒生银行',
@@ -550,7 +552,7 @@ export const bankCards = [
     proofImage: DEMO_CARD_PROOF,
     currency: 'USD',
     whitelistStatus: 'unverified',
-    reviewStatus: 'pending',
+    reviewStatus: 'approved',
     verifiedAt: null,
     verifiedAmount: null,
   },
@@ -7132,7 +7134,7 @@ export function submitDepositRequest({ currency, amount, method, cardId, bank, c
   // 付款卡校验：本人 + 非停用/拒绝（未验证可充，首充即验证）
   const card = bankCards.find(c => c.id === cardId && c.userId === currentUser.id);
   if (!card || card.whitelistStatus === BANK_CARD_STATUS.REJECTED) return false;
-  if (card.reviewStatus === CARD_REVIEW_STATUS.PENDING) return false; // 资料未审核通过前不能用于充值
+  if (card.reviewStatus === CARD_REVIEW_STATUS.PENDING) return false; // 兜底（2026-11-09 迁移后不再产生 pending 卡，防未来回归）
   if (!(evidence && evidence.name)) return false; // 线下转账必须上传凭证
   const orderNo = genOrderNo('DR');
   const genRef = 'BK' + Date.now();   // 外部单号：银行参考号（mock 演示值，接后端由银行回执替换）
@@ -7826,55 +7828,44 @@ export function addBankCard({ bank, branch, holder, cardNo, type, currency, acco
     proofImage,
     currency: cur,
     whitelistStatus: BANK_CARD_STATUS.UNVERIFIED,
-    reviewStatus: CARD_REVIEW_STATUS.PENDING, // 先进后台卡审核队列
+    reviewStatus: CARD_REVIEW_STATUS.APPROVED, // 直通待首充（2026-11-09 取消前置人工审卡，行业口径：入金宽松/出金严格）
     verifiedAt: null,
     verifiedAmount: null,
   });
   pushNotification({
     type: 'wallet',
-    title: '银行卡已提交审核',
-    body: '{bank}（**** {digits}）已提交，审核通过后用该卡充值 ≥1万 HKD 等值即可加入白名单。', args: { bank, digits: digits.slice(-4) },
+    title: '银行卡已添加',
+    body: '{bank}（**** {digits}）已生效，可直接用于充值打款。用该卡充值 ≥1万 HKD 等值并在平台登记，财务确认到账后即加入白名单。', args: { bank, digits: digits.slice(-4) },
   });
   logAudit({ operator: currentUser.name || '投资人', category: 'fundProduct', action: 'apply', target: '银行卡', targetId: '', note: `添加银行卡：${bank}（**** ${digits.slice(-4)}）· ${region} · ${cur}` });
   Storage.save();
   return { ok: true };
 }
 
-// 后台卡审核：通过 → 待验证（可首充）；拒绝 → 已拒绝（卡作废，需重新添加；后台不改用户数据）
-export function reviewBankCard(cardId, decision, operator = '', reason = '') {
+// 后台卡复核（2026-11-09 重排）：前置人工审卡取消，卡资料随首充核销一并核对（付款人姓名 + 卡资料），
+// 此处仅保留事后复核拒绝——发现坏卡时切断。拒绝后该卡不可出入金；已 VERIFIED 卡被拒的，
+// 已入金资金需重新绑卡并完成首充验证后方可提走（通知中已向用户说明）。
+export function rejectBankCard(cardId, operator = '', reason = '') {
   const card = bankCards.find(c => c.id === cardId);
-  if (!card || card.reviewStatus !== CARD_REVIEW_STATUS.PENDING) return false;
-  if (decision === 'approve') {
-    card.reviewStatus = CARD_REVIEW_STATUS.APPROVED;
-    card.whitelistStatus = BANK_CARD_STATUS.UNVERIFIED;
-    card.reviewedAt = formatNow();
-    card.reviewedBy = operator || '运营后台';
-    pushNotification({
-      type: 'wallet',
-      title: '银行卡审核通过',
-      body: '{bank}（{no}）资料审核通过。请用该卡转账 ≥1万 HKD 等值并在平台登记，财务确认到账后加入白名单。', args: { bank: card.bank, no: card.maskedNo },
-    }, card.userId);
-    logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'approve', target: card.holder, targetId: card.id, note: `银行卡审核通过：${card.bank} ${card.maskedNo}` });
-  } else {
-    card.reviewStatus = CARD_REVIEW_STATUS.REJECTED;
-    card.whitelistStatus = BANK_CARD_STATUS.REJECTED;
-    card.reviewedAt = formatNow();
-    card.reviewedBy = operator || '运营后台';
-    card.reviewReason = reason || '资料不符';
-    pushNotification({
-      type: 'wallet',
-      title: '银行卡审核未通过',
-      body: '{bank}（{no}）未通过审核：{reason}。请核对后重新添加。', args: { bank: card.bank, no: card.maskedNo, reason: card.reviewReason },
-    }, card.userId);
-    logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'reject', target: card.holder, targetId: card.id, note: `银行卡审核拒绝：${card.reviewReason}` });
-  }
+  if (!card || card.whitelistStatus === BANK_CARD_STATUS.REJECTED) return false;
+  card.reviewStatus = CARD_REVIEW_STATUS.REJECTED;
+  card.whitelistStatus = BANK_CARD_STATUS.REJECTED;
+  card.reviewedAt = formatNow();
+  card.reviewedBy = operator || '运营后台';
+  card.reviewReason = reason || '资料不符';
+  pushNotification({
+    type: 'wallet',
+    title: '银行卡复核未通过',
+    body: '{bank}（{no}）未通过复核：{reason}。该卡已不可用于出入金；已入金资金请重新添加本人银行卡并完成首充验证后提走。', args: { bank: card.bank, no: card.maskedNo, reason: card.reviewReason },
+  }, card.userId);
+  logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'reject', target: card.holder, targetId: card.id, note: `银行卡复核拒绝：${card.reviewReason}` });
   Storage.save();
   return true;
 }
 
 // 解绑银行卡（2026-11-05 起唯一的下卡动作：INV-5「删」冻结期数据层兜底；有在途出金的卡不可解绑）
 // 解绑 = 从用户银行卡列表移除，历史单据仍保留卡号快照（后台可查）。
-// 名额随之释放；重新添加同一张卡需要重新走审核 + 首充加白。
+// 名额随之释放；重新添加同一张卡需要重新首充加白（无需再走卡审核，2026-11-09 起）。
 export function removeBankCard(cardId) {
   if (getFreezeState().frozen) return { ok: false, error: '安全冻结生效中，暂不能变更出金账户' };
   const idx = bankCards.findIndex(c => c.id === cardId && c.userId === currentUser.id);
@@ -9567,7 +9558,11 @@ export function submitSubscription({ project, amount, currency = 'HKD' }) {
 // 60→61（2026-11-05）：补 KYC 中间态演示种子（郑嘉文 k8 + 首卡 bc-k8 + 首充单 dr-k8）。
 //     kycSubmissions / bankCards / depositRequests 均属快照恢复范围，不升版旧快照里没有这条链路，
 //     后台「待首充」标识与「银行转账认证」抽屉区块在老浏览器里恒空。迁移为追加（按 id 去重），不清空现有数据。
-const STATE_VERSION = 61;
+// 61→62（2026-11-09）：银行卡取消前置人工审核。新添加卡直通「已通过、待首充」，卡资料随首充核销
+//     一并核对（参考代码 + 到账付款人姓名与客户实名一致 + 卡资料），后台改事后复核（仅拒绝）。
+//     bankCards 属快照恢复范围，旧快照里 reviewStatus='pending' 的卡在新链路下没有审核队列可进，
+//     会永远卡在「审核中」且不可用于充值——迁移统一转 approved（待首充）。
+const STATE_VERSION = 62;
 
 // ========== 快照迁移（2026-11-05） ==========
 // 机制：load 时按版本逐级跑迁移函数，跑不到 STATE_VERSION 才整体丢弃。
@@ -9593,6 +9588,16 @@ const SNAPSHOT_MIGRATIONS = {
     data.kycSubmissions = addOnce(data.kycSubmissions, KYC_MID_SUBMISSION);
     data.bankCards = addOnce(data.bankCards, KYC_MID_CARD);
     data.depositRequests = addOnce(data.depositRequests, KYC_MID_DEPOSIT);
+    return data;
+  },
+  // 61 → 62：银行卡取消前置人工审核。旧快照里 reviewStatus='pending' 的卡统一转「已通过、待首充」
+  // （新链路下卡资料随首充核销核对）。纯数据变换：只改 reviewStatus，不动 whitelistStatus / 验证字段。
+  61: (data) => {
+    if (Array.isArray(data.bankCards)) {
+      data.bankCards = data.bankCards.map(c => (c && c.reviewStatus === 'pending')
+        ? { ...c, reviewStatus: 'approved' }
+        : c);
+    }
     return data;
   },
 };

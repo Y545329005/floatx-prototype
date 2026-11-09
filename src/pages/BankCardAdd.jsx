@@ -14,7 +14,8 @@ import BottomPicker from '../components/BottomPicker';
 // 且内部还要叠协议弹窗、失败要保留已填内容——这些都是页面语义，不是弹层语义。
 // 账户类型不再是表单项：业务只接受个人单名账户，给一个只有单一选项的下拉等于让用户做无意义操作，
 // 数据层仍保留校验（防绕过）。地区选定后「香港账户 / 海外账户」由数据层按 region 推断。
-// 顶部不再写流程说明：规则在上一级页面的「?」里，重复一遍只会把表单推低。
+// 2026-11-09 链路重排：取消前置人工审卡，提交即生效。预期改在提交按钮上方一句话交代
+// （首充门槛 + 到账才加白），不再依赖上一级页面的「?」——现在有真实的等待预期要前置。
 const CURRENCIES = [
   { key: 'HKD', label: 'HKD 港币' },
   { key: 'USD', label: 'USD 美元' },
@@ -63,7 +64,7 @@ export default function BankCardAdd({ navigate, goBack, setToast, currency }) {
     });
     if (!res.ok) { setError(res.error || t('添加失败，请检查填写内容后重试')); return; }
     recordAgreement({ type: 'bank-card', agreementIds: ['bank-card-service'] });
-    if (setToast) setToast(t('银行卡已提交审核'));
+    if (setToast) setToast(t('银行卡已添加，可直接用于充值'));
     navigate('#bank-cards');
   };
 
@@ -184,6 +185,9 @@ export default function BankCardAdd({ navigate, goBack, setToast, currency }) {
         </div>
 
         {error && <p className="form-error">{error}</p>}
+        <p className="fund-field-hint">
+          {t('提交后立即生效，可直接用于充值打款；首次充值 ≥1万 HKD 等值并经财务确认到账后加入出金白名单，验证款计入账户余额。')}
+        </p>
       </div>
 
       <div className="kyc-actions">
@@ -193,7 +197,7 @@ export default function BankCardAdd({ navigate, goBack, setToast, currency }) {
           style={{ opacity: (agreed && !allFull && !frozen) ? 1 : 0.45 }}
           onClick={submit}
         >
-          {t('提交审核')}
+          {t('确认添加')}
         </button>
       </div>
 

@@ -5,7 +5,7 @@ import {
   AlertTriangle, ReceiptText, X,
 } from 'lucide-react';
 import {
-  wallet, walletAccountOf, bankCards, BANK_CARD_STATUS, CARD_REVIEW_STATUS, platformAccounts, platformDepositAccount,
+  wallet, walletAccountOf, bankCards, BANK_CARD_STATUS, platformAccounts, platformDepositAccount,
   depositRequests, withdrawRequests, submitDepositRequest, submitWithdrawRequest,
   getAvailableCash, getFreezeState, depositRefCode, formatExactAmount,
   getWithdrawQuote, getMinWithdraw, currentUser,
@@ -72,10 +72,10 @@ export default function FundOperation({ mode, navigate, goBack }) {
   const refCode = depositRefCode();
   // 2026-11-04：充值付款卡放开到「本人全部有效卡」——未验证卡正是首充验证的对象
   // （此前只列已验证卡，导致「先验证才能充值」的顺序与会议纪要/集团口径相反）。
-  // 出金仍只允许已验证卡（白名单硬约束），且按币种匹配，不做跨币种打款。
+  // 2026-11-09 链路重排：卡审核取消，全部非拒绝卡都可充；出金仍只允许已验证卡（白名单硬约束），
+  // 且按币种匹配，不做跨币种打款。数据层 submitDepositRequest 保留 pending 卡拦截兜底。
   const myCards = bankCards.filter(c => c.userId === currentUser.id
-    && c.whitelistStatus !== BANK_CARD_STATUS.REJECTED
-    && c.reviewStatus !== CARD_REVIEW_STATUS.PENDING); // 卡审核中的卡不能充（资料还没核过）
+    && c.whitelistStatus !== BANK_CARD_STATUS.REJECTED);
   const whitelistedCards = myCards.filter(c => c.whitelistStatus === BANK_CARD_STATUS.VERIFIED);
   // 2026-11-06：完全未绑卡时直接拦截提现表单（与充值侧拦截态同构）——
   // 否则用户填完整页金额/费用，才在收款卡字段与提交时报错。有卡但未达白名单不拦，保留字段级提示。
@@ -514,7 +514,7 @@ export default function FundOperation({ mode, navigate, goBack }) {
       {isDeposit && myCards.length === 0 && (
         <div className="card fund-empty-card">
           <p>{t('暂无可用银行卡，请先添加银行卡')}</p>
-          <p className="text-muted text-sm">{t('卡片审核通过后，用该卡首充 ≥1万 HKD 等值即可自动加入白名单。')}</p>
+          <p className="text-muted text-sm">{t('添加银行卡后，用该卡首充 ≥1万 HKD 等值即可自动加入白名单。')}</p>
           <button className="btn btn-outline btn-sm" onClick={() => navigate('#bank-cards')}>{t('去添加')}</button>
         </div>
       )}
@@ -529,7 +529,7 @@ export default function FundOperation({ mode, navigate, goBack }) {
                 type="button"
                 className="fund-pay-select fund-pay-trigger"
                 onClick={() => setCardPickerOpen(true)}
-                aria-label={t('付款银行卡（白名单）')}
+                aria-label={t('付款银行卡')}
               >
                 {selectedCard ? `${selectedCard.bank} · ${selectedCard.maskedNo}` : t('选择银行卡')}
               </button>
