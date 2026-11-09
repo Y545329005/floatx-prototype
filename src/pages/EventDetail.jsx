@@ -165,7 +165,7 @@ export default function EventDetail({ id, navigate, goBack, setToast }) {
             <div className="event-meta-cell event-meta-cell-wide">
               <span className="event-meta-label">{t('地点')}</span>
               <div className="event-location-row">
-                <span className="event-meta-value event-location-text">{event.location}</span>
+                <span className="event-meta-value event-location-text">{t(event.location)}</span>
                 <div className="event-location-actions">
                   <button className="btn-icon" onClick={copyAddress} title={t('复制地址')}><Copy size={16} /></button>
                   <button className="btn-icon" onClick={openMaps} title={t('打开地图')}><Navigation size={16} /></button>
@@ -202,14 +202,14 @@ export default function EventDetail({ id, navigate, goBack, setToast }) {
         {event.joinNote && (
           <div className="event-join-note">
             {isOnline ? <Monitor size={14} /> : <MapPin size={14} />}
-            <span>{event.joinNote}</span>
+            <span>{t(event.joinNote)}</span>
           </div>
         )}
       </div>
 
       <div className="card card-secondary">
         <h3 className="card-title">{t('活动介绍')}</h3>
-        <p className="text-body">{event.description}</p>
+        <p className="text-body">{t(event.description)}</p>
       </div>
 
       {event.agenda && event.agenda.length > 0 && (
@@ -219,7 +219,7 @@ export default function EventDetail({ id, navigate, goBack, setToast }) {
             {event.agenda.map((a, i) => (
               <div key={i} className="agenda-item">
                 <span className="agenda-time">{a.time}</span>
-                <span className="agenda-topic">{a.topic}</span>
+                <span className="agenda-topic">{t(a.topic)}</span>
               </div>
             ))}
           </div>
@@ -233,7 +233,7 @@ export default function EventDetail({ id, navigate, goBack, setToast }) {
             {event.highlights.map((h, i) => (
               <li key={i} className="highlight-item">
                 <TrendingUp size={16} className="highlight-icon" />
-                <span>{h}</span>
+                <span>{t(h)}</span>
               </li>
             ))}
           </ul>
@@ -246,7 +246,7 @@ export default function EventDetail({ id, navigate, goBack, setToast }) {
           <div className="speaker-avatar">{event.speaker[0]}</div>
           <div className="speaker-info">
             <strong>{event.speaker}</strong>
-            {event.speakerBio && <p className="text-muted text-sm">{event.speakerBio}</p>}
+            {event.speakerBio && <p className="text-muted text-sm">{t(event.speakerBio)}</p>}
           </div>
         </div>
       </div>
@@ -265,7 +265,7 @@ export default function EventDetail({ id, navigate, goBack, setToast }) {
               <ChevronRight size={18} className="event-project-arrow" />
             </div>
             {project.highlights && project.highlights[0] && (
-              <p className="text-muted text-sm event-project-desc">{project.highlights[0]}</p>
+              <p className="text-muted text-sm event-project-desc">{t(project.highlights[0])}</p>
             )}
             <div className="detail-stat-row event-project-stats">
               <div className="detail-stat">

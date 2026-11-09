@@ -325,7 +325,7 @@ export default function KYCBankTransfer({ navigate, goBack }) {
       <BottomPicker
         open={picker === 'bank'}
         title={t('银行')}
-        options={BANK_OPTIONS.map(b => ({ value: b, label: b }))}
+        options={BANK_OPTIONS.map(b => ({ value: b, label: t(b) }))}
         value={bank}
         onSelect={v => setBank(v)}
         onClose={() => setPicker(null)}

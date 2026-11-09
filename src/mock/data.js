@@ -2333,7 +2333,7 @@ export function submitFundOrder({ fundId, currency, amount }) {
   pushNotification({
     type: 'fund',
     title: '申购申请已提交',
-    body: `${fund.name} ${cur} ${amt.toLocaleString()} 申购申请已提交，财务确认后份额入账。`,
+    body: '{fund} {cur} {amt} 申购申请已提交，财务确认后份额入账。', args: { fund: fund.name, cur, amt: amt.toLocaleString() },
   }, currentUser.id);
   Storage.save();
   return { ok: true, order };
@@ -2430,7 +2430,7 @@ export function confirmFundOrder(orderId, { nav = null, operator = '运营专员
   pushNotification({
     type: 'fund',
     title: '申购已确认',
-    body: `${order.fundName} 申购已确认，${shares} 份已入账，结单可在「基金结单」查看。`,
+    body: '{fund} 申购已确认，{shares} 份已入账，结单可在「基金结单」查看。', args: { fund: order.fundName, shares: String(shares) },
   }, order.userId);
   Storage.save();
   return { ok: true, order, statement };
@@ -2537,7 +2537,7 @@ export function submitRedemptionOrder({ holdingId, shares }) {
   pushNotification({
     type: 'fund',
     title: '赎回申请已提交',
-    body: `${fund.name} 赎回 ${formatShares(n)} 份已提交，财务确认后回款至可用余额。`,
+    body: '{fund} 赎回 {shares} 份已提交，财务确认后回款至可用余额。', args: { fund: fund.name, shares: formatShares(n) },
   }, holding.userId);
   Storage.save();
   return { ok: true, order };
@@ -2635,7 +2635,7 @@ export function confirmRedemptionOrder(orderId, { nav = null, operator = '运营
   pushNotification({
     type: 'fund',
     title: '赎回已确认',
-    body: `${order.fundName} 赎回 ${formatShares(shares)} 份已确认，回款 ${order.currency} ${formatExactAmount(netAmount)} 已进入可用余额。`,
+    body: '{fund} 赎回 {shares} 份已确认，回款 {cur} {amt} 已进入可用余额。', args: { fund: order.fundName, shares: formatShares(shares), cur: order.currency, amt: formatExactAmount(netAmount) },
   }, order.userId);
   Storage.save();
   return { ok: true, order, statement };
@@ -2667,7 +2667,7 @@ export function rejectFundOrder(orderId, reason = '', operator = '运营专员')
   pushNotification({
     type: 'fund',
     title: isRedeem ? '赎回未通过' : '申购未通过',
-    body: `${order.fundName} ${isRedeem ? '赎回' : '申购'}申请未通过${reason ? `：${reason}` : ''}。`,
+    body: '{fund} {kind}申请未通过{reason}。', args: { fund: order.fundName, kind: isRedeem ? '赎回' : '申购', reason: reason ? `：${reason}` : '' },
   }, order.userId);
   Storage.save();
   return { ok: true, order };
@@ -5272,7 +5272,7 @@ export function depositFunds({ currency, amount, method }) {
   pushNotification({
     type: 'wallet',
     title: '入金到账',
-    body: `您的${w.label}入金 ${w.symbol}${amount.toLocaleString()} 已到账，可用资金已更新。`,
+    body: '您的{label}入金 {sym}{amt} 已到账，可用资金已更新。', args: { label: w.label, sym: w.symbol, amt: amount.toLocaleString() },
   });
   Storage.save();
   return true;
@@ -5301,7 +5301,7 @@ export function withdrawFunds({ currency, amount, method }) {
   pushNotification({
     type: 'wallet',
     title: '提现成功',
-    body: `您的${w.label}提现 ${w.symbol}${amount.toLocaleString()} 已发起，资金将在 1-2 个工作日到账。`,
+    body: '您的{label}提现 {sym}{amt} 已发起，资金将在 1-2 个工作日到账。', args: { label: w.label, sym: w.symbol, amt: amount.toLocaleString() },
   });
   Storage.save();
   return true;
@@ -6467,7 +6467,7 @@ export function approvePiSubmission(pid, operator = '系统', checks = null) {
     currentUser.pi.category = s.piType === 'asset' ? '专业投资者' : '专业投资者';
     currentUser.pi.basis = s.piType === 'asset' ? '持有至少 HK$8,000,000 的投资组合' : '持牌人士或注册机构';
   }
-  pushNotification({ type: 'service', title: 'PI 认证通过', body: `${s.name} 的专业投资者资格已核验通过，可使用平台资讯与咨询服务。` });
+  pushNotification({ type: 'service', title: 'PI 认证通过', body: '{name} 的专业投资者资格已核验通过，可使用平台资讯与咨询服务。', args: { name: s.name } });
   logAudit({ operator, category: 'pi', action: 'approve', target: s.name, targetId: pid, note: checkNote ? `PI 资格审核通过（核验：${checkNote}）` : 'PI 资格审核通过（专业投资者认证）' });
   Storage.save();
   return true;
@@ -6488,7 +6488,7 @@ export function rejectPiSubmission(pid, reason, operator = '系统') {
     currentUser.pi.status = 'rejected'; // 用户侧状态页区分 rejected（KYC 拒绝用 kyc_status，PI 独立）
     currentUser.kyc_profile.rejectReason = s.rejectReason;
   }
-  pushNotification({ type: 'service', title: 'PI 认证未通过', body: `${s.name} 的专业投资者资格未通过审核，原因：${s.rejectReason}` });
+  pushNotification({ type: 'service', title: 'PI 认证未通过', body: '{name} 的专业投资者资格未通过审核，原因：{reason}', args: { name: s.name, reason: s.rejectReason } });
   logAudit({ operator, category: 'pi', action: 'reject', target: s.name, targetId: pid, note: `PI 拒绝原因：${s.rejectReason}` });
   Storage.save();
   return true;
@@ -6699,7 +6699,7 @@ export function approveKycSubmission(kid, operator = '系统') {
   pushNotification({
     type: 'service',
     title: 'KYC 审核通过',
-    body: `${k.name} 的专业投资者认证已通过，可正常使用平台服务。`,
+    body: '{name} 的专业投资者认证已通过，可正常使用平台服务。', args: { name: k.name },
   });
   logAudit({ operator, category: 'kyc', action: 'approve', target: k.name, targetId: kid, note: 'KYC 审核通过（专业投资者认证）' });
   Storage.save();
@@ -6721,7 +6721,7 @@ export function rejectKycSubmission(kid, reason, operator = '系统') {
   pushNotification({
     type: 'service',
     title: 'KYC 审核未通过',
-    body: `${k.name} 的认证资料未通过审核，原因：${k.rejectReason}。`,
+    body: '{name} 的认证资料未通过审核，原因：{reason}。', args: { name: k.name, reason: k.rejectReason },
   });
   logAudit({ operator, category: 'kyc', action: 'reject', target: k.name, targetId: kid, note: `拒绝原因：${k.rejectReason}` });
   Storage.save();
@@ -6746,7 +6746,7 @@ export function requireKycAction(kid, reason, operator = '系统') {
   pushNotification({
     type: 'service',
     title: 'KYC 材料需补充',
-    body: `${k.name} 的认证资料需补充：${k.rejectReason}。请登录后在认证状态页查看并重新提交。`,
+    body: '{name} 的认证资料需补充：{reason}。请登录后在认证状态页查看并重新提交。', args: { name: k.name, reason: k.rejectReason },
   });
   logAudit({ operator, category: 'kyc', action: 'requires_action', target: k.name, targetId: kid, note: `补件原因：${k.rejectReason}` });
   Storage.save();
@@ -7166,7 +7166,7 @@ export function submitDepositRequest({ currency, amount, method, cardId, bank, c
   pushNotification({
     type: 'wallet',
     title: '入金申请已提交',
-    body: `${w.label}入金 ${w.symbol}${amount.toLocaleString()} 已提交，待财务核对凭证后上账。`,
+    body: '{label}入金 {sym}{amt} 已提交，待财务核对凭证后上账。', args: { label: w.label, sym: w.symbol, amt: amount.toLocaleString() },
   });
   logAudit({ operator: currentUser.name || '投资人', category: 'fundProduct', action: 'apply', target: '', targetId: req.id, note: `提交入金申请 ${w.symbol}${amount.toLocaleString()}（银行转账+凭证）` });
   Storage.save();
@@ -7218,7 +7218,7 @@ export function approveDepositRequest(reqId, { actualAmount, actualCurrency, ban
     pushNotification({
       type: 'wallet',
       title: '首充验证通过 · 卡已加白',
-      body: `${depositCard.bank}（${depositCard.maskedNo}）已加入资金白名单，可用于出入金。`,
+      body: '{bank}（{no}）已加入资金白名单，可用于出入金。', args: { bank: depositCard.bank, no: depositCard.maskedNo },
     }, req.userId);
   }
   const diffNote = credited !== req.amount || cur !== req.currency
@@ -7245,7 +7245,7 @@ export function approveDepositRequest(reqId, { actualAmount, actualCurrency, ban
   pushNotification({
     type: 'wallet',
     title: '入金到账',
-    body: `${w.label}入金 ${w.symbol}${credited.toLocaleString()} 已确认到账，可用资金已更新。`,
+    body: '{label}入金 {sym}{amt} 已确认到账，可用资金已更新。', args: { label: w.label, sym: w.symbol, amt: credited.toLocaleString() },
   }, req.userId);
   logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'approve', target: req.userName, targetId: reqId, note: `充值确认到账 ${w.symbol}${credited.toLocaleString()}${diffNote}${cardVerified ? `；首充加白 ${depositCard.maskedNo}` : ''}` });
   Storage.save();
@@ -7262,7 +7262,7 @@ export function rejectDepositRequest(reqId, reason, operator = '') {
   pushNotification({
     type: 'wallet',
     title: '入金申请未通过',
-    body: `您的入金申请未通过审核：${req.rejectReason}`,
+    body: '您的入金申请未通过审核：{reason}', args: { reason: req.rejectReason },
   }, req.userId);
   logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'reject', target: req.userName, targetId: reqId, note: `充值申请拒绝：${req.rejectReason}` });
   Storage.save();
@@ -7280,7 +7280,7 @@ export function requestDepositEvidence(reqId, reason, operator = '') {
   pushNotification({
     type: 'wallet',
     title: '入金凭证待补传',
-    body: `您的入金申请需补传凭证：${req.requestEvidenceReason}`,
+    body: '您的入金申请需补传凭证：{reason}', args: { reason: req.requestEvidenceReason },
   }, req.userId);
   logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'reject', target: req.userName, targetId: reqId, note: `要求补传入金凭证：${req.requestEvidenceReason}` });
   Storage.save();
@@ -7300,7 +7300,7 @@ export function submitDepositEvidence(reqId, evidence) {
   pushNotification({
     type: 'wallet',
     title: '凭证已补传',
-    body: `入金 ${req.currency} ${req.amount.toLocaleString()} 凭证已补传，等待财务核对。`,
+    body: '入金 {cur} {amt} 凭证已补传，等待财务核对。', args: { cur: req.currency, amt: req.amount.toLocaleString() },
   }, req.userId);
   logAudit({ operator: currentUser.name || '投资人', category: 'fundProduct', action: 'apply', target: '', targetId: req.id, note: `补传入金凭证：${evidence.name}` });
   Storage.save();
@@ -7553,7 +7553,7 @@ export function submitWithdrawRequest({ currency, amount, method, cardId, bank, 
   pushNotification({
     type: 'wallet',
     title: '提现申请已提交',
-    body: `${w.label}提现 ${w.symbol}${amount.toLocaleString()} 已提交，待平台审核。`,
+    body: '{label}提现 {sym}{amt} 已提交，待平台审核。', args: { label: w.label, sym: w.symbol, amt: amount.toLocaleString() },
   });
   logAudit({ operator: currentUser.name || '投资人', category: 'fundProduct', action: 'apply', target: '', targetId: req.id, note: `提交提现申请 ${w.symbol}${amount.toLocaleString()}` });
   Storage.save();
@@ -7581,7 +7581,7 @@ export function approveWithdrawRequest(reqId, operator = '') {
     pushNotification({
       type: 'wallet',
       title: '提现申请未通过',
-      body: `您的提现申请未通过审核：${req.rejectReason}`,
+      body: '您的提现申请未通过审核：{reason}', args: { reason: req.rejectReason },
     }, req.userId);
     logAudit({ operator: '运营后台', category: 'fundProduct', action: 'reject', target: req.userName, targetId: reqId, note: '提现打款失败自动拒绝：打款时可用余额不足' });
     Storage.save();
@@ -7614,7 +7614,7 @@ export function approveWithdrawRequest(reqId, operator = '') {
   pushNotification({
     type: 'wallet',
     title: '提现成功',
-    body: `${w.label}提现 ${w.symbol}${req.amount.toLocaleString()} 已处理，手续费 ${w.symbol}${formatExactAmount(req.feeAmount || 0)}，实际到账 ${w.symbol}${formatExactAmount(req.netAmount != null ? req.netAmount : req.amount)}，1-2 个工作日到账。`,
+    body: '{label}提现 {sym}{amt} 已处理，手续费 {sym2}{fee}，实际到账 {sym3}{net}，1-2 个工作日到账。', args: { label: w.label, sym: w.symbol, amt: req.amount.toLocaleString(), sym2: w.symbol, fee: formatExactAmount(req.feeAmount || 0), sym3: w.symbol, net: formatExactAmount(req.netAmount != null ? req.netAmount : req.amount) },
   }, req.userId);
   logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'approve', target: req.userName, targetId: reqId, note: `提现打款 ${w.symbol}${req.amount.toLocaleString()}（手续费 ${w.symbol}${formatExactAmount(req.feeAmount || 0)}）` });
   Storage.save();
@@ -7631,7 +7631,7 @@ export function rejectWithdrawRequest(reqId, reason, operator = '') {
   pushNotification({
     type: 'wallet',
     title: '提现申请未通过',
-    body: `您的提现申请未通过审核：${req.rejectReason}`,
+    body: '您的提现申请未通过审核：{reason}', args: { reason: req.rejectReason },
   }, req.userId);
   logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'reject', target: req.userName, targetId: reqId, note: `提现申请拒绝：${req.rejectReason}` });
   Storage.save();
@@ -7652,7 +7652,7 @@ export function cancelWithdrawRequest(reqId) {
   pushNotification({
     type: 'wallet',
     title: '提现申请已撤销',
-    body: `${req.currency} ${formatExactAmount(req.amount)} 提现申请已撤销，冻结金额已释放。`,
+    body: '{cur} {amt} 提现申请已撤销，冻结金额已释放。', args: { cur: req.currency, amt: formatExactAmount(req.amount) },
   }, req.userId);
   logAudit({ operator: currentUser.name || '投资人', category: 'fundProduct', action: 'cancel', target: req.userName, targetId: reqId, note: `用户撤销提现申请 ${req.currency} ${formatExactAmount(req.amount)}` });
   Storage.save();
@@ -7702,7 +7702,7 @@ export function submitExchangeRequest({ from, to, amount }) {
   pushNotification({
     type: 'wallet',
     title: '换汇申请已提交',
-    body: `${from.toUpperCase()} ${amount.toLocaleString()} → ${to.toUpperCase()} 换汇申请已提交，由人工在银行内处理，以实际成交汇率上账。`,
+    body: '{from} {amt} → {to} 换汇申请已提交，由人工在银行内处理，以实际成交汇率上账。', args: { from: from.toUpperCase(), amt: amount.toLocaleString(), to: to.toUpperCase() },
   });
   logAudit({ operator: currentUser.name || '投资人', category: 'fundProduct', action: 'apply', target: '', targetId: req.id, note: `提交换汇申请 ${from.toUpperCase()} ${amount.toLocaleString()} → ${to.toUpperCase()}` });
   Storage.save();
@@ -7759,7 +7759,7 @@ export function approveExchangeRequest(reqId, { actualRate, bankRef }, operator 
   pushNotification({
     type: 'wallet',
     title: '换汇已完成',
-    body: `${req.fromCurrency} ${req.amount.toLocaleString()} → ${req.toCurrency} ${actual.toLocaleString()} 已按银行实际成交汇率上账。`,
+    body: '{from} {amt} → {to} {actual} 已按银行实际成交汇率上账。', args: { from: req.fromCurrency, amt: req.amount.toLocaleString(), to: req.toCurrency, actual: actual.toLocaleString() },
   });
   logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'approve', target: req.userName, targetId: reqId, note: `换汇完成：${req.fromCurrency} ${req.amount.toLocaleString()} → ${req.toCurrency} ${actual.toLocaleString()}（汇率 ${rate}）` });
   Storage.save();
@@ -7779,7 +7779,7 @@ export function rejectExchangeRequest(reqId, reason, operator = '') {
   pushNotification({
     type: 'wallet',
     title: '换汇申请未通过',
-    body: `您的换汇申请未通过：${req.rejectReason}`,
+    body: '您的换汇申请未通过：{reason}', args: { reason: req.rejectReason },
   });
   logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'reject', target: req.userName, targetId: reqId, note: `换汇申请拒绝：${req.rejectReason}` });
   Storage.save();
@@ -7833,7 +7833,7 @@ export function addBankCard({ bank, branch, holder, cardNo, type, currency, acco
   pushNotification({
     type: 'wallet',
     title: '银行卡已提交审核',
-    body: `${bank}（**** ${digits.slice(-4)}）已提交，审核通过后用该卡充值 ≥1万 HKD 等值即可加入白名单。`,
+    body: '{bank}（**** {digits}）已提交，审核通过后用该卡充值 ≥1万 HKD 等值即可加入白名单。', args: { bank, digits: digits.slice(-4) },
   });
   logAudit({ operator: currentUser.name || '投资人', category: 'fundProduct', action: 'apply', target: '银行卡', targetId: '', note: `添加银行卡：${bank}（**** ${digits.slice(-4)}）· ${region} · ${cur}` });
   Storage.save();
@@ -7852,7 +7852,7 @@ export function reviewBankCard(cardId, decision, operator = '', reason = '') {
     pushNotification({
       type: 'wallet',
       title: '银行卡审核通过',
-      body: `${card.bank}（${card.maskedNo}）资料审核通过。请用该卡转账 ≥1万 HKD 等值并在平台登记，财务确认到账后加入白名单。`,
+      body: '{bank}（{no}）资料审核通过。请用该卡转账 ≥1万 HKD 等值并在平台登记，财务确认到账后加入白名单。', args: { bank: card.bank, no: card.maskedNo },
     }, card.userId);
     logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'approve', target: card.holder, targetId: card.id, note: `银行卡审核通过：${card.bank} ${card.maskedNo}` });
   } else {
@@ -7864,7 +7864,7 @@ export function reviewBankCard(cardId, decision, operator = '', reason = '') {
     pushNotification({
       type: 'wallet',
       title: '银行卡审核未通过',
-      body: `${card.bank}（${card.maskedNo}）未通过审核：${card.reviewReason}。请核对后重新添加。`,
+      body: '{bank}（{no}）未通过审核：{reason}。请核对后重新添加。', args: { bank: card.bank, no: card.maskedNo, reason: card.reviewReason },
     }, card.userId);
     logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'reject', target: card.holder, targetId: card.id, note: `银行卡审核拒绝：${card.reviewReason}` });
   }
@@ -8066,7 +8066,7 @@ export function createExitEvent({ projectId, exitType, pricePerShare }, operator
   pushNotification({
     type: 'wallet',
     title: '退出分配公告',
-    body: `${ev.projectName} 发起${EXIT_TYPE_META[exitType].label}：每份对价 HK$${price.toLocaleString()}，预计净回款 HK$${split.netAmount.toLocaleString()}（已计提 Carry ${carryRate}），请在持仓页确认收款明细。`,
+    body: '{fund} 发起{exitType}：每份对价 HK${price}，预计净回款 HK${net}（已计提 Carry {carry}），请在持仓页确认收款明细。', args: { fund: ev.projectName, exitType: EXIT_TYPE_META[exitType].label, price: price.toLocaleString(), net: split.netAmount.toLocaleString(), carry: carryRate },
   });
   logAudit({ operator: operator || '运营后台', category: 'exit', action: 'announce', target: ev.projectName, targetId: ev.id, note: `发起${EXIT_TYPE_META[exitType].label}：每份 HK$${price.toLocaleString()} × ${totalShares} 份，净回款 HK$${formatCurrency(split.netAmount)}（Carry ${carryRate}）` });
   Storage.save();
@@ -8084,7 +8084,7 @@ export function confirmExitEvent(eventId) {
   pushNotification({
     type: 'wallet',
     title: '退出分配已确认',
-    body: `${ev.projectName} ${EXIT_TYPE_META[ev.exitType].label}收款明细已确认，平台将发起打款，预计 5-10 个工作日到账。`,
+    body: '{fund} {exitType}收款明细已确认，平台将发起打款，预计 5-10 个工作日到账。', args: { fund: ev.projectName, exitType: EXIT_TYPE_META[ev.exitType].label },
   });
   logAudit({ operator: currentUser.name || '投资人', category: 'exit', action: 'confirm', target: ev.projectName, targetId: ev.id, note: `确认收款明细（净回款 HK$${formatCurrency(ev.netAmount)}）` });
   Storage.save();
@@ -8128,7 +8128,7 @@ export function completeExitEvent(eventId, operator = '') {
   pushNotification({
     type: 'wallet',
     title: '退出分配已完成',
-    body: `${ev.projectName} 退出分配已完成，净回款 HK$${paidTotal.toLocaleString()} 已到账（本金及收益明细见交易记录）。`,
+    body: '{fund} 退出分配已完成，净回款 HK${amt} 已到账（本金及收益明细见交易记录）。', args: { fund: ev.projectName, amt: paidTotal.toLocaleString() },
   });
   logAudit({ operator: operator || '运营后台', category: 'exit', action: 'complete', target: ev.projectName, targetId: ev.id, note: `确认到账并完成分配，净回款 HK$${formatCurrency(paidTotal)}（含 Carry 计提 HK$${formatCurrency(ev.carryAmount)}）` });
   Storage.save();
@@ -8215,7 +8215,7 @@ export function approveDividendRequest(reqId, operator = '') {
   pushNotification({
     type: 'wallet',
     title: '分红到账',
-    body: `${req.projectName} 分红 HK$${due.toLocaleString()} 已发放至资金账户。`,
+    body: '{fund} 分红 HK${amt} 已发放至资金账户。', args: { fund: req.projectName, amt: due.toLocaleString() },
   });
   logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'approve', target: req.projectName, targetId: reqId, note: `分红发放：每份 HK$ ${req.perShare.toLocaleString()} × ${holders.reduce((s, h) => s + (h.shares || 0), 0)} 份 = HK$ ${due.toLocaleString()}` });
   Storage.save();
@@ -8232,7 +8232,7 @@ export function rejectDividendRequest(reqId, reason, operator = '') {
   pushNotification({
     type: 'wallet',
     title: '分红发放未通过',
-    body: `${req.projectName} 分红发放未通过审核：${req.rejectReason}`,
+    body: '{fund} 分红发放未通过审核：{reason}', args: { fund: req.projectName, reason: req.rejectReason },
   });
   logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'reject', target: req.projectName, targetId: reqId, note: `分红发放拒绝：${req.rejectReason}` });
   Storage.save();
@@ -8241,6 +8241,19 @@ export function rejectDividendRequest(reqId, reason, operator = '') {
 
 // ========== 工具函数（2026-08-07 从各页面去重抽离） ==========
 export function formatCurrency(v) {
+  let lang = 'zh-CN';
+  try { lang = localStorage.getItem('zhifu-lang') || 'zh-CN'; } catch (e) { /* ignore */ }
+  if (lang === 'en') {
+    if (v >= 1000000000) return `${(v / 1000000000).toFixed(1)}B`;
+    if (v >= 1000000) return `${(v / 1000000).toFixed(1)}M`;
+    if (v >= 1000) return `${(v / 1000).toFixed(0)}K`;
+    return v.toLocaleString();
+  }
+  if (lang === 'zh-HK') {
+    if (v >= 100000000) return `${(v / 100000000).toFixed(1)}億`;
+    if (v >= 10000) return `${(v / 10000).toFixed(0)}萬`;
+    return v.toLocaleString();
+  }
   if (v >= 100000000) return `${(v / 100000000).toFixed(1)}亿`;
   if (v >= 10000) return `${(v / 10000).toFixed(0)}万`;
   return v.toLocaleString();
@@ -8432,7 +8445,7 @@ export function markSubscriptionAllocated(subscriptionId, operator = '') {
   pushNotification({
     type: 'subscription',
     title: '客户经理已接手',
-    body: `${sub.projectName} 已由客户经理接手跟进，如需进一步了解可直接联系您的专属顾问。`,
+    body: '{fund} 已由客户经理接手跟进，如需进一步了解可直接联系您的专属顾问。', args: { fund: sub.projectName },
   });
   logAudit({ operator: operator || '系统', category: 'subscription', action: 'allocate', target: sub.projectName, targetId: sub.id, note: '转客户经理跟进' });
   Storage.save();
@@ -8458,7 +8471,7 @@ export function markSubscriptionCompleted(subscriptionId, note, operator = '') {
   pushNotification({
     type: 'subscription',
     title: '已标记完成',
-    body: `${sub.projectName} 的相关事项已办结，如需进一步了解请联系您的专属客户经理。`,
+    body: '{fund} 的相关事项已办结，如需进一步了解请联系您的专属客户经理。', args: { fund: sub.projectName },
   });
   logAudit({ operator: operator || '系统', category: 'subscription', action: 'complete', target: sub.projectName, targetId: sub.id, note: '标记完成' });
   Storage.save();
@@ -8478,7 +8491,7 @@ export function markSubscriptionUnallocated(subscriptionId, note, operator = '')
   pushNotification({
     type: 'subscription',
     title: '本次提交暂无进一步安排',
-    body: `${sub.projectName} 本轮已结束，如后续有进一步意向可重新填写问卷。`,
+    body: '{fund} 本轮已结束，如后续有进一步意向可重新填写问卷。', args: { fund: sub.projectName },
   });
   logAudit({ operator: operator || '系统', category: 'subscription', action: 'unallocate', target: sub.projectName, targetId: sub.id, note: '标记暂无需推进' });
   Storage.save();
@@ -9186,8 +9199,9 @@ export function pushSecurityHistory(type, method) {
 }
 
 // 安全项变更全渠道警报：站内通知 + console 邮件
-export function pushSecurityAlert(what) {
-  pushNotification({ type: 'security', title: `安全提醒：${what}`, body: `您的${what}。若非本人操作，请立即冻结账户并联系客服。` });
+export function pushSecurityAlert(what, extraArgs = {}) {
+  // extraArgs：what 模板串的内插值（如通行密钥名），随 args 透传给渲染层二次替换
+  pushNotification({ type: 'security', title: '安全提醒：{what}', body: '您的{what}。若非本人操作，请立即冻结账户并联络客服。', args: { what, ...extraArgs } });
   console.log(`[Mock 邮件→${currentUser.email}] 安全警报：您的${what}。若非本人操作，请立即冻结账户。`);
 }
 
@@ -9247,7 +9261,7 @@ export function addPasskey(deviceName) {
   sec.passkeys.push(pk);
   saveUserSecurity(currentUser.id, sec);
   pushSecurityHistory('添加通行密钥', '安全验证');
-  pushSecurityAlert(`新通行密钥（${name}）已添加`);
+  pushSecurityAlert('新通行密钥（{pkName}）已添加', { pkName: name });
   console.log(`[Mock 邮件→${currentUser.email}] 您的账户新增了一枚通行密钥：${name}`);
   return { ok: true, passkey: pk };
 }
@@ -9259,7 +9273,7 @@ export function removePasskey(pkId) {
   sec.passkeys = sec.passkeys.filter(p => p.id !== pkId);
   saveUserSecurity(currentUser.id, sec);
   pushSecurityHistory('删除通行密钥', '安全验证');
-  pushSecurityAlert(`通行密钥（${pk.name}）已删除`);
+  pushSecurityAlert('通行密钥（{pkName}）已删除', { pkName: pk.name });
   triggerSecurityFreeze(24, '删除安全项');
   const lastOne = sec.passkeys.length === 0 && !sec.ga.bound;
   return { ok: true, lastFactorRemoved: lastOne, hint: lastOne ? '删除后将使用邮箱验证码登录' : null };
@@ -9422,7 +9436,7 @@ export function submitSubscription({ project, amount, currency = 'HKD' }) {
       pushNotification({
         type: 'subscription',
         title: '大额交易审查',
-        body: `您填写的意向档位触发大额交易审查（${review.reviewLevel === REVIEW_LEVEL.LEVEL_3 ? '三级' : review.reviewLevel === REVIEW_LEVEL.LEVEL_2 ? '二级' : '一级'}），审查通过后方可转客户经理跟进。`,
+        body: '您填写的意向档位触发大额交易审查（{level}），审查通过后方可转客户经理跟进。', args: { level: review.reviewLevel === REVIEW_LEVEL.LEVEL_3 ? '三级' : review.reviewLevel === REVIEW_LEVEL.LEVEL_2 ? '二级' : '一级' },
         createdAt: now,
       });
     }
@@ -10119,7 +10133,7 @@ export function submitCryptoWithdrawal({ asset, chain, addressId, amount }) {
   pushNotification({
     type: 'wallet',
     title: '提现申请已提交',
-    body: `${asset} ${amt} 提现申请已提交，审核通过后提交托管执行。`,
+    body: '{asset} {amt} 提现申请已提交，审核通过后提交托管执行。', args: { asset, amt: String(amt) },
   });
   Storage.save();
   return { ok: true, id: row.id, businessNo: row.businessNo };
@@ -10178,7 +10192,7 @@ export function advanceCryptoWithdrawal(id) {
     }
     const addr = cryptoAddressOf(row.addressId);
     if (addr) addr.firstCapUsed = true;
-    pushNotification({ type: 'wallet', title: '提现已汇出', body: `${row.asset} ${row.netAmount} 已汇出，可在记录中查看链上交易。` });
+    pushNotification({ type: 'wallet', title: '提现已汇出', body: '{asset} {amt} 已汇出，可在记录中查看链上交易。', args: { asset: row.asset, amt: String(row.netAmount) } });
   } else if (row.status === 'failed') {
     return { ok: false };
   } else {
@@ -10203,7 +10217,7 @@ export function advanceCryptoDeposit(id) {
       bucket.total = Number(bucket.total || 0) + Number(row.amount || 0);
       bucket.locked = Number(bucket.locked || 0) + Number(row.amount || 0);
     }
-    pushNotification({ type: 'wallet', title: '入金已入账', body: `${row.asset} ${row.amount} 已入账，24 小时后可提。` });
+    pushNotification({ type: 'wallet', title: '入金已入账', body: '{asset} {amt} 已入账，24 小时后可提。', args: { asset: row.asset, amt: String(row.amount) } });
   } else {
     return { ok: false };
   }

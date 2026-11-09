@@ -168,7 +168,7 @@ export default function BankCards({ navigate, goBack, setToast }) {
                 <CreditCard size={18} />
                 <div>
                   <strong>{c.bank}</strong>
-                  <span className="bank-card-sub">{c.holder} · {jurisdictionLabel(c.region, lang)} · {c.type}</span>
+                  <span className="bank-card-sub">{c.holder} · {jurisdictionLabel(c.region, lang)} · {t(c.type)}</span>
                 </div>
               </div>
               <button

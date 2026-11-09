@@ -42,7 +42,7 @@ const money = (currency, value) => {
 };
 
 export default function AssetOverview({ navigate, goBack, embed = false }) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [hidden, setHidden] = useState(false);
   const p = getFundPortfolio();
   const pendingCount = myFundOrders().filter(o => o.status === 'pending_confirm').length;
@@ -112,7 +112,7 @@ export default function AssetOverview({ navigate, goBack, embed = false }) {
                 {p.pnlHKD >= 0 ? '+' : '-'}{formatExactAmount(Math.abs(p.pnlHKD))}
               </b>
               <em className="asset-hero-change-pct">
-                （{heroPct >= 0 ? '+' : ''}{heroPct.toFixed(2)}%）
+                {lang === 'en' ? '(' : '（'}{heroPct >= 0 ? '+' : ''}{heroPct.toFixed(2)}%{lang === 'en' ? ')' : '）'}
               </em>
             </span>
           )}
@@ -219,7 +219,7 @@ export default function AssetOverview({ navigate, goBack, embed = false }) {
                           {totalPnl >= 0 ? '+' : '-'}{formatExactAmount(Math.abs(totalPnl))}
                         </b>
                         <em className="asset-hold-pct">
-                          （{pct >= 0 ? '+' : ''}{pct.toFixed(2)}%）
+                          {lang === 'en' ? '(' : '（'}{pct >= 0 ? '+' : ''}{pct.toFixed(2)}%{lang === 'en' ? ')' : '）'}
                         </em>
                       </span>
                     </span>

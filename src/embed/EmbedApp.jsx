@@ -6,6 +6,7 @@ import TermsUpdateGate from '../components/TermsUpdateGate';
 import { parseHash, resolveGate } from '../shell/guard';
 import { renderAppPage } from '../shell/router';
 import { testAccounts, setMockCurrentUser, restoreKycStatus, currentUser as currentUserData, initState, resetSubscriptionForDemo, termsState } from '../mock/data';
+import { useLang } from '../i18n';
 import './embed.css';
 
 // ── 身份注入（模拟宿主 SSO）───────────────────────────────────────────
@@ -35,6 +36,7 @@ const MINE_TAB_PATHS = new Set([
 ]);
 
 export default function EmbedApp() {
+  const { t } = useLang();
   // ?reset= 检测（同步，渲染前执行）：跳过 localStorage 恢复指定 subscription（演示签署流程用，与 App.jsx 同款）
   const _url = new URL(window.location.href);
   const _resetTarget = _url.searchParams.has('reset') ? (_url.searchParams.get('reset') || 's2') : null;
@@ -174,7 +176,7 @@ export default function EmbedApp() {
     <div className="app-container">
       <div className="app-content">
         <ErrorBoundary>
-          <Suspense fallback={<div className="p-lazy-loading">加载中…</div>}>
+          <Suspense fallback={<div className="p-lazy-loading">{t('加载中…')}</div>}>
             {renderEmbed()}
           </Suspense>
         </ErrorBoundary>
@@ -192,7 +194,7 @@ export default function EmbedApp() {
               onClick={() => navigate(`#${tab.key}`)}
             >
               <Icon size={22} />
-              <span>{tab.label}</span>
+              <span>{t(tab.label)}</span>
             </button>
           );
         })}

@@ -12,9 +12,9 @@ function AccountManagerCard({ onEscalate }) {
   return (
     <div className="account-manager-card">
       <div className="account-manager-head">
-        <div className="account-manager-avatar">{am.name[0]}</div>
+        <div className="account-manager-avatar">{t(am.name)[0]}</div>
         <div className="account-manager-info">
-          <strong>{am.name}</strong>
+          <strong>{t(am.name)}</strong>
           <span className="text-muted text-sm">{t(am.role)} · {t('全程为您服务')}</span>
         </div>
       </div>
@@ -54,7 +54,7 @@ export default function AccountManager({ onEscalate, compact }) {
             <Headphones size={18} />
           </div>
           <div className="account-manager-row-info">
-            <strong>{am.name}</strong>
+            <strong>{t(am.name)}</strong>
             <span className="text-muted text-sm">{t(am.role)}</span>
           </div>
           <span className="account-manager-row-hint text-muted text-sm">{t('联系专属经理')}</span>

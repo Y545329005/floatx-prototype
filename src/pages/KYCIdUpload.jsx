@@ -356,7 +356,7 @@ const [backFile, setBackFile] = useState(null);
  <div className="kyc-ekyc-section">
    <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', marginBottom: 'var(--space-2)' }}>
      <ShieldCheck size={16} style={{ color: 'var(--primary)' }} />
-     <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>eKYC 身份核验</span>
+     <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{t('eKYC 身份核验')}</span>
    </div>
 
    {ekycState === EKYC_STATE.IDLE && (
@@ -372,8 +372,8 @@ const [backFile, setBackFile] = useState(null);
      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-4)', background: 'var(--primary-light)', borderRadius: 'var(--radius-md)' }}>
        <span className="kyc-ekyc-spinner" aria-hidden="true" />
        <div>
-         <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', marginBottom: 2 }}>eKYC 核验中...</div>
-         <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>正在比对证件信息与人脸特征，请保持正对屏幕</div>
+         <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', marginBottom: 2 }}>{t('eKYC 核验中...')}</div>
+         <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>{t('正在比对证件信息与人脸特征，请保持正对屏幕')}</div>
        </div>
      </div>
    )}
@@ -382,11 +382,11 @@ const [backFile, setBackFile] = useState(null);
      <div style={{ padding: 'var(--space-3)', background: 'var(--success-light)', borderRadius: 'var(--radius-md)', border: '1px solid var(--success-border)' }}>
        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
          <Check size={16} style={{ color: 'var(--success)' }} />
-         <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--success)' }}>核验通过</span>
+         <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--success)' }}>{t('核验通过')}</span>
        </div>
        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.7 }}>
-         <div>人脸比对相似度：<strong>{Math.round(ekycResult.score * 100)}%</strong> · 活体检测：通过 · 证件识别：通过</div>
-         <div style={{ color: 'var(--text-muted)' }}>核验参考号：{ekycResult.vendorRef}</div>
+         <div>{t('人脸比对相似度')}：<strong>{Math.round(ekycResult.score * 100)}%</strong> · {t('活体检测：通过')} · {t('证件识别：通过')}</div>
+         <div style={{ color: 'var(--text-muted)' }}>{t('核验参考号')}：{ekycResult.vendorRef}</div>
        </div>
      </div>
    )}
@@ -395,14 +395,14 @@ const [backFile, setBackFile] = useState(null);
      <div style={{ padding: 'var(--space-3)', background: 'var(--danger-light)', borderRadius: 'var(--radius-md)', border: '1px solid var(--danger-border)' }}>
        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
          <AlertCircle size={16} style={{ color: 'var(--danger)' }} />
-         <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--danger)' }}>核验未通过</span>
+         <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--danger)' }}>{t('核验未通过')}</span>
        </div>
        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.7 }}>
-         <div>原因：{ekycResult.failReason}</div>
+         <div>{t('原因')}：{t(ekycResult.failReason)}</div>
          {attempts >= EKYC_MAX_ATTEMPTS ? (
-           <div style={{ color: 'var(--danger)', marginTop: 4 }}>重试次数已达上限，将转入人工审核队列，请耐心等待</div>
+           <div style={{ color: 'var(--danger)', marginTop: 4 }}>{t('重试次数已达上限，将转入人工审核队列，请耐心等待')}</div>
          ) : (
-           <div style={{ color: 'var(--text-muted)', marginTop: 4 }}>您还可以重试 {EKYC_MAX_ATTEMPTS - attempts} 次（24 小时内）</div>
+           <div style={{ color: 'var(--text-muted)', marginTop: 4 }}>{t('您还可以重试 {n} 次（24 小时内）').replace('{n}', EKYC_MAX_ATTEMPTS - attempts)}</div>
          )}
        </div>
        {attempts < EKYC_MAX_ATTEMPTS && (
@@ -412,7 +412,7 @@ const [backFile, setBackFile] = useState(null);
            onClick={runEkyc}
          >
            <RotateCcw size={14} style={{ marginRight: 4 }} />
-           重新核验
+           {t('重新核验')}
          </button>
        )}
      </div>

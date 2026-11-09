@@ -60,7 +60,7 @@ function AuthHero({ title, subtitle, compact }) {
       <AuthBrand compact={compact} />
       <div className="auth-license">
         <ShieldCheck size={14} />
-        <span>{t('香港证监会持牌机构')} · SFC NO: {platformBrand.licenseNo}</span>
+        <span>{t('香港证监会持牌机构')} · CE No. {platformBrand.licenseNo}</span>
       </div>
       <div className="auth-hero-text">
         <h1>{title}</h1>

@@ -3997,8 +3997,27 @@ input, select, textarea {
 }
 
 .notification-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: var(--space-3);
   white-space: nowrap;
+}
+
+/* 未读数胶囊：形态对齐订单页签 .orders-tab-count，底色用 --danger 与列表未读点同色（红=未读） */
+.notification-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-xl);
+  background: var(--danger);
+  color: #fff;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .notification-list {
@@ -9066,13 +9085,14 @@ input, select, textarea {
    这里改为可横向滚动 —— 是可达性问题，不只是视觉。 */
 .segmented-control.notification-tabs {
   justify-content: flex-start;
-  gap: var(--space-4);
+  gap: var(--space-2);
   overflow-x: auto;
   scrollbar-width: none;
   padding-bottom: 1px;
+  font-size: var(--text-sm);
 }
 .segmented-control.notification-tabs::-webkit-scrollbar { display: none; }
-.segmented-control.notification-tabs button { white-space: nowrap; }
+.segmented-control.notification-tabs button { white-space: nowrap; padding: var(--space-3) var(--space-1); font-size: var(--text-sm); }
 
 .wallet-actions-grid-4 { grid-template-columns: repeat(4, 1fr); }
 

@@ -125,10 +125,10 @@ export default function Notifications({ navigate, goBack }) {
               </div>
               <div className="notification-body">
                 <div className="notification-title-row">
-                  <strong>{n.title}</strong>
+                  <strong>{(() => { let s = t(n.title); Object.entries(n.args || {}).forEach(([k, v]) => { s = s.split(`{${k}}`).join(String(t(v))); }); return s; })()}</strong>
                   {!n.read && <span className="unread-dot" />}
                 </div>
-                <p className="notification-text">{n.body}</p>
+                <p className="notification-text">{(() => { let s = t(n.body); Object.entries(n.args || {}).forEach(([k, v]) => { s = s.split(`{${k}}`).join(String(t(v))); }); return s; })()}</p>
                 <span className="notification-time">{n.createdAt}</span>
               </div>
               <button className="notification-delete" title={t('删除')} onClick={e => { e.stopPropagation(); handleRemove(n); }}>

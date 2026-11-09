@@ -68,7 +68,7 @@ export default function About({ navigate, goBack, setToast }) {
           <div>
             <strong>{t(platformBrand.licenseType)}</strong>
             <span className="text-muted text-sm">{t(platformBrand.licenseDesc)}</span>
-            <span className="text-muted text-sm">SFC NO: {platformBrand.licenseNo}</span>
+            <span className="text-muted text-sm">CE No. {platformBrand.licenseNo}</span>
           </div>
         </div>
       </div>

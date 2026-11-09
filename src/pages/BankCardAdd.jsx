@@ -118,7 +118,7 @@ export default function BankCardAdd({ navigate, goBack, setToast, currency }) {
           <div className="form-group">
             <label className="form-label">{t('账户币种')}</label>
             <button className="form-input picker-trigger" onClick={() => setPicker('currency')}>
-              <span className="picker-trigger-value">{currencyLabel}</span>
+              <span className="picker-trigger-value">{t(currencyLabel)}</span>
               <ChevronDown size={18} className="picker-caret" />
             </button>
           </div>

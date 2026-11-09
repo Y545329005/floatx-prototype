@@ -88,7 +88,7 @@ export default function MySubscription({ id, navigate, goBack }) {
                     <span className="history-time date-iso">{formatISODateTime(h.timestamp)}</span>
                   </div>
                   <div className="history-row2">
-                    <span className="history-note">{h.note}</span>
+                    <span className="history-note">{t(h.note)}</span>
                     {h.amount !== undefined && h.amount !== 0 && (
                       <strong className={`history-amount ${h.amount > 0 ? 'positive' : 'negative'}`}>
                         {h.amount > 0 ? '+' : ''}HK$ {formatCurrency(Math.abs(h.amount || 0))}

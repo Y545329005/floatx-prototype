@@ -93,7 +93,7 @@ export default function Settings({ navigate, goBack }) {
         <div className="detail-stat-row">
           <div className="detail-stat">
             <span className="detail-stat-label">{t('姓名')}</span>
-            <span className="detail-stat-value">{currentUser.name}</span>
+            <span className="detail-stat-value">{t(currentUser.name)}</span>
           </div>
         </div>
         <div className="detail-stat-row">

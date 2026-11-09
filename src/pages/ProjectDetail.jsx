@@ -79,7 +79,7 @@ export default function ProjectDetail({ id, navigate, goBack }) {
         <div className="detail-stat-row">
           <div className="detail-stat">
             <span className="detail-stat-label">{t('总部')}</span>
-            <span className="detail-stat-value">{project.location}</span>
+            <span className="detail-stat-value">{t(project.location)}</span>
           </div>
           <div className="detail-stat">
             <span className="detail-stat-label">{t('融资阶段')}</span>
@@ -131,7 +131,7 @@ export default function ProjectDetail({ id, navigate, goBack }) {
           {project.highlights.map((h, i) => (
             <li key={i} className="highlight-item">
               <TrendingUp size={16} className="highlight-icon" />
-              <span>{h}</span>
+              <span>{t(h)}</span>
             </li>
           ))}
         </ul>
@@ -139,7 +139,7 @@ export default function ProjectDetail({ id, navigate, goBack }) {
 
       <div className="card card-secondary">
         <div className="card-title">{t('项目简介')}</div>
-        <p className="text-body">{project.description}</p>
+        <p className="text-body">{t(project.description)}</p>
       </div>
 
       {(f.revenue !== undefined || f.burnRate !== undefined || f.grossMargin !== null && f.grossMargin !== undefined) && (
@@ -158,11 +158,11 @@ export default function ProjectDetail({ id, navigate, goBack }) {
           <div className="card-title">{t('核心团队')}</div>
           {project.team.map((m, i) => (
             <div key={i} className="team-member">
-              <div className="team-member-avatar">{m.name[0]}</div>
+              <div className="team-member-avatar">{t(m.name)[0]}</div>
               <div className="team-member-info">
-                <strong>{m.name}</strong>
-                <span className="text-muted text-sm">{m.role}</span>
-                <p className="text-muted text-sm">{m.bg}</p>
+                <strong>{t(m.name)}</strong>
+                <span className="text-muted text-sm">{t(m.role)}</span>
+                <p className="text-muted text-sm">{t(m.bg)}</p>
               </div>
             </div>
           ))}
@@ -190,7 +190,7 @@ export default function ProjectDetail({ id, navigate, goBack }) {
           {project.documents.map((d, i) => (
             <a key={i} className="doc-item" href={d.url} onClick={e => e.preventDefault()}>
               <FileText size={16} />
-              <span>{d.name}</span>
+              <span>{t(d.name)}</span>
             </a>
           ))}
         </div>
