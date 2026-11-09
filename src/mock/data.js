@@ -432,27 +432,21 @@ export function jurisdictionLabel(code, lang = 'zh-CN') {
   return j.zh;
 }
 
-// ========== 银行卡状态机（2026-11-04，2026-11-05 收敛为三态） ==========
-// ★ 2026-11-05 业务拍板：取消「已停用」，只保留「解绑」。
-//   原因：停用与解绑在用户视角没有区分度（都释放名额、都受在途提现拦截、都不能用于出入金），
-//   两项并存只会让卡片菜单多出一个含义重叠的选项。
-// 用户侧三态（whitelistStatus）：待验证 / 已验证 / 已拒绝。
-// 后台审核子态（reviewStatus）：已通过 / 已拒绝（2026-11-09 起取消前置人工审卡：新添加卡直通
-// 「已通过、待首充」，卡资料随首充核销一并核对——参考代码 + 到账付款人姓名与客户实名一致 + 卡资料）。
-// 已拒绝 = 后台事后复核切断的卡。'pending' 仅作为旧快照兼容值保留（迁移后不再产生）。
-// 名额口径：每币种「待验证 + 已验证」≤ 3（集团默认总量 3，本项目按会议纪要 per-currency，做成常量）。
-// 「已拒绝」释放名额；有在途出金的卡不可解绑。
-// ⚠️ 与集团《统一法币出入金整体方案》§5.5 的四态不一致（少了「已停用」），属本项目业务裁量，
-//    已在《资金域口径确认单》登记，待财务/RO 确认。
+// ========== 银行卡状态机（2026-11-04，2026-11-09 定版三态） ==========
+// ★ 2026-11-05 曾取消「已停用」：当时指的是**用户侧自我停用开关**（与解绑在用户视角无区分度，
+//   都释放名额、都不能出入金），故只保留「解绑」。
+// ★ 2026-11-09 恢复「已停用」，含义不同：**平台侧风控停用**（合规/运营切断涉案、冒用、
+//   资料造假的卡），卡保留在客户列表并显示原因，用户不能自行恢复，只能解绑后重新添加并重新首充。
+//   对应集团《统一法币出入金整体方案》§5.5 四态口径（此前本项目缺停用态的裁量已撤回）。
+// 卡片状态单一事实源（whitelistStatus）：待首充（unverified）/ 已验证（verified）/ 已停用（suspended）。
+// 加白由首充核销自动完成（参考代码 + 到账付款人姓名与客户实名一致 + 卡资料），后台没有「审核通过」动作；
+// 唯一人工动作 = 风控停用（必填原因）与误停用恢复（按 suspendedFrom 还原、校验名额）。
+// 旧字段 reviewStatus（已通过/已拒绝）于迁移 63 清理，不再产生。
+// 名额口径：每币种「待首充 + 已验证」≤ 3（停用不占名额，恢复前必须校验）。
 export const BANK_CARD_STATUS = {
   UNVERIFIED: 'unverified',
   VERIFIED: 'verified',
-  REJECTED: 'rejected',
-};
-export const CARD_REVIEW_STATUS = {
-  PENDING: 'pending',
-  APPROVED: 'approved',
-  REJECTED: 'rejected',
+  SUSPENDED: 'suspended',
 };
 export const CARD_QUOTA_PER_CURRENCY = 3;
 // 首充加白门槛：≥ 10,000 HKD 或等值（会议纪要 + 集团《法币银行账户白名单数量限制后端逻辑处理》）
@@ -476,7 +470,6 @@ export const bankCards = [
     proofImage: DEMO_CARD_PROOF,   // 卡照/开户证明（演示占位图）
     currency: 'HKD',
     whitelistStatus: 'verified',   // 已通过白名单验证（演示预置）
-    reviewStatus: 'approved',
     verifiedAt: '2026-07-28 10:22:00',
     verifiedAmount: 10000,
   },
@@ -494,7 +487,6 @@ export const bankCards = [
     proofImage: DEMO_CARD_PROOF,
     currency: 'USD',
     whitelistStatus: 'verified',
-    reviewStatus: 'approved',
     verifiedAt: '2026-07-28 10:30:00',
     verifiedAmount: 2000,          // 2000 USD 等值 ≥1万 HKD
   },
@@ -511,8 +503,7 @@ export const bankCards = [
     region: 'HK',
     proofImage: DEMO_BANK_PROOF,
     currency: 'HKD',
-    whitelistStatus: 'unverified', // 审核通过、待首充（演示「去充值验证」分支）
-    reviewStatus: 'approved',
+    whitelistStatus: 'unverified', // 待首充（演示「去充值验证」分支）
     verifiedAt: null,
     verifiedAmount: null,
   },
@@ -532,7 +523,6 @@ export const bankCards = [
     proofImage: DEMO_CARD_PROOF,
     currency: 'HKD',
     whitelistStatus: 'unverified',
-    reviewStatus: 'approved',
     verifiedAt: null,
     verifiedAmount: null,
   },
@@ -552,7 +542,6 @@ export const bankCards = [
     proofImage: DEMO_CARD_PROOF,
     currency: 'USD',
     whitelistStatus: 'unverified',
-    reviewStatus: 'approved',
     verifiedAt: null,
     verifiedAmount: null,
   },
@@ -572,12 +561,11 @@ export const bankCards = [
     proofImage: DEMO_CARD_PROOF,
     currency: 'HKD',
     whitelistStatus: 'verified',
-    reviewStatus: 'approved',
     verifiedAt: '2026-08-01 15:40:00',
     verifiedAmount: 15000,
   },
   {
-    // 卡审核被拒的卡——演示「已拒绝」终态（用户需重新添加；后台不可改用户数据）
+    // 风控停用的卡——演示「已停用」态与恢复动作（2026-11-09 由旧「审核被拒」种子改造）
     id: 'bc13',
     userId: 'u6',
     bank: '中国银行（香港）',
@@ -590,19 +578,21 @@ export const bankCards = [
     region: 'SG',
     proofImage: DEMO_CARD_PROOF,
     currency: 'USD',
-    whitelistStatus: 'rejected',
-    reviewStatus: 'rejected',
+    whitelistStatus: 'suspended',
+    suspendedFrom: 'unverified',   // 停用前为待首充（恢复后回到待首充）
+    suspendedAt: '2026-08-21 11:20:00',
+    suspendedBy: '李合规',
     reviewReason: '开户证明与持卡人不一致',
     verifiedAt: null,
     verifiedAmount: null,
   },
 ];
 
-// 名额统计：每币种「待验证 + 已验证」计数（已拒绝不占位）
+// 名额统计：每币种「待首充 + 已验证」计数（已停用不占名额，与解绑一致）
 export function countActiveCards(currency, userId = currentUser.id) {
   return bankCards.filter(c => c.userId === userId
     && c.currency === String(currency || '').toUpperCase()
-    && c.whitelistStatus !== BANK_CARD_STATUS.REJECTED).length;
+    && c.whitelistStatus !== BANK_CARD_STATUS.SUSPENDED).length;
 }
 
 // 该卡是否有在途出金（有则不可解绑）
@@ -7039,7 +7029,6 @@ const KYC_MID_CARD = {
   proofImage: DEMO_CARD_PROOF,
   currency: 'HKD',
   whitelistStatus: 'unverified',
-  reviewStatus: 'approved',   // KYC 首卡：材料随开户提交，直通待首充
   firstCard: true,
   verifiedAt: null,
   verifiedAmount: null,
@@ -7131,10 +7120,9 @@ export function submitDepositRequest({ currency, amount, method, cardId, bank, c
   const key = walletKeyOf(currency) || currency.toLowerCase();
   const w = wallet[key];
   if (!w || !amount || amount <= 0) return false;
-  // 付款卡校验：本人 + 非停用/拒绝（未验证可充，首充即验证）
+  // 付款卡校验：本人 + 非停用（未验证可充，首充即验证）
   const card = bankCards.find(c => c.id === cardId && c.userId === currentUser.id);
-  if (!card || card.whitelistStatus === BANK_CARD_STATUS.REJECTED) return false;
-  if (card.reviewStatus === CARD_REVIEW_STATUS.PENDING) return false; // 兜底（2026-11-09 迁移后不再产生 pending 卡，防未来回归）
+  if (!card || card.whitelistStatus === BANK_CARD_STATUS.SUSPENDED) return false;
   if (!(evidence && evidence.name)) return false; // 线下转账必须上传凭证
   const orderNo = genOrderNo('DR');
   const genRef = 'BK' + Date.now();   // 外部单号：银行参考号（mock 演示值，接后端由银行回执替换）
@@ -7218,7 +7206,6 @@ export function approveDepositRequest(reqId, { actualAmount, actualCurrency, ban
     depositCard.verifiedByReqId = req.id;              // 加白来源单据（台账可追溯：哪笔首充批的这张卡）
     depositCard.verifiedBy = operator || '运营后台';    // 加白核销人（白名单审批责任落到具体人）
     cardVerified = true;
-    if (depositCard.reviewStatus !== CARD_REVIEW_STATUS.APPROVED) depositCard.reviewStatus = CARD_REVIEW_STATUS.APPROVED;
     pushNotification({
       type: 'wallet',
       title: '首充验证通过 · 卡已加白',
@@ -7830,7 +7817,6 @@ export function addBankCard({ bank, branch, holder, cardNo, type, currency, acco
     proofImage,
     currency: cur,
     whitelistStatus: BANK_CARD_STATUS.UNVERIFIED,
-    reviewStatus: CARD_REVIEW_STATUS.APPROVED, // 直通待首充（2026-11-09 取消前置人工审卡，行业口径：入金宽松/出金严格）
     verifiedAt: null,
     verifiedAmount: null,
   });
@@ -7844,25 +7830,56 @@ export function addBankCard({ bank, branch, holder, cardNo, type, currency, acco
   return { ok: true };
 }
 
-// 后台卡复核（2026-11-09 重排）：前置人工审卡取消，卡资料随首充核销一并核对（付款人姓名 + 卡资料），
-// 此处仅保留事后复核拒绝——发现坏卡时切断。拒绝后该卡不可出入金；已 VERIFIED 卡被拒的，
-// 已入金资金需重新绑卡并完成首充验证后方可提走（通知中已向用户说明）。
-export function rejectBankCard(cardId, operator = '', reason = '') {
+// 后台风控停用 / 恢复（2026-11-09 定版）：加白由首充核销自动完成，后台不再有「审核通过」动作，
+// 唯一人工动作 = 风控停用（涉案/冒用/资料造假）与误停用恢复，责任角色为合规 / 运营。
+// 停用保留卡片与历史数据（用户需解绑后重新添加并重新首充）；suspendedFrom 记录停用前状态用于恢复。
+// 停用卡不占每币种名额（与解绑一致），因此恢复前必须校验名额，否则会出现超额有效卡。
+export function suspendBankCard(cardId, operator = '', reason = '') {
   const card = bankCards.find(c => c.id === cardId);
-  if (!card || card.whitelistStatus === BANK_CARD_STATUS.REJECTED) return false;
-  card.reviewStatus = CARD_REVIEW_STATUS.REJECTED;
-  card.whitelistStatus = BANK_CARD_STATUS.REJECTED;
-  card.reviewedAt = formatNow();
-  card.reviewedBy = operator || '运营后台';
-  card.reviewReason = reason || '资料不符';
+  if (!card || card.whitelistStatus === BANK_CARD_STATUS.SUSPENDED) return { ok: false, error: '卡片不存在或已停用' };
+  if (!String(reason || '').trim()) return { ok: false, error: '请填写停用原因' };
+  card.suspendedFrom = card.whitelistStatus;   // verified | unverified（恢复时还原）
+  card.whitelistStatus = BANK_CARD_STATUS.SUSPENDED;
+  card.suspendedAt = formatNow();
+  card.suspendedBy = operator || '运营后台';
+  card.reviewReason = String(reason).trim();   // 沿用 reviewReason 存停用原因（不搬字段，减少迁移风险）
   pushNotification({
     type: 'wallet',
-    title: '银行卡复核未通过',
-    body: '{bank}（{no}）未通过复核：{reason}。该卡已不可用于出入金；已入金资金请重新添加本人银行卡并完成首充验证后提走。', args: { bank: card.bank, no: card.maskedNo, reason: card.reviewReason },
+    title: '银行卡已停用',
+    body: '{bank}（{no}）已被停用：{reason}。该卡不可用于出入金；如需继续使用，请解绑后重新添加本人银行卡并完成首充验证。',
+    args: { bank: card.bank, no: card.maskedNo, reason: card.reviewReason },
   }, card.userId);
-  logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'reject', target: card.holder, targetId: card.id, note: `银行卡复核拒绝：${card.reviewReason}` });
+  logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'reject', target: card.holder, targetId: card.id, note: `风控停用银行卡：${card.reviewReason}` });
   Storage.save();
-  return true;
+  return { ok: true };
+}
+
+export function restoreBankCard(cardId, operator = '', reason = '') {
+  const card = bankCards.find(c => c.id === cardId);
+  if (!card || card.whitelistStatus !== BANK_CARD_STATUS.SUSPENDED) return { ok: false, error: '卡片不存在或未停用' };
+  if (!String(reason || '').trim()) return { ok: false, error: '请填写恢复原因' };
+  // 名额校验：停用卡不占名额，期间用户可能已补满该币种 3 张
+  const activeOthers = bankCards.filter(c => c.userId === card.userId
+    && c.currency === card.currency
+    && c.id !== card.id
+    && c.whitelistStatus !== BANK_CARD_STATUS.SUSPENDED).length;
+  if (activeOthers >= CARD_QUOTA_PER_CURRENCY) {
+    return { ok: false, error: `该币种已有 ${CARD_QUOTA_PER_CURRENCY} 张有效卡，请先解绑一张再恢复` };
+  }
+  card.whitelistStatus = card.suspendedFrom === BANK_CARD_STATUS.VERIFIED
+    ? BANK_CARD_STATUS.VERIFIED
+    : BANK_CARD_STATUS.UNVERIFIED;
+  card.restoredAt = formatNow();
+  card.restoredBy = operator || '运营后台';
+  pushNotification({
+    type: 'wallet',
+    title: '银行卡已恢复',
+    body: '{bank}（{no}）已恢复使用（{reason}）。',
+    args: { bank: card.bank, no: card.maskedNo, reason: String(reason).trim() },
+  }, card.userId);
+  logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'update', target: card.holder, targetId: card.id, note: `恢复银行卡：${String(reason).trim()}` });
+  Storage.save();
+  return { ok: true };
 }
 
 // 解绑银行卡（2026-11-05 起唯一的下卡动作：INV-5「删」冻结期数据层兜底；有在途出金的卡不可解绑）
@@ -7916,7 +7933,6 @@ export function submitKycBankTransfer({ currency, accountType, region, bank, car
     proofImage,
     currency: cur,
     whitelistStatus: BANK_CARD_STATUS.UNVERIFIED,
-    reviewStatus: CARD_REVIEW_STATUS.APPROVED, // KYC 首卡：材料已随开户提交，直通待首充
     firstCard: true,
     verifiedAt: null,
     verifiedAmount: null,
@@ -9564,7 +9580,7 @@ export function submitSubscription({ project, amount, currency = 'HKD' }) {
 //     一并核对（参考代码 + 到账付款人姓名与客户实名一致 + 卡资料），后台改事后复核（仅拒绝）。
 //     bankCards 属快照恢复范围，旧快照里 reviewStatus='pending' 的卡在新链路下没有审核队列可进，
 //     会永远卡在「审核中」且不可用于充值——迁移统一转 approved（待首充）。
-const STATE_VERSION = 62;
+const STATE_VERSION = 63;
 
 // ========== 快照迁移（2026-11-05） ==========
 // 机制：load 时按版本逐级跑迁移函数，跑不到 STATE_VERSION 才整体丢弃。
@@ -9599,6 +9615,26 @@ const SNAPSHOT_MIGRATIONS = {
       data.bankCards = data.bankCards.map(c => (c && c.reviewStatus === 'pending')
         ? { ...c, reviewStatus: 'approved' }
         : c);
+    }
+    return data;
+  },
+  // 62 → 63：银行卡状态机收敛（2026-11-09）。「已拒绝」改为「已停用」（平台侧风控停用，可恢复），
+  // 删除 reviewStatus 子态（单一事实源 = whitelistStatus）。suspendedFrom 供恢复还原：
+  // 原卡验证过（verifiedAt 有值）→ verified，否则 → unverified。
+  62: (data) => {
+    if (Array.isArray(data.bankCards)) {
+      data.bankCards = data.bankCards.map(c => {
+        if (!c) return c;
+        const next = { ...c };
+        delete next.reviewStatus;
+        if (next.whitelistStatus === 'rejected') {
+          next.whitelistStatus = 'suspended';
+          if (!next.suspendedFrom) next.suspendedFrom = c.verifiedAt ? 'verified' : 'unverified';
+          if (!next.suspendedAt) next.suspendedAt = c.reviewedAt || null;
+          if (!next.suspendedBy) next.suspendedBy = c.reviewedBy || null;
+        }
+        return next;
+      });
     }
     return data;
   },

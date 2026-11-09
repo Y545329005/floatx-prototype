@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Eye, X, Search, ShieldCheck, Ban, CheckCircle, Users, UserCheck, Wallet, ChevronRight, CreditCard, Settings } from 'lucide-react';
+import { Eye, X, Search, ShieldCheck, Ban, CheckCircle, Users, UserCheck, Wallet, ChevronRight, Settings } from 'lucide-react';
 import {
   getInvestorUsers, assignAccountManager, toggleUserDisabled,
   accountManagers, kycSubmissions, testAccounts, subscriptions, eventRegistrationsList,
@@ -7,6 +7,7 @@ import {
   bankCards, KYC_STATUS, PI_STATUS, maskName, formatCurrency,
 } from '../mock/data';
 import { useDrawerFocus } from './useDrawerFocus';
+import AdminBankCards from './AdminBankCards';
 
 // 用户管理（2026-08-13 · 后台 P0）：投资人账户统一视图（账户全貌视角）
 // 与现有模块分工：用户管理 = 账户视图（人的全生命周期）；KYC 审核 = 认证动作；
@@ -335,21 +336,7 @@ export default function AdminUsers({ navigate, detailId, admin }) {
 
             {/* 2026-08-15 银行卡卡（mock 单用户场景下展示 u1 的 2 张；其他用户空态）
                2026-08-16 重设计：分行布局（银行分行 / maskedNo · 币种），币种改中性色 */}
-            <div className="card kyc-review-block">
-              <h4 className="card-title"><CreditCard size={14} /> 银行卡（{selBankCards.length}）</h4>
-              {selBankCards.length > 0 ? selBankCards.map(c => (
-                <div className="admin-bank-card-item" key={c.id}>
-                  <div className="admin-bank-card-bank-row">
-                    <span className="admin-bank-card-bank">{c.bank}</span>
-                    {c.branch && <span className="admin-bank-card-branch">{c.branch}</span>}
-                  </div>
-                  <div className="admin-bank-card-no-row">
-                    <span className="admin-bank-card-no" title={c.maskedNo}>{c.maskedNo}</span>
-                    <span className="admin-bank-card-currency">{c.currency}</span>
-                  </div>
-                </div>
-              )) : <div className="text-muted text-sm">暂未绑定银行卡</div>}
-            </div>
+            <AdminBankCards cards={selBankCards} admin={admin} />
 
             {/* 认证卡（2026-08-14：去胶囊改主色 600 文字 + 2026-08-15 3 字段双排，KYC/PI 同行 + PI 有效期独行） */}
             <div className="card kyc-review-block admin-kyc-review-tight">

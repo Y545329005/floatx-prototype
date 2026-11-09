@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Eye, X, Search, UserCheck, ShieldCheck, Wallet, History, Plus, Trash2, Calendar, HeartHandshake, CreditCard } from 'lucide-react';
+import { Eye, X, Search, UserCheck, ShieldCheck, Wallet, History, Plus, Trash2, Calendar, HeartHandshake } from 'lucide-react';
 import {
   getInvestorUsers, getClientTasks,
   kycSubmissions, testAccounts, subscriptions, eventRegistrationsList,
@@ -8,6 +8,7 @@ import {
   regLeadStatusLabels, updateClientLeadStatus, getLeadClients, addCompanion, removeCompanion,
   accountManagers,
 } from '../mock/data';
+import AdminBankCards from './AdminBankCards';
 
 /**
  * 我的客户（2026-08-15 · 专属顾问工作视图 · 方案 A）
@@ -333,21 +334,7 @@ export default function AdminMyClients({ navigate, detailId, admin }) {
                     <div className="admin-user-info-item"><span>账户状态</span><strong className={sel.disabled ? 'text-danger' : ''}>{sel.disabled ? '已禁用（风控冻结）' : '正常'}</strong></div>
                   </div>
                 </div>
-                <div className="card kyc-review-block">
-                  <h4 className="card-title"><CreditCard size={14} /> 银行卡（{selBankCards.length}）</h4>
-                  {selBankCards.length > 0 ? selBankCards.map(c => (
-                    <div className="admin-bank-card-item" key={c.id}>
-                      <div className="admin-bank-card-bank-row">
-                        <span className="admin-bank-card-bank">{c.bank}</span>
-                        {c.branch && <span className="admin-bank-card-branch">{c.branch}</span>}
-                      </div>
-                      <div className="admin-bank-card-no-row">
-                        <span className="admin-bank-card-no" title={c.maskedNo}>{c.maskedNo}</span>
-                        <span className="admin-bank-card-currency">{c.currency}</span>
-                      </div>
-                    </div>
-                  )) : <div className="text-muted text-sm">暂未绑定银行卡</div>}
-                </div>
+                <AdminBankCards cards={selBankCards} admin={admin} />
                 <div className="card kyc-review-block admin-kyc-review-tight">
                   <h4 className="card-title"><ShieldCheck size={14} /> 认证状态</h4>
                   <div className="kyc-review-double-row">

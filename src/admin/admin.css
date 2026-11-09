@@ -3912,3 +3912,24 @@
 .admin-white-badge.is-ok { background: var(--success-light); color: var(--success); }
 .admin-white-badge.is-warn { background: var(--warning-light); color: var(--warning); }
 .admin-white-badge.is-bad { background: var(--danger-light); color: var(--danger); }
+
+/* 客户详情 · 银行卡区块（2026-11-09 方案 B）：加白溯源 / 停用原因 / 风控动作 */
+.admin-card-meta-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.admin-card-meta-line svg { flex-shrink: 0; margin-top: 2px; }
+.admin-card-meta-line.is-bad { color: var(--danger); }
+.admin-card-action-btns {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.admin-card-action-form { margin-top: var(--space-2); }
+.admin-card-action-form .form-input { width: 100%; resize: vertical; }
+.admin-card-action-form .admin-card-action-btns { justify-content: flex-end; }

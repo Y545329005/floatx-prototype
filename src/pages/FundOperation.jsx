@@ -75,7 +75,7 @@ export default function FundOperation({ mode, navigate, goBack }) {
   // 2026-11-09 链路重排：卡审核取消，全部非拒绝卡都可充；出金仍只允许已验证卡（白名单硬约束），
   // 且按币种匹配，不做跨币种打款。数据层 submitDepositRequest 保留 pending 卡拦截兜底。
   const myCards = bankCards.filter(c => c.userId === currentUser.id
-    && c.whitelistStatus !== BANK_CARD_STATUS.REJECTED);
+    && c.whitelistStatus !== BANK_CARD_STATUS.SUSPENDED);
   const whitelistedCards = myCards.filter(c => c.whitelistStatus === BANK_CARD_STATUS.VERIFIED);
   // 2026-11-06：完全未绑卡时直接拦截提现表单（与充值侧拦截态同构）——
   // 否则用户填完整页金额/费用，才在收款卡字段与提交时报错。有卡但未达白名单不拦，保留字段级提示。

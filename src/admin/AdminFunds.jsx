@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { CheckCircle, XCircle, Download, Upload, ClipboardCheck, X, Search, ShieldCheck, FileText, Check, Eye } from 'lucide-react';
+import { CheckCircle, XCircle, Download, Upload, ClipboardCheck, X, Search, FileText, Check, Eye } from 'lucide-react';
 import {
   depositRequests, withdrawRequests, exchangeRequests, bankCards,
-  BANK_CARD_STATUS, CARD_REVIEW_STATUS, jurisdictionLabel,
+  BANK_CARD_STATUS, jurisdictionLabel,
   approveDepositRequest, rejectDepositRequest, requestDepositEvidence,
   approveWithdrawRequest, rejectWithdrawRequest,
   approveExchangeRequest, rejectExchangeRequest,
-  rejectBankCard,
   formatExactAmount, getEvidencePreview, logAudit,
   platformWithdrawAccount, platformDepositAccount,
 } from '../mock/data';
@@ -39,29 +38,17 @@ const REQ_FILTERS = [
   { key: 'approved', label: '已通过' },
   { key: 'rejected', label: '已拒绝' },
 ];
-// 银行卡复核的筛选项（2026-11-09 取消前置审核后无「待审核」队列：全部 / 已通过 / 已拒绝）
-const CARD_FILTERS = [
-  { key: 'all', label: '全部' },
-  { key: 'approved', label: '已通过' },
-  { key: 'rejected', label: '已拒绝' },
-];
-const filtersForTab = (tabKey) => (
-  tabKey === 'deposits' ? REQ_FILTERS
-    : tabKey === 'cardReviews' ? CARD_FILTERS
-    : REQ_FILTERS.filter(f => f.key !== 'requires_evidence')
-);
-// 各 tab 的默认筛选：单据类任务优先落「待处理」；银行卡复核无待办队列，默认「全部」
-const defaultFilterFor = (tabKey) => (tabKey === 'cardReviews' ? 'all' : 'pending');
+// 筛选能力按 tab 收敛：「待补凭证」只在充值存在
+const filtersForTab = (tabKey) => (tabKey === 'deposits' ? REQ_FILTERS : REQ_FILTERS.filter(f => f.key !== 'requires_evidence'));
 
-// tabs（同域多类并列内容，任务优先）：充值/提现审核 + 银行卡复核
+// tabs（同域多类并列内容，任务优先）：充值/提现审核
 // 2026-11-04：白名单验证单并入充值链路（验证款=充值款），「白名单审核」tab 下线。
-// 2026-11-09：前置人工审卡取消——卡资料随首充核销一并核对（付款人姓名 + 卡资料），
-// 本页签改为「银行卡复核」（全量卡列表 + 事后拒绝），不再是任务队列。
+// 2026-11-09：加白由核销自动完成，银行卡不再是资金审核的任务队列——原「银行卡复核」页签删除，
+// 卡状态查看与风控停用/恢复归入客户详情（用户管理 / 我的客户），责任角色为合规 / 运营。
 const TABS = [
   // 入金=Download（钱落进账户）、出金=Upload（钱提出去）；与 Wallet/AssetOverview 入出金方向一致（2026-10-29 对调修正）
   { key: 'deposits', label: '充值审核', icon: Download },
   { key: 'withdraws', label: '提现审核', icon: Upload },
-  { key: 'cardReviews', label: '银行卡复核', icon: ShieldCheck },
 ];
 
 // ---- 列表配置：四类单据共用同一张表骨架（2026-11-02 收敛，此前四块 JSX 复制粘贴） ----
@@ -272,7 +259,7 @@ function StatusCard({ userName, status, approvedLabel, children }) {
 
 // 银行卡号展示（2026-11-04 · 集团数据脱敏规则）：默认只显示后四位；
 // 「查看明文」需要一次显式动作，并记审计日志（who / 哪张单 / 什么时间）。
-function CardNoRow({ value, operator, targetId, label = '银行卡号' }) {
+export function CardNoRow({ value, operator, targetId, label = '银行卡号' }) {
   const [shown, setShown] = useState(false);
   const digits = String(value || '').replace(/\s/g, '');
   const masked = digits ? `**** ${digits.slice(-4)}` : '—';
@@ -696,161 +683,6 @@ function ExchangeDrawer({ req, onClose, onApprove, onReject }) {
   );
 }
 
-// ========== 银行卡复核（2026-11-09 · 前置人工审卡取消后的事后复核） ==========
-// 卡资料随首充核销一并核对（参考代码 + 到账付款人姓名与客户实名一致 + 卡资料，见充值审核抽屉），
-// 本页签是全量卡列表 + 事后拒绝：发现坏卡时切断（拒绝后该卡不可出入金）。
-// reviewStatus 现只有 approved / rejected 两个产生值（'pending' 仅存于未迁移旧快照，展示按已通过兜底）。
-const CARD_REVIEW_META = {
-  pending: { label: '已通过', cls: 'admin-status-approved' },
-  approved: { label: '已通过', cls: 'admin-status-approved' },
-  rejected: { label: '已拒绝', cls: 'admin-status-rejected' },
-};
-
-// 白名单状态映射（2026-11-09 方案 A：复核台账必须能看出「加白与否」，不能只显示复核状态）
-const WHITELIST_META = {
-  verified: { label: '已验证', cls: 'is-ok' },
-  unverified: { label: '待首充', cls: 'is-warn' },
-  rejected: { label: '已停用', cls: 'is-bad' },
-};
-
-function CardReviewTable({ rows, isSearching, filter, navigate }) {
-  const go = (id) => navigate(`#admin/funds/cardReviews/${id}`);
-  const emptyText = isSearching
-    ? '未找到匹配的银行卡'
-    : '暂无符合条件的银行卡';
-  return (
-    <div className="admin-table admin-table--verifications">
-      <div className="admin-table-header">
-        {['申请人', '银行', '卡号', '开户地区', '提交时间', '状态', '操作'].map(label => (
-          <span key={label} className={label === '申请人' ? 'col-name' : label === '卡号' ? 'col-id' : label === '银行' ? 'col-amount' : label === '开户地区' ? 'col-amount' : label === '提交时间' ? 'col-date' : label === '状态' ? 'col-status' : 'col-actions'}>{label}</span>
-        ))}
-      </div>
-      {rows.map(c => {
-        const meta = CARD_REVIEW_META[c.reviewStatus] || CARD_REVIEW_META.approved;
-        const wl = WHITELIST_META[c.whitelistStatus] || WHITELIST_META.unverified;
-        return (
-          <div
-            key={c.id}
-            className="admin-table-row"
-            onClick={() => go(c.id)}
-            role="button"
-            tabIndex={0}
-            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(c.id); } }}
-          >
-            <span className="col-name"><strong>{c.holder}</strong></span>
-            <span className="col-amount">{c.bank}</span>
-            <span className="col-id">{c.maskedNo}</span>
-            <span className="col-amount">{jurisdictionLabel(c.region)}</span>
-            <span className="col-date">{c.createdAt || c.reviewedAt || '—'}</span>
-            <span className="col-status">
-              <span className={`status-badge ${meta.cls}`}>{meta.label}</span>
-              <span className={`admin-white-badge ${wl.cls}`}>{wl.label}</span>
-            </span>
-            <span className="col-actions">
-              <button className="btn-icon" title="复核" onClick={(e) => { e.stopPropagation(); go(c.id); }}>
-                <ClipboardCheck size={16} />
-              </button>
-            </span>
-          </div>
-        );
-      })}
-      {rows.length === 0 && (
-        <div className="admin-table-row"><span className="admin-table-empty">{emptyText}</span></div>
-      )}
-    </div>
-  );
-}
-
-function CardReviewDrawer({ card, onClose, onReject, operator }) {
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const reject = useRejectFlow();
-  const meta = CARD_REVIEW_META[card.reviewStatus] || CARD_REVIEW_META.approved;
-  const title = `银行卡复核 #${card.id} · ${card.holder}`;
-  const rejectable = card.whitelistStatus !== BANK_CARD_STATUS.REJECTED;
-
-  const close = () => { reject.reset(); onClose(); };
-  const handleReject = () => reject.submit(reason => { onReject(card.id, reason); close(); });
-
-  const footer = rejectable ? (
-    reject.open ? (
-      <>
-        <button className="btn btn-md btn-secondary" onClick={reject.reset}>取消</button>
-        <button className="btn btn-md btn-outline" onClick={handleReject}><XCircle size={16} /> 确认拒绝</button>
-      </>
-    ) : (
-      <button className="btn btn-md btn-outline" onClick={reject.openPanel}><XCircle size={16} /> 拒绝</button>
-    )
-  ) : null;
-
-  return (
-    <>
-      <DrawerScaffold title={title} onClose={close} footer={footer}>
-        {/* 基本信息区 */}
-        <div className="card kyc-review-block admin-fund-card">
-          <div className="card-title">基本信息</div>
-          <div className="kyc-review-row"><span>持卡人</span><strong>{card.holder}</strong></div>
-          <div className="kyc-review-row"><span>银行</span><strong>{card.bank}</strong></div>
-          <CardNoRow value={card.cardNo} operator={operator} targetId={card.id} />
-          <div className="kyc-review-row"><span>账户类型</span><strong>{card.accountType === 'personal' ? '个人单名账户' : '联名账户'}</strong></div>
-          <div className="kyc-review-row"><span>开户地区</span><strong>{jurisdictionLabel(card.region)}</strong></div>
-          <div className="kyc-review-row"><span>币种</span><strong>{card.currency}</strong></div>
-        </div>
-
-        {/* 复核资料区 */}
-        <div className="card kyc-review-block admin-fund-card">
-          <div className="card-title">复核资料</div>
-          <div className="kyc-review-row">
-            <span>卡照 / 开户证明</span>
-            <strong className="admin-evidence-cell">
-              <span className="admin-evidence-name"><FileText size={13} className="inline-icon" /> {card.proofImage ? card.proofImage.split('/').pop() : '未上传'}</span>
-              {card.proofImage && (
-                <button className="btn btn-sm btn-outline" onClick={() => setPreviewOpen(true)}>查看资料</button>
-              )}
-            </strong>
-          </div>
-          <p className="admin-form-hint">卡资料已随首充核销核对（参考代码 + 到账付款人姓名与客户实名一致）。此处用于事后复核：发现资料问题可直接拒绝；拒绝后该卡作废且不可出入金，用户需重新添加。</p>
-        </div>
-
-        {/* 复核结果 / 历史区 */}
-        <div className="card kyc-review-block admin-fund-card">
-          <div className="card-title">复核结果</div>
-          <div className="kyc-review-row"><span>卡状态</span><span className={`status-badge ${meta.cls}`}>{meta.label}</span></div>
-          {/* 2026-11-09 方案 A：白名单状态独立成行（加白由首充核销完成，这里显示结果与来源，供追溯审批责任人） */}
-          <div className="kyc-review-row">
-            <span>白名单</span>
-            <span className={`admin-white-badge ${(WHITELIST_META[card.whitelistStatus] || WHITELIST_META.unverified).cls}`}>
-              {(WHITELIST_META[card.whitelistStatus] || WHITELIST_META.unverified).label}
-            </span>
-          </div>
-          {card.whitelistStatus === BANK_CARD_STATUS.VERIFIED && (
-            <>
-              <div className="kyc-review-row"><span>加白时间</span><strong>{card.verifiedAt || '—'}</strong></div>
-              <div className="kyc-review-row">
-                <span>加白来源</span>
-                <strong>{card.verifiedByReqId ? `首充 ${card.verifiedByReqId}` : card.verifiedAmount != null ? '历史数据（无来源单号）' : '—'}{card.verifiedBy ? ` · ${card.verifiedBy}` : ''}</strong>
-              </div>
-              <div className="kyc-review-row"><span>验证到账金额</span><strong>{card.verifiedAmount != null ? formatExactAmount(card.verifiedAmount) : '—'}</strong></div>
-            </>
-          )}
-          {card.reviewedAt && <div className="kyc-review-row"><span>处理时间</span><strong>{card.reviewedAt} · {card.reviewedBy || '—'}</strong></div>}
-          {card.reviewStatus === CARD_REVIEW_STATUS.REJECTED && (
-            <div className="kyc-review-row"><span>拒绝原因</span><strong>{card.reviewReason || '—'}</strong></div>
-          )}
-        </div>
-
-        {rejectable && card.whitelistStatus === BANK_CARD_STATUS.VERIFIED && (
-          <p className="admin-form-hint">注意：该卡已加入白名单。拒绝后该卡不可用于出入金，卡内已入金资金需重新绑卡并完成首充验证后方可提走。</p>
-        )}
-
-        <RejectPanel flow={reject} label="拒绝原因" placeholder="例如：开户证明与持卡人不一致 / 卡号模糊无法核对" />
-      </DrawerScaffold>
-      {previewOpen && card.proofImage && (
-        <ImageLightbox src={card.proofImage} title={`卡照 / 开户证明 · ${card.holder}`} onClose={() => setPreviewOpen(false)} />
-      )}
-    </>
-  );
-}
-
 export default function AdminFunds({ navigate, tab, detailId, admin }) {
   const [reqFilter, setReqFilter] = useState('pending'); // 状态筛选（默认待处理 = 任务优先）
   const [keyword, setKeyword] = useState('');            // 审核搜索（单号/申请人/金额，跨 filter 全局检索——对齐 KYC/Users）
@@ -861,12 +693,12 @@ export default function AdminFunds({ navigate, tab, detailId, admin }) {
   // 筛选能力按 tab 收敛：「待补凭证」只在充值存在；历史筛选态不属于当前 tab 时回落「待处理」
   // （浏览器 back/forward 切 tab 也走此兜底，避免按钮不可见却过滤生效成空列表）
   const filterOptions = filtersForTab(activeTab);
-  const effectiveFilter = filterOptions.some(f => f.key === reqFilter) ? reqFilter : defaultFilterFor(activeTab);
+  const effectiveFilter = filterOptions.some(f => f.key === reqFilter) ? reqFilter : 'pending';
 
   // 状态归一：切到不提供当前筛选项的 tab（按钮/前进后退/深链）时把选择落回该 tab 的默认项，
   // 否则下次切回充值 tab 会突然回到「待补凭证」，与中间 tab 的可见态不一致
   useEffect(() => {
-    if (!filtersForTab(activeTab).some(f => f.key === reqFilter)) setReqFilter(defaultFilterFor(activeTab));
+    if (!filtersForTab(activeTab).some(f => f.key === reqFilter)) setReqFilter('pending');
   }, [activeTab, reqFilter]);
 
   // 抽屉由 URL param3 驱动（#admin/funds/{tab}/{id}）
@@ -874,12 +706,11 @@ export default function AdminFunds({ navigate, tab, detailId, admin }) {
   const selDep = activeTab === 'deposits' && selId ? depositRequests.find(r => r.id === selId) : null;
   const selWit = activeTab === 'withdraws' && selId ? withdrawRequests.find(r => r.id === selId) : null;
   const selExc = activeTab === 'exchanges' && selId ? exchangeRequests.find(r => r.id === selId) : null;
-  const selCard = activeTab === 'cardReviews' && selId ? bankCards.find(c => c.id === selId) : null;
   const goList = () => { if (navigate) navigate(`#admin/funds/${activeTab}`); };
   const operator = admin?.name || '运营后台';
 
   // 待处理盘口（任务优先摘要）：充值含 requires_evidence（2026-11-02 待补凭证计入待办）
-  // 银行卡不再是待办队列（2026-11-09 改事后复核），不入待处理摘要
+  // 银行卡不再是待办队列（2026-11-09 加白由核销自动完成，卡状态归入客户详情）
   const pendingDeposits = depositRequests.filter(r => r.status === 'pending' || r.status === 'requires_evidence');
   const pendingWithdraws = withdrawRequests.filter(r => r.status === 'pending');
 
@@ -904,18 +735,6 @@ export default function AdminFunds({ navigate, tab, detailId, admin }) {
     withdraws: filterReqs(withdrawRequests),
     exchanges: filterReqs(exchangeRequests),
   };
-  // 银行卡复核：筛选项映射到 reviewStatus（approved/rejected；all = 全量；pending 不再产生）
-  const cardFilterReqs = (arr) => {
-    const kwCards = keyword.trim().toLowerCase();
-    let list = arr;
-    if (kwCards) {
-      return list.filter(c => (c.bank || '').toLowerCase().includes(kwCards) || (c.holder || '').toLowerCase().includes(kwCards) || (c.maskedNo || '').includes(kwCards));
-    }
-    if (effectiveFilter === 'all') return list;
-    return list.filter(c => (c.reviewStatus || 'approved') === effectiveFilter);
-  };
-  const shownCards = cardFilterReqs(bankCards);
-
   return (
     <div className="admin-page">
       <div className="admin-page-header">
@@ -965,23 +784,14 @@ export default function AdminFunds({ navigate, tab, detailId, admin }) {
       </div>
 
       {/* 任务优先 tab：当前类别一张全宽待办列表（列头/空态/状态名由变体配置驱动） */}
-      {activeTab === 'cardReviews' ? (
-        <CardReviewTable
-          rows={shownCards}
-          isSearching={isSearching}
-          filter={effectiveFilter}
-          navigate={navigate}
-        />
-      ) : (
-        <FundRequestTable
-          variant={activeTab}
-          tab={activeTab}
-          rows={shownRequests[activeTab]}
-          isSearching={isSearching}
-          reqFilter={effectiveFilter}
-          navigate={navigate}
-        />
-      )}
+      <FundRequestTable
+        variant={activeTab}
+        tab={activeTab}
+        rows={shownRequests[activeTab]}
+        isSearching={isSearching}
+        reqFilter={effectiveFilter}
+        navigate={navigate}
+      />
 
       {/* 统一右侧抽屉：资金申请详情 + 审核操作（URL 化驱动） */}
       {selDep && (
@@ -1011,14 +821,6 @@ export default function AdminFunds({ navigate, tab, detailId, admin }) {
           onClose={goList}
           onApprove={(id, { actualRate, bankRef }) => approveExchangeRequest(id, { actualRate, bankRef }, operator)}
           onReject={(id, reason) => rejectExchangeRequest(id, reason, operator)}
-        />
-      )}
-      {selCard && (
-        <CardReviewDrawer
-          card={selCard}
-          operator={operator}
-          onClose={goList}
-          onReject={(id, reason) => rejectBankCard(id, operator, reason)}
         />
       )}
     </div>

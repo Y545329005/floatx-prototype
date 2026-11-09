@@ -10,12 +10,12 @@ import {
 } from '../mock/data';
 import { useLang } from '../i18n';
 
-// 用户侧三态（2026-11-05 起「已停用」取消，只保留解绑）
-// 2026-11-09 起取消前置人工审卡：「待验证」只有一种含义——等首充加白（≥1万 HKD 等值）。
+// 用户侧三态（2026-11-09 定版）：「待验证」= 等首充加白（≥1万 HKD 等值）；
+// 「已停用」= 平台风控切断（用户不能自行恢复，只能解绑后重新添加并重新首充）。
 const cardStatusMeta = {
   [BANK_CARD_STATUS.VERIFIED]: { label: '已验证', cls: 'is-ok' },
   [BANK_CARD_STATUS.UNVERIFIED]: { label: '待验证', cls: 'is-warn' },
-  [BANK_CARD_STATUS.REJECTED]: { label: '已拒绝', cls: 'is-bad' },
+  [BANK_CARD_STATUS.SUSPENDED]: { label: '已停用', cls: 'is-bad' },
 };
 
 const CURRENCIES = [
@@ -24,10 +24,10 @@ const CURRENCIES = [
   { key: 'CNH', label: 'CNH 离岸人民币' },
 ];
 
-// 列表内排序权重（币种页签内）：待验证 → 已拒绝 → 已验证
+// 列表内排序权重（币种页签内）：待验证 → 已停用 → 已验证
 const CARD_ORDER = {
   [BANK_CARD_STATUS.UNVERIFIED]: 0,
-  [BANK_CARD_STATUS.REJECTED]: 1,
+  [BANK_CARD_STATUS.SUSPENDED]: 1,
   [BANK_CARD_STATUS.VERIFIED]: 2,
 };
 
@@ -92,7 +92,7 @@ export default function BankCards({ navigate, goBack, setToast }) {
     if (c.whitelistStatus === BANK_CARD_STATUS.UNVERIFIED) {
       return t('首充 ≥1万 HKD 等值后加白');
     }
-    if (c.whitelistStatus === BANK_CARD_STATUS.REJECTED) return c.reviewReason || t('资料不符，请重新添加');
+    if (c.whitelistStatus === BANK_CARD_STATUS.SUSPENDED) return t('已停用：{reason}。请解绑后重新添加本人银行卡并完成首充验证。').replace('{reason}', c.reviewReason || t('风控停用'));
     return '';
   };
 

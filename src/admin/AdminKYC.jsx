@@ -187,8 +187,10 @@ export default function AdminKYC({ navigate, detailId, admin }) {
           const meta = statusMeta[k.status];
           const docLabel = k.profile.idDocType === 'HK_ID' ? '香港身份证' : k.profile.idDocType === 'PASSPORT' ? '护照' : '内地通行证';
           // 2026-11-05：待首充标识——首卡未加白时点「通过」会被硬门控拒绝，列表先给出原因
+          // 2026-11-09：首卡被风控停用 ≠ 待首充（停用是合规切断，不是等财务确认），必须分开显示
           const firstCard = bankCards.find(c => c.userId === k.userId && c.firstCard);
-          const pendingWhitelist = firstCard && firstCard.whitelistStatus !== BANK_CARD_STATUS.VERIFIED;
+          const firstCardSuspended = firstCard && firstCard.whitelistStatus === BANK_CARD_STATUS.SUSPENDED;
+          const pendingWhitelist = firstCard && !firstCardSuspended && firstCard.whitelistStatus !== BANK_CARD_STATUS.VERIFIED;
           const openDrawer = () => { navigate(`#admin/kyc/${k.id}`); };
           return (
             <div
@@ -201,6 +203,7 @@ export default function AdminKYC({ navigate, detailId, admin }) {
             >
               <span className="col-name">
                 <strong>{maskName(k.name)}</strong>
+                {firstCardSuspended && <span className="tag tag-neutral" style={{ marginLeft: 'var(--space-2)' }}>首卡已停用</span>}
                 {pendingWhitelist && <span className="tag tag-neutral" style={{ marginLeft: 'var(--space-2)' }}>待首充</span>}
               </span>
               <span className="col-doc">{docLabel}</span>
@@ -336,14 +339,15 @@ export default function AdminKYC({ navigate, detailId, admin }) {
                     return <div className="kyc-review-row"><span>首卡</span><strong>未提交（非本流程提交）</strong></div>;
                   }
                   const dep = depositRequests.find(d => d.cardId === firstCard.id);
+                  const suspended = firstCard.whitelistStatus === BANK_CARD_STATUS.SUSPENDED;
                   const whitelisted = firstCard.whitelistStatus === BANK_CARD_STATUS.VERIFIED;
                   return (
                     <>
                       <div className="kyc-review-row"><span>首卡</span><strong>{firstCard.bank} · {firstCard.currency} · {firstCard.maskedNo}</strong></div>
                       <div className="kyc-review-row">
                         <span>白名单</span>
-                        <strong style={{ color: whitelisted ? 'var(--success)' : 'var(--warning-text)' }}>
-                          {whitelisted ? '已加白（可开户）' : '待首充确认到账'}
+                        <strong style={{ color: suspended ? 'var(--danger)' : whitelisted ? 'var(--success)' : 'var(--warning-text)' }}>
+                          {suspended ? `已停用（不可开户）：${firstCard.reviewReason || '风控停用'}` : whitelisted ? '已加白（可开户）' : '待首充确认到账'}
                         </strong>
                       </div>
                       {dep ? (
