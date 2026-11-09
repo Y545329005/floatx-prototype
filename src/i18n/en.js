@@ -214,7 +214,7 @@ export const en = {
   '暂无相关通知': 'No notifications here',
   '全部': 'All',
   '活动': 'Events',
-  '资金': 'Funding',
+  '资金': 'Wallet',
   '服务': 'Service',
 
   // Asset domain additions
