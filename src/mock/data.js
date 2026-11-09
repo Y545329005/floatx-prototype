@@ -7215,6 +7215,8 @@ export function approveDepositRequest(reqId, { actualAmount, actualCurrency, ban
     depositCard.whitelistStatus = BANK_CARD_STATUS.VERIFIED;
     depositCard.verifiedAt = formatNow();
     depositCard.verifiedAmount = credited;
+    depositCard.verifiedByReqId = req.id;              // 加白来源单据（台账可追溯：哪笔首充批的这张卡）
+    depositCard.verifiedBy = operator || '运营后台';    // 加白核销人（白名单审批责任落到具体人）
     cardVerified = true;
     if (depositCard.reviewStatus !== CARD_REVIEW_STATUS.APPROVED) depositCard.reviewStatus = CARD_REVIEW_STATUS.APPROVED;
     pushNotification({

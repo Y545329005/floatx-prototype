@@ -307,9 +307,18 @@ function RequestDrawer({ kind, req, onClose, onApprove, onReject, onRequestEvide
   const [approveError, setApproveError] = useState(''); // 数据层拒绝时的反馈（2026-11-02 修复：此前失败也静默关抽屉）
   const [matchConfirmed, setMatchConfirmed] = useState(false); // 2026-08-20 方案确认：是否通过「与登记一致」一键填入（手动录入即清除，差异场景显式区分）
   const [previewOpen, setPreviewOpen] = useState(false); // 2026-08-20 凭证放大预览
+  // 2026-11-09 方案 A：首充加白 = 白名单审批，确认项必须显式勾选（不能藏在灰色提示里被「顺手确认」）
+  const [verifyAck, setVerifyAck] = useState(false);
   const reject = useRejectFlow();
   const meta = KIND_META[kind];
   const title = `${meta.title} #${req.id} · ${req.userName}`;
+  // 付款卡定位与首充判定：与数据层 approveDepositRequest 同口径（cardId 主键，cardNo 兜底）
+  const depositCard = kind === 'deposit'
+    ? (bankCards.find(c => c.id === req.cardId)
+        || bankCards.find(c => c.userId === req.userId && c.cardNo && c.cardNo === req.cardNo)
+        || null)
+    : null;
+  const isFirstDeposit = !!(depositCard && depositCard.whitelistStatus === BANK_CARD_STATUS.UNVERIFIED);
   // 打款账户按单据币种取（2026-11-03）：出金不做换汇，财务必须从同币种账户汇出。
   // 取不到 = 该币种没有配置打款账户，这是配置缺失，不是「随便找个账户打」。
   const payeeAccount = kind === 'withdraw' ? platformWithdrawAccount(req.currency) : null;
@@ -329,6 +338,7 @@ function RequestDrawer({ kind, req, onClose, onApprove, onReject, onRequestEvide
       setDepositForm({ actualAmount: '', bankRef: '', actualCurrency: req.currency });
       setDepositFormError('');
       setMatchConfirmed(false);
+      setVerifyAck(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kind, req.id]);
@@ -346,6 +356,11 @@ function RequestDrawer({ kind, req, onClose, onApprove, onReject, onRequestEvide
       const credited = Number(depositForm.actualAmount);
       if (!Number.isFinite(credited) || credited <= 0) {
         setDepositFormError('请填写实际到账金额（必须大于 0）');
+        return;
+      }
+      // 2026-11-09 方案 A：首充加白是白名单审批，未勾选核对项不得执行（防止「只是确认钱到了」的心智认知顺手加白）
+      if (isFirstDeposit && !verifyAck) {
+        setApproveError('本单将把该卡加入资金白名单，请先勾选「我已核对」确认项');
         return;
       }
       res = onApprove(req.id, { actualAmount: String(credited), actualCurrency: depositForm.actualCurrency, bankRef: depositForm.bankRef.trim() });
@@ -429,11 +444,23 @@ function RequestDrawer({ kind, req, onClose, onApprove, onReject, onRequestEvide
           </div>
         )}
 
-        {/* 首充加白提示（充值）：付款卡未验证时，本单就是验证动作本身；核销同时完成卡资料核对 */}
-        {kind === 'deposit' && req.status === 'pending' && (
+        {/* 首充加白（2026-11-09 方案 A）：本单核销 = 白名单审批，做成显式区块 + 勾选确认，
+            不让「加白」藏在灰色提示里被顺手确认；非首充单只保留姓名核对提示 */}
+        {kind === 'deposit' && req.status === 'pending' && isFirstDeposit && (
+          <div className="card kyc-review-block admin-fund-card admin-verify-ack-card">
+            <div className="card-title">首充加白（本单核销后生效）</div>
+            <div className="kyc-review-row"><span>付款卡</span><strong>{depositCard.bank} {depositCard.maskedNo}（{depositCard.currency}）</strong></div>
+            <div className="kyc-review-row"><span>核销后</span><strong>该卡加入资金白名单（已验证，可用于出入金）</strong></div>
+            <div className="kyc-review-row"><span>门槛</span><strong>实际到账 ≥1万 HKD 等值；不足门槛请拒绝并原路退回</strong></div>
+            <label className="admin-verify-ack">
+              <input type="checkbox" checked={verifyAck} onChange={e => { setVerifyAck(e.target.checked); if (approveError) setApproveError(''); }} />
+              <span>我已核对：到账付款账号与登记卡号一致、付款人姓名与客户实名一致、卡资料与持卡人一致</span>
+            </label>
+          </div>
+        )}
+        {kind === 'deposit' && req.status === 'pending' && !isFirstDeposit && (
           <p className="admin-form-hint">
-            核销前核对：① 银行到账付款人姓名须与客户实名一致，不一致请拒绝并原路退回；
-            ② 付款卡尚未加入白名单时，本单实际到账 ≥1万 HKD 等值即确认后自动加白，不足门槛请拒绝并原路退回。
+            核销前核对：银行到账付款人姓名须与客户实名一致，不一致请拒绝并原路退回。
           </p>
         )}
 
@@ -551,6 +578,9 @@ function RequestDrawer({ kind, req, onClose, onApprove, onReject, onRequestEvide
             {req.status === 'approved' && (
               <>
                 {kind === 'deposit' && <div className="kyc-review-row"><span>实际到账</span><strong>{formatExactAmount(req.actualAmount ?? req.amount)}</strong></div>}
+                {kind === 'deposit' && depositCard && depositCard.verifiedByReqId === req.id && (
+                  <div className="kyc-review-row"><span>首充加白</span><strong>本单已将该卡（{depositCard.maskedNo}）加入资金白名单</strong></div>
+                )}
                 <div className="kyc-review-row"><span>处理时间</span><strong>{req.handledAt} · {req.handledBy}</strong></div>
               </>
             )}
@@ -676,6 +706,13 @@ const CARD_REVIEW_META = {
   rejected: { label: '已拒绝', cls: 'admin-status-rejected' },
 };
 
+// 白名单状态映射（2026-11-09 方案 A：复核台账必须能看出「加白与否」，不能只显示复核状态）
+const WHITELIST_META = {
+  verified: { label: '已验证', cls: 'is-ok' },
+  unverified: { label: '待首充', cls: 'is-warn' },
+  rejected: { label: '已停用', cls: 'is-bad' },
+};
+
 function CardReviewTable({ rows, isSearching, filter, navigate }) {
   const go = (id) => navigate(`#admin/funds/cardReviews/${id}`);
   const emptyText = isSearching
@@ -690,6 +727,7 @@ function CardReviewTable({ rows, isSearching, filter, navigate }) {
       </div>
       {rows.map(c => {
         const meta = CARD_REVIEW_META[c.reviewStatus] || CARD_REVIEW_META.approved;
+        const wl = WHITELIST_META[c.whitelistStatus] || WHITELIST_META.unverified;
         return (
           <div
             key={c.id}
@@ -704,9 +742,12 @@ function CardReviewTable({ rows, isSearching, filter, navigate }) {
             <span className="col-id">{c.maskedNo}</span>
             <span className="col-amount">{jurisdictionLabel(c.region)}</span>
             <span className="col-date">{c.createdAt || c.reviewedAt || '—'}</span>
-            <span className="col-status"><span className={`status-badge ${meta.cls}`}>{meta.label}</span></span>
+            <span className="col-status">
+              <span className={`status-badge ${meta.cls}`}>{meta.label}</span>
+              <span className={`admin-white-badge ${wl.cls}`}>{wl.label}</span>
+            </span>
             <span className="col-actions">
-              <button className="btn-icon" title="审核" onClick={(e) => { e.stopPropagation(); go(c.id); }}>
+              <button className="btn-icon" title="复核" onClick={(e) => { e.stopPropagation(); go(c.id); }}>
                 <ClipboardCheck size={16} />
               </button>
             </span>
@@ -773,13 +814,27 @@ function CardReviewDrawer({ card, onClose, onReject, operator }) {
         {/* 复核结果 / 历史区 */}
         <div className="card kyc-review-block admin-fund-card">
           <div className="card-title">复核结果</div>
-          <div className="kyc-review-row"><span>状态</span><span className={`status-badge ${meta.cls}`}>{meta.label}</span></div>
+          <div className="kyc-review-row"><span>卡状态</span><span className={`status-badge ${meta.cls}`}>{meta.label}</span></div>
+          {/* 2026-11-09 方案 A：白名单状态独立成行（加白由首充核销完成，这里显示结果与来源，供追溯审批责任人） */}
+          <div className="kyc-review-row">
+            <span>白名单</span>
+            <span className={`admin-white-badge ${(WHITELIST_META[card.whitelistStatus] || WHITELIST_META.unverified).cls}`}>
+              {(WHITELIST_META[card.whitelistStatus] || WHITELIST_META.unverified).label}
+            </span>
+          </div>
+          {card.whitelistStatus === BANK_CARD_STATUS.VERIFIED && (
+            <>
+              <div className="kyc-review-row"><span>加白时间</span><strong>{card.verifiedAt || '—'}</strong></div>
+              <div className="kyc-review-row">
+                <span>加白来源</span>
+                <strong>{card.verifiedByReqId ? `首充 ${card.verifiedByReqId}` : card.verifiedAmount != null ? '历史数据（无来源单号）' : '—'}{card.verifiedBy ? ` · ${card.verifiedBy}` : ''}</strong>
+              </div>
+              <div className="kyc-review-row"><span>验证到账金额</span><strong>{card.verifiedAmount != null ? formatExactAmount(card.verifiedAmount) : '—'}</strong></div>
+            </>
+          )}
           {card.reviewedAt && <div className="kyc-review-row"><span>处理时间</span><strong>{card.reviewedAt} · {card.reviewedBy || '—'}</strong></div>}
           {card.reviewStatus === CARD_REVIEW_STATUS.REJECTED && (
             <div className="kyc-review-row"><span>拒绝原因</span><strong>{card.reviewReason || '—'}</strong></div>
-          )}
-          {(card.reviewStatus === CARD_REVIEW_STATUS.APPROVED || card.reviewStatus === CARD_REVIEW_STATUS.PENDING) && (
-            <p className="admin-form-hint">已通过 = 待首充。用户需用该卡首充 ≥1万 HKD 等值，财务确认到账后自动加入白名单。</p>
           )}
         </div>
 
