@@ -20,7 +20,7 @@ const CARD_STATUS_META = {
 // 停用/恢复 = 风控动作：合规、运营与超管可操作；客服（只读查询）与顾问（客户关系）不显示按钮
 const SUSPEND_ROLES = new Set(['super', 'ops', 'compliance']);
 
-export default function AdminBankCards({ cards, admin }) {
+export default function AdminBankCards({ cards, admin, variant = 'manage', onManage }) {
   const [tick, setTick] = useState(0);
   const [shownNo, setShownNo] = useState({});   // 卡号明文展开（逐卡，留痕）
   const [acting, setActing] = useState(null);   // { cardId, mode: 'suspend' | 'restore' }
@@ -44,6 +44,28 @@ export default function AdminBankCards({ cards, admin }) {
     cancel();
     setTick(t => t + 1); // 模块级数组已原地更新，触发一次重渲染
   };
+
+  // 摘要形态（资料 tab）：只回答「有几张、什么状态」，动作与明细进操作 tab
+  if (variant === 'summary') {
+    const count = (st) => cards.filter(c => c.whitelistStatus === st).length;
+    return (
+      <div className="card kyc-review-block">
+        <div className="admin-bank-head-row">
+          <h4 className="card-title"><CreditCard size={14} /> 银行卡（{cards.length}）</h4>
+          {onManage && <button className="admin-bank-manage-link" onClick={onManage}>管理 ›</button>}
+        </div>
+        {cards.length === 0 ? (
+          <div className="admin-bank-empty">暂未绑定银行卡</div>
+        ) : (
+          <div className="admin-bank-summary">
+            <span className="admin-bank-sum-item"><i className="admin-bank-sum-dot is-ok" />已验证 <b className="admin-bank-sum-num">{count(BANK_CARD_STATUS.VERIFIED)}</b></span>
+            <span className="admin-bank-sum-item"><i className="admin-bank-sum-dot is-warn" />待首充 <b className="admin-bank-sum-num">{count(BANK_CARD_STATUS.UNVERIFIED)}</b></span>
+            <span className="admin-bank-sum-item"><i className="admin-bank-sum-dot is-bad" />已停用 <b className="admin-bank-sum-num">{count(BANK_CARD_STATUS.SUSPENDED)}</b></span>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="card kyc-review-block" key={tick}>

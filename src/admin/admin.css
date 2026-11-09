@@ -3968,3 +3968,35 @@
 .admin-white-badge.is-bad { background: var(--danger-light); color: var(--danger); }
 
 
+
+/* 银行卡摘要（资料 tab，2026-11-09）：只回答「有几张、什么状态」，管理动作进操作 tab */
+.admin-bank-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.admin-bank-sum-item { display: inline-flex; align-items: center; gap: 6px; }
+.admin-bank-sum-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+  flex-shrink: 0;
+}
+.admin-bank-sum-dot.is-ok { background: var(--success); }
+.admin-bank-sum-dot.is-warn { background: var(--warning); }
+.admin-bank-sum-dot.is-bad { background: var(--danger); }
+.admin-bank-sum-num { font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+.admin-bank-manage-link {
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--primary);
+  cursor: pointer;
+}
+.admin-bank-manage-link:hover { text-decoration: underline; }

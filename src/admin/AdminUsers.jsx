@@ -336,7 +336,7 @@ export default function AdminUsers({ navigate, detailId, admin }) {
 
             {/* 2026-08-15 银行卡卡（mock 单用户场景下展示 u1 的 2 张；其他用户空态）
                2026-08-16 重设计：分行布局（银行分行 / maskedNo · 币种），币种改中性色 */}
-            <AdminBankCards cards={selBankCards} admin={admin} />
+            <AdminBankCards cards={selBankCards} admin={admin} variant="summary" onManage={() => setTab('actions')} />
 
             {/* 认证卡（2026-08-14：去胶囊改主色 600 文字 + 2026-08-15 3 字段双排，KYC/PI 同行 + PI 有效期独行） */}
             <div className="card kyc-review-block admin-kyc-review-tight">
@@ -504,6 +504,10 @@ export default function AdminUsers({ navigate, detailId, admin }) {
                   </div>
                 </div>
               </div>
+            )}
+            {/* 银行卡风控（2026-11-09）：与整户冻结同属风控职责，放在操作 tab 与「风控」并列 */}
+            {tab === 'actions' && (
+              <AdminBankCards cards={selBankCards} admin={admin} />
             )}
           </div>
           {/* 操作区已迁至 tab='actions'（2026-08-14），底部 footer 移除 */}
