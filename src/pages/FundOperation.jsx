@@ -447,6 +447,24 @@ export default function FundOperation({ mode, navigate, goBack }) {
     setError('');
     setCardPickerOpen(false);
   };
+  // 2026-11-10：充值侧名额口径每币种 ≤3 张 × 3 币种，最多 9 张——平铺时币种交错难扫读。
+  // 改为按币种分组、当前汇款币种组排最前；提现侧本就单币种，分组头自动隐藏。
+  // 币种不在三币种内的历史/异常卡兜底归入「其他币种」组，避免凭空消失。
+  const cardGroups = currencyOptions
+    .filter(o => cardOptions.some(c => c.currency === o.key))
+    .map(o => ({ key: o.key, label: t(o.label), cards: cardOptions.filter(c => c.currency === o.key) }));
+  const otherCurrencyCards = cardOptions.filter(c => !currencyOptions.some(o => o.key === c.currency));
+  if (otherCurrencyCards.length > 0) cardGroups.push({ key: '_other', label: t('其他币种'), cards: otherCurrencyCards });
+  cardGroups.sort((a, b) => (b.key === activeCurrency) - (a.key === activeCurrency));
+  const renderCardOption = (c) => (
+    <button key={c.id} ref={el => { if (el && c.id === selectedCard?.id) el.scrollIntoView({ block: 'nearest' }); }} type="button" className={`fund-card-option${c.id === selectedCard?.id ? ' selected' : ''}`} onClick={() => pickCard(c.id)}>
+      <span className="fund-card-option-main">
+        <strong>{c.bank}</strong>
+        <span className="text-muted text-sm">{c.maskedNo} · {c.currency}{c.whitelistStatus !== BANK_CARD_STATUS.VERIFIED ? ` · ${t('首充验证')}` : ''}</span>
+      </span>
+      {c.id === selectedCard?.id && <Check size={18} className="fund-card-option-check" />}
+    </button>
+  );
   const renderCardPicker = () => !cardPickerOpen ? null : (
     <>
       <div className="sheet-mask" onClick={() => setCardPickerOpen(false)} />
@@ -463,14 +481,11 @@ export default function FundOperation({ mode, navigate, goBack }) {
           </p>
         ) : (
           <div className="fund-card-options">
-            {cardOptions.map(c => (
-              <button key={c.id} type="button" className={`fund-card-option${c.id === selectedCard?.id ? ' selected' : ''}`} onClick={() => pickCard(c.id)}>
-                <span className="fund-card-option-main">
-                  <strong>{c.bank}</strong>
-                  <span className="text-muted text-sm">{c.maskedNo} · {c.currency}{c.whitelistStatus !== BANK_CARD_STATUS.VERIFIED ? ` · ${t('首充验证')}` : ''}</span>
-                </span>
-                {c.id === selectedCard?.id && <Check size={18} className="fund-card-option-check" />}
-              </button>
+            {cardGroups.map(g => (
+              <div key={g.key} className="fund-card-group">
+                {cardGroups.length > 1 && <span className="fund-card-group-label">{g.label}</span>}
+                {g.cards.map(renderCardOption)}
+              </div>
             ))}
           </div>
         )}
