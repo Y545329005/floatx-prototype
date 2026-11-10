@@ -2103,6 +2103,7 @@ export const en = {
 'HKD 港币': 'HKD (HK dollar)',
 'USD 美元': 'USD (US dollar)',
 'CNH 离岸人民币': 'CNH (Offshore RMB)',
+'其他币种': 'Other currencies',
 '香港账户': 'Hong Kong account',
 '海外账户': 'Overseas account',
 '汇丰银行': 'HSBC',
