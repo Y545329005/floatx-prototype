@@ -1,13 +1,10 @@
 import { useMemo, useState } from 'react';
-import { ArrowLeft, Download, Mail } from 'lucide-react';
+import { ArrowLeft, Download } from 'lucide-react';
 import {
-  buildPeriodStatement, formatExactAmount, platformBrand, statementMailboxOf,
+  buildPeriodStatement, formatExactAmount, platformBrand,
   requestStatementExport, advanceStatementExport,
 } from '../mock/data';
 import { useLang } from '../i18n';
-import StatementMailboxSheet from '../components/StatementMailboxSheet';
-import { periodEmailDoc } from '../mock/emailDocs';
-import { renderEmailHtml, sendMockEmail } from '../mock/emailTemplates';
 
 /* ─────────────────────────────────────────────────────────────
    账户结单（期间） · 2026-11-12 · 双排版分离（2026-11-13）
@@ -23,24 +20,23 @@ import { renderEmailHtml, sendMockEmail } from '../mock/emailTemplates';
 
 const fmtQty = (n) => (Number(n) || 0).toLocaleString('en-US', { maximumFractionDigits: 6 });
 
-export default function FundPeriodStatement({ from, to, goBack, setToast }) {
+export default function FundPeriodStatement({ from, to, goBack }) {
   const { t, lang } = useLang();
-  const [mailboxOpen, setMailboxOpen] = useState(false);
   const [printNote, setPrintNote] = useState('');
-  const [sendNote, setSendNote] = useState('');
 
   const stmt = useMemo(() => buildPeriodStatement({ from, to }), [from, to]);
 
-  // 下载/发送都落一条「申请成功」的导出记录：动作出生即 ready，
+  // 下载落一条「申请成功」的导出记录：动作出生即 ready，
   // 不走「processing → 导出记录页 2 秒后推进」——用户刚点完下载却看到「申请中」是假延迟。
-  // 下载是本地动作，不要求收件邮箱；发送才要求。
-  const logExport = (requireMailbox = true) => {
+  // 下载是本地动作，不要求收件邮箱；手动「发送到邮箱」已下线（2026-11-13，
+  // 结单按 SFC 口径自动送达，手动补发与自动送达重复）
+  const logExport = () => {
     const res = requestStatementExport({
       kind: 'period',
       rangeFrom: stmt.from,
       rangeTo: stmt.to,
       targetHref: `#fund-period-statement/${stmt.from}/${stmt.to}`,
-      requireMailbox,
+      requireMailbox: false,
     });
     if (res.ok) advanceStatementExport(res.record.id);
   };
@@ -54,26 +50,8 @@ export default function FundPeriodStatement({ from, to, goBack, setToast }) {
     setPrintNote('');
     // 记录写死在 print 之前：浏览器无法感知用户在打印对话框点了取消还是打印，
     // 记录只能算「发起过」（已知取舍，2026-11-13）
-    logExport(false);
-    window.print();
-  };
-
-  const sendNow = () => {
-    const to0 = statementMailboxOf();
-    if (!to0) {
-      setMailboxOpen(true);
-      return;
-    }
-    const doc = periodEmailDoc(stmt, t);
-    sendMockEmail({
-      to: to0,
-      subject: doc.subject,
-      html: renderEmailHtml(doc),
-      label: '账户结单',
-    });
     logExport();
-    setSendNote(t('已发送至 {email}').replace('{email}', to0));
-    if (setToast) setToast(t('结单已发送至邮箱'));
+    window.print();
   };
 
   return (
@@ -105,12 +83,7 @@ export default function FundPeriodStatement({ from, to, goBack, setToast }) {
                 {rows.map(b => (
                   <div key={`${b.account}-${b.currency}`} className="doc-screen-row">
                     <span className="doc-screen-row-title">{b.currency}</span>
-                    <span className="doc-screen-row-right">
-                      <b className="doc-screen-amt">{b.account === 'crypto' ? fmtQty(b.closing) : formatExactAmount(b.closing)}</b>
-                      {b.currency !== 'HKD' && (
-                        <span className="doc-screen-amt-sub">HKD {formatExactAmount(b.closingHKD)}</span>
-                      )}
-                    </span>
+                    <b className="doc-screen-amt">{b.account === 'crypto' ? fmtQty(b.closing) : formatExactAmount(b.closing)}</b>
                   </div>
                 ))}
               </div>
@@ -313,22 +286,12 @@ export default function FundPeriodStatement({ from, to, goBack, setToast }) {
       </article>
 
       {printNote && <p className="statement-print-note">{printNote}</p>}
-      {sendNote && <p className="doc-send-note">{sendNote}</p>}
 
       <div className="bottom-action-bar doc-actions">
-        <button className="btn btn-outline" onClick={sendNow}>
-          <Mail size={16} /> {t('发送到邮箱')}
-        </button>
         <button className="btn btn-primary" onClick={download}>
           <Download size={16} /> {t('下载')}
         </button>
       </div>
-
-      <StatementMailboxSheet
-        open={mailboxOpen}
-        onClose={() => setMailboxOpen(false)}
-        onSaved={() => sendNow()}
-      />
     </div>
   );
 }

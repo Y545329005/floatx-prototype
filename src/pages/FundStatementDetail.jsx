@@ -1,13 +1,10 @@
 import { useState } from 'react';
-import { ArrowLeft, Download, Mail } from 'lucide-react';
+import { ArrowLeft, Download } from 'lucide-react';
 import {
   fundStatements, formatExactAmount, formatShares, currentUser, platformBrand,
-  statementMailboxOf, requestStatementExport, advanceStatementExport,
+  requestStatementExport, advanceStatementExport,
 } from '../mock/data';
 import { useLang } from '../i18n';
-import StatementMailboxSheet from '../components/StatementMailboxSheet';
-import { confirmationEmailDoc } from '../mock/emailDocs';
-import { renderEmailHtml, sendMockEmail } from '../mock/emailTemplates';
 
 // 确认单详情（2026-11-05 第二版）
 // 结构：一张明细表，不再有「抬头两栏（名 ↔ 金额）+ 明细 key-value」两套排版并存。
@@ -18,8 +15,6 @@ import { renderEmailHtml, sendMockEmail } from '../mock/emailTemplates';
 export default function FundStatementDetail({ id, navigate, goBack }) {
   const { t } = useLang();
   const [printNote, setPrintNote] = useState('');
-  const [mailboxOpen, setMailboxOpen] = useState(false);
-  const [sendNote, setSendNote] = useState('');
   const s = (fundStatements || []).find(x => x.id === id);
 
   if (!s) {
@@ -60,38 +55,21 @@ export default function FundStatementDetail({ id, navigate, goBack }) {
     }
     setPrintNote('');
     // 记录写死在 print 之前：打印对话框的「取消」无法感知，记录只能算「发起过」
-    logExport(false);
+    // 下载是本地动作，不要求收件邮箱；手动「发送到邮箱」已下线（2026-11-13，
+    // 确认单按 SFC 口径自动送达，手动补发与自动送达重复）
+    logExport();
     window.print();
   };
 
-  // 下载/发送都落一条「申请成功」的导出记录（出生即 ready，不造「申请中」假延迟）；
-  // 下载是本地动作，不要求收件邮箱
-  const logExport = (requireMailbox = true) => {
+  const logExport = () => {
     const res = requestStatementExport({
       kind: 'confirmation',
       fundName: s.fundName,
       tradeType: s.tradeType || '认购',
       targetHref: `#fund-statement/${s.id}`,
-      requireMailbox,
+      requireMailbox: false,
     });
     if (res.ok) advanceStatementExport(res.record.id);
-  };
-
-  const handleSend = () => {
-    const to0 = statementMailboxOf();
-    if (!to0) {
-      setMailboxOpen(true);
-      return;
-    }
-    const doc = confirmationEmailDoc(s, t);
-    sendMockEmail({
-      to: to0,
-      subject: doc.subject,
-      html: renderEmailHtml(doc),
-      label: '交易确认单',
-    });
-    logExport();
-    setSendNote(t('已发送至 {email}').replace('{email}', to0));
   };
 
   return (
@@ -180,23 +158,12 @@ export default function FundStatementDetail({ id, navigate, goBack }) {
       </div>
 
       {printNote && <p className="statement-print-note">{printNote}</p>}
-      {sendNote && <p className="doc-send-note">{sendNote}</p>}
 
       <div className="bottom-action-bar doc-actions">
-        <button className="btn btn-outline" onClick={handleSend}>
-          <Mail size={16} /> {t('发送到邮箱')}
-        </button>
         <button className="btn btn-primary" onClick={handleDownload}>
           <Download size={16} /> {t('下载确认单')}
         </button>
       </div>
-
-      {/* 未设置接收邮箱时的拦截：与期间结单页共用同一个组件 */}
-      <StatementMailboxSheet
-        open={mailboxOpen}
-        onClose={() => setMailboxOpen(false)}
-        onSaved={() => handleSend()}
-      />
     </div>
   );
 }

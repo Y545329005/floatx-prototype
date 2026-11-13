@@ -9017,16 +9017,9 @@ input, select, textarea {
 .doc-foot span:last-child { flex: none; white-space: nowrap; }
 .doc-nowrap { white-space: nowrap; }
 
-.doc-send-note {
-  padding: 0 2px var(--space-2);
-  font-size: var(--text-sm);
-  color: var(--success);
-}
-
 .doc-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-2);
+  /* 三类单据页均为单主按钮（手动「发送到邮箱」2026-11-13 下线后） */
+  display: block;
 }
 
 .doc-unready-title {
@@ -9381,7 +9374,7 @@ input, select, textarea {
   .doc-note, .doc-empty, .doc-decl { font-size: 7.5pt; }
   .doc-legal { font-size: 6.5pt; color: #777; }
   .doc-foot { font-size: 6.5pt; color: #888; }
-  .doc-actions, .doc-send-note { display: none !important; }
+  .doc-actions { display: none !important; }
 }
 
 /* 交易单据卡（2026-10-28 结构重做）：一张「委托 → 成交」账单。
@@ -9951,27 +9944,6 @@ input, select, textarea {
    新类一律 p-funds-*：详情页仍在用 fund-card / fund-return / fund-metrics，
    两套互不影响，改列表不会牵连 FundDetail。 */
 .p-funds-head { align-items: center; }
-.p-funds-head-right {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-/* 基金结单入口（2026-11-05）：图标 + 文字。原 .p-funds-count 计数已删，
-   与文字按钮同处页头右侧，纯图标会被读成「文档 / 帮助」。 */
-.p-funds-statement {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 36px;
-  padding: 0 var(--space-2);
-  border-radius: var(--radius-md);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--text-secondary);
-  transition: background 0.2s;
-}
-.p-funds-statement:hover { background: var(--bg); }
 
 /* 吸顶条与第一张卡之间留一口气：sticky 自带阴影，贴边会被看成「卡片被切掉」 */
 .subpage-sticky + .p-funds-card { margin-top: var(--space-2); }

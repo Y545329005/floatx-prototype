@@ -1,10 +1,7 @@
 import { useState } from 'react';
-import { ArrowLeft, Download, Mail } from 'lucide-react';
-import { formatExactAmount, currentUser, platformBrand, receiptOf, statementMailboxOf } from '../mock/data';
+import { ArrowLeft, Download } from 'lucide-react';
+import { formatExactAmount, currentUser, platformBrand, receiptOf } from '../mock/data';
 import { useLang } from '../i18n';
-import StatementMailboxSheet from '../components/StatementMailboxSheet';
-import { receiptEmailDoc } from '../mock/emailDocs';
-import { renderEmailHtml, sendMockEmail } from '../mock/emailTemplates';
 
 /* ─────────────────────────────────────────────────────────────
    单次资金变动回单（2026-11-12）
@@ -18,11 +15,9 @@ const fmtQty = (n) => {
   return v.toLocaleString('en-US', { maximumFractionDigits: 6 });
 };
 
-export default function Receipt({ type, id, goBack, setToast }) {
+export default function Receipt({ type, id, goBack }) {
   const { t } = useLang();
-  const [mailboxOpen, setMailboxOpen] = useState(false);
   const [printNote, setPrintNote] = useState('');
-  const [sendNote, setSendNote] = useState('');
 
   const rec = receiptOf(type, id);
 
@@ -67,18 +62,6 @@ export default function Receipt({ type, id, goBack, setToast }) {
     }
     setPrintNote('');
     window.print();
-  };
-
-  const sendNow = () => {
-    const to = statementMailboxOf();
-    if (!to) {
-      setMailboxOpen(true);
-      return;
-    }
-    const doc = receiptEmailDoc(rec, t);
-    sendMockEmail({ to, subject: doc.subject, html: renderEmailHtml(doc), label: rec.title });
-    setSendNote(t('已发送至 {email}').replace('{email}', to));
-    if (setToast) setToast(t('回单已发送至邮箱'));
   };
 
   const amountText = rec.type.startsWith('crypto')
@@ -147,22 +130,13 @@ export default function Receipt({ type, id, goBack, setToast }) {
       </article>
 
       {printNote && <p className="statement-print-note">{printNote}</p>}
-      {sendNote && <p className="doc-send-note">{sendNote}</p>}
+      {printNote && <p className="statement-print-note">{printNote}</p>}
 
       <div className="bottom-action-bar doc-actions">
-        <button className="btn btn-outline" onClick={sendNow}>
-          <Mail size={16} /> {t('发送到邮箱')}
-        </button>
         <button className="btn btn-primary" onClick={download}>
           <Download size={16} /> {t('下载')}
         </button>
       </div>
-
-      <StatementMailboxSheet
-        open={mailboxOpen}
-        onClose={() => setMailboxOpen(false)}
-        onSaved={() => sendNow()}
-      />
     </div>
   );
 }
