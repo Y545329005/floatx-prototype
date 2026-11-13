@@ -1,4 +1,4 @@
-import { ChevronRight, FileText } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { funds, getPiStatusForUser, PI_STATUS, currentUser, getHoldings, fundMonthsLabel } from '../mock/data';
 import { useLang } from '../i18n';
 
@@ -41,18 +41,6 @@ export default function Funds({ navigate }) {
       <div className="subpage-sticky">
         <div className="page-header p-funds-head">
           <h1>{t('基金')}</h1>
-          <div className="p-funds-head-right">
-            {/* 结单中心入口（2026-11-13）：页面是「账户结单 | 交易确认单」双页签，
-                入口只写「确认单」就漏了账户结单那一半 */}
-            <button
-              type="button"
-              className="p-funds-statement"
-              onClick={() => navigate('#fund-statements')}
-            >
-              <FileText size={16} />
-              {t('结单')}
-            </button>
-          </div>
         </div>
       </div>
 

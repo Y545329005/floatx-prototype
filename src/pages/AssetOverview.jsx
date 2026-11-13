@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Bitcoin, ClipboardList, ChevronRight, CreditCard, Download, Eye, EyeOff, History, Upload } from 'lucide-react';
+import { ArrowLeft, Bitcoin, ClipboardList, ChevronRight, CreditCard, Download, Eye, EyeOff, FileText, History, Upload } from 'lucide-react';
 import { keyed } from '../lib';
 import {
   getFundPortfolio, myFundOrders, formatExactAmount, formatShares, CURRENCY_META, cryptoModuleEnabled,
@@ -163,8 +163,14 @@ export default function AssetOverview({ navigate, goBack, embed = false }) {
           </span>
           <span>{t('我的交易')}</span>
         </button>
-        {/* 数字资产替代原「基金结单」格位（2026-11-05 标注）：结单入口移到基金页右上角，
-            资产页这一格给集团钱包入口；未开放时该格不渲染。 */}
+        {/* 结单入口回资产页（2026-11-13 第二次迁移）：结单是全账户凭证
+            （法币+数字资产+基金+资金往来），挂基金域属语义错位；
+            资产页动作区是它的 2026-11-05 前历史落点，「看我的钱 / 核对我的钱」同域 */}
+        <button className="asset-action" onClick={() => navigate('#fund-statements')}>
+          <span className="asset-action-icon"><FileText size={18} /></span>
+          <span>{t('结单')}</span>
+        </button>
+        {/* 数字资产格（2026-11-05 标注）：集团钱包入口；未开放时该格不渲染 */}
         {cryptoModuleEnabled && (
           <button className="asset-action" onClick={() => navigate('#crypto')}>
             <span className="asset-action-icon"><Bitcoin size={18} /></span>
