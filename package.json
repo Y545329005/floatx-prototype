@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "vite build",
+    "build": "node scripts/check-copy.mjs && vite build",
+    "check:copy": "node scripts/check-copy.mjs",
     "preview": "vite preview --host 127.0.0.1"
   },
   "dependencies": {

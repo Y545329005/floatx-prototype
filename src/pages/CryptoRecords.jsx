@@ -4,7 +4,7 @@ import {
 } from 'lucide-react';
 import {
   advanceCryptoDeposit, advanceCryptoWithdrawal, cryptoChainOf, cryptoDepositsOf,
-  cryptoWithdrawalsOf, cryptoTimeLeft, logCryptoCall,
+  cryptoWithdrawalsOf, cryptoTimeLeft, logCryptoCall, isDemoMode,
 } from '../mock/data';
 import { useLang } from '../i18n';
 import {
@@ -120,14 +120,31 @@ export default function CryptoRecords({ navigate, goBack }) {
 
             <DetailBody row={detail} t={t} copiedKey={copiedKey} copy={copy} />
 
-            {detail.kind === 'deposit' && detail.raw.status === 'confirming' && (
-              <button type="button" className="btn btn-outline btn-sm btn-full crypto-demo-btn" onClick={() => advance(detail)}>
-                {t('演示：模拟确认入账')}
+            {/* 回单只在终态出现：在途单据还没有凭证可出 */}
+            {((detail.kind === 'deposit' && detail.raw.status === 'credited')
+              || (detail.kind === 'withdraw' && detail.raw.status === 'confirmed')) && (
+              <button
+                type="button"
+                className="btn btn-outline btn-full crypto-receipt-btn"
+                onClick={() => {
+                  const kind = detail.kind === 'deposit' ? 'crypto-deposit' : 'crypto-withdraw';
+                  const id = detail.raw.id;
+                  setDetail(null);
+                  navigate(`#receipt/${kind}/${id}`);
+                }}
+              >
+                {t('查看回单')}
               </button>
             )}
-            {detail.kind === 'withdraw' && ['pending_approval', 'manual_pending', 'submitted', 'broadcasting', 'unknown'].includes(detail.raw.status) && (
+
+            {isDemoMode() && detail.kind === 'deposit' && detail.raw.status === 'confirming' && (
               <button type="button" className="btn btn-outline btn-sm btn-full crypto-demo-btn" onClick={() => advance(detail)}>
-                {detail.raw.status === 'pending_approval' ? t('演示：审批通过') : t('演示：推进托管状态')}
+                {t('演示：模拟确认入账')} {/* copy-allow: 演示操作（判据2，isDemoMode 守卫） */}
+              </button>
+            )}
+            {isDemoMode() && detail.kind === 'withdraw' && ['pending_approval', 'manual_pending', 'submitted', 'broadcasting', 'unknown'].includes(detail.raw.status) && (
+              <button type="button" className="btn btn-outline btn-sm btn-full crypto-demo-btn" onClick={() => advance(detail)}>
+                {detail.raw.status === 'pending_approval' ? t('演示：审批通过') : t('演示：推进托管状态')} {/* copy-allow: 演示操作（判据2，isDemoMode 守卫） */}
               </button>
             )}
           </div>

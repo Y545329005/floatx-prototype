@@ -339,7 +339,10 @@ input, select, textarea {
 .asset-overview-page,
 .fund-orders-page,
 .fund-statements-page,
+.fund-statement-exports-page,
 .fund-statement-detail-page,
+.doc-page,
+.mail-preview-page,
 .fund-request-detail-page,
 .security-center {
   padding-top: 0;
@@ -8179,17 +8182,26 @@ input, select, textarea {
 .p-fund-detail-note { margin-top: var(--space-2); font-size: var(--text-xs); line-height: 1.55; color: var(--text-secondary); }
 
 /* 条款分组 + 标签/值行：值右对齐 tabular-nums，不再用居中 3 列（上一版 9 格有 4 格折行） */
+/* 2026-11-13 分组降噪：横线只表达组边界——组标题带 border-top，组内行线全部移除
+   （此前每行一条 border-bottom，18 行 18 条线，分组感反而被冲掉） */
 .p-fund-detail-group {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-2);
-  margin: var(--space-4) 0 var(--space-1);
+  margin: var(--space-3) 0 var(--space-1);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-light);
   font-size: var(--text-xs);
   font-weight: 600;
   color: var(--text);
 }
-.p-fund-detail-group:first-of-type { margin-top: var(--space-2); }
+/* 卡内第一个组贴着卡片标题，不画线也不留组间距 */
+.p-fund-detail-group.is-first {
+  margin-top: var(--space-2);
+  padding-top: 0;
+  border-top: 0;
+}
 
 .p-fund-detail-rows > div {
   display: flex;
@@ -8199,9 +8211,7 @@ input, select, textarea {
                         时不允许换行，标签会撑出卡片右边缘、值被挤到看不见——实测 2026-10-28 */
   gap: 2px var(--space-3);
   padding: 7px 0;
-  border-bottom: 1px solid var(--border-light);
 }
-.p-fund-detail-rows > div:last-child { border-bottom: 0; }
 .p-fund-detail-rows dt { flex-shrink: 1; min-width: 0; font-size: var(--text-sm); color: var(--text-secondary); }
 .p-fund-detail-rows dd {
   min-width: 0;
@@ -8217,6 +8227,104 @@ input, select, textarea {
   font-weight: 400;
   font-size: var(--text-sm);
   color: var(--text-secondary);
+}
+
+/* 交易节点时间线（2026-11-13 学富途）：相对轴。组内块，不再画分隔线——线只表达组边界；
+   节点轨道线是流程示意（点连成线），不是表格行线，属同一视觉语言 */
+.p-fund-detail-tl { margin-top: var(--space-3); }
+.p-fund-detail-tl-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+.p-fund-detail-tl-row + .p-fund-detail-tl-row { margin-top: var(--space-3); }
+.p-fund-detail-tl-cap {
+  flex: 0 0 auto;
+  padding-top: 1px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.p-fund-detail-tl-track {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding-top: 1px;
+}
+/* 轨道线：从首节点圆心到末节点圆心（3 等分列，圆心在 1/6 与 5/6 处） */
+.p-fund-detail-tl-track::before {
+  content: '';
+  position: absolute;
+  left: 16.6%;
+  right: 16.6%;
+  top: 6px;
+  height: 1px;
+  background: var(--border);
+}
+.p-fund-detail-tl-node {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  text-align: center;
+}
+.p-fund-detail-tl-dot {
+  display: block;
+  width: 9px;
+  height: 9px;
+  margin: 0 auto var(--space-1);
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+}
+.p-fund-detail-tl-node.is-first .p-fund-detail-tl-dot {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+.p-fund-detail-tl-label {
+  display: block;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text);
+}
+.p-fund-detail-tl-value {
+  display: block;
+  margin-top: 1px;
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.p-fund-detail-tl-note {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  color: var(--text-tertiary);
+}
+
+/* 目标回报脚注：数字挂上标，口径集中卡底（学富途）；页底整段法务不动 */
+.p-fund-detail-fn-mark {
+  margin-left: 2px;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+.p-fund-detail-fn {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  color: var(--text-tertiary);
+}
+.p-fund-detail-fn sup { margin-right: 2px; }
+
+/* 文件更新日期：有 url 才渲染；日期淡于「查看」动作，避免抢操作焦点 */
+.p-fund-detail-doc-date {
+  margin-right: var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: 400;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
 }
 
 .p-fund-detail-risks { list-style: none; display: flex; flex-direction: column; gap: 6px; }
@@ -8353,14 +8461,23 @@ input, select, textarea {
   overflow: hidden;
 }
 
+/* 行本身是可进入的按钮（2026-11-13 第六版）：整行一个动作 = 打开那份单据，
+   行尾只剩 chevron。导出动作搬进了文档页，行上不再挂第二个动作。
+   上下 padding 用 --space-4（2026-11-13 二次修订）：月份行只有单行文字，
+   14px 时行高 ≈50px 勉强达标，18px 拉到 ≈58px——热区富余高于 Apple 44pt /
+   Material 48dp，月份行与确认单行共用本类，同步加宽保持列表一致性。 */
 .p-statements-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 14px;
+  display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-3);
   width: 100%;
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-4);
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
   text-align: left;
+  cursor: pointer;
   transition: background 0.15s;
 }
 
@@ -8376,11 +8493,19 @@ input, select, textarea {
   outline-offset: -2px;
 }
 
+/* 行主体：铺满左侧，把 chevron 顶到右缘 */
 .p-statements-main {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
+}
+
+/* 行尾 chevron：App 列表「可以进去」的唯一记号 */
+.p-statements-go {
+  flex: none;
+  color: var(--text-tertiary);
 }
 
 /* 基金名独占一行：中文名 15px 在 296px 里放得下，英文名与未来更长的产品名折两行，
@@ -8456,10 +8581,423 @@ input, select, textarea {
   color: var(--primary);
 }
 
-.p-statements-chev {
-  align-self: center;
+.p-statements-hint {
+  padding: var(--space-3) var(--space-1) 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+/* ========== 导出记录（2026-11-12） ==========
+   一页只回答「我申请过的在哪」。状态用淡底胶囊而不是整行染色：
+   失败的记录也要能读清金额与范围，整行染红会让它看起来像不可挽回的错误。 */
+.p-export-row {
+  padding: var(--space-3) var(--space-4);
+}
+
+.p-export-row + .p-export-row {
+  border-top: 1px solid var(--border-light);
+}
+
+.p-export-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+
+.p-export-title {
+  min-width: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.p-export-status {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.p-export-status.is-processing { background: var(--warning-bg); color: var(--warning); }
+.p-export-status.is-ready { background: var(--success-bg); color: var(--success); }
+.p-export-status.is-failed { background: var(--danger-bg); color: var(--danger); }
+
+.p-export-kv {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 3px 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.p-export-kv b {
+  min-width: 0;
+  font-weight: 500;
+  color: var(--text);
+  text-align: right;
+  word-break: break-all;
+}
+
+.p-export-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
   color: var(--text-tertiary);
 }
+
+.p-export-foot .is-muted { color: var(--danger); }
+
+.p-export-download {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--primary-light);
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.p-export-download:disabled {
+  background: var(--bg);
+  color: var(--text-tertiary);
+  cursor: default;
+}
+
+.p-export-download:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.p-export-fail,
+.p-export-pending {
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+}
+
+.p-export-fail { color: var(--danger); }
+.p-export-pending { color: var(--text-secondary); }
+
+/* ========== A4 文档（期间结单 / 回单共用，2026-11-12） ==========
+   屏幕上是一张纸的预览，不是 App 页面：白底、细边、紧凑字号。
+   打印时去掉卡片外观（见 @media print）。 */
+.doc-sheet {
+  padding: var(--space-4);
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.doc-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1.5px solid var(--text);
+}
+
+.doc-brand {
+  font-size: var(--text-xl);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: var(--text);
+}
+
+.doc-title {
+  margin-top: 2px;
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.doc-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+.doc-client {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px var(--space-3);
+  margin: var(--space-3) 0 var(--space-1);
+}
+
+.doc-client span {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+.doc-client b {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.doc-section-title {
+  margin: var(--space-4) 0 var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* 表格在 390px 屏幕上会挤，允许横向滚动；打印时按 A4 宽度完整铺开 */
+.doc-table-wrap { overflow-x: auto; }
+
+.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-xs);
+}
+
+.doc-table th {
+  padding: 6px 5px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+/* 表格在手机上横向滚动，单元格默认不折行：
+   日期、金额、哈希被折成两行比横向滑动更难读 */
+.doc-table td {
+  padding: 6px 5px;
+  border-bottom: 1px solid var(--border-light);
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.doc-table .wrap { white-space: normal; }
+
+.doc-group td {
+  background: var(--bg);
+  color: var(--text-secondary);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.doc-table .num {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.doc-table .in { color: var(--success); }
+.doc-table .out { color: var(--danger); }
+
+.doc-table .ref {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.doc-table .doc-total td,
+.doc-total td {
+  background: var(--bg);
+  font-weight: 700;
+}
+
+/* 回单是纵向的两列 key-value，不是横向宽表 */
+.doc-table-kv { table-layout: fixed; }
+
+.doc-table-kv th {
+  width: 34%;
+  background: transparent;
+  font-weight: 500;
+  white-space: normal;
+  color: var(--text-secondary);
+}
+
+.doc-table-kv td {
+  white-space: normal;
+  word-break: break-all;
+}
+
+.doc-note,
+.doc-empty {
+  margin-top: 6px;
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.doc-decl {
+  margin: var(--space-3) 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.doc-amount {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0 6px;
+}
+
+.doc-amount span {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.doc-amount b {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.doc-legal {
+  margin-top: var(--space-4);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  color: var(--text-tertiary);
+}
+
+.doc-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-light);
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+.doc-foot span:first-child { min-width: 0; }
+.doc-foot span:last-child { flex: none; white-space: nowrap; }
+.doc-nowrap { white-space: nowrap; }
+
+.doc-send-note {
+  padding: 0 2px var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--success);
+}
+
+.doc-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.doc-unready-title {
+  margin-bottom: 4px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* 邮件校样页（不挂入口） */
+.mail-preview-subject {
+  margin-bottom: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.mail-preview-frame {
+  width: 100%;
+  height: 720px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+}
+
+/* 演示模式开关（2026-11-13 阶段 1）：设置页里唯一常驻的演示入口 */
+.settings-demo-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-1) 0 var(--space-2);
+}
+
+.settings-demo-text { min-width: 0; }
+
+.settings-demo-text .list-item-title { font-size: var(--text-md); }
+
+.demo-switch {
+  position: relative;
+  flex: none;
+  width: 48px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--border-light);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.demo-switch.is-on { background: var(--primary); }
+
+.demo-switch:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.demo-switch-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s;
+}
+
+.demo-switch.is-on .demo-switch-knob { transform: translateX(20px); }
+
+/* 资金明细行尾的回单入口：小、贴着状态，不和金额抢注意力 */
+.transaction-row-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: none;
+}
+
+.transaction-receipt {
+  padding: 3px 10px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.transaction-receipt:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.crypto-receipt-btn { margin-top: var(--space-3); }
 
 .p-statements-empty {
   display: flex;
@@ -8483,8 +9021,10 @@ input, select, textarea {
    金额作为第一行并加粗——它属于「这笔成交的数字」，不属于抬头装饰。 */
 .statement-card { padding: var(--space-4); }
 
-/* 纸面文头：只在打印时出现 */
-.statement-print-head { display: none; }
+/* 纸面文头 / 客户块 / 法务页脚：只在打印时出现 */
+.statement-print-head,
+.statement-print-client,
+.statement-print-legal { display: none; }
 
 .statement-head {
   padding-bottom: var(--space-3);
@@ -8558,6 +9098,8 @@ input, select, textarea {
 /* 打印：屏幕上的壳全部退场，只留这张凭证。
    作用域限定在本页，不影响其它页面打印。 */
 @media print {
+  @page { size: A4; margin: 16mm; }
+
   .subpage-sticky,
   .bottom-nav,
   .bottom-action-bar,
@@ -8571,30 +9113,147 @@ input, select, textarea {
 
   .fund-statement-detail-page { padding: 0; }
 
+  /* 纸面是一份可存档的凭证，不是截屏：A4 版心内不保留卡片投影与圆角 */
   .statement-card {
     box-shadow: none;
-    border: 1px solid #d9d9d9;
+    border: 0;
     border-radius: 0;
-    padding: 24px;
+    padding: 0;
     margin: 0;
   }
 
   .statement-print-head {
     display: flex;
-    align-items: baseline;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 16px;
-    margin-bottom: 20px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid #18181b;
+    padding-bottom: 8px;
+    border-bottom: 1.5px solid #111;
   }
 
+  .statement-print-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .statement-print-brand strong {
+    font-size: 15pt;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    color: #111;
+  }
+
+  .statement-print-brand span {
+    font-size: 11pt;
+    font-weight: 600;
+    color: #111;
+  }
+
+  .statement-print-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 7.5pt;
+    line-height: 1.5;
+    color: #555;
+    text-align: right;
+  }
+
+  .statement-print-client {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 16px;
+    margin: 10px 0 6px;
+    font-size: 8.5pt;
+    color: #111;
+  }
+
+  .statement-print-client span {
+    display: block;
+    font-size: 7.5pt;
+    color: #888;
+    margin-bottom: 1px;
+  }
+
+  .statement-print-client b { font-weight: 600; }
+
+  .statement-head {
+    padding-bottom: 6px;
+    margin: 10px 0 2px;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .statement-title { font-size: 12pt; font-weight: 600; }
+  .statement-sub { font-size: 8.5pt; color: #555; margin-top: 2px; }
+
+  .statement-row {
+    padding: 5px 0;
+    font-size: 9pt;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .statement-row > span:first-child { color: #666; }
+
   /* 纸面凭证不带品牌色：彩色打印不必说，黑白打印时蓝值会掉成浅灰 */
-  .statement-row.is-amount > span:last-child { color: #000 !important; }
+  .statement-row > span:last-child { color: #000 !important; }
 
-  .statement-print-head strong { font-size: 16px; }
-  .statement-print-head span { font-size: 11px; color: #555; }
+  .statement-row.is-amount > span:last-child {
+    color: #000 !important;
+    font-size: 11pt;
+    font-weight: 700;
+  }
 
+  .statement-note {
+    margin: 6px 0 0;
+    font-size: 7.5pt;
+    color: #666;
+  }
+
+  .statement-print-legal {
+    display: block;
+    margin-top: 14px;
+    padding-top: 6px;
+    border-top: 1px solid #ddd;
+  }
+
+  .statement-print-legal p {
+    margin: 0 0 3px;
+    font-size: 6.5pt;
+    line-height: 1.5;
+    color: #777;
+  }
+
+  .statement-print-foot {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 8px;
+    font-size: 6.5pt;
+    color: #888;
+  }
+
+  /* A4 文档（期间结单 / 回单）：屏幕上带卡片外观，纸上必须是一张纸 */
+  .doc-page { padding: 0; }
+  .doc-sheet { padding: 0; border-radius: 0; box-shadow: none; }
+  .doc-head { border-bottom: 1.5px solid #111; padding-bottom: 8px; }
+  .doc-brand { font-size: 15pt; }
+  .doc-title { font-size: 11pt; }
+  .doc-meta { font-size: 7.5pt; color: #555; }
+  .doc-client { margin: 10px 0 4px; gap: 4px 16px; }
+  .doc-client span { font-size: 7.5pt; color: #888; }
+  .doc-client b { font-size: 8.5pt; color: #111; }
+  .doc-section-title { font-size: 10pt; margin: 12px 0 5px; }
+  .doc-table { font-size: 8pt; }
+  .doc-table th { background: #F2F4F7; color: #444; }
+  .doc-table td { padding: 4px 5px; }
+  .doc-amount { padding: 8px 0 4px; }
+  .doc-amount b { font-size: 14pt; }
+  .doc-note, .doc-empty, .doc-decl { font-size: 7.5pt; }
+  .doc-legal { font-size: 6.5pt; color: #777; }
+  .doc-foot { font-size: 6.5pt; color: #888; }
+  .doc-actions, .doc-send-note { display: none !important; }
 }
 
 /* 交易单据卡（2026-10-28 结构重做）：一张「委托 → 成交」账单。
@@ -10455,4 +11114,15 @@ button.kyc-form-input.picker-trigger {
   .bottom-nav {
     max-width: none;
   }
+}
+
+/* ========== 防截屏演示遮罩（2026-11-13 会议拍板：截图全白方案，不做水印） ==========
+   页面切离（visibilitychange hidden）时全覆盖白屏，回到前台即移除。
+   仅基金域 + 结单类路由挂载（见 shell/router.jsx SCREEN_GUARD_PATHS）；
+   组件见 components/ScreenGuard.jsx。z-index 3000：盖过 lightbox（2000）在内的一切层。 */
+.screen-guard-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: var(--bg-card);
 }

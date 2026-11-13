@@ -214,7 +214,22 @@ export default function Transactions({ navigate, goBack }) {
                       <span className={`transaction-type ${row.kind}`}>{t(row.kind === 'deposit' ? '充值' : '提现')}</span>
                       {meta && <span className={`tag ${meta.cls} transaction-status-tag`}>{t(meta.labelKey)}</span>}
                     </span>
-                    {row.extra && <span className="wallet-transaction-extra">{row.extra}</span>}
+                    <span className="transaction-row-right">
+                      {row.extra && <span className="wallet-transaction-extra">{row.extra}</span>}
+                      {/* 回单入口只挂已完成流水：申请单还在途，没有凭证可出 */}
+                      {row.status === 'completed' && (
+                        <button
+                          type="button"
+                          className="transaction-receipt"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`#receipt/${row.kind}/${row.reqId || row.id}`);
+                          }}
+                        >
+                          {t('回单')}
+                        </button>
+                      )}
+                    </span>
                   </div>
                   <div className="wallet-transaction-footer">
                     <span className="text-muted text-sm">

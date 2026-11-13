@@ -3,6 +3,7 @@
 // 新增页面只改这里，双壳自动同步（原 App.jsx renderPage switch 等价搬入，props 逐项未动）。
 
 import { lazy } from 'react';
+import ScreenGuard from '../components/ScreenGuard';
 
 // APP 端页面按需加载（2026-09-24 主包瘦身 Phase 1 模式延续：36 页全部 lazy）
 // 2026-10-16 首期裁剪：资产树 13 页路由摘除（钱包/出入金/换汇/银行卡/持仓/报告等线上账本页，
@@ -38,6 +39,10 @@ const FundSubscribe = lazy(() => import('../pages/FundSubscribe'));
 const FundRedeem = lazy(() => import('../pages/FundRedeem'));
 const FundStatements = lazy(() => import('../pages/FundStatements'));
 const FundStatementDetail = lazy(() => import('../pages/FundStatementDetail'));
+const FundStatementExports = lazy(() => import('../pages/FundStatementExports'));
+const FundPeriodStatement = lazy(() => import('../pages/FundPeriodStatement'));
+const Receipt = lazy(() => import('../pages/Receipt'));
+const MailPreview = lazy(() => import('../pages/MailPreview'));
 const FundOrders = lazy(() => import('../pages/FundOrders'));
 // 资产 / 资金（2026-10-28 一期闭环恢复：资产只读聚合 + 资金公共模块最小 4 条路由）
 // 2026-11-02 资金审查收尾：#wallet 摘除——资金域归属地为 #asset，#wallet 全仓无正向入口
@@ -58,12 +63,31 @@ const CryptoDeposit = lazy(() => import('../pages/CryptoDeposit'));
 const CryptoWithdraw = lazy(() => import('../pages/CryptoWithdraw'));
 const CryptoAddresses = lazy(() => import('../pages/CryptoAddresses'));
 const CryptoRecords = lazy(() => import('../pages/CryptoRecords'));
-const CryptoMap = lazy(() => import('../pages/CryptoMap'));
 
 // 渲染 APP 端页面（门控放行后调用）。
 // ctx: { navigate, goBack, setToast, isLoggedIn, setIsLoggedIn, embed }
+// 基金域 + 结单类路由（2026-11-13 防截屏演示）：切离页面时全白遮罩，见 components/ScreenGuard.jsx。
+// 结单导出/期间结单/回单/邮件校样（11-12 线）与结单详情同属敏感数据页，一并纳入——
+// 防详情页不防导出页等于保护不全。范围超出会议字面（基金详情页），属「基金域全部页面」拍板的自然延伸。
+const SCREEN_GUARD_PATHS = new Set([
+  'funds', 'fund', 'fund-subscribe', 'fund-redeem', 'fund-orders',
+  'fund-statements', 'fund-statement', 'fund-statement-exports',
+  'fund-period-statement', 'receipt', 'mail-preview',
+]);
+
 export function renderAppPage(path, param, ctx) {
-  const { navigate, goBack, setToast, isLoggedIn, setIsLoggedIn, embed, param2 } = ctx;
+  const page = renderAppPageInner(path, param, ctx);
+  if (!SCREEN_GUARD_PATHS.has(path)) return page;
+  return (
+    <>
+      <ScreenGuard />
+      {page}
+    </>
+  );
+}
+
+function renderAppPageInner(path, param, ctx) {
+  const { navigate, goBack, setToast, isLoggedIn, setIsLoggedIn, embed, param2, param3 } = ctx;
   switch (path) {
     case 'search':
       return <SearchPage navigate={navigate} goBack={goBack} isLoggedIn={isLoggedIn} />;
@@ -96,6 +120,18 @@ export function renderAppPage(path, param, ctx) {
       return <FundStatements navigate={navigate} goBack={goBack} />;
     case 'fund-statement':
       return <FundStatementDetail id={param} navigate={navigate} goBack={goBack} />;
+    // 导出记录（2026-11-12）：结单导出的申请/生成/下载状态都在这里，不挂在结单页里做二级 tab
+    case 'fund-statement-exports':
+      return <FundStatementExports navigate={navigate} goBack={goBack} />;
+    // 期间结单预览（2026-11-12）：param=起始日、param2=截止日，直接决定聚合区间
+    case 'fund-period-statement':
+      return <FundPeriodStatement from={param} to={param2} goBack={goBack} setToast={setToast} />;
+    // 单次资金变动回单：param=单据类型、param2=单据 id
+    case 'receipt':
+      return <Receipt type={param} id={param2} goBack={goBack} setToast={setToast} />;
+    // 邮件校样页（不挂入口）：param=类型、param2=id、param3=期间结单截止日
+    case 'mail-preview':
+      return <MailPreview type={param} id={param2} to={param3} goBack={goBack} />;
     case 'fund-orders':
       return <FundOrders navigate={navigate} goBack={goBack} setToast={setToast} />;
     // 资产 / 资金公共模块（2026-10-28 恢复；app/withdraw/bank-cards/transactions 资金路由全量接线——
@@ -132,8 +168,10 @@ export function renderAppPage(path, param, ctx) {
       return <CryptoAddresses navigate={navigate} goBack={goBack} setToast={setToast} />;
     case 'crypto-records':
       return <CryptoRecords navigate={navigate} goBack={goBack} />;
+    // CryptoMap 内部演示页已移出投资人路由（2026-11-13 阶段 2，文件保留）：
+    // 旧深链按 fund-requests 的先例重定向到数字资产记录，不落 404
     case 'crypto-map':
-      return <CryptoMap navigate={navigate} goBack={goBack} />;
+      return <CryptoRecords navigate={navigate} goBack={goBack} />;
     case 'fund-requests':
       // 2026-10-29：资金申请页已并入「资金明细」，旧深链落到同一页（默认筛「全部状态」即可看到在途单）
       return <Transactions navigate={navigate} goBack={goBack} />;

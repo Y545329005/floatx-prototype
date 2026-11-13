@@ -1259,6 +1259,57 @@ export const funds = [
   },
 ];
 
+// Term Sheet 种子值（2026-11-13 会议 + Jackson 模板对齐）：集中注入而非逐只内联，
+// 每只产品的条款值集中一处可读。只填各产品有真实来源的值；机构类字段
+// （行政管理人/核数师）不在此编造—— parties 缺值时一览区显示「详见基金文件」。
+// stepInvestment/minRedemption 按基金本币计（f1-usd 即 USD），与净值/持仓记账币种一致。
+const TERM_SHEET_SEEDS = {
+  f1: {
+    // 2026-11-13 详情页文案压缩：条款值由后台手动配置，行内长句收成短语（展示层唯一事实源仍是本文件）
+    underlyingAssets: 'AI、数据中心及算力设施',
+    strategy: '主动管理 · AI 产业链配置',
+    stepInvestment: 100000,
+    minRedemption: 10000,
+  },
+  f2: {
+    underlyingAssets: '美股首次公开发行（IPO）项目配售份额',
+    strategy: '通过合规渠道参与 IPO 一级配置，分散打新',
+    stepInvestment: 100000,
+    minRedemption: 10000,
+  },
+  f3: {
+    underlyingAssets: '货币市场工具及短久期固定收益资产',
+    strategy: '固收增强，以短久期票息收益为主',
+    stepInvestment: 100000,
+    minRedemption: 10000,
+  },
+  f4: {
+    underlyingAssets: '全球多资产类别（股票、债券、另类）配置组合',
+    strategy: '多策略主动配置，分散区域与资产类别',
+    stepInvestment: 100000,
+    minRedemption: 10000,
+  },
+  f5: {
+    underlyingAssets: '东南亚基建与公用事业资产',
+    strategy: '收益型配置，以基建项目现金流分红为主',
+    stepInvestment: 100000,
+    minRedemption: 10000,
+  },
+  f6: {
+    underlyingAssets: '欧洲消费品牌与渠道升级相关权益资产',
+    strategy: '主题投资，聚焦消费升级结构性机会',
+    stepInvestment: 100000,
+    minRedemption: 10000,
+  },
+  'f1-usd': {
+    underlyingAssets: 'AI、数据中心及算力设施',
+    strategy: '主动管理 · AI 产业链配置',
+    stepInvestment: 100000,
+    minRedemption: 10000,
+  },
+};
+funds.forEach((f) => { Object.assign(f, TERM_SHEET_SEEDS[f.id] || {}); });
+
 // 区间收益（2026-10-28）：与 NavChart 完全同口径（切片首尾 last/first-1），
 // m6=近6月(26点) y1=近1年(52点) all=成立以来(全序列)——业绩网格与净值图共用，杜绝两处各算各的
 export function fundRangeReturns(navSeries) {
@@ -1443,6 +1494,16 @@ export const FUND_DEFAULTS = {
   returnValue: '',
   returnNote: '非保证',
   minInvestment: 1000000,
+  // 追加申购门槛（2026-11-13 会议口径）：首笔看 minInvestment（产品条款），
+  // 有本基金持仓后追加只须 stepInvestment 且须为其整数倍——「首次最低100万，后续每次以10万为单位递增」
+  stepInvestment: 100000,
+  // 最低赎回金额（2026-11-13 Term Sheet 模板条款「最低为相当于 10,000」）：
+  // 按「本单预估赎回金额」判定，全额赎回豁免（否则小额持仓会被永久困死）
+  minRedemption: 10000,
+  // Term Sheet 一览区展示字段（2026-11-13 模板对齐）。空值展示层显示「详见基金文件」，
+  // 不编造具名机构——机构类信息（行政管理人/核数师）仍走 parties，由后台录入
+  underlyingAssets: '',
+  strategy: '',
   status: 'draft',
   currency: ['HKD'],
   redemptionDays: 15,
@@ -2034,6 +2095,9 @@ export const FUND_SEED_RESULT = { redeemNet: 0, redeemAt: '' };
     statementNo,
     confirmedAt,
     date: monthsAgoDate(FUND_SEED.monthsAgo),
+    // 结算日期（contract note 要素）：认购=款划付确认日，赎回=回款入账日。
+    // 本平台「确认即划付」，故与交易日同值；字段独立记录——将来结算周期变化只改生成点。
+    settleDate: monthsAgoDate(FUND_SEED.monthsAgo),
   });
 
   // ---------- ② 主持仓的部分赎回：8 周前确认（份额/成本冲减/已实现收益，与 confirmRedemptionOrder 同口径） ----------
@@ -2093,6 +2157,7 @@ export const FUND_SEED_RESULT = { redeemNet: 0, redeemAt: '' };
     statementNo: genOrderNo('FS', redAt),
     confirmedAt: redAt,
     date: redDate,
+    settleDate: redDate,
   });
 
   fundHoldings.push({
@@ -2164,6 +2229,7 @@ export const FUND_SEED_RESULT = { redeemNet: 0, redeemAt: '' };
     statementNo: genOrderNo('FS', at2),
     confirmedAt: at2,
     date: date2,
+    settleDate: date2,
   });
 
   fundHoldings.push({
@@ -2264,6 +2330,440 @@ export const FUND_SEED_RESULT = { redeemNet: 0, redeemAt: '' };
   }
 })();
 
+// ========== 结单接收邮箱 + 导出记录（2026-11-12） ==========
+// 为什么单独一个邮箱、不复用登录邮箱：结单要发到客户长期可查的邮箱（常常不是登录邮箱），
+// 而「未设置」本身就是一个必须被拦截的状态（设计稿：未设置接收邮箱弹层）。
+// 默认留空 —— 演示时第一次点「导出」就能走到拦截分支；真实系统由 KYC 资料带入默认值。
+export const statementMailbox = { email: '', updatedAt: null };
+// 演示模式开关（2026-11-13 阶段 1）：默认关，随快照持久化（旧快照缺 key → 保持默认关）
+export const demoMode = { on: false, updatedAt: null };
+
+// 导出记录 = 一次「申请 → 生成 → 下载」的过程，状态只有三档。
+// 有效期 30 天按 readyAt 起算：过期只是下载入口失效，记录本身永久保留（对账要查得到）。
+// 种子覆盖「申请成功」「申请失败」两个分支；「申请中」由点击导出实时产生，
+// 2 秒后由导出记录页调用 advanceStatementExport 置为成功（原型没有后端 PDF 生成）。
+export const statementExports = [
+  {
+    id: 'se-seed-1',
+    userId: 'u1',
+    kind: 'confirmation',
+    fundName: 'AIDC 基金',
+    tradeType: '认购',
+    targetHref: '#fund-statement/fst-seed-1',
+    requestedAt: '2026-11-05 10:12:44',
+    readyAt: '2026-11-05 10:13:02',
+    status: 'ready',
+    failReason: '',
+  },
+  {
+    id: 'se-seed-2',
+    userId: 'u1',
+    kind: 'confirmation',
+    fundName: '美股 IPO 配置基金',
+    tradeType: '认购',
+    targetHref: '',
+    requestedAt: '2026-10-30 16:20:10',
+    readyAt: null,
+    status: 'failed',
+    failReason: '生成失败，请重新申请',
+  },
+];
+
+export const STATEMENT_EXPORT_TTL_DAYS = 30;
+
+// 只做日期加减，不碰时区：结单有效期以「哪一天」为准，精确到秒没有业务意义
+function addDaysStamp(dateStr, days) {
+  const [y, m, d] = String(dateStr).split('-').map(Number);
+  if (!y || !m || !d) return '';
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + days);
+  const p = n => String(n).padStart(2, '0');
+  return `${dt.getFullYear()}-${p(dt.getMonth() + 1)}-${p(dt.getDate())}`;
+}
+
+export function statementExportExpiresAt(rec) {
+  if (!rec || !rec.readyAt) return '';
+  return addDaysStamp(String(rec.readyAt).slice(0, 10), STATEMENT_EXPORT_TTL_DAYS);
+}
+
+export function statementExportExpired(rec) {
+  const exp = statementExportExpiresAt(rec);
+  if (!exp) return false;
+  return formatNow().slice(0, 10) > exp;
+}
+
+export function statementMailboxOf() {
+  return statementMailbox.email || '';
+}
+
+export function setStatementMailbox(email) {
+  const v = String(email || '').trim();
+  if (!v) return { ok: false, error: '请输入接收邮箱' };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return { ok: false, error: '请输入有效的邮箱地址' };
+  statementMailbox.email = v;
+  statementMailbox.updatedAt = formatNow();
+  Storage.save();
+  return { ok: true, email: v };
+}
+
+// ---------- 演示模式（2026-11-13 阶段 1） ----------
+// 对内文案治理的落地口径：模拟推进按钮、固定验证码提示、演示重置入口全部收进这个开关，
+// 默认关闭——评审打开设置页看到的是产品语言，打开开关才出现演示操作口。
+// 判据与审计表见 prototype/docs/基金APP交付规范-2026-11-13.html §1 / 附录 A。
+export function isDemoMode() {
+  return !!demoMode.on;
+}
+
+export function setDemoMode(v) {
+  demoMode.on = !!v;
+  demoMode.updatedAt = formatNow();
+  Storage.save();
+  return { ok: true, on: demoMode.on };
+}
+
+export function statementExportsOf(userId) {
+  const owner = userId || currentUser.id;
+  return statementExports.filter(r => r.userId === owner);
+}
+
+export function requestStatementExport({ kind = 'confirmation', fundName = '', tradeType = '', scopeLabel = '', rangeFrom = '', rangeTo = '', targetHref = '', requireMailbox = true } = {}) {
+  // 邮箱只拦「发送到邮箱」：下载/打印是本地动作，不需要收件地址——
+  // 否则未设邮箱的用户下载了文件，导出记录里却查无此事（2026-11-13 验收发现）
+  if (requireMailbox && !statementMailbox.email) return { ok: false, error: 'no-mailbox' };
+  const rec = {
+    id: `se${Date.now().toString(36)}`,
+    userId: currentUser.id,
+    kind,
+    // 存原文而不是拼好的字符串：导出记录要跟着界面语言走，
+    // 存 'AIDC 基金 · 认购' 的话，用户切到英文后历史记录会永远停在中文。
+    fundName,
+    tradeType,
+    scopeLabel,
+    rangeFrom,
+    rangeTo,
+    targetHref,
+    requestedAt: formatNow(),
+    readyAt: null,
+    status: 'processing',
+    failReason: '',
+  };
+  statementExports.unshift(rec);
+  logAudit({
+    operator: currentUser.name || '投资人',
+    category: 'fundProduct',
+    action: 'export',
+    target: '结单导出',
+    targetId: rec.id,
+    note: `申请导出结单：${fundName ? `${fundName} · ${tradeType}` : `${rangeFrom} – ${rangeTo}`}`,
+  });
+  // 「将发送至 {email}」的通知只在真的有邮箱时发
+  if (statementMailbox.email) {
+    pushNotification({
+      type: 'fund',
+      title: '结单导出申请已提交',
+      body: '结单生成后将发送至 {email}，也可在「导出记录」中下载。',
+      args: { email: statementMailbox.email },
+    }, currentUser.id);
+  }
+  Storage.save();
+  return { ok: true, record: rec };
+}
+
+export function advanceStatementExport(id) {
+  const rec = statementExports.find(r => r.id === id);
+  if (!rec || rec.status !== 'processing') return { ok: false };
+  rec.status = 'ready';
+  rec.readyAt = formatNow();
+  Storage.save();
+  return { ok: true, record: rec };
+}
+
+// ---------- 期间结单聚合（2026-11-12 批次 B） ----------
+// 期初余额是「期末 − 期间净外部流入」反推的：仓库没有日终余额快照表。
+// 真实系统必须日终落快照，否则跨月改单会让历史结单跟着变——这里只做演示口径。
+function dayOf(stamp) {
+  return String(stamp || '').slice(0, 10);
+}
+
+function withinRange(stamp, from, to) {
+  const d = dayOf(stamp);
+  return !!d && d >= from && d <= to;
+}
+
+const FIAT_CURRENCIES = [
+  ['HKD', 'hkd'],
+  ['USD', 'usd'],
+  ['CNH', 'cny'],
+];
+
+// 最近 N 个「已结束」的自然月：当月还没过完，出了也会立刻过期，不列入
+export function periodMonths(count = 6) {
+  const now = new Date();
+  const list = [];
+  for (let i = 1; i <= count; i += 1) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const y = d.getFullYear();
+    const m = d.getMonth() + 1;
+    const last = new Date(y, m, 0).getDate();
+    const p = n => String(n).padStart(2, '0');
+    list.push({
+      key: `${y}-${p(m)}`,
+      from: `${y}-${p(m)}-01`,
+      to: `${y}-${p(m)}-${p(last)}`,
+    });
+  }
+  return list;
+}
+
+export function buildPeriodStatement({ from, to, userId = currentUser.id } = {}) {
+  const months = periodMonths(1);
+  const start = from || months[0].from;
+  const end = to || months[0].to;
+
+  const fiatTx = transactions.filter(tx => tx.status === 'completed');
+  const depositTx = fiatTx.filter(tx => tx.type === 'deposit' && withinRange(tx.createdAt, start, end));
+  const withdrawTx = fiatTx.filter(tx => tx.type === 'withdraw' && withinRange(tx.createdAt, start, end));
+
+  const balances = FIAT_CURRENCIES.map(([code]) => {
+    const acc = walletAccountOf(code);
+    const closing = acc ? Number(acc.balance) || 0 : 0;
+    const inflow = depositTx.filter(tx => tx.currency === code).reduce((s, tx) => s + Number(tx.amount || 0), 0);
+    const outflow = withdrawTx.filter(tx => tx.currency === code).reduce((s, tx) => s + Number(tx.amount || 0), 0);
+    return {
+      account: 'fiat',
+      currency: code,
+      opening: Math.round((closing - inflow + outflow) * 100) / 100,
+      closing,
+      hkdRate: code === 'HKD' ? 1 : convertToHKD(1, code),
+    };
+  });
+
+  const cryptoDep = cryptoDepositsOf(userId).filter(d => d.status === 'credited' && withinRange(d.creditedAt || d.createdAt, start, end));
+  const cryptoWdr = cryptoWithdrawalsOf(userId).filter(w => w.status === 'confirmed' && withinRange(w.createdAt, start, end));
+  const cryptoCodes = Array.from(new Set([
+    ...Object.keys(cryptoBalances[userId] || {}),
+    ...cryptoDep.map(d => d.asset),
+    ...cryptoWdr.map(w => w.asset),
+  ]));
+  cryptoCodes.forEach(code => {
+    const bal = (cryptoBalances[userId] || {})[code] || { total: 0 };
+    const asset = cryptoAssets.find(a => a.code === code);
+    const inflow = cryptoDep.filter(d => d.asset === code).reduce((s, d) => s + Number(d.amount || 0), 0);
+    const outflow = cryptoWdr.filter(w => w.asset === code).reduce((s, w) => s + Number(w.amount || 0), 0);
+    const closing = Number(bal.total) || 0;
+    balances.push({
+      account: 'crypto',
+      currency: code,
+      opening: Math.round((closing - inflow + outflow) * 1000000) / 1000000,
+      closing,
+      hkdRate: asset ? asset.hkdRate : 0,
+    });
+  });
+  balances.forEach(b => {
+    b.openingHKD = Math.round(b.opening * b.hkdRate * 100) / 100;
+    b.closingHKD = Math.round(b.closing * b.hkdRate * 100) / 100;
+  });
+
+  const trades = myFundStatements(userId)
+    .filter(s => withinRange(s.confirmedAt || s.date, start, end))
+    .slice()
+    .sort((a, b) => String(b.confirmedAt || b.date).localeCompare(String(a.confirmedAt || a.date)));
+
+  const cash = [
+    ...depositTx.map(tx => ({
+      id: tx.id, time: tx.createdAt, direction: 'in', kind: 'deposit',
+      currency: tx.currency, amount: Number(tx.amount || 0),
+      channel: [tx.method, tx.bank].filter(Boolean).join(' · ') || '—',
+      reference: tx.reference || tx.orderNo || '—',
+    })),
+    ...withdrawTx.map(tx => ({
+      id: tx.id, time: tx.createdAt, direction: 'out', kind: 'withdraw',
+      currency: tx.currency, amount: Number(tx.amount || 0),
+      channel: [tx.method, tx.bank].filter(Boolean).join(' · ') || '—',
+      reference: tx.reference || tx.orderNo || '—',
+    })),
+    ...cryptoDep.map(d => ({
+      id: d.id, time: d.creditedAt || d.createdAt, direction: 'in', kind: 'crypto-deposit',
+      currency: d.asset, amount: Number(d.amount || 0),
+      channel: `${cryptoChainOf(d.chain)?.label || d.chain} · ${String(d.fromAddress || '').slice(0, 6)}…${String(d.fromAddress || '').slice(-4)}`,
+      reference: String(d.txHash || '').slice(0, 8) + '…' + String(d.txHash || '').slice(-6),
+    })),
+    ...cryptoWdr.map(w => ({
+      id: w.id, time: w.createdAt, direction: 'out', kind: 'crypto-withdraw',
+      currency: w.asset, amount: Number(w.amount || 0),
+      channel: `${cryptoChainOf(w.chain)?.label || w.chain} · ${String(w.toAddress || '').slice(0, 6)}…${String(w.toAddress || '').slice(-4)}`,
+      reference: w.businessNo || (String(w.txHash || '').slice(0, 8) + '…'),
+    })),
+  ].sort((a, b) => String(b.time).localeCompare(String(a.time)));
+
+  const closingHKD = Math.round(balances.reduce((s, b) => s + b.closingHKD, 0) * 100) / 100;
+  const openingHKD = Math.round(balances.reduce((s, b) => s + b.openingHKD, 0) * 100) / 100;
+
+  return {
+    from: start,
+    to: end,
+    clientName: currentUser.name,
+    clientUid: String(currentUser.id).toUpperCase(),
+    printedAt: formatNow(),
+    balances,
+    openingHKD,
+    closingHKD,
+    trades,
+    cash,
+  };
+}
+
+// ---------- 单次资金变动回单（2026-11-12 批次 B） ----------
+// 回单不是结单：只证「这一笔到账/打款」，一页一单，按单号取，不做区间聚合。
+// 只有终态才出回单——在途/失败的单子发出去就是一张假凭证。
+export const RECEIPT_TYPES = ['deposit', 'withdraw', 'crypto-deposit', 'crypto-withdraw'];
+
+export function receiptOf(type, id, userId = currentUser.id) {
+  if (!RECEIPT_TYPES.includes(type)) return null;
+
+  if (type === 'deposit') {
+    const r = depositRequests.find(x => x.id === id && x.userId === userId);
+    if (r) {
+      return {
+        type,
+        title: '入金回单',
+        docNo: r.orderNo,
+        issuedAt: r.handledAt || r.createdAt,
+        ready: r.status === 'approved',
+        amountLabel: '入账金额',
+        amount: Number(r.amount || 0),
+        currency: r.currency,
+        fields: [
+          { label: '入金方式', value: r.method },
+          { label: '银行', value: r.bank },
+          { label: '银行卡', value: r.cardNo ? `尾号 ${String(r.cardNo).replace(/\s/g, '').slice(-4)}` : '' },
+          { label: '银行参考号', value: r.bankRef },
+          { label: '付款方备注', value: r.payerRef },
+          { label: '转账时间', value: r.transferDate || r.createdAt },
+          { label: '入账时间', value: r.handledAt },
+        ],
+      };
+    }
+    // 历史流水没有申请单（tx.reqId 为空）：回单按流水本身出，
+    // 字段少几项（没有付款方备注），但单号、金额、参考号都在，仍能对上账
+    const tx = transactions.find(t => t.id === id && t.type === 'deposit' && t.status === 'completed');
+    if (!tx) return null;
+    return {
+      type,
+      title: '入金回单',
+      docNo: tx.orderNo || tx.reference || tx.id,
+      issuedAt: tx.createdAt,
+      ready: true,
+      amountLabel: '入账金额',
+      amount: Number(tx.amount || 0),
+      currency: tx.currency,
+      fields: [
+        { label: '入金方式', value: tx.method },
+        { label: '银行', value: tx.bank },
+        { label: '银行卡', value: tx.cardNo ? `尾号 ${String(tx.cardNo).replace(/\s/g, '').slice(-4)}` : '' },
+        { label: '参考号', value: tx.reference },
+        { label: '入账时间', value: tx.createdAt },
+      ],
+    };
+  }
+
+  if (type === 'withdraw') {
+    const r = withdrawRequests.find(x => x.id === id && x.userId === userId);
+    if (r) {
+      return {
+        type,
+        title: '出金回单',
+        docNo: r.orderNo,
+        issuedAt: r.handledAt || r.createdAt,
+        ready: r.status === 'approved',
+        amountLabel: '实付金额',
+        amount: Number(r.netAmount ?? r.amount ?? 0),
+        currency: r.currency,
+        fields: [
+          { label: '提现金额', value: `${r.currency} ${formatExactAmount(Number(r.amount || 0))}` },
+          { label: '手续费', value: `${r.currency} ${formatExactAmount(Number(r.feeAmount || 0))}` },
+          { label: '提现方式', value: r.method },
+          { label: '收款银行', value: r.bank },
+          { label: '收款账户', value: r.cardNo ? `尾号 ${String(r.cardNo).replace(/\s/g, '').slice(-4)}` : '' },
+          { label: '银行参考号', value: r.bankRef },
+          { label: '打款时间', value: r.handledAt },
+        ],
+      };
+    }
+    const tx = transactions.find(t => t.id === id && t.type === 'withdraw' && t.status === 'completed');
+    if (!tx) return null;
+    return {
+      type,
+      title: '出金回单',
+      docNo: tx.orderNo || tx.reference || tx.id,
+      issuedAt: tx.createdAt,
+      ready: true,
+      amountLabel: '实付金额',
+      amount: Number(tx.amount || 0),
+      currency: tx.currency,
+      fields: [
+        { label: '提现方式', value: tx.method },
+        { label: '收款银行', value: tx.bank },
+        { label: '收款账户', value: tx.cardNo ? `尾号 ${String(tx.cardNo).replace(/\s/g, '').slice(-4)}` : '' },
+        { label: '参考号', value: tx.reference },
+        { label: '记账时间', value: tx.createdAt },
+      ],
+    };
+  }
+
+  if (type === 'crypto-deposit') {
+    const r = cryptoDepositsOf(userId).find(x => x.id === id);
+    if (!r) return null;
+    return {
+      type,
+      title: '充币回单',
+      docNo: r.custodyFlowId || r.id,
+      issuedAt: r.creditedAt || r.createdAt,
+      ready: r.status === 'credited',
+      amountLabel: '上账数量',
+      amount: Number(r.amount || 0),
+      currency: r.asset,
+      fields: [
+        { label: '币种', value: r.asset },
+        { label: '链', value: cryptoChainOf(r.chain)?.label || r.chain },
+        { label: '来源地址', value: r.fromAddress },
+        { label: '交易哈希', value: r.txHash },
+        { label: '上账时间', value: r.creditedAt },
+        { label: '托管流水号', value: r.custodyFlowId },
+      ],
+    };
+  }
+
+  const w = cryptoWithdrawalsOf(userId).find(x => x.id === id);
+  if (!w) return null;
+  return {
+    type: 'crypto-withdraw',
+    title: '提币回单',
+    docNo: w.businessNo || w.id,
+    issuedAt: w.approvedAt || w.createdAt,
+    ready: w.status === 'confirmed',
+    amountLabel: '实际到账',
+    amount: Number(w.netAmount ?? w.amount ?? 0),
+    currency: w.asset,
+    fields: [
+      { label: '提币数量', value: `${formatCryptoAmount(Number(w.amount || 0))} ${w.asset}` },
+      { label: '手续费', value: `${formatCryptoAmount(Number(w.fee || 0))} ${w.asset}` },
+      { label: '链', value: cryptoChainOf(w.chain)?.label || w.chain },
+      { label: '收款地址', value: w.toAddress },
+      { label: '交易哈希', value: w.txHash },
+      { label: '提交时间', value: w.createdAt },
+      { label: '完成时间', value: w.approvedAt },
+    ],
+  };
+}
+
+// 数字资产的数量精度和法币不同：金额固定两位，币数量最多 6 位且不要千分位
+function formatCryptoAmount(n) {
+  const v = Number(n) || 0;
+  return v.toLocaleString('en-US', { maximumFractionDigits: 6 });
+}
+
+
 // 待确认申购冻结额（按币种；不传 currency 返回该用户全部，按 HKD 不折算）
 export function getFundFrozen(userId = currentUser.id, currency = null) {
   return fundOrders
@@ -2302,7 +2802,20 @@ export function submitFundOrder({ fundId, currency, amount }) {
   if (!(fund.currency || []).includes(cur)) return { ok: false, error: '该基金不支持此币种' };
   const amt = Number(amount);
   if (!Number.isFinite(amt) || amt <= 0) return { ok: false, error: '请输入有效金额' };
-  if (amt < fund.minInvestment) return { ok: false, error: `低于起投金额 ${fund.minInvestment.toLocaleString()}` };
+  // 起投门槛动态化（2026-11-13 会议口径）：首笔看产品条款 minInvestment；有本基金持仓后
+  // 追加只须 stepInvestment 且须为其整数倍（「首次最低100万，后续每次以10万为单位递增」）。
+  // Math.min 防配置错误（step 不应高于首笔）。特殊例外（董事签字批准的降档）走线下审批，前端不放开。
+  const held = getHoldings().some(h => h.fundId === fundId);
+  const step = Number(fund.stepInvestment) > 0 ? Number(fund.stepInvestment) : fund.minInvestment;
+  const minReq = held ? Math.min(step, fund.minInvestment) : fund.minInvestment;
+  if (amt < minReq) {
+    return held
+      ? { ok: false, error: `追加申购最低 ${step.toLocaleString()}` }
+      : { ok: false, error: `低于起投金额 ${fund.minInvestment.toLocaleString()}` };
+  }
+  if (held && step > 0 && amt % step !== 0) {
+    return { ok: false, error: `追加申购金额须为 ${step.toLocaleString()} 的整数倍` };
+  }
   if (!walletAccountOf(cur)) return { ok: false, error: '账户不支持此币种' };
   if (amt > getAvailableCash(cur)) return { ok: false, error: '可用余额不足' };
 
@@ -2400,6 +2913,7 @@ export function confirmFundOrder(orderId, { nav = null, operator = '运营专员
     statementNo: genOrderNo('FS', now),
     confirmedAt: now,
     date: now.slice(0, 10),
+    settleDate: now.slice(0, 10),
   };
   order.statementId = statement.id;
   fundStatements.unshift(statement);
@@ -2490,8 +3004,10 @@ export function getHoldings(userId = currentUser.id) {
   return fundHoldings.filter(h => h.userId === userId && h.shares > 0);
 }
 
-// 提交赎回：冻结份额（不扣），确认才扣 + 回款。允许部分赎回，不设最低门槛
-// ——「最低 1,000 份」这类规则没有业务依据，只会给校验加分支（2026-10-28 对抗性审查结论）。
+// 提交赎回：冻结份额（不扣），确认才扣 + 回款。允许部分赎回。
+// 最低赎回金额（2026-11-13）：Term Sheet 模板条款「最低为相当于 10,000」给出业务依据，
+// 推翻 2026-10-28「不设门槛」的旧结论；按本单预估赎回金额判定（与 order.amount 同口径），
+// 全额赎回豁免——没有豁免，持仓不足最低赎回量的客户会被永久困死。
 export function submitRedemptionOrder({ holdingId, shares }) {
   const holding = getHolding(holdingId);
   if (!holding) return { ok: false, error: '持仓不存在' };
@@ -2503,9 +3019,13 @@ export function submitRedemptionOrder({ holdingId, shares }) {
   const info = getHoldingRedeemInfo(holding);
   if (info.redeemable <= 0) return { ok: false, error: '当前无可赎回份额（锁定期内）' };
   if (n > info.redeemable) return { ok: false, error: `超过可赎回份额（上限 ${formatShares(info.redeemable)} 份）` };
+  const nav = latestNav(fund);
+  const minRedemption = Number(fund.minRedemption) > 0 ? Number(fund.minRedemption) : 0;
+  if (minRedemption > 0 && n < info.redeemable && round2(n * nav) < minRedemption) {
+    return { ok: false, error: `单笔赎回预估金额不得低于 ${holding.currency} ${minRedemption.toLocaleString()}（全额赎回不受限）` };
+  }
 
   const now = formatNow();
-  const nav = latestNav(fund);
   const order = {
     id: `fo${Date.now()}`,
     type: 'redeem',
@@ -2603,6 +3123,7 @@ export function confirmRedemptionOrder(orderId, { nav = null, operator = '运营
     statementNo: genOrderNo('FS', now),
     confirmedAt: now,
     date: now.slice(0, 10),
+    settleDate: now.slice(0, 10),
   };
   order.statementId = statement.id;
   fundStatements.unshift(statement);
@@ -10313,6 +10834,11 @@ export const Storage = {
         fundOrders: fundOrders,
         fundHoldings: fundHoldings,
         fundStatements: fundStatements,
+        // 结单接收邮箱 + 导出记录（2026-11-12）：旧快照无这两个 key 时保留代码默认（空邮箱 + 种子记录）
+        statementMailbox: statementMailbox,
+        statementExports: statementExports,
+        // 演示模式开关（2026-11-13 阶段 1）：同上，旧快照缺 key → 默认关
+        demoMode: demoMode,
         // 基金产品（2026-10-28）：后台「基金产品管理」改了条款/文件/净值必须刷新保留。
         // 只存产品本体，不存由它派生的展示文案（那边已经改成按数字生成）。
         funds: funds,
@@ -10451,6 +10977,22 @@ export const Storage = {
       if (Array.isArray(data.fundStatements) && !legacyFundSnapshot) {
         fundStatements.length = 0;
         data.fundStatements.forEach(s => fundStatements.push(s));
+      }
+      // 结单邮箱 + 导出记录（2026-11-12）：旧快照缺 key → 保留代码默认；有则整表恢复
+      if (data.statementMailbox && typeof data.statementMailbox === 'object') {
+        statementMailbox.email = String(data.statementMailbox.email || '');
+        statementMailbox.updatedAt = data.statementMailbox.updatedAt || null;
+      }
+      // 演示模式（2026-11-13 阶段 1）：旧快照缺 key → 保持默认关
+      if (data.demoMode && typeof data.demoMode === 'object') {
+        demoMode.on = !!data.demoMode.on;
+        demoMode.updatedAt = data.demoMode.updatedAt || null;
+      }
+      if (Array.isArray(data.statementExports)) {
+        statementExports.length = 0;
+        data.statementExports.forEach(r => {
+          if (r && r.id) statementExports.push(r);
+        });
       }
       // 基金产品（2026-10-28 / 10-29）：**按 id 叠加**，不做整表替换。
       // 理由（项目规则「持久化快照只叠加不重建」）：代码以后给产品新增字段时，

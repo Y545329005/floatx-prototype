@@ -347,7 +347,7 @@ export default function App() {
       navigate(gate.to);
       return null;
     }
-    return renderAppPage(hash.path, hash.param, { navigate, goBack, setToast, isLoggedIn, setIsLoggedIn, param2: hash.param2 });
+    return renderAppPage(hash.path, hash.param, { navigate, goBack, setToast, isLoggedIn, setIsLoggedIn, param2: hash.param2, param3: hash.param3 });
   };
 
   const TOP_LEVEL_PAGES = ['events', 'projects', 'funds', 'asset', 'profile'];
