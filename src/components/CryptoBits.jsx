@@ -123,11 +123,11 @@ export function CryptoDevFab() {
           <div className="sheet-mask" onClick={() => setOpen(false)} />
           <div className="sheet crypto-dev-sheet">
             <div className="sheet-header">
-              <h3>{t('接口与假设（演示）')}</h3>
+              <h3>{t('接口与假设（演示）')}</h3> {/* copy-allow: CryptoMap 内部页专用（已移出投资人路由，文件保留） */}
               <button className="btn-icon" onClick={() => setOpen(false)} aria-label={t('关闭')}><X size={18} /></button>
             </div>
             <p className="text-muted text-sm">
-              {t('本页所有数据为 mock；以下为每一步对应的接口调用与待确认假设。')}
+              {t('本页所有数据为 mock；以下为每一步对应的接口调用与待确认假设。')} {/* copy-allow: CryptoMap 内部页专用（已移出投资人路由，文件保留） */}
             </p>
 
             <h4 className="crypto-dev-h">{t('最近调用')}</h4>

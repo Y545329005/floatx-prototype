@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ArrowLeft, Mail, Check, AlertCircle, Edit3 } from "lucide-react";
 import { useLang } from "../i18n";
-import { currentUser, sendEmailVerifyCode, verifyEmailCode, resolveSensitiveFactors, consumeAuthToken } from "../mock/data";
+import { currentUser, sendEmailVerifyCode, verifyEmailCode, resolveSensitiveFactors, consumeAuthToken, isDemoMode } from "../mock/data";
 import SecurityVerifySheet from "../components/SecurityVerifySheet";
 
 // 独立「更换邮箱」功能：账号安全（邮箱是登录凭证）
@@ -176,13 +176,15 @@ export default function ChangeEmail({ goBack, setToast }) {
                 </div>
               )}
 
-              {/* Mock 测试提示 */}
-              <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-start', marginTop: 'var(--space-3)', padding: 'var(--space-3)', background: 'var(--primary-light)', borderRadius: 'var(--radius-md)' }}>
-                <AlertCircle size={14} style={{ color: 'var(--primary)', flexShrink: 0, marginTop: 2 }} />
-                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                  {t('演示模式：验证码为 123456')}
+              {/* 验证码提示（2026-11-13 阶段 1）：mock 网关固定 123456，提示只在演示模式出现 */}
+              {isDemoMode() && (
+                <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-start', marginTop: 'var(--space-3)', padding: 'var(--space-3)', background: 'var(--primary-light)', borderRadius: 'var(--radius-md)' }}>
+                  <AlertCircle size={14} style={{ color: 'var(--primary)', flexShrink: 0, marginTop: 2 }} />
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                    {t('演示模式：验证码为 123456')} {/* copy-allow: 演示操作（判据2，isDemoMode 守卫） */}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* 换绑时显示取消 */}
               <button

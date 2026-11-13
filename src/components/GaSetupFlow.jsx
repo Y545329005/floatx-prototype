@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Copy, Check, Download, ShieldCheck } from 'lucide-react';
 import { useLang } from '../i18n';
-import { generateTotpSecret, verifyTotp, bindGa, confirmGaReset, GA_DEMO_MODE } from '../mock/data';
+import { generateTotpSecret, verifyTotp, bindGa, confirmGaReset, GA_DEMO_MODE, isDemoMode } from '../mock/data';
 
 // GA 绑定/重置流程（2026-09-22 · 规格 5.3.2）
 // 前置：调用方已完成安全验证（SecurityVerifySheet）；本组件负责 密钥展示 → GA 出码验证 → 落库。
@@ -62,7 +62,8 @@ export default function GaSetupFlow({ mode = 'bind', onDone, onCancel }) {
 
       <div className="ga-flow-verify">
         <label className="form-label">{t('输入 GA App 中的 6 位验证码')}</label>
-        {GA_DEMO_MODE && <p className="text-muted text-sm">{t('演示模式：验证码为 123456')}</p>}
+        {/* GA 演示码提示与邮箱验证码提示同口径：只在演示模式出现（GA_DEMO_MODE 是 GA 固定码的编译期开关） */}
+        {GA_DEMO_MODE && isDemoMode() && <p className="text-muted text-sm">{t('演示模式：验证码为 123456')}</p>} {/* copy-allow: 演示操作（判据2，GA_DEMO_MODE+isDemoMode 守卫） */}
         <input
           className={`form-input ga-code ${error ? 'error' : ''}`}
           inputMode="numeric"

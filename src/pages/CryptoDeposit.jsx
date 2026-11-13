@@ -5,7 +5,7 @@ import {
 import {
   cryptoAssetOf, cryptoAssets, cryptoChainOf, cryptoChains,
   inboundAddressOf, latestCryptoDeposit, simulateAssignInboundAddress, advanceCryptoDeposit,
-  cryptoTimeLeft, currentUser, logCryptoCall,
+  cryptoTimeLeft, currentUser, logCryptoCall, isDemoMode,
 } from '../mock/data';
 import { useLang } from '../i18n';
 import { CryptoAssetIcon, cryptoDepositMeta, fmtCrypto, fmtTimeLeft, useCopy } from '../components/CryptoBits';
@@ -103,13 +103,15 @@ export default function CryptoDeposit({ navigate, goBack, param }) {
             <RefreshCw size={18} className="crypto-spin" />
             <strong>{t('地址准备中')}</strong>
           </div>
-          <button
-            type="button"
-            className="btn btn-outline btn-sm btn-full crypto-demo-btn"
-            onClick={() => { simulateAssignInboundAddress(chainId); setTick(v => v + 1); }}
-          >
-            {t('演示：模拟地址分配完成')}
-          </button>
+          {isDemoMode() && (
+            <button
+              type="button"
+              className="btn btn-outline btn-sm btn-full crypto-demo-btn"
+              onClick={() => { simulateAssignInboundAddress(chainId); setTick(v => v + 1); }}
+            >
+              {t('演示：模拟地址分配完成')} {/* copy-allow: 演示操作（判据2，isDemoMode 守卫） */}
+            </button>
+          )}
         </div>
       ) : addressStatus === 'failed' ? (
         <div className="card crypto-pending-card">
@@ -183,13 +185,15 @@ export default function CryptoDeposit({ navigate, goBack, param }) {
                   <p className="crypto-status-note">
                     {t('确认数')} {deposit.confirmations}/{deposit.required}
                   </p>
-                  <button
-                    type="button"
-                    className="btn btn-outline btn-sm btn-full crypto-demo-btn"
-                    onClick={() => { advanceCryptoDeposit(deposit.id); setTick(v => v + 1); }}
-                  >
-                    {t('演示：模拟确认入账')}
-                  </button>
+                  {isDemoMode() && (
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm btn-full crypto-demo-btn"
+                      onClick={() => { advanceCryptoDeposit(deposit.id); setTick(v => v + 1); }}
+                    >
+                      {t('演示：模拟确认入账')} {/* copy-allow: 演示操作（判据2，isDemoMode 守卫） */}
+                    </button>
+                  )}
                 </>
               )}
 

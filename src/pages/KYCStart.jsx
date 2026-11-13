@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ArrowLeft, ShieldCheck, User, Calendar, Globe, ChevronDown, X, AlertCircle } from "lucide-react";
 import { useLang } from "../i18n";
-import { currentUser, updateKycProfile } from "../mock/data";
+import { currentUser, updateKycProfile, isDemoMode } from "../mock/data";
 import BottomPicker from "../components/BottomPicker";
 import DateWheelPicker from "../components/DateWheelPicker";
 
@@ -407,7 +407,7 @@ const [errors, setErrors] = useState({});
                 <X size={20} />
               </button>
             </div>
-            <div className="sheet-sub">{t('演示模式：日期预设为 mock 数据')}</div>
+            {isDemoMode() && <div className="sheet-sub">{t('演示模式：日期预设为 mock 数据')}</div>} {/* copy-allow: 演示操作（判据2，isDemoMode 守卫） */}
             <div className="sheet-body">
               <DateWheelPicker
                 value={formData.birth_date}

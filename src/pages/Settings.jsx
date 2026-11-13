@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ArrowLeft, Shield, Lock, BadgeCheck, ChevronRight, Languages, Clock, XCircle, AlertCircle, Award, RotateCcw, AlertTriangle } from 'lucide-react';
 import { clickable } from '../lib';
-import { currentUser, KYC_STATUS, resetDemoData } from '../mock/data';
+import { currentUser, KYC_STATUS, resetDemoData, isDemoMode, setDemoMode } from '../mock/data';
 import { useLang, LANGUAGES } from '../i18n';
 
 export default function Settings({ navigate, goBack }) {
@@ -10,6 +10,8 @@ export default function Settings({ navigate, goBack }) {
   const { lang, setLang, t } = useLang();
   // 演示重置二次确认（一键清空不可撤销，不允许单点触发）
   const [confirmReset, setConfirmReset] = useState(false);
+  // 演示模式开关（2026-11-13 阶段 1）：持久化在 data 层，这里只镜像渲染
+  const [demoOn, setDemoOn] = useState(isDemoMode());
 
   // 2026-09-18：PI 卡片分态渲染——此前无条件展示"已认证"，KYC 提交后即误导用户已获 PI 资格。
   // 仅 verified 且未过期展示认证详情；pending/rejected/expired 展示对应状态与操作；
@@ -180,11 +182,31 @@ export default function Settings({ navigate, goBack }) {
         </div>
       </div>
 
-      {/* 演示维护（2026-10-28）：演示几次后余额/持仓/单据已经偏离初始态，
-          没有入口就只能手动清缓存——非技术同事做不了。只清业务数据，保留语言与登录态。 */}
+      {/* 演示模式（2026-11-13 阶段 1）：演示操作口统一收进这个开关，默认关——
+          评审看到的设置页是产品语言；打开开关才出现模拟推进按钮、验证码提示与重置入口。
+          重置会把快照整个清掉，演示模式也随之回到种子默认（关）。 */}
       <div className="card card-secondary">
         <h3 className="card-title">{t('演示维护')}</h3>
-        {!confirmReset && (
+        <div className="settings-demo-row">
+          <div className="settings-demo-text">
+            <div className="list-item-title">{t('演示模式')}</div>
+            <div className="list-item-subtitle">{t('开启后显示模拟操作与测试提示')}</div>
+          </div>
+          <button
+            type="button"
+            className={`demo-switch${demoOn ? ' is-on' : ''}`}
+            role="switch"
+            aria-checked={demoOn}
+            aria-label={t('演示模式')}
+            onClick={() => {
+              const res = setDemoMode(!demoOn);
+              if (res.ok) setDemoOn(res.on);
+            }}
+          >
+            <span className="demo-switch-knob" />
+          </button>
+        </div>
+        {demoOn && !confirmReset && (
           <button className="list-item" onClick={() => setConfirmReset(true)}>
             <div className="list-item-icon"><RotateCcw size={18} /></div>
             <div className="list-item-content">
@@ -194,7 +216,7 @@ export default function Settings({ navigate, goBack }) {
             <ChevronRight size={18} className="text-muted" />
           </button>
         )}
-        {confirmReset && (
+        {demoOn && confirmReset && (
           <div className="settings-reset-confirm">
             <p className="text-sm">
               <AlertTriangle size={14} /> {t('将清空本机全部业务数据（余额、持仓、单据、认证、通知），回到初始种子状态。此操作不可撤销。')}

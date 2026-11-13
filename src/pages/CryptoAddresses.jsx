@@ -5,7 +5,7 @@ import {
 import {
   cryptoAddressStatusMeta, cryptoChains, cryptoTimeLeft, cryptoAssetsOnChain,
   outboundAddressesOf, submitCryptoAddress, advanceCryptoAddress, removeCryptoAddress,
-  currentUser, logCryptoCall,
+  currentUser, logCryptoCall, isDemoMode,
 } from '../mock/data';
 import { useLang } from '../i18n';
 import { CryptoChip, fmtTimeLeft, useCopy } from '../components/CryptoBits';
@@ -129,7 +129,8 @@ export default function CryptoAddresses({ navigate, goBack, setToast }) {
               </span>
 
               <span className="crypto-address-actions">
-                {canAdvance && (
+                {/* copy-allow: 演示操作（判据2，isDemoMode 守卫） */}
+                {canAdvance && isDemoMode() && (
                   <button type="button" className="btn btn-outline btn-sm crypto-demo-btn" onClick={() => advance(a.id)}>
                     {a.status === 'reviewing' ? t('演示：审核通过')
                       : a.status === 'whitelist_pending' ? t('演示：白名单启用')

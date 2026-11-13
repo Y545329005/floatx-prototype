@@ -6,7 +6,7 @@ import GaSetupFlow from '../components/GaSetupFlow';
 import {
   currentUser, getUserSecurity, listPasskeys, addPasskey, removePasskey,
   resolveSensitiveFactors, consumeAuthToken, isKyc1, getFreezeState,
-  requestGaReset, changeUserPassword, deleteUserAccount,
+  requestGaReset, changeUserPassword, deleteUserAccount, isDemoMode,
 } from '../mock/data';
 
 // 安全中心（2026-09-22 · 复刻规格 5.2/5.3：安全项生命周期管理）
@@ -136,7 +136,7 @@ export default function SecurityCenter({ navigate, goBack, setToast, setIsLogged
     const res = deleteUserAccount(currentUser.id);
     setFlow(null);
     if (!res.ok) { setToast(t(res.message)); return; }
-    forceRelogin(t('账户删除申请已提交。演示模式下内置演示账号未真实删除；正式环境将永久删除您的全部数据。'));
+    forceRelogin(t('账户删除申请已提交，您的账户与全部数据将被永久删除。'));
   };
 
   return (
@@ -322,7 +322,7 @@ export default function SecurityCenter({ navigate, goBack, setToast, setIsLogged
                 <div className="svs-sim-scan" />
               </div>
               <p className="text-sm">{t('正在创建通行密钥…')}</p>
-              <p className="text-muted text-sm">{t('演示模式：模拟系统生物识别面板')}</p>
+              {isDemoMode() && <p className="text-muted text-sm">{t('演示模式：模拟系统生物识别面板')}</p>} {/* copy-allow: 演示操作（判据2，isDemoMode 守卫） */}
             </div>
           </div>
         </>

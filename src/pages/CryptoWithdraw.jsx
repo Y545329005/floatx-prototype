@@ -5,7 +5,7 @@ import {
 import {
   cryptoAssetOf, cryptoAssets, cryptoBalanceOf, cryptoChainOf,
   cryptoTimeLeft, outboundAddressesOf, cryptoAddressStatusMeta, getFreezeState,
-  submitCryptoWithdrawal, currentUser, logCryptoCall,
+  submitCryptoWithdrawal, currentUser, logCryptoCall, isDemoMode,
 } from '../mock/data';
 import { useLang } from '../i18n';
 import { CryptoAssetIcon, CryptoChip, fmtCrypto, fmtTimeLeft } from '../components/CryptoBits';
@@ -75,7 +75,9 @@ export default function CryptoWithdraw({ navigate, goBack, setToast }) {
   };
 
   const confirm = () => {
-    if (code !== '123456') { setError(t('验证码不正确（演示：123456）')); return; }
+    // mock 网关固定 123456（真实短信/邮件验证码由后端下发，见规范页 §9）；
+    // 演示模式关时错误提示不泄露演示码（copy-allow: 演示操作，判据2）
+    if (code !== '123456') { setError(isDemoMode() ? t('验证码不正确（演示：123456）') : t('验证码不正确')); return; }
     const res = submitCryptoWithdrawal({ asset: assetCode, chain: selected.chain, addressId: selected.id, amount: amt });
     if (!res.ok) { setError(t(res.error)); return; }
     setConfirmOpen(false);
@@ -275,7 +277,7 @@ export default function CryptoWithdraw({ navigate, goBack, setToast }) {
                 value={code}
                 onChange={e => { setCode(e.target.value.replace(/\D/g, '')); setError(''); }}
               />
-              <p className="crypto-code-hint">{t('演示验证码 123456')}</p>
+              {isDemoMode() && <p className="crypto-code-hint">{t('演示验证码 123456')}</p>} {/* copy-allow: 演示操作（判据2，isDemoMode 守卫） */}
             </div>
 
             {error && <p className="form-error">{error}</p>}

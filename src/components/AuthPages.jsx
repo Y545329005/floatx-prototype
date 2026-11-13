@@ -11,7 +11,7 @@ import {
   startEmergencyLogin, completeEmergencyUnbind, finishEmergencyRebind, getEmergencyState,
   addPasskey,
   sendRegisterCode, verifyRegisterCode, registerAccount, findRegisteredAccount, isAccountRegistered,
-  validateInviteCode, INVITE_GATE_ENABLED,
+  validateInviteCode, INVITE_GATE_ENABLED, isDemoMode,
 } from "../mock/data";
 
 // 账号校验：仅邮箱（邮箱单通道）
@@ -451,7 +451,7 @@ function RebindPasskey({ onDone }) {
             <div className="svs-sim-scan" />
           </div>
           <p className="text-sm">{t('正在创建通行密钥…')}</p>
-          <p className="text-muted text-sm">{t('演示模式：模拟系统生物识别面板')}</p>
+          {isDemoMode() && <p className="text-muted text-sm">{t('演示模式：模拟系统生物识别面板')}</p>} {/* copy-allow: 演示操作（判据2，isDemoMode 守卫） */}
         </div>
       ) : (
         <button className="btn btn-secondary btn-full" onClick={handleBind}>
@@ -765,7 +765,7 @@ export function RegisterPage({ navigate, setIsLoggedIn, setUser, setToast }) {
                 </button>
               </div>
               {errors.verifyCode && <span className="error-text">{errors.verifyCode}</span>}
-              {sentCode && (
+              {sentCode && isDemoMode() && ( /* copy-allow: 演示操作（判据2，isDemoMode 守卫） */
                 <span className="form-hint">{t('演示模式验证码')}: <strong>{sentCode}</strong></span>
               )}
             </div>
@@ -1014,7 +1014,7 @@ export function ForgotPasswordPage({ navigate, setToast }) {
         <div className="auth-body">
           <div className="auth-card">
             {/* Mock模式提示：显示验证码 */}
-            {sentCode && (
+            {sentCode && isDemoMode() && ( /* copy-allow: 演示操作（判据2，isDemoMode 守卫） */
               <div className="auth-mock-hint">
                 {t('演示模式验证码')}: <strong>{sentCode}</strong>
               </div>
