@@ -63,12 +63,3 @@ function escapeHtml(v) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
-
-// 原型没有邮件网关：只留一行可核对的日志 + 返回发送结果，页面据此给 toast。
-// 接真实后端时替换本函数即可，调用方不用改。
-export function sendMockEmail({ to, subject, html, label }) {
-  if (typeof console !== 'undefined') {
-    console.log(`[Mock 邮件→${to}] ${subject}${label ? `（${label}）` : ''}`);
-  }
-  return { ok: true, to, subject, html };
-}

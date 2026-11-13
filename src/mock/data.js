@@ -2330,10 +2330,11 @@ export const FUND_SEED_RESULT = { redeemNet: 0, redeemAt: '' };
   }
 })();
 
-// ========== 结单接收邮箱 + 导出记录（2026-11-12） ==========
-// 为什么单独一个邮箱、不复用登录邮箱：结单要发到客户长期可查的邮箱（常常不是登录邮箱），
-// 而「未设置」本身就是一个必须被拦截的状态（设计稿：未设置接收邮箱弹层）。
-// 默认留空 —— 演示时第一次点「导出」就能走到拦截分支；真实系统由 KYC 资料带入默认值。
+// ========== 结单接收邮箱 + 导出记录（2026-11-12；2026-11-13 手动发送下线） ==========
+// 为什么单独一个邮箱、不复用登录邮箱：结单要发到客户长期可查的邮箱（常常不是登录邮箱）。
+// 2026-11-13 起 UI 侧手动「发送到邮箱」下线（三类单据按 SFC 口径自动送达），
+// getter/setter（statementMailboxOf/setStatementMailbox）与拦截弹层随之删除；
+// 状态本体保留：requestStatementExport 的送达记录仍引用它，快照结构不变故不升版。
 export const statementMailbox = { email: '', updatedAt: null };
 // 演示模式开关（2026-11-13 阶段 1）：默认关，随快照持久化（旧快照缺 key → 保持默认关）
 export const demoMode = { on: false, updatedAt: null };
@@ -2390,20 +2391,6 @@ export function statementExportExpired(rec) {
   const exp = statementExportExpiresAt(rec);
   if (!exp) return false;
   return formatNow().slice(0, 10) > exp;
-}
-
-export function statementMailboxOf() {
-  return statementMailbox.email || '';
-}
-
-export function setStatementMailbox(email) {
-  const v = String(email || '').trim();
-  if (!v) return { ok: false, error: '请输入接收邮箱' };
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return { ok: false, error: '请输入有效的邮箱地址' };
-  statementMailbox.email = v;
-  statementMailbox.updatedAt = formatNow();
-  Storage.save();
-  return { ok: true, email: v };
 }
 
 // ---------- 演示模式（2026-11-13 阶段 1） ----------
