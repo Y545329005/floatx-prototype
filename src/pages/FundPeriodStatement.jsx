@@ -10,12 +10,15 @@ import { periodEmailDoc } from '../mock/emailDocs';
 import { renderEmailHtml, sendMockEmail } from '../mock/emailTemplates';
 
 /* ─────────────────────────────────────────────────────────────
-   账户结单（期间） · 2026-11-12
-   THESIS：一张 A4 纸回答「这个月账上有多少钱、钱从哪来、进了哪」。
-   OWN-WORLD：纸面文头/客户块/分节表格/法务页脚，和交易确认单同一套文档语言。
-   STORY：先看总览，再看基金成交，最后看资金往来；对不上时逐节往下核。
-   FIRST VIEWPORT：纸面文头 + 客户块 + 账户总览。
-   FORM：A4 文档，不是 App 页面——屏幕上只是预览。
+   账户结单（期间） · 2026-11-12 · 双排版分离（2026-11-13）
+   同一份数据两套排版（buildPeriodStatement 单一事实源）：
+   · 屏幕版 .doc-screen —— App 原生卡片流：合计大数置顶、余额/交易/流水
+     列表行（与「我的交易」/钱包流水同构），纸面专属要素（编号小节、
+     列印日期、法律声明全文、页脚牌照）屏上不渲染；
+   · 打印版 .doc-print —— A4 凭证原样保留，window.print 只打这一份
+     （@media print 切换，见 styles.css）。
+   纸面版回答「这个月账上有多少钱、钱从哪来、进了哪」；
+   屏幕版回答同一问题，以 App 语法呈现，要纸面凭证走下载/邮箱。
    ───────────────────────────────────────────────────────────── */
 
 const fmtQty = (n) => (Number(n) || 0).toLocaleString('en-US', { maximumFractionDigits: 6 });
@@ -84,7 +87,95 @@ export default function FundPeriodStatement({ from, to, goBack, setToast }) {
         </div>
       </div>
 
-      <article className="doc-sheet">
+      {/* ── 屏幕版：App 卡片流（2026-11-13 双排版分离） ── */}
+      <div className="doc-screen">
+        <section className="doc-screen-hero">
+          <span className="doc-screen-hero-label">{t('期末资产总估值')}</span>
+          <b className="doc-screen-hero-amt">HKD {formatExactAmount(stmt.closingHKD)}</b>
+          <span className="doc-screen-hero-period">{stmt.from} – {stmt.to} · HKD</span>
+          <span className="doc-screen-hero-client">{t(stmt.clientName)} · {stmt.clientUid}</span>
+        </section>
+
+        {[['fiat', '法币账户'], ['crypto', '数字资产']].map(([group, groupLabel]) => {
+          const rows = stmt.balances.filter(b => b.account === group);
+          if (!rows.length) return null;
+          return (
+            <section key={group}>
+              <h2 className="doc-screen-group">{t(groupLabel)}</h2>
+              <div className="doc-screen-card">
+                {rows.map(b => (
+                  <div key={`${b.account}-${b.currency}`} className="doc-screen-row">
+                    <span className="doc-screen-row-title">{b.currency}</span>
+                    <span className="doc-screen-row-right">
+                      <b className="doc-screen-amt">{b.account === 'crypto' ? fmtQty(b.closing) : formatExactAmount(b.closing)}</b>
+                      <span className="doc-screen-amt-sub">≈ HKD {formatExactAmount(b.closingHKD)}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          );
+        })}
+
+        <section>
+          <h2 className="doc-screen-group">{t('基金交易')}</h2>
+          {stmt.trades.length === 0 ? (
+            <p className="doc-empty">{t('本期无基金交易')}</p>
+          ) : (
+            <div className="doc-screen-card">
+              {stmt.trades.map(s => (
+                <div key={s.id} className="doc-screen-row">
+                  <span className="doc-screen-row-main">
+                    <span className="doc-screen-row-title">{t(s.fundName)}</span>
+                    <span className="doc-screen-row-sub">
+                      {String(s.date || s.confirmedAt || '').slice(5, 10)} · {t(s.tradeType || '认购')}
+                      {s.shares ? ` · ${fmtQty(s.shares)} ${t('份')}` : ''}
+                    </span>
+                  </span>
+                  <b className="doc-screen-amt">{s.currency} {formatExactAmount(s.amount)}</b>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section>
+          <h2 className="doc-screen-group">{t('资金往来')}</h2>
+          {stmt.cash.length === 0 ? (
+            <p className="doc-empty">{t('本期无资金往来')}</p>
+          ) : (
+            <div className="doc-screen-card">
+              {stmt.cash.map(c => (
+                <div key={`${c.kind}-${c.id}`} className="doc-screen-row">
+                  <span className="doc-screen-row-main">
+                    <span className="doc-screen-row-title">
+                      {t({ deposit: '充值', withdraw: '提现', 'crypto-deposit': '充币', 'crypto-withdraw': '提币' }[c.kind])}
+                    </span>
+                    <span className="doc-screen-row-sub">
+                      {String(c.time).slice(0, 10)}{c.channel ? ` · ${c.channel}` : ''}
+                    </span>
+                  </span>
+                  <b className={`doc-screen-amt ${c.direction === 'in' ? 'in' : 'out'}`}>
+                    {c.direction === 'in' ? '+' : '−'}{c.currency} {
+                      c.kind.startsWith('crypto') ? fmtQty(c.amount) : formatExactAmount(c.amount)
+                    }
+                  </b>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <p className="doc-screen-note">
+          {t('仅列示已完成记账的记录；数字资产折算估值仅供参考。')}
+        </p>
+        <p className="doc-screen-note">
+          {platformBrand.nameFullZh} · {t(platformBrand.licenseType)} · {t('中央编号')} {platformBrand.licenseNo}
+        </p>
+      </div>
+
+      {/* ── 打印版：A4 凭证原样（window.print 只打这一份） ── */}
+      <article className="doc-sheet doc-print">
         <header className="doc-head">
           <div>
             <div className="doc-brand">{platformBrand.nameZh}</div>

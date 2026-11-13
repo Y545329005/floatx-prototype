@@ -1507,6 +1507,8 @@ export const en = {
   '单笔赎回预估金额不得低于 {}（全额赎回不受限）': 'Estimated redemption amount per request must be at least {} (full redemption is exempt)',
   '交易日': 'Trade Date',
   '结算日期': 'Settlement Date',
+  '基金交易': 'Fund Transactions',
+  '仅列示已完成记账的记录；数字资产折算估值仅供参考。': 'Only settled records are listed; digital asset valuations converted to HKD are for reference only.',
   '发出时间': 'Issued At',
   '成交金额': 'Trade amount',
   '到账金额': 'Net proceeds',
