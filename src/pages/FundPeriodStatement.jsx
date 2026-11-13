@@ -87,13 +87,12 @@ export default function FundPeriodStatement({ from, to, goBack, setToast }) {
         </div>
       </div>
 
-      {/* ── 屏幕版：App 卡片流（2026-11-13 双排版分离） ── */}
+      {/* ── 屏幕版：App 卡片流（2026-11-13 双排版分离；语法对齐资产页 hero 与「我的交易」行） ── */}
       <div className="doc-screen">
         <section className="doc-screen-hero">
           <span className="doc-screen-hero-label">{t('期末资产总估值')}</span>
           <b className="doc-screen-hero-amt">HKD {formatExactAmount(stmt.closingHKD)}</b>
-          <span className="doc-screen-hero-period">{stmt.from} – {stmt.to} · HKD</span>
-          <span className="doc-screen-hero-client">{t(stmt.clientName)} · {stmt.clientUid}</span>
+          <span className="doc-screen-hero-sub">{stmt.from} – {stmt.to} · {t(stmt.clientName)}</span>
         </section>
 
         {[['fiat', '法币账户'], ['crypto', '数字资产']].map(([group, groupLabel]) => {
@@ -108,7 +107,7 @@ export default function FundPeriodStatement({ from, to, goBack, setToast }) {
                     <span className="doc-screen-row-title">{b.currency}</span>
                     <span className="doc-screen-row-right">
                       <b className="doc-screen-amt">{b.account === 'crypto' ? fmtQty(b.closing) : formatExactAmount(b.closing)}</b>
-                      <span className="doc-screen-amt-sub">≈ HKD {formatExactAmount(b.closingHKD)}</span>
+                      <span className="doc-screen-amt-sub">HKD {formatExactAmount(b.closingHKD)}</span>
                     </span>
                   </div>
                 ))}
@@ -129,10 +128,12 @@ export default function FundPeriodStatement({ from, to, goBack, setToast }) {
                     <span className="doc-screen-row-title">{t(s.fundName)}</span>
                     <span className="doc-screen-row-sub">
                       {String(s.date || s.confirmedAt || '').slice(5, 10)} · {t(s.tradeType || '认购')}
-                      {s.shares ? ` · ${fmtQty(s.shares)} ${t('份')}` : ''}
                     </span>
                   </span>
-                  <b className="doc-screen-amt">{s.currency} {formatExactAmount(s.amount)}</b>
+                  <span className="doc-screen-row-right">
+                    <b className="doc-screen-amt">{s.currency} {formatExactAmount(s.amount)}</b>
+                    {s.shares ? <span className="doc-screen-amt-sub">{fmtQty(s.shares)} {t('份')}</span> : null}
+                  </span>
                 </div>
               ))}
             </div>
@@ -165,13 +166,6 @@ export default function FundPeriodStatement({ from, to, goBack, setToast }) {
             </div>
           )}
         </section>
-
-        <p className="doc-screen-note">
-          {t('仅列示已完成记账的记录；数字资产折算估值仅供参考。')}
-        </p>
-        <p className="doc-screen-note">
-          {platformBrand.nameFullZh} · {t(platformBrand.licenseType)} · {t('中央编号')} {platformBrand.licenseNo}
-        </p>
       </div>
 
       {/* ── 打印版：A4 凭证原样（window.print 只打这一份） ── */}
