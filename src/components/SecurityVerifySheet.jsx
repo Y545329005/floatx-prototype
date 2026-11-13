@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, KeyRound, ScanFace, Fingerprint, ShieldCheck, AlertTriangle, Check, RefreshCw, LifeBuoy, Mail } from 'lucide-react';
 import { useLang } from '../i18n';
-import { GA_DEMO_MODE, createVerifySession, submitVerifyItem, completeVerifyItem, finalizeVerifySession } from '../mock/data';
+import { GA_DEMO_MODE, createVerifySession, submitVerifyItem, completeVerifyItem, finalizeVerifySession, isDemoMode } from '../mock/data';
 
 // 安全验证弹窗（2026-09-22 · 复刻规格第 4 章：逐项验证 BottomSheet）
 // - 逐项验证模式（规格 4.1，不可回退并行填写）：每项独立提交独立验证，进度 N/N
@@ -73,7 +73,8 @@ export default function SecurityVerifySheet({ open, factors, onVerified, onClose
     setCodeSent(true);
     setCountdown(60);
     console.log('[Mock] 2FA 邮箱验证码（演示）: 123456');
-    setMsg({ type: 'info', text: t('演示模式：验证码为 123456') });
+    // 演示码提示只在演示模式出现（2026-11-13 阶段 1 口径补口）；验证码 123456 仍被 mock 网关接受
+    if (isDemoMode()) setMsg({ type: 'info', text: t('演示模式：验证码为 123456') }); // copy-allow: 演示操作（判据2，isDemoMode 守卫）
   }, [t]);
 
   const handleSubmitItem = async (type) => {
@@ -244,7 +245,7 @@ export default function SecurityVerifySheet({ open, factors, onVerified, onClose
                         onChange={e => setCode(e.target.value.replace(/\D/g, ''))}
                       />
                     </div>
-                    <p className="text-muted text-sm">{GA_DEMO_MODE ? t('演示模式：验证码为 123456') : t('验证码 30 秒刷新一次，请以当前显示为准')}</p>
+                    <p className="text-muted text-sm">{GA_DEMO_MODE && isDemoMode() ? t('演示模式：验证码为 123456') : t('验证码 30 秒刷新一次，请以当前显示为准')}</p> {/* copy-allow: 演示操作（判据2，GA_DEMO_MODE+isDemoMode 守卫） */}
                     <button className="btn btn-primary btn-sm svs-item-verify" disabled={code.length !== 6} onClick={() => handleSubmitItem('ga')}>{t('验证')}</button>
                     {onUnavailable && (
                       <button className="svs-link" onClick={() => { setSession(null); onUnavailable(); }}>
@@ -262,7 +263,7 @@ export default function SecurityVerifySheet({ open, factors, onVerified, onClose
                         <div className="svs-sim-scan" />
                       </div>
                       <p className="text-sm">{item.type === 'passkey' ? t('正在验证生物识别…') : t('正在进行活体检测，请正对屏幕…')}</p>
-                      <p className="text-muted text-sm">{t('演示模式：模拟系统生物识别面板')}</p>
+                      {isDemoMode() && <p className="text-muted text-sm">{t('演示模式：模拟系统生物识别面板')}</p>} {/* copy-allow: 演示操作（判据2，isDemoMode 守卫） */}
                     </div>
                   </div>
                 )}
