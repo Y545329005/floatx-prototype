@@ -233,7 +233,7 @@ export default function FundRequestDetail({ id, navigate, goBack }) {
               <div className="fund-evidence-empty">
                 <Upload size={20} />
                 <strong>{t('补传转账凭证')}</strong>
-                <span className="text-muted text-sm">{t('上传清晰凭证后重新提交核对（演示阶段仅模拟文件名）')}</span>
+                <span className="text-muted text-sm">{t('上传清晰凭证后重新提交核对')}</span>
               </div>
             </div>
           </>

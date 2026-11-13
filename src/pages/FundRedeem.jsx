@@ -40,7 +40,11 @@ export default function FundRedeem({ id, from, navigate, goBack, setToast }) {
   const fee = gross * FUND_FEE_RATE.redeem;
   const net = gross - fee;
   const remaining = Math.max(0, (holding?.shares || 0) - rounded);
-  const validInput = rounded > 0 && !over && !tooPrecise;
+  // 最低赎回金额（2026-11-13 Term Sheet 模板条款）：按本单预估赎回金额判定（与数据层同口径），
+  // 全额赎回豁免——持仓不足最低赎回量的客户仍可清仓离场，不被困死
+  const minRedemption = (fund?.minRedemption || 0) > 0 ? fund.minRedemption : 0;
+  const belowMinRedeem = minRedemption > 0 && rounded > 0 && rounded < info.redeemable && gross < minRedemption;
+  const validInput = rounded > 0 && !over && !tooPrecise && !belowMinRedeem;
   const canSubmit = validInput && info.redeemable > 0 && !!holding;
 
   const onShares = (e) => { applyNumberInput(e, setShares); setError(''); };
@@ -195,6 +199,11 @@ export default function FundRedeem({ id, from, navigate, goBack, setToast }) {
         )}
         {tooPrecise && (
           <p className="p-fund-trade-alert is-plain">{t('份额最多 4 位小数')}</p>
+        )}
+        {belowMinRedeem && (
+          <p className="p-fund-trade-alert is-plain">
+            {t('单笔赎回预估金额不得低于 {}（全额赎回不受限）').replace('{}', `${holding.currency} ${formatExactAmount(minRedemption)}`)}
+          </p>
         )}
 
         <dl className="p-fund-trade-rows is-flush">

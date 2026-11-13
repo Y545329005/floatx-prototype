@@ -5,7 +5,7 @@ import AgreementModal from '../components/AgreementModal';
 import {
   funds, getPiStatusForUser, PI_STATUS, currentUser,
   fundRangeReturns, getHoldings, getHoldingRedeemInfo, formatShares, formatExactAmount, FUND_FEE_RATE,
-  fundMonthsLabel, fundRedemptionLabel, formatFundSize,
+  fundMonthsLabel, formatFundSize,
 } from '../mock/data';
 import { useLang } from '../i18n';
 
@@ -40,10 +40,9 @@ const pct = (rate) => (rate == null ? '-' : `${(rate * 100).toFixed(2)}%`);
 // 起投额是金额，走全站金额口径（2 位小数）；否则与申购页的「HKD 1,000,000.00」两种写法
 const money = (amount, currency) => `${String(currency || 'HKD').toUpperCase() === 'USD' ? 'US$' : 'HK$'} ${formatExactAmount(amount)}`;
 // 参与方：填了值的逐行展示，缺值的收成一行「详见基金文件」（逐个重复同一句占位＝空区块）
+// 2026-11-13：行政管理人/核数师已按 Term Sheet 模板提级进「关键条款一览」，此处只剩模板未列的托管人
 const PARTY_ROWS = [
   { key: 'custodian', label: '托管人' },
-  { key: 'administrator', label: '行政管理人' },
-  { key: 'auditor', label: '审计师' },
 ];
 
 // 开放日枚举 → 文案（数据层存枚举，后台将来用下拉框，不填死文本）
@@ -52,6 +51,29 @@ const OPEN_FREQ = {
   'quarterly-end': '每季度最后营业日',
   'semi-annual-start': '每半年首个营业日',
 };
+
+// 交易节点时间线（2026-11-13 学富途）：相对轴替代表内「确认日/赎回到账」两行（净增零行）。
+// 只标相对周期、不标绝对日期：季度窗口没有结算日历，凭空写日期＝图替数据说谎
+// （同 NavChart「不用 Date.now() 当净值日」的约束）。
+// 单节点缺值回落「详见基金文件」，不隐藏整条轨道——赎回轨道是退出机制，
+// 属购买决策信息，未持仓者同样要看（富途也把卖出规则展示给未持仓者）。
+function buildTimeline(fund, dealing, t) {
+  const node = (label, value) => ({ label, value: value || t('详见基金文件') });
+  const confirm = dealing.confirmDays != null ? `T+${dealing.confirmDays}` : null;
+  const arrive = fund.redemptionDays != null ? `T+${fund.redemptionDays}` : null;
+  return [
+    { cap: t('申购'), nodes: [
+      node(t('窗口截止'), dealing.openFrequency ? t(OPEN_FREQ[dealing.openFrequency] || '') : null),
+      node(t('确认'), confirm),
+      node(t('份额入账'), t('确认后计入')),
+    ] },
+    { cap: t('赎回'), nodes: [
+      node(t('提交申请'), t('锁定期后')),
+      node(t('确认'), confirm),
+      node(t('预计到账日'), arrive),
+    ] },
+  ];
+}
 
 export default function FundDetail({ id, navigate, goBack }) {
   const { t, lang } = useLang();
@@ -149,10 +171,13 @@ export default function FundDetail({ id, navigate, goBack }) {
 
         <div className="p-fund-detail-hero-row">
           <div className="p-fund-detail-target">
-            <span className="p-fund-detail-target-label">
-              {t(fund.returnLabel)} · {t(fund.returnNote)} · {t('不代表实际收益')}
+            {/* 2026-11-13：标签行只留「目标回报」，口径说明下沉到卡底脚注——
+                三段小字挤一行等于没有重点（学富途上标脚注法）。returnNote 不再在此渲染。 */}
+            <span className="p-fund-detail-target-label">{t(fund.returnLabel)}</span>
+            <span className="p-fund-detail-target-value">
+              {prettyReturn(t(fund.returnValue))}
+              <sup className="p-fund-detail-fn-mark">1</sup>
             </span>
-            <span className="p-fund-detail-target-value">{prettyReturn(t(fund.returnValue))}</span>
           </div>
           <div className="p-fund-detail-nav">
             <span className="p-fund-detail-nav-label">{t('单位净值')} · {navCurrency} {t('份额')}</span>
@@ -166,6 +191,9 @@ export default function FundDetail({ id, navigate, goBack }) {
           <div><span>{t('起投')}</span><strong>{money(fund.minInvestment, navCurrency)}</strong></div>
           <div><span>{t('期限')}</span><strong>{fundMonthsLabel(fund.termMonths, t)}</strong></div>
         </div>
+
+        {/* 目标回报脚注：整句一个 i18n key（同页底合规声明的纪律）；页底整段法务不动 */}
+        <p className="p-fund-detail-fn"><sup>1</sup> {t('目标回报为投资目标，非收益承诺；实际收益以正式结单为准。')}</p>
 
         {/* 持仓降为一行静态事实（2026-10-28 五轮）：底栏已有赎回入口，这里再做一条可点卡片
             等于第二个入口。信息要留——「我持有多少、能不能卖」是持仓人看这一页的第一诉求。 */}
@@ -197,43 +225,85 @@ export default function FundDetail({ id, navigate, goBack }) {
         />
       </div>
 
-      {/* 交易条款：申购/赎回两组，标签左、值右（不再用居中 3 列网格——上一版 9 格里 4 格折行） */}
+      {/* 关键条款一览（2026-11-13 · 按 Jackson Term Sheet 模板行序对齐）：
+          会议要求「客户必看的基金资料」集中一处，不再散在两个折叠区。
+          数据全部复用现有字段；机构类字段缺值显示「详见基金文件」，原型不编造具名机构。
+          分组降噪：横线只表达组边界（组内行线全部移除），四组 = 发行与身份 / 参与机构 / 交易与窗口 / 费用。 */}
       <div className="card p-fund-detail-card">
         <div className="p-fund-detail-cardhead">
-          <h3>{t('交易条款')}</h3>
+          <h3>{t('关键条款一览')}</h3>
         </div>
 
-        {/* 常显 4 行：锁定期 / 起投 / 费率 / 到账 —— 覆盖「钱怎么进出」的全部关键项。
-            细则（币种、管理费、开放日、确认日、通知期、风险全文）收进折叠，但不进页签、不跳转。 */}
+        <div className="p-fund-detail-group is-first">{t('发行与身份')}</div>
         <dl className="p-fund-detail-rows">
-          <div><dt>{t('锁定期')}</dt><dd>{fundMonthsLabel(fund.lockMonths, t)}</dd></div>
-          <div><dt>{t('起投')}</dt><dd>{money(fund.minInvestment, navCurrency)}</dd></div>
+          <div><dt>{t('发行人 / 投资管理人')}</dt><dd className={fund.manager ? '' : 'is-empty'}>{fund.manager ? t(fund.manager) : t('详见基金文件')}</dd></div>
+          <div><dt>{t('产品类型')}</dt><dd>{t(fund.type)}</dd></div>
+          <div><dt>{t('底层资产')}</dt><dd className={fund.underlyingAssets ? '' : 'is-empty'}>{fund.underlyingAssets ? t(fund.underlyingAssets) : t('详见基金文件')}</dd></div>
+          <div><dt>{t('投资策略')}</dt><dd className={fund.strategy ? '' : 'is-empty'}>{fund.strategy ? t(fund.strategy) : t('详见基金文件')}</dd></div>
+          <div><dt>{t('合资格客户')}</dt><dd>{t('专业投资者')}</dd></div>
+        </dl>
+
+        <div className="p-fund-detail-group">{t('参与机构')}</div>
+        <dl className="p-fund-detail-rows">
+          <div><dt>{t('行政管理人')}</dt><dd className={parties.administrator ? '' : 'is-empty'}>{parties.administrator ? t(parties.administrator) : t('详见基金文件')}</dd></div>
+          <div><dt>{t('会计核数师')}</dt><dd className={parties.auditor ? '' : 'is-empty'}>{parties.auditor ? t(parties.auditor) : t('详见基金文件')}</dd></div>
+        </dl>
+
+        <div className="p-fund-detail-group">{t('交易与窗口')}</div>
+        <dl className="p-fund-detail-rows">
+          <div><dt>{t('申购 / 赎回币种')}</dt><dd>{(fund.currency || []).join(' · ')}</dd></div>
+          <div><dt>{t('申购频率与窗口')}</dt><dd className={dealing.openFrequency ? '' : 'is-empty'}>{dealing.openFrequency ? t(OPEN_FREQ[dealing.openFrequency]) : t('详见基金文件')}</dd></div>
+          {/* 最低申购金额是产品条款（静态两档），不随登录人持仓状态变——动态校验在申购页 */}
           <div>
-            <dt>{t('费率')}</dt>
-            <dd>{t('认购费')} {pct(FUND_FEE_RATE.subscribe)} · {t('赎回费')} {pct(FUND_FEE_RATE.redeem)}</dd>
+            <dt>{t('最低申购金额')}</dt>
+            <dd>{t('首笔 {} · 追加 {} 整数倍').replace('{}', money(fund.minInvestment, navCurrency)).replace('{}', money(fund.stepInvestment > 0 ? fund.stepInvestment : fund.minInvestment, navCurrency))}</dd>
           </div>
-          <div><dt>{t('到账')}</dt><dd>{fundRedemptionLabel(fund.redemptionDays, fund.redemptionMode, t)}</dd></div>
-          <div><dt>{t('主要风险')}</dt><dd className="is-empty">{t('流动性 · 估值 · 汇率')}</dd></div>
+          <div><dt>{t('最低赎回数量')}</dt><dd>{money(fund.minRedemption > 0 ? fund.minRedemption : 0, navCurrency)}</dd></div>
+          {/* 锁定期不可赎回已由结论卡「锁定期」+ 风险披露第一条覆盖，行内不再复述 */}
+          <div><dt>{t('最短持有期')}</dt><dd>{fundMonthsLabel(fund.lockMonths, t)}</dd></div>
+        </dl>
+
+        {/* 交易节点时间线：替代表内「确认日」「赎回到账」两行（净增零行，同一事实不两处落地） */}
+        <div className="p-fund-detail-tl">
+          {buildTimeline(fund, dealing, t).map(row => (
+            <div key={row.cap} className="p-fund-detail-tl-row">
+              <span className="p-fund-detail-tl-cap">{row.cap}</span>
+              <div className="p-fund-detail-tl-track">
+                {row.nodes.map((n, i) => (
+                  <div key={n.label} className={`p-fund-detail-tl-node${i === 0 ? ' is-first' : ''}`}>
+                    <span className="p-fund-detail-tl-dot" aria-hidden="true" />
+                    <span className="p-fund-detail-tl-label">{n.label}</span>
+                    <span className="p-fund-detail-tl-value">{n.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+          <p className="p-fund-detail-tl-note">{t('节点为预计时间，赎回含人工处理；实际以确认单为准。')}</p>
+        </div>
+
+        {/* 费用组（模板「费用」节）：四费各占一行——挤一行会在 320px 折成三行；费用必须常显，不进折叠 */}
+        <div className="p-fund-detail-group">{t('费用')}</div>
+        <dl className="p-fund-detail-rows">
+          <div><dt>{t('认购费')}</dt><dd>{pct(FUND_FEE_RATE.subscribe)}</dd></div>
+          <div><dt>{t('赎回费')}</dt><dd>{pct(FUND_FEE_RATE.redeem)}</dd></div>
+          <div>
+            <dt>{t('管理费')}</dt>
+            <dd className={economics.managementFeePct != null ? '' : 'is-empty'}>
+              {economics.managementFeePct != null ? t('{}/年').replace('{}', `${economics.managementFeePct}%`) : t('详见基金文件')}
+            </dd>
+          </div>
+          <div>
+            <dt>{t('表现费')}</dt>
+            <dd className={economics.performanceFeePct != null ? '' : 'is-empty'}>
+              {economics.performanceFeePct != null ? t('{}（高水位）').replace('{}', `${economics.performanceFeePct}%`) : t('详见基金文件')}
+            </dd>
+          </div>
         </dl>
 
         {termsOpen && (
           <div className="p-fund-detail-more">
             <dl className="p-fund-detail-rows">
-              <div><dt>{t('币种')}</dt><dd>{fund.currency.join(' · ')}</dd></div>
-              <div>
-                <dt>{t('管理费与表现费')}</dt>
-                <dd>
-                  {economics.managementFeePct == null && economics.performanceFeePct == null
-                    ? t('详见基金文件')
-                    : `${t('{}/年').replace('{}', `${economics.managementFeePct}%`)} · ${t('{}（高水位）').replace('{}', `${economics.performanceFeePct}%`)}`}
-                </dd>
-              </div>
-              <div>
-                <dt>{t('开放日与确认日')}</dt>
-                <dd>
-                  {`${dealing.openFrequency ? t(OPEN_FREQ[dealing.openFrequency]) : t('详见基金文件')} · T+${dealing.confirmDays ?? '-'}`}
-                </dd>
-              </div>
               <div>
                 <dt>{t('最低持有期与通知期')}</dt>
                 <dd>
@@ -242,7 +312,7 @@ export default function FundDetail({ id, navigate, goBack }) {
               </div>
             </dl>
 
-            {/* 不再重复「主要风险」组标题：常显行已经叫这个名字，展开后直接接全文 */}
+            {/* 风险全文收在折叠里：一览区是条款清单，风险披露是另一职责，但合规上不能没有 */}
             <ul className="p-fund-detail-risks">
               {KEY_RISKS.map(k => <li key={k}>{t(k)}</li>)}
             </ul>
@@ -255,7 +325,7 @@ export default function FundDetail({ id, navigate, goBack }) {
           aria-expanded={termsOpen}
           onClick={() => setTermsOpen(v => !v)}
         >
-          <span>{termsOpen ? t('收起') : t('全部条款与风险（含费用明细）')}</span>
+          <span>{termsOpen ? t('收起') : t('风险披露与细则')}</span>
           <ChevronDown size={16} className={termsOpen ? 'is-open' : ''} />
         </button>
       </div>
@@ -269,7 +339,7 @@ export default function FundDetail({ id, navigate, goBack }) {
         </div>
 
         <dl className="p-fund-detail-rows">
-          <div><dt>{t('管理人')}</dt><dd>{fund.manager}</dd></div>
+          {/* 管理人已提级进「关键条款一览」（2026-11-13），此处不再重复——同一事实两处落地 */}
           {/* 成立时间与规模是尽调信息，此前只存在于后台表单、APP 从不渲染——
               「后台能填、前台看不到」等于白填（2026-10-28 补齐） */}
           {fund.inceptionDate && <div><dt>{t('成立时间')}</dt><dd>{fund.inceptionDate}</dd></div>}
@@ -282,10 +352,15 @@ export default function FundDetail({ id, navigate, goBack }) {
 
         <div className="p-fund-detail-group">{t('基金文件')}</div>
         <dl className="p-fund-detail-rows">
+          {/* 文件更新日期（2026-11-13 布线）：有 url 才显示——没有文件却有日期＝自相矛盾；
+              updatedAt 字段后台表单下批补，缺失即不渲染（当前种子全部无 url，走「联系客户经理获取」） */}
           {fundDocs.length === 0 ? null : fundDocs.some(d => d.url) ? fundDocs.map(d => (
             <div key={d.type}>
               <dt>{t(d.name)}</dt>
               <dd className={d.url ? '' : 'is-empty'}>
+                {d.url && d.updatedAt && (
+                  <span className="p-fund-detail-doc-date">{t('更新 {}').replace('{}', d.updatedAt)}</span>
+                )}
                 {d.url ? <a href={d.url} target="_blank" rel="noreferrer">{t('查看')}</a> : t('联系客户经理获取')}
               </dd>
             </div>
@@ -335,7 +410,7 @@ export default function FundDetail({ id, navigate, goBack }) {
       </div>
 
       {/* 合规声明：整句一个 i18n key，等法务定稿后只替换文案（示意版本，未定稿） */}
-      <p className="p-fund-detail-disclaimer">{t('本基金并非香港证监会认可基金，仅向专业投资者提供；本页资料仅供参考，不构成任何要约、招揽或投资建议。过往业绩不代表将来表现。')}</p>
+      <p className="p-fund-detail-disclaimer">{t('本基金并非香港证监会认可基金，仅向专业投资者提供；本页资料仅供参考，不构成任何要约、招揽或投资建议。过往业绩不代表将来表现。收益率仅供参考，实际以正式结单为准。')}</p>
 
       {legalDoc && <AgreementModal agreementId={legalDoc} onClose={() => setLegalDoc(null)} />}
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft, X } from 'lucide-react';
-import { funds, submitFundOrder, getAvailableCash, latestNav, FUND_FEE_RATE, formatExactAmount, formatShares, fundMonthsLabel } from '../mock/data';
+import { funds, submitFundOrder, getAvailableCash, latestNav, getHoldings, FUND_FEE_RATE, formatExactAmount, formatShares, fundMonthsLabel } from '../mock/data';
 import { groupDigits, applyNumberInput } from '../lib';
 import { useLang } from '../i18n';
 
@@ -28,6 +28,11 @@ export default function FundSubscribe({ id, navigate, goBack, setToast }) {
   const available = fund ? getAvailableCash(currency) : 0;
   const nav = fund ? latestNav(fund) : 0;
   const minInvestment = fund?.minInvestment || 0;
+  // 动态起投门槛（2026-11-13 会议口径）：与数据层 submitFundOrder 同口径——首笔看产品条款
+  // minInvestment，有本基金持仓后追加只须 stepInvestment 且为其整数倍。数据层是权威，这里只做就地提示。
+  const held = !!fund && getHoldings().some(h => h.fundId === fund.id);
+  const stepInvestment = (fund?.stepInvestment || 0) > 0 ? fund.stepInvestment : minInvestment;
+  const minReq = held ? Math.min(stepInvestment, minInvestment) : minInvestment;
   const amountNum = Number(amount) || 0;
   const feeAmount = Math.round(amountNum * FUND_FEE_RATE.subscribe);
   const netAmount = amountNum - feeAmount;
@@ -36,14 +41,20 @@ export default function FundSubscribe({ id, navigate, goBack, setToast }) {
   const estShares = netAmount > 0 && nav > 0 ? Math.round((netAmount / nav) * 10000) / 10000 : 0;
   const afterBalance = Math.max(0, available - amountNum);
   const shortfall = amountNum > available ? amountNum - available : 0;
-  const belowMin = amountNum > 0 && amountNum < minInvestment;
-  const canSubmit = !closed && amountNum > 0 && shortfall === 0 && !belowMin;
-  // 可用余额本身不够起投时，「全部」只会一键生成一个必然失败的状态——不给这个按钮，直接说差多少
-  const minTopUp = available < minInvestment ? minInvestment - available : 0;
+  const belowMin = amountNum > 0 && amountNum < minReq;
+  const notStepMultiple = held && stepInvestment > 0 && amountNum > 0 && amountNum % stepInvestment !== 0;
+  const canSubmit = !closed && amountNum > 0 && shortfall === 0 && !belowMin && !notStepMultiple;
+  // 可用余额本身不够门槛时，「全部」只会一键生成一个必然失败的状态——不给这个按钮，直接说差多少。
+  // 有持仓时「全部」向下取整到追加门槛的整数倍，否则一键填出的金额必然被倍数校验拦下
+  const fillTarget = held && stepInvestment > 0
+    ? Math.floor(available / stepInvestment) * stepInvestment
+    : Math.floor(available);
+  const showFillAll = fillTarget >= minReq;
+  const minTopUp = available < minReq ? minReq - available : 0;
   const cashGap = Math.max(shortfall, minTopUp);
 
   const onAmount = (e) => { applyNumberInput(e, setAmount); setError(''); };
-  const fillAll = () => { setAmount(String(Math.floor(available))); setError(''); };
+  const fillAll = () => { setAmount(String(fillTarget)); setError(''); };
 
   const submit = () => {
     const res = submitFundOrder({ fundId: fund.id, currency, amount: amountNum });
@@ -89,7 +100,8 @@ export default function FundSubscribe({ id, navigate, goBack, setToast }) {
         <div className="p-fund-trade-ident-meta">
           <span>{t('锁定')} {fundMonthsLabel(fund.lockMonths, t)}</span>
           <span>{t('期限')} {fundMonthsLabel(fund.termMonths, t)}</span>
-          <span>{t('起投')} {currency} {formatExactAmount(fund.minInvestment)}</span>
+          {/* 身份条写产品条款（首笔）；追加门槛是持仓状态相关口径，动态提示在下方输入区 */}
+          <span>{t('首笔')} {currency} {formatExactAmount(minInvestment)}</span>
         </div>
       </div>
 
@@ -108,7 +120,7 @@ export default function FundSubscribe({ id, navigate, goBack, setToast }) {
         </div>
         <div className="p-fund-trade-hint">
           <span>{t('可用余额')} {currency} {formatExactAmount(available)}</span>
-          {minTopUp === 0 && (
+          {showFillAll && (
             <div className="p-fund-trade-quick">
               <button type="button" onClick={fillAll}>{t('全部')}</button>
             </div>
@@ -126,7 +138,14 @@ export default function FundSubscribe({ id, navigate, goBack, setToast }) {
         )}
         {minTopUp === 0 && belowMin && (
           <p className="p-fund-trade-alert is-plain">
-            {t('低于起投金额')} {currency} {formatExactAmount(fund.minInvestment)}
+            {held
+              ? `${t('追加申购最低')} ${currency} ${formatExactAmount(minReq)}`
+              : `${t('低于起投金额')} ${currency} ${formatExactAmount(minInvestment)}`}
+          </p>
+        )}
+        {notStepMultiple && (
+          <p className="p-fund-trade-alert is-plain">
+            {t('追加申购金额须为 {} 的整数倍').replace('{}', `${currency} ${formatExactAmount(stepInvestment)}`)}
           </p>
         )}
 
@@ -157,6 +176,10 @@ export default function FundSubscribe({ id, navigate, goBack, setToast }) {
       {/* 口径说明：私募按确认日净值复核，估算≠成交。这是本页最容易被误解的一条，常显不折叠 */}
       <p className="p-fund-trade-note">
         {t('本页数字按最近净值估算；私募基金按确认日净值复核，实际成交份额可能不同。提交后资金立即冻结，财务确认前可撤销。')}
+      </p>
+      {/* 特殊申购（2026-11-13 会议）：经董事批准的例外（如首笔降档）走线下人工审批，前端不放开 */}
+      <p className="p-fund-trade-note">
+        {t('特殊申购安排（如经批准的首笔降档）请联系客户经理线下办理，系统不受理。')}
       </p>
 
       {error && <p className="form-error">{error}</p>}
