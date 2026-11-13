@@ -8736,6 +8736,18 @@ input, select, textarea {
   color: var(--text-secondary);
 }
 
+/* 余额行左列币种撑满：右列（金额+折算）才能贴卡右缘；
+   交易/流水行的 title 在 .doc-screen-row-main（已有 flex:1）内，不受影响 */
+.doc-screen-row > .doc-screen-row-title { flex: 1; }
+
+.doc-screen-empty {
+  margin: 0;
+  padding: var(--space-4);
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+}
+
 .doc-screen-card {
   background: var(--bg-card);
   border-radius: var(--radius-lg);

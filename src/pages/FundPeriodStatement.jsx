@@ -107,7 +107,9 @@ export default function FundPeriodStatement({ from, to, goBack, setToast }) {
                     <span className="doc-screen-row-title">{b.currency}</span>
                     <span className="doc-screen-row-right">
                       <b className="doc-screen-amt">{b.account === 'crypto' ? fmtQty(b.closing) : formatExactAmount(b.closing)}</b>
-                      <span className="doc-screen-amt-sub">HKD {formatExactAmount(b.closingHKD)}</span>
+                      {b.currency !== 'HKD' && (
+                        <span className="doc-screen-amt-sub">HKD {formatExactAmount(b.closingHKD)}</span>
+                      )}
                     </span>
                   </div>
                 ))}
@@ -119,7 +121,9 @@ export default function FundPeriodStatement({ from, to, goBack, setToast }) {
         <section>
           <h2 className="doc-screen-group">{t('基金交易')}</h2>
           {stmt.trades.length === 0 ? (
-            <p className="doc-empty">{t('本期无基金交易')}</p>
+            <div className="doc-screen-card">
+              <p className="doc-screen-empty">{t('本期无基金交易')}</p>
+            </div>
           ) : (
             <div className="doc-screen-card">
               {stmt.trades.map(s => (
@@ -143,7 +147,9 @@ export default function FundPeriodStatement({ from, to, goBack, setToast }) {
         <section>
           <h2 className="doc-screen-group">{t('资金往来')}</h2>
           {stmt.cash.length === 0 ? (
-            <p className="doc-empty">{t('本期无资金往来')}</p>
+            <div className="doc-screen-card">
+              <p className="doc-screen-empty">{t('本期无资金往来')}</p>
+            </div>
           ) : (
             <div className="doc-screen-card">
               {stmt.cash.map(c => (
