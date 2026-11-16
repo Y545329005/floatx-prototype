@@ -342,6 +342,7 @@ input, select, textarea {
 .fund-statement-exports-page,
 .fund-statement-detail-page,
 .doc-page,
+.mandate-page,
 .mail-preview-page,
 .fund-request-detail-page,
 .security-center {
@@ -894,6 +895,7 @@ input, select, textarea {
   margin: var(--space-3) 0 0;
   font-size: var(--text-sm);
   color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
 .asset-cash-split-k {
@@ -998,10 +1000,17 @@ input, select, textarea {
   font-variant-numeric: tabular-nums;
 }
 
+/* 委托资产分解行的「含提取处理中」标注（2026-11-16）：在途只标注不减值 */
+.asset-hero-part-sub {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary, var(--text-secondary));
+}
+
 .asset-actions {
   display: grid;
-  /* 2026-10-29：4 → 6 格（3×2），补「资金记录 / 资金申请」两个资金域入口 */
-  grid-template-columns: repeat(3, 1fr);
+  /* 2026-11-16 v3：3 → 4 列（金刚区口径放宽为「资金动作 + 账户入口」）。
+     上限 8 格（两行），超出先讨论准入——金刚区是资产页最高价值的位置，不无限扩容 */
+  grid-template-columns: repeat(4, 1fr);
   gap: 4px;
   background: var(--bg-card);
   border-radius: var(--radius-lg);
@@ -11216,7 +11225,7 @@ button.kyc-form-input.picker-trigger {
   }
 }
 
-/* ========== 防截屏演示遮罩（2026-11-13 会议拍板：截图全白方案，不做水印） ==========
+/* ========== 防截屏演示遮罩（2026-11-13 会议：全白方案；水印由产品拍板不加） ==========
    页面切离（visibilitychange hidden）时全覆盖白屏，回到前台即移除。
    仅基金域 + 结单类路由挂载（见 shell/router.jsx SCREEN_GUARD_PATHS）；
    组件见 components/ScreenGuard.jsx。z-index 3000：盖过 lightbox（2000）在内的一切层。 */
@@ -11225,4 +11234,399 @@ button.kyc-form-input.picker-trigger {
   inset: 0;
   z-index: 3000;
   background: var(--bg-card);
+}
+
+/* ---- 委托详情 / 交易流水 ---- */
+.mandate-hero {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-4);
+  margin-bottom: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.mandate-hero-k { font-size: var(--text-xs); color: var(--text-secondary); }
+.mandate-hero-v { font-size: var(--text-3xl); font-variant-numeric: tabular-nums; }
+.mandate-hero-badge {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+.mandate-hero-badge em { font-style: normal; }
+.mandate-hero-badge.up { background: var(--success-light); color: var(--success); }
+.mandate-hero-badge.down { background: var(--danger-light); color: var(--danger); }
+.mandate-hero-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+.mandate-hero-mgr {
+  margin-top: var(--space-1);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+/* 分区眉标：资产 / 合约（交易卡自带标题语义，不设眉标） */
+.mandate-section-label {
+  margin: var(--space-1) 0;
+  font-size: var(--text-xs);
+  letter-spacing: 1.5px;
+  color: var(--text-secondary);
+}
+.mandate-pos-right .up { color: var(--success); }
+.mandate-pos-right .down { color: var(--danger); }
+
+.mandate-page .card { margin-bottom: var(--space-3); }
+
+.mandate-pos-row,
+.mandate-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-light);
+}
+.mandate-pos-row:last-child,
+.mandate-row:last-child { border-bottom: none; }
+.mandate-pos-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mandate-pos-main strong { font-size: var(--text-md); }
+.mandate-pos-main span { font-size: var(--text-xs); color: var(--text-secondary); }
+.mandate-pos-method { color: var(--text-tertiary, var(--text-secondary)); }
+.mandate-pos-right { text-align: right; display: flex; flex-direction: column; gap: 2px; }
+.mandate-pos-right strong { font-size: var(--text-md); font-variant-numeric: tabular-nums; }
+.mandate-pos-right span { font-size: var(--text-xs); }
+.mandate-row span { font-size: var(--text-sm); color: var(--text-secondary); }
+.mandate-row strong { font-size: var(--text-sm); text-align: right; }
+
+.mandate-trade-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--border-light);
+  background: none;
+  padding: var(--space-3) 0;
+  text-align: left;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.mandate-trade-row:last-of-type { border-bottom: none; }
+.mandate-trade-row:disabled { cursor: default; }
+.mandate-trade-main { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.mandate-trade-main strong { font-size: var(--text-md); }
+.mandate-trade-main span { font-size: var(--text-xs); color: var(--text-secondary); }
+.mandate-trade-amount { font-variant-numeric: tabular-nums; }
+.mandate-correct-tag {
+  margin-left: 6px;
+  font-style: normal;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--warning-light);
+  color: var(--warning-text);
+}
+.mandate-trade-status {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.mandate-trade-status.is-active { color: var(--success); }
+.mandate-trade-status.is-pending { color: var(--warning-text); }
+
+.mandate-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  border: none;
+  background: none;
+  padding-top: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--primary);
+  cursor: pointer;
+}
+/* 提取整行动作（2026-11-16 定稿）：有授权可点 / 无授权禁用提示 */
+.mandate-withdraw-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 44px;
+  margin-top: var(--space-1);
+  padding: var(--space-2) 0;
+  border: none;
+  border-top: 1px solid var(--border-light);
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--primary);
+  text-align: left;
+  cursor: pointer;
+}
+.mandate-withdraw-action span {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.mandate-withdraw-action.is-gated {
+  color: var(--text-tertiary, var(--text-secondary));
+  cursor: default;
+}
+.mandate-withdraw-gate-tip {
+  font-size: var(--text-xs);
+  text-align: right;
+}
+.mandate-agree-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+.mandate-agree-head svg { color: var(--primary); flex-shrink: 0; margin-top: 2px; }
+.mandate-agree-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mandate-agree-main strong { font-size: var(--text-md); }
+.mandate-agree-main span { font-size: var(--text-xs); color: var(--text-secondary); }
+.mandate-agree-detail { padding-top: var(--space-1); }
+.mandate-agree-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 44px;
+  margin-top: var(--space-2);
+  padding: var(--space-2) 0;
+  border: none;
+  border-top: 1px solid var(--border-light);
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--primary);
+  text-align: left;
+  cursor: pointer;
+}
+.mandate-agree-toggle svg { flex-shrink: 0; transition: transform 0.18s ease; }
+.mandate-agree-toggle svg.flip { transform: rotate(180deg); }
+.mandate-agree-toggle:focus-visible {
+  outline: 2px solid var(--primary);
+}
+/* 投资限制等长值允许换行 */
+.mandate-row--wrap strong { text-align: right; line-height: 1.45; }
+/* 合规声明：两句合并进单一浅底容器（文本本身不动，均为合规义务） */
+.mandate-legal {
+  background: var(--bg);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 var(--space-3);
+}
+.mandate-legal p {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+/* 交易流水 / 提取页仍在用的裸免责段（MandateTrades / MandateWithdraw） */
+.mandate-disclaimer {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+.mandate-trades-card { padding-top: 0; padding-bottom: 0; }
+
+/* ---- 委托提取（2026-11-16 · 协议 10：委托 B → 现金 A，两段式第一段） ---- */
+/* 现金余额卡头：标题 + 提取入口两端排 */
+.mandate-cash-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.mandate-cash-gate {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary, var(--text-secondary));
+}
+.mandate-row-sub {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary, var(--text-secondary));
+  margin-top: 2px;
+}
+/* 缺常设授权的提示条 */
+.mandate-withdraw-gate {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--warning-light);
+  color: var(--warning-text);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  margin-bottom: var(--space-3);
+}
+.mandate-withdraw-gate svg { flex-shrink: 0; margin-top: 2px; }
+/* 可提取 hero：主值 = 可用（余额 − 在途），与详情页「余额口径」刻意不同，见页内文案 */
+.mandate-withdraw-hero { gap: 6px; }
+.mandate-withdraw-amount {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.mandate-withdraw-input {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  flex: 1;
+  min-width: 0;
+}
+.mandate-withdraw-cur { font-size: var(--text-sm); color: var(--text-secondary); }
+.mandate-withdraw-input input {
+  border: none;
+  outline: none;
+  background: none;
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  width: 100%;
+  min-width: 0;
+}
+.mandate-withdraw-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  font-size: var(--text-sm);
+}
+.mandate-withdraw-meta span { color: var(--text-secondary); }
+.mandate-withdraw-meta strong { font-variant-numeric: tabular-nums; }
+.mandate-withdraw-submit { width: 100%; margin-top: var(--space-3); }
+.mandate-withdraw-notice p { margin: 0 0 var(--space-2); }
+.mandate-withdraw-notice p:last-child { margin-bottom: 0; }
+/* 提取记录行 */
+.mandate-withdraw-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-light);
+}
+.mandate-withdraw-row:last-child { border-bottom: none; }
+.mandate-withdraw-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mandate-withdraw-main strong { font-size: var(--text-md); font-variant-numeric: tabular-nums; }
+.mandate-withdraw-side { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+
+/* ---- 后台：委托提取审核（AdminMandateAccounts 抽屉内） ---- */
+.mandate-wd-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-light);
+}
+.mandate-wd-row:last-of-type { border-bottom: none; }
+.mandate-wd-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mandate-wd-main strong { font-size: var(--text-md); font-variant-numeric: tabular-nums; }
+.mandate-wd-actions { display: flex; align-items: center; gap: var(--space-2); flex-shrink: 0; }
+.mandate-wd-reason { margin-top: var(--space-2); }
+
+
+/* ---- 成交通知单 / 日结单的文档补件 ---- */
+.doc-correct {
+  margin: var(--space-2) 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--warning-light);
+  color: var(--warning-text);
+  font-size: var(--text-sm);
+}
+.doc-mail-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: var(--space-2) 0;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+.doc-section { margin: var(--space-4) 0; }
+.doc-section h3 { font-size: var(--text-md); margin: 0 0 var(--space-2); }
+.doc-section-total {
+  margin: var(--space-2) 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.doc-sub { display: block; font-size: 10px; color: var(--text-secondary); font-weight: 400; }
+.doc-line { margin: 4px 0; font-size: var(--text-sm); }
+.doc-muted { color: var(--text-secondary); font-size: var(--text-sm); }
+
+/* ---- 入金「资金去向」 ---- */
+.fund-target-options { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+.fund-target-options button {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  text-align: left;
+  cursor: pointer;
+}
+.fund-target-options button.is-active {
+  border-color: var(--primary);
+  background: var(--primary-light, rgba(54, 96, 255, 0.06));
+}
+.fund-target-options strong { font-size: var(--text-sm); color: var(--text-primary); }
+.fund-target-options span { font-size: 11px; color: var(--text-secondary); line-height: 1.4; }
+
+/* 日结单表格：窄屏必须放得下，靠压缩列而不是横向滚动——
+   结单是要打印的凭证，滚动条外的列打印时会被切掉。
+   第一列允许换行（名称/方法/日期），数值列不换行并右对齐。 */
+.doc-table--fit { table-layout: fixed; }
+.doc-table--fit th,
+.doc-table--fit td { padding: 6px 4px; }
+.doc-table--fit .doc-cell-wrap { white-space: normal; word-break: break-word; }
+.doc-table--fit td.is-num { white-space: nowrap; }
+
+/* 窄屏结单：表头允许换行，副行也允许换行——英文表头（Valuation price / Market value）比中文长得多 */
+.doc-table--fit th,
+.doc-table--fit td { white-space: normal; }
+.doc-table--fit td.is-num { white-space: nowrap; }
+.doc-table--fit .doc-sub { white-space: normal; }
+
+/* 单据中心日结单页签：月报送达义务的常驻说明（协议 11.3） */
+.p-statements-daily-note {
+  margin: var(--space-2) var(--space-4);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  color: var(--text-secondary);
 }

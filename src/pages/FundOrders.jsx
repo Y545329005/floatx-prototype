@@ -87,7 +87,7 @@ export default function FundOrders({ navigate, goBack, setToast }) {
           <button className="back-btn" onClick={() => goBack('#asset')} aria-label={t('返回')}>
             <ArrowLeft size={20} />
           </button>
-          <h1>{t('我的交易')}</h1>
+          <h1>{t('基金交易')}</h1>
         </div>
         {/* 只有「待确认」带计数：它是唯一需要行动的项目；给三个 tab 都标数会出现
             「全部 3 = 待确认 1 + 已成交 1」的账不平（已撤销/已驳回不在其中的） */}

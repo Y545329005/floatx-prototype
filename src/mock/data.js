@@ -6017,6 +6017,14 @@ export const ADMIN_MENUS = [
   // 项目模块未来若下线，删「项目」组即可，基金不受牵连。
   { key: 'fund-products', label: '基金产品', hash: '#admin/fund-products', group: '基金' },
   { key: 'fund-trades', label: '基金交易', hash: '#admin/fund-trades', group: '基金' },
+  // 特殊申购（2026-11-13 会议 §3）：前端不放开降档，例外只在这里留痕并代下单
+  { key: 'special-subs', label: '特殊申购', hash: '#admin/special-subs', group: '基金' },
+  // 2026-11-13 RO 补充会议：委托账户（B 号）独立成组——它是 9 号牌下的全权委托业务，
+  // 与基金（C 号）和资金审核（A 号）分属三本账，菜单也不合并。
+  { key: 'mandate-agreements', label: '委托协议', hash: '#admin/mandate-agreements', group: '委托' },
+  { key: 'mandate-accounts', label: '委托账户', hash: '#admin/mandate-accounts', group: '委托' },
+  { key: 'mandate-trades', label: '交易与估值', hash: '#admin/mandate-trades', group: '委托' },
+  { key: 'mandate-reports', label: '日结单与月报', hash: '#admin/mandate-reports', group: '委托' },
   { key: 'funds', label: '资金审核', hash: '#admin/funds', group: '资金' },
   { key: 'broadcast', label: '通知触达', hash: '#admin/broadcast', group: '运营' },
   { key: 'messages', label: '客户消息', hash: '#admin/messages', group: '运营' }, // 客服工作台（2026-08-24）：响应式 1v1 咨询，与广播（主动触达）相邻成对；service+super
@@ -6032,14 +6040,16 @@ export const ADMIN_MENUS = [
 export const roleMenuKeys = {
   // 超级管理员 = 最高权限：全部菜单（2026-08-15 用户确认"所有页面所有功能都有"——my-clients 原 advisor 专属，补上）；锁定不可编辑
   // 2026-10-16 口径修订：问卷记录恢复（意向收集链），其余资金/交易/投后 10 key 保持摘除
-  super: ['kyc', 'pi', 'users', 'my-clients', 'projects', 'events', 'registrations', 'subscriptions', 'fund-products', 'fund-trades', 'funds', 'broadcast', 'messages', 'audit', 'roles', 'admins', 'config'],
-  ops: ['projects', 'events', 'registrations', 'subscriptions', 'fund-products', 'fund-trades', 'funds', 'broadcast', 'users', 'config'],
+  super: ['kyc', 'pi', 'users', 'my-clients', 'projects', 'events', 'registrations', 'subscriptions', 'fund-products', 'fund-trades', 'special-subs', 'mandate-agreements', 'mandate-accounts', 'mandate-trades', 'mandate-reports', 'funds', 'broadcast', 'messages', 'audit', 'roles', 'admins', 'config'],
+  ops: ['projects', 'events', 'registrations', 'subscriptions', 'fund-products', 'fund-trades', 'special-subs', 'mandate-accounts', 'mandate-trades', 'funds', 'broadcast', 'users', 'config'],
   // 合规角色：KYC审核 + PI认证 + 用户管理 + 问卷记录 + 审计日志（交易监控类 7 key 随资金流下线摘除）
-  compliance: ['kyc', 'pi', 'users', 'subscriptions', 'audit'],
+  // 2026-11-13：委托协议归合规（协议档案由合规登记、super 复核）+ 委托账户授权复核（Maker-Checker 的 Checker）
+  compliance: ['kyc', 'pi', 'users', 'subscriptions', 'special-subs', 'mandate-agreements', 'mandate-accounts', 'mandate-trades', 'audit'],
   // 客服：看问卷 + 客户账户 + 通知触达（主动）+ 客户消息（响应式 1v1 咨询，2026-08-24）；不跟进线索（线索是顾问的职责）
   service: ['subscriptions', 'users', 'broadcast', 'messages'],
   // 财务专员：资金核销（充值到账/提现打款/换汇确认）+ 基金交易确认（2026-10-28 一期闭环恢复）
-  finance: ['funds', 'fund-trades'],
+  // 2026-11-13：委托交易与估值、日结单与月报归财务（估值留痕 + 费用扣减 + 每日快照）
+  finance: ['funds', 'fund-trades', 'mandate-trades', 'mandate-reports'],
   // 专属顾问：「我的客户」单一工作视图（2026-08-15 方案 A——顾问工作单元 = 客户而非模块，
   // 名下客户列表 + 跨模块任务聚合 + 客户详情；替代报名管理，线索跟进并入我的客户「跟进」）
   advisor: ['my-clients'],
@@ -6048,7 +6058,10 @@ export const roleMenuKeys = {
 // 权限覆盖持久化（localStorage 快照优先于默认值；"恢复默认"按钮清覆盖逃生——防代码更新默认值被旧快照屏蔽）
 // 2026-10-28：key 升 v3。v2 快照缺少新增的 fund-products（getRoleMenuKeys 只做 VALID 过滤、不补默认值），
 // 沿用会让新菜单在存过角色配置的浏览器里整片消失——与 v1→v2 同源事故，新菜单必须升版。
-const ROLE_MENUS_KEY = 'zhifu-admin-role-menus-v3';
+// 2026-11-13：key 升 v6（新增 mandate-* 四菜单 + special-subs）。
+// 与 v1→v2、v2→v3、v3→v4 同源：getRoleMenuKeys 只做 VALID 过滤、不补默认值，
+// 老浏览器里存过的覆盖表不含新 key，不升版新菜单会整片消失。
+const ROLE_MENUS_KEY = 'zhifu-admin-role-menus-v6';
 function getRoleMenuOverrides() {
   try {
     const raw = localStorage.getItem(ROLE_MENUS_KEY);
@@ -6293,6 +6306,14 @@ export function getMenuBadges(role, admin) {
     funds: pendingDeposits + pendingWithdraws,
     // 基金交易待确认（2026-10-28）：申购/赎回单据，财务/运营的日常待办
     'fund-trades': fundOrders.filter(o => o.status === FUND_ORDER_STATUS.PENDING).length,
+    // 委托账户待授权（2026-11-13）：已开户但未复核授权 → APP 不可见，属合规/运营的待办；
+    // 并入提取待办（2026-11-16：待审核 + 提取中都在本页抽屉审核，宿主菜单同计数）
+    'mandate-accounts': mandateAccounts.filter(a => a.status === MANDATE_ACCOUNT_STATUS.PENDING).length
+      + mandateWithdrawals.filter(w =>
+        w.status === MANDATE_WITHDRAWAL_STATUS.PENDING || w.status === MANDATE_WITHDRAWAL_STATUS.IN_PROGRESS).length,
+    // 委托交易待复核（2026-11-13 批 1b）
+    'mandate-trades': mandateTrades.filter(t => t.status === MANDATE_TRADE_STATUS.PENDING).length,
+    'special-subs': specialSubscriptionApprovals.filter(r => r.status === SPECIAL_SUB_STATUS.PENDING).length,
     subscriptions: pendingAlloc + pendingSignSubs,
     dividends: pendingDividends,
     exits: pendingExits,
@@ -7624,13 +7645,21 @@ kycSubmissions.push(KYC_MID_SUBMISSION);
 //   - 付款卡只需属于本人且未停用/未拒绝；
 //   - 首充 ≥1万 HKD 等值 → 财务确认到账时自动加白（见 approveDepositRequest）；
 //   - 独立「白名单验证单」下线，验证款 = 充值款（本来就是上账的，只是换了单据形态）。
-export function submitDepositRequest({ currency, amount, method, cardId, bank, cardNo, evidence, refNo, refCode, transferDate }) {
+export function submitDepositRequest({ currency, amount, method, cardId, bank, cardNo, evidence, refNo, refCode, transferDate, accountType = 'cash', mandateAccountId = '' }) {
   const key = walletKeyOf(currency) || currency.toLowerCase();
   const w = wallet[key];
   if (!w || !amount || amount <= 0) return false;
   // 付款卡校验：本人 + 非停用（未验证可充，首充即验证）
   const card = bankCards.find(c => c.id === cardId && c.userId === currentUser.id);
   if (!card || card.whitelistStatus === BANK_CARD_STATUS.SUSPENDED) return false;
+  // 资金去向（2026-11-13 RO 补充会议）：A 现金账户 / B 委托账户，后台核销按去向入账。
+  // 委托账户必须是本人、已生效且已授权的账户——未授权账户连入金都不该进得去。
+  const toMandate = accountType === 'mandate';
+  const mandateAccount = toMandate
+    ? mandateAccounts.find(a => a.id === mandateAccountId && a.userId === currentUser.id
+      && a.status === MANDATE_ACCOUNT_STATUS.ACTIVE && a.visibleInApp)
+    : null;
+  if (toMandate && !mandateAccount) return false;
   if (!(evidence && evidence.name)) return false; // 线下转账必须上传凭证
   const orderNo = genOrderNo('DR');
   const genRef = 'BK' + Date.now();   // 外部单号：银行参考号（mock 演示值，接后端由银行回执替换）
@@ -7646,6 +7675,9 @@ export function submitDepositRequest({ currency, amount, method, cardId, bank, c
     bank: card.bank || '',
     cardNo: card.cardNo || '',   // 完整卡号（用户侧从 bankCards 选择传完整号；审核抽屉授权查看）
     bankRef: genRef,
+    accountType: toMandate ? 'mandate' : 'cash',   // 资金去向（2026-11-13）：cash = A 现金账户；mandate = B 委托账户
+    mandateAccountId: mandateAccount ? mandateAccount.id : '',
+    mandateAccountNo: mandateAccount ? mandateAccount.no : '',
     // 2026-10-29 对账三元组：refCode = 我们在页面上给出的 6 位码（用户已写进汇款备注，是最强的匹配键）；
     // payerRef = 用户从银行回单抄来的参考号（可空，第二匹配键）；transferDate = 用户声明的汇款时间。
     // 三者与金额一起构成财务核销时的匹配依据，此前只有金额 + 姓名 + 时间的弱信号。
@@ -7695,9 +7727,28 @@ export function approveDepositRequest(reqId, { actualAmount, actualCurrency, ban
     return { ok: false, error: `该卡首次充值未达加白门槛（≥1万 HKD 或等值），请拒绝并原路退回` };
   }
   // 按单据归属记账：演示账户走全局钱包，其他客户只更各自账户（护栏见 applyWalletDelta）
-  const moved = applyWalletDelta(req.userId, cur, credited);
+  // 资金去向（2026-11-13 RO 补充会议）：委托账户 B 的钱进流水账本，不进 wallet——
+  // 两个资金池分开结算，混记会让 A/B 两边余额同时失真。
+  const toMandate = req.accountType === 'mandate';
+  if (toMandate) {
+    const mandateAccount = mandateAccounts.find(a => a.id === req.mandateAccountId);
+    if (!mandateAccount) return { ok: false, error: '委托账户不存在，无法入账' };
+    if (mandateAccount.status === MANDATE_ACCOUNT_STATUS.CLOSED) return { ok: false, error: '委托账户已关闭，无法入账' };
+    const booked = addMandateCashEntry({
+      accountId: mandateAccount.id,
+      type: MANDATE_LEDGER_TYPES.DEPOSIT,
+      currency: cur,
+      amount: credited,
+      note: `入金核销 ${req.orderNo}`,
+      refType: 'deposit',
+      refId: req.id,
+    }, operator || '运营后台');
+    if (!booked.ok) return booked;
+    req.mandateAccountNo = mandateAccount.no;
+  }
+  const moved = toMandate ? { ok: true, self: false } : applyWalletDelta(req.userId, cur, credited);
   if (!moved.ok) return { ok: false, error: '记账失败' };
-  if (moved.self) updateLatestTotal(toHkd(cur, credited));
+  if (!toMandate && moved.self) updateLatestTotal(toHkd(cur, credited));
   const ref = bankRef || `REF${Date.now()}`;
   req.actualAmount = credited;
   req.actualCurrency = cur;
@@ -7723,7 +7774,7 @@ export function approveDepositRequest(reqId, { actualAmount, actualCurrency, ban
   const diffNote = credited !== req.amount || cur !== req.currency
     ? `（登记 ${req.currency} ${req.amount.toLocaleString()} → 实际 ${cur} ${credited.toLocaleString()}）`
     : '';
-  if (moved.self) {
+  if (!toMandate && moved.self) {
     transactions.unshift({
       id: `t${Date.now()}`,
       orderNo: genOrderNo('TX'),
@@ -7746,7 +7797,7 @@ export function approveDepositRequest(reqId, { actualAmount, actualCurrency, ban
     title: '入金到账',
     body: '{label}入金 {sym}{amt} 已确认到账，可用资金已更新。', args: { label: w.label, sym: w.symbol, amt: credited.toLocaleString() },
   }, req.userId);
-  logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'approve', target: req.userName, targetId: reqId, note: `充值确认到账 ${w.symbol}${credited.toLocaleString()}${diffNote}${cardVerified ? `；首充加白 ${depositCard.maskedNo}` : ''}` });
+  logAudit({ operator: operator || '运营后台', category: 'fundProduct', action: 'approve', target: req.userName, targetId: reqId, note: `充值确认到账 ${w.symbol}${credited.toLocaleString()}${toMandate ? `（委托账户 ${req.mandateAccountNo || req.mandateAccountId}）` : ''}${diffNote}${cardVerified ? `；首充加白 ${depositCard.maskedNo}` : ''}` });
   Storage.save();
   return { ok: true, cardVerified };
 }
@@ -10826,6 +10877,22 @@ export const Storage = {
         statementExports: statementExports,
         // 演示模式开关（2026-11-13 阶段 1）：同上，旧快照缺 key → 默认关
         demoMode: demoMode,
+        // 委托账户（2026-11-13 批 1a）：全部追加型，旧快照缺 key 时保留代码种子。
+        // cashLedger 是账户余额的唯一事实源，必须持久化；账户上不存余额。
+        mandateConfig: mandateConfig,
+        mandateAgreements: mandateAgreements,
+        mandateAccounts: mandateAccounts,
+        cashLedger: cashLedger,
+        // 委托账户批 1b（2026-11-13）：交易 / 估值标记 / 费用 / 常设授权 / 日结单。
+        // 持仓仍是派生视图，不持久化；日结单是唯一允许持久化的快照。
+        mandateTrades: mandateTrades,
+        mandatePriceMarks: mandatePriceMarks,
+        mandateFees: mandateFees,
+        mandateStandingAuth: mandateStandingAuth,
+        // 委托提取（2026-11-16）：追加型，旧快照缺 key 时保留代码种子，不升 STATE_VERSION
+        mandateWithdrawals: mandateWithdrawals,
+        dailyStatements: dailyStatements,
+        specialSubscriptionApprovals: specialSubscriptionApprovals,
         // 基金产品（2026-10-28）：后台「基金产品管理」改了条款/文件/净值必须刷新保留。
         // 只存产品本体，不存由它派生的展示文案（那边已经改成按数字生成）。
         funds: funds,
@@ -10975,6 +11042,37 @@ export const Storage = {
         demoMode.on = !!data.demoMode.on;
         demoMode.updatedAt = data.demoMode.updatedAt || null;
       }
+      // 委托账户（2026-11-13 批 1a）：追加型实体，旧快照缺 key → 保留代码种子。
+      // 逐字段恢复配置（对象整体替换会让以后新增的配置项在旧快照里消失），数组整表替换。
+      if (data.mandateConfig && typeof data.mandateConfig === 'object') {
+        const cfg = data.mandateConfig;
+        if (cfg.entryCard && typeof cfg.entryCard === 'object') Object.assign(mandateConfig.entryCard, cfg.entryCard);
+        if (cfg.fees && typeof cfg.fees === 'object') Object.assign(mandateConfig.fees, cfg.fees);
+        if (cfg.limits && typeof cfg.limits === 'object') Object.assign(mandateConfig.limits, cfg.limits);
+        if (Number.isFinite(Number(cfg.minInvestment))) mandateConfig.minInvestment = Number(cfg.minInvestment);
+        if (typeof cfg.adviceEmail === 'boolean') mandateConfig.adviceEmail = cfg.adviceEmail;
+        if (cfg.applyChannel) mandateConfig.applyChannel = cfg.applyChannel;
+        // 提取参数（2026-11-16）：旧快照缺 key → 保留代码默认（10 营业日 / 禁售期未启用）
+        if (Number.isFinite(Number(cfg.withdrawalNoticeDays))) mandateConfig.withdrawalNoticeDays = Number(cfg.withdrawalNoticeDays);
+        if (typeof cfg.lockUpEnabled === 'boolean') mandateConfig.lockUpEnabled = cfg.lockUpEnabled;
+      }
+      const restoreMandateArray = (target, source) => {
+        if (!Array.isArray(source)) return;
+        target.length = 0;
+        source.forEach(item => { if (item && item.id) target.push(item); });
+      };
+      restoreMandateArray(mandateAgreements, data.mandateAgreements);
+      restoreMandateArray(mandateAccounts, data.mandateAccounts);
+      restoreMandateArray(cashLedger, data.cashLedger);
+      restoreMandateArray(mandateTrades, data.mandateTrades);
+      restoreMandateArray(mandatePriceMarks, data.mandatePriceMarks);
+      restoreMandateArray(mandateFees, data.mandateFees);
+      restoreMandateArray(mandateStandingAuth, data.mandateStandingAuth);
+      restoreMandateArray(mandateWithdrawals, data.mandateWithdrawals);
+      restoreMandateArray(dailyStatements, data.dailyStatements);
+      restoreMandateArray(specialSubscriptionApprovals, data.specialSubscriptionApprovals);
+      // 日结单快照存在即视为已播种（否则 getDailyStatements 会再补一份历史，和快照叠加）
+      if (Array.isArray(data.dailyStatements)) dailyStatementSeeded = true;
       if (Array.isArray(data.statementExports)) {
         statementExports.length = 0;
         data.statementExports.forEach(r => {
@@ -11278,7 +11376,7 @@ function migrateContactKeys() {
 // action:   create/update/delete/approve/reject/checkin/allocate/forfeit/promote/sign/assign/disable/enable/submit/register...
 export const auditCategoryLabels = {
   project: '项目', event: '路演', registration: '报名', lead: '客户线索', kyc: '认证',
-  pi: 'PI 认证', fund: '资金', fundProduct: '基金产品', subscription: '申购', exit: '退出', user: '用户', admin: '后台账号', service: '客服服务', config: '系统配置',
+  pi: 'PI 认证', fund: '资金', fundProduct: '基金产品', mandate: '委托账户', subscription: '申购', exit: '退出', user: '用户', admin: '后台账号', service: '客服服务', config: '系统配置',
 };
 
 // 预置 mock 日志（覆盖各类型供演示筛选；接后端由真实操作记录替换）
@@ -12278,4 +12376,1554 @@ export function checkUserCanSubscribe(userId, amount) {
     reason: null,
     flags: [],
   };
+}
+
+// ========== 委托账户（2026-11-13 批 1a · 11-13 会议 + RO 补充会议） ==========
+//
+// 术语：界面统一「委托账户」（不用「全权委托」做账户名），法律文本保留《全權委託投資管理協議》原题，
+// 代码一律 mandate*。英文用 Discretionary Account（与协议一致，不用 Mandate Account 造成两套叫法）。
+//
+// 三本账（结构图 149）：
+//   现金账户 A（A00001）= 现有 wallet，不建新表；入金/出金/换汇/数字资产都归它。
+//   委托账户 B（B00001）= 本段 mandateAccounts + cashLedger，有独立资金池。
+//   基金账户 C（C00001）= fundHoldings + 在途标识，资金直付基金公司（原型仍走钱包扣款），无资金池。
+//
+// 两条硬规则（对抗性审查 E1/E5 的落地）：
+//   ① 资金流水是 B 账户余额的唯一事实源——账户上不存 balance 字段，余额一律现算。
+//      存一份余额就会和流水漂移，漂移之后没有任何一处能判断谁对。
+//   ② 开户闸门在数据层，不在按钮上：协议未登记 / 未生效 / 缺持牌代表 CE 号，一律开户失败。
+//      UI 灰按钮只是提示，绕过 UI 直调函数同样拒绝。
+//
+// 本轮（1a）不含：交易与持仓（1b）、日结单（1b）、APP 展示（批 2）。
+
+export const MANDATE_ACCOUNT_STATUS = {
+  PENDING: 'pending',     // 已开户，待合规复核授权（APP 不可见）
+  ACTIVE: 'active',
+  SUSPENDED: 'suspended',
+  CLOSED: 'closed',
+};
+
+// 资金流水类型。正负号由金额本身承载（deposit +、withdraw −），不靠类型推断符号——
+// 费用与分红都可能是正负（费用冲正/分红代扣税），让类型只管语义。
+export const MANDATE_LEDGER_TYPES = {
+  DEPOSIT: 'deposit',            // 外部入金
+  TRANSFER_IN: 'transfer_in',    // 现金账户 A → 委托账户 B
+  TRANSFER_OUT: 'transfer_out',  // 委托账户 B → 现金账户 A
+  WITHDRAW: 'withdraw',          // 出金到银行卡（法规待 RO 确认，本轮只记账不开放入口）
+  TRADE: 'trade',                // 交易结算（1b 起由交易复核自动生成）
+  FEE: 'fee',                    // 管理费/设立费/表现费（协议 12，从组合扣减）
+  DIVIDEND: 'dividend',          // 股息/分红（协议 11.5(d)，按已收估值）
+};
+
+export const MANDATE_LEDGER_LABELS = {
+  deposit: '入金',
+  transfer_in: '转入',
+  transfer_out: '转出',
+  withdraw: '出金',
+  trade: '交易结算',
+  fee: '费用',
+  dividend: '股息',
+};
+
+// 提取申请状态机（协议 10 · 2026-11-16 定稿）：
+//   pending（待审核）→ in_progress（已通过，管理人变现中）→ completed（已划入现金账户 A）
+//   pending → rejected（仅 pending 可拒；in_progress 钱已变现，只能走完或线下处理）
+// 命名纪律：「提取」= 委托 B → 现金 A（协议 10 用词）；「出金」= 现金 A → 银行，两者不得混用。
+export const MANDATE_WITHDRAWAL_STATUS = {
+  PENDING: 'pending',
+  IN_PROGRESS: 'in_progress',
+  COMPLETED: 'completed',
+  REJECTED: 'rejected',
+};
+
+export const MANDATE_WITHDRAWAL_LABELS = {
+  pending: '待审核',
+  in_progress: '提取中',
+  completed: '已划入现金账户',
+  rejected: '未通过',
+};
+
+// 后台可配项（协议里所有 [ ] 空值 + 入口卡文案 + 成交通知邮件开关，全部落这里）。
+// 用「配置为底 + 协议逐份覆盖」：新建协议时带出默认值，单份协议仍可改（费率可能谈不同）。
+export const mandateConfig = {
+  // 入口卡（对所有 PI 展示，只做介绍与联系经理；不出现「立即投资」类行动词，不承诺收益）
+  entryCard: {
+    title: { 'zh-CN': '委托账户', 'zh-HK': '委託帳戶', en: 'Discretionary Account' },
+    desc: {
+      'zh-CN': '由持牌基金经理按约定策略全权管理，适合希望委托专业团队操作的投资者。须签署委托协议并经授权后开通。',
+      'zh-HK': '由持牌基金經理按約定策略全權管理，適合希望委託專業團隊操作的投資者。須簽署委託協議並經授權後開通。',
+      en: 'Professionally managed by a licensed fund manager under an agreed mandate. A signed discretionary agreement and authorisation are required.',
+    },
+    cta: { 'zh-CN': '联系客户经理', 'zh-HK': '聯絡客戶經理', en: 'Contact your manager' },
+  },
+  // 协议 Fee Schedule 默认值（百分比；0 = 待合规填写，不当作免费）
+  fees: { managementPct: 1.5, inceptionPct: 0, performancePct: 20, hurdlePct: 8, minimumValue: 1000000 },
+  // 附录 A 投资限制（% of NAV；0 = 不校验）
+  limits: { singleCompanyPct: 20, singleIssuerPct: 30, borrowingPct: 0 },
+  minInvestment: 0,       // 开账户最低投资额（0 = 不校验）
+  adviceEmail: true,      // 成交通知单复核生效后发邮件（协议 11.2 义务）
+  applyChannel: 'manager', // 入口卡按钮去向：manager 客户经理 / service 客服
+  // 提取（协议 10）参数：
+  // withdrawalNoticeDays = 10.1「禁售期规限下 ≥10 个营业日事先书面通知」。附录 [ ] 空位 =
+  // 禁售期未填 → 合规确认前按无禁售期处理（lockUpEnabled: false），通知期 10 营业日先行。
+  // 表现费 Acquisition Amount 不按提取重算——协议允许按提取比例调整，属上线前置（后端重算），原型不做。
+  withdrawalNoticeDays: 10,
+  lockUpEnabled: false,
+};
+
+// 协议档案（不只是「一个 id」：签署见证、持牌代表 CE、语言版本、费率、附录限制都在这里）
+export const mandateAgreements = [
+  {
+    id: 'mag1',
+    no: 'HB-DA-2026-001',
+    userId: 'u1',
+    userName: '张三',
+    status: 'active',              // draft 草稿 / active 生效 / terminated 已终止
+    signedAt: '2026-11-04 15:20:00',
+    effectiveAt: '2026-11-05 00:00:00',
+    terminatedAt: null,
+    clientWitness: '陈大文',        // 客户方见证人
+    managerDirector: '黎国基',      // 公司方董事/负责人员
+    licensedRepName: '林景湖',
+    licensedRepCE: 'BJW123',       // 持牌代表 CE 号（缺失不允许开户）
+    language: 'zh-HK',             // 客户选择的协议语言版本（协议 33：英文版优先）
+    scanUrl: null,                  // 扫描件（原型不存文件，正式环境由后端上传）
+    version: 'v1.0',
+    fees: { managementPct: 1.5, inceptionPct: 0, performancePct: 20, hurdlePct: 8, minimumValue: 1000000 },
+    strategy: {
+      objectives: '以美股 IPO 及上市后证券为主，追求中长期资本增值。',
+      policy: '由持牌基金经理全权决定买入、持有与卖出。',
+      limits: { singleCompanyPct: 20, singleIssuerPct: 30, borrowingPct: 0 },
+    },
+    valuationCurrency: 'HKD',
+    valuationCycle: 'monthly',      // 协议 11.1：至少每月估值
+    reportingPeriod: 'monthly',     // 协议 11.3：月报，期末 15 个营业日内
+    createdAt: '2026-11-04 15:20:00',
+    createdBy: '李合规',
+  },
+];
+
+// 委托账户 B 号。auth 双人：ops 发起授权、compliance 复核，两人不得同一人（Maker-Checker）。
+export const mandateAccounts = [
+  {
+    id: 'mb1',
+    no: 'B00001',
+    userId: 'u1',
+    userName: '张三',
+    agreementId: 'mag1',
+    managerName: '林景湖',
+    custodian: 'HighBlock Securities Limited',
+    status: MANDATE_ACCOUNT_STATUS.ACTIVE,
+    visibleInApp: true,            // 额外授权：授权后 APP 才显示（未授权时资产页只有入口卡）
+    authRequestedBy: '王运营',
+    authReviewedBy: '李合规',
+    authReviewedAt: '2026-11-05 10:30:00',
+    openedAt: '2026-11-05 09:40:00',
+    createdBy: '王运营',
+  },
+];
+
+// 委托账户资金流水（余额由本表派生，账户本身不存余额）
+export const cashLedger = [
+  {
+    id: 'cl1',
+    accountId: 'mb1',
+    no: 'B00001',
+    userId: 'u1',
+    type: MANDATE_LEDGER_TYPES.DEPOSIT,
+    currency: 'HKD',
+    amount: 300000,
+    note: '客户银行转账入金（凭证核销）',
+    refType: 'manual',
+    refId: '',
+    at: '2026-11-05 11:20:00',
+    createdBy: '王财务',
+  },
+  {
+    id: 'cl2',
+    accountId: 'mb1',
+    no: 'B00001',
+    userId: 'u1',
+    type: MANDATE_LEDGER_TYPES.FEE,
+    currency: 'HKD',
+    amount: -1200,
+    note: '2026-11 管理费（手录，按协议 12）',
+    refType: 'fee',
+    refId: 'mf1',
+    at: '2026-11-06 09:00:00',
+    createdBy: '王财务',
+  },
+  // 交易结算流水（1b 起由交易复核自动生成；种子与 mandateTrades 的 mt1/mt2 对齐）
+  {
+    id: 'cl3', accountId: 'mb1', no: 'B00001', userId: 'u1',
+    type: MANDATE_LEDGER_TYPES.TRADE, currency: 'HKD', amount: -14047.8,
+    note: '买入 AAPL 10 股 @ USD 180（含费 USD 1，汇率 7.8）',
+    refType: 'trade', refId: 'mt1', at: '2026-11-06 15:05:00', createdBy: '王运营',
+  },
+  {
+    id: 'cl4', accountId: 'mb1', no: 'B00001', userId: 'u1',
+    type: MANDATE_LEDGER_TYPES.TRADE, currency: 'HKD', amount: -4699.82,
+    note: '买入 NVDA 5 股 @ USD 120（含费 USD 1，汇率 7.82）',
+    refType: 'trade', refId: 'mt2', at: '2026-11-10 15:05:00', createdBy: '王运营',
+  },
+  // 委托提取划出（2026-11-16）：mw1 已完成单的 B→A 记账腿，与 wallet.hkd 的入账腿对齐
+  // （mock wallet 为演示口径，种子 9,000,000 已含该笔划入 100,000，不做历史精确对账）。
+  {
+    id: 'cl5', accountId: 'mb1', no: 'B00001', userId: 'u1',
+    type: MANDATE_LEDGER_TYPES.TRANSFER_OUT, currency: 'HKD', amount: -100000,
+    note: '提取 MW20261112113000 划转至现金账户（已审核通过并完成划转）',
+    refType: 'mandate-withdrawal', refId: 'mw1', at: '2026-11-13 10:05:00', createdBy: '王运营',
+  },
+];
+
+// 委托提取申请（协议 10 · 2026-11-16）：状态机见 MANDATE_WITHDRAWAL_STATUS。
+// 钱只动两腿且必须同批发生：completed 时 B 户 cashLedger 记负流水（transfer_out）、
+// A 户钱包入账（wallet + transactions），恒等式「委托资产 −X、可用现金 +X、总资产不变」。
+// 种子自洽：mw1 为 completed 历史单，配套 cl5 划出流水；mw2 为 rejected，不涉资金移动。
+export const mandateWithdrawals = [
+  {
+    id: 'mw1',
+    no: 'MW20261112113000',
+    accountId: 'mb1',
+    userId: 'u1',
+    userName: '张三',
+    currency: 'HKD',
+    amount: 100000,
+    status: MANDATE_WITHDRAWAL_STATUS.COMPLETED,
+    expectedDate: '2026-11-26',   // 提交日 11-12 起 D+10 个营业日（工作日近似）
+    completedAt: '2026-11-13 10:05:00',
+    rejectReason: null,
+    createdAt: '2026-11-12 11:30:00',
+    handledAt: '2026-11-12 14:10:00',
+    handledBy: '李合规',
+  },
+  {
+    id: 'mw2',
+    no: 'MW20261110091500',
+    accountId: 'mb1',
+    userId: 'u1',
+    userName: '张三',
+    currency: 'HKD',
+    amount: 50000,
+    status: MANDATE_WITHDRAWAL_STATUS.REJECTED,
+    expectedDate: null,
+    completedAt: null,
+    rejectReason: '申请金额与书面通知不符，请重新提交',
+    createdAt: '2026-11-10 09:15:00',
+    handledAt: '2026-11-10 11:40:00',
+    handledBy: '李合规',
+  },
+];
+
+// ---- 读 ----
+
+export function getMandateAccounts() {
+  return mandateAccounts.slice();
+}
+
+// APP 侧唯一读取入口：只有「已生效 + 已授权可见」的账户才返回。
+// 未授权的账户不是被藏起来，是查询层就不返回——UI 藏字段迟早会被某个页面漏出来。
+export function getMandateAccountForUser(userId = currentUser.id) {
+  return mandateAccounts.find(a =>
+    a.userId === userId
+    && a.status === MANDATE_ACCOUNT_STATUS.ACTIVE
+    && a.visibleInApp) || null;
+}
+
+export function getMandateAgreementForUser(userId = currentUser.id) {
+  return mandateAgreements.find(a => a.userId === userId && a.status === 'active') || null;
+}
+
+export function getMandateCashBalance(accountId, currency = null) {
+  const cur = currency ? String(currency).toUpperCase() : null;
+  return cashLedger
+    .filter(e => e.accountId === accountId && (!cur || e.currency === cur))
+    .reduce((sum, e) => sum + Number(e.amount || 0), 0);
+}
+
+export function getMandateCashByCurrency(accountId) {
+  const map = new Map();
+  cashLedger
+    .filter(e => e.accountId === accountId)
+    .forEach(e => map.set(e.currency, (map.get(e.currency) || 0) + Number(e.amount || 0)));
+  return Array.from(map.entries()).map(([currency, balance]) => ({ currency, balance }));
+}
+
+// ---- 提取（协议 10 · B→A 两段式的第一段；第二段走现有现金提现，零新增） ----
+// 恒等式（动手前立据，改动不得破坏）：
+//   ① 提交申请：总资产不变（在途提取仍计入委托资产，仅标注「提取处理中」）；
+//   ② completed：委托资产 −X、可用现金 +X、总资产不变（平台内部两户记账，无真实出银行）；
+//   ③ 任何时刻 可提取 = 派生余额 − 在途合计（pending + in_progress）≥ 0。
+
+export function getMandateWithdrawals(accountId) {
+  return mandateWithdrawals.filter(w => w.accountId === accountId);
+}
+
+// 本人视角（APP 侧）：按时间倒序
+export function getMandateWithdrawalsForUser(userId = currentUser.id) {
+  return mandateWithdrawals
+    .filter(w => w.userId === userId)
+    .slice()
+    .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+}
+
+// 在途合计（pending + in_progress）。多单在途口径：可用 = 余额 − 全部在途，不是单查最新一单。
+export function getMandateWithdrawFrozen(accountId, currency = null) {
+  const cur = currency ? String(currency).toUpperCase() : null;
+  return mandateWithdrawals
+    .filter(w => w.accountId === accountId
+      && (w.status === MANDATE_WITHDRAWAL_STATUS.PENDING || w.status === MANDATE_WITHDRAWAL_STATUS.IN_PROGRESS)
+      && (!cur || w.currency === cur))
+    .reduce((s, w) => s + Number(w.amount || 0), 0);
+}
+
+// 可提取余额 = 派生余额 − 在途合计。余额本身仍是唯一事实源（cashLedger），冻结不落库。
+export function getMandateAvailableCash(accountId, currency) {
+  const cur = String(currency || '').toUpperCase();
+  return getMandateCashBalance(accountId, cur) - getMandateWithdrawFrozen(accountId, cur);
+}
+
+// 14.2 常设授权校验：平台转移客户款项须有书面常设授权（transfer scope、active、未过期）。
+// 校验按账户查证，不依赖种子巧合——没有授权就拒绝，UI 入口同步禁用。
+export function hasMandateTransferAuth(accountId) {
+  const today = formatNow().slice(0, 10);
+  return mandateStandingAuth.some(a =>
+    a.accountId === accountId
+    && a.status === 'active'
+    && Array.isArray(a.scope) && a.scope.includes('transfer')
+    && String(a.grantedAt || '') <= today
+    && String(a.expiresAt || '') >= today);
+}
+
+// 预计到账日期 = 提交日起 D+N 个营业日（不含提交当日）。
+// 近似声明：按周一至周五计算、不排公众假期；接后端由假期表修正，前端不维护假期数据。
+function addBusinessDays(days) {
+  const n = Number(days) > 0 ? Math.floor(Number(days)) : 0;
+  const d = new Date(formatNow().slice(0, 10) + 'T00:00:00');
+  let added = 0;
+  while (added < n) {
+    d.setDate(d.getDate() + 1);
+    const day = d.getDay();
+    if (day !== 0 && day !== 6) added += 1;
+  }
+  const p = x => String(x).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+// 提取资格四层拦截的数据层兜底（① 路由门控见 router；② 入口 UI 见 MandateDetail；
+// ③ 这里；④ 后台审核侧复核在 reviewMandateWithdrawal）。返回 { ok, error } 供 UI 直接展示。
+export function canRequestMandateWithdrawal(accountId) {
+  if (getFreezeState().frozen) return { ok: false, error: '安全冻结生效中，暂不能发起提取' };
+  const account = mandateAccounts.find(a => a.id === accountId);
+  if (!account) return { ok: false, error: '委托账户不存在' };
+  // 越权兜底：与 APP 读取入口同一条件（active + 已授权可见），不是只查「存在」
+  if (account.status !== MANDATE_ACCOUNT_STATUS.ACTIVE || !account.visibleInApp) {
+    return { ok: false, error: '委托账户未授权，不能发起提取' };
+  }
+  if (!hasMandateTransferAuth(accountId)) {
+    return { ok: false, error: '缺少资金划转常设授权（协议 14.2），请联系客户经理补签' };
+  }
+  // 禁售期：协议附录 [ ] 空位，合规确认前不启用（mandateConfig.lockUpEnabled）。
+  // 启用时在此加「禁售期内不能提取」拦截，UI 同步隐藏入口。
+  return { ok: true, account };
+}
+
+// 提交提取申请（协议 10.1：禁售期规限下 ≥10 营业日事先书面通知 → 平台内即本单申请）。
+// 金额口径定版：可提取上限 = B 户现金余额。协议 10.1 的「变现适当部分」是管理人义务条款，
+// 不是客户权利上限——持仓不进可提取范围（无滑点、无估值风险），大额变现线下联系客户经理。
+export function requestMandateWithdrawal({ accountId, currency, amount }) {
+  const gate = canRequestMandateWithdrawal(accountId);
+  if (!gate.ok) return { ok: false, error: gate.error };
+  const account = gate.account;
+  if (account.userId !== currentUser.id) return { ok: false, error: '只能对本人委托账户发起提取' };
+  const cur = String(currency || '').toUpperCase();
+  if (!CURRENCY_META[cur]) return { ok: false, error: '不支持的币种' };
+  const amt = Math.round(Number(amount) * 100) / 100;
+  if (!Number.isFinite(amt) || amt <= 0) return { ok: false, error: '请输入有效金额' };
+  if (amt > getMandateAvailableCash(accountId, cur)) {
+    return { ok: false, error: '超过可提取金额（余额减去在途提取）' };
+  }
+  const req = {
+    id: `mw${Date.now()}`,
+    no: genOrderNo('MW'),
+    accountId,
+    userId: currentUser.id,
+    userName: currentUser.name,
+    currency: cur,
+    amount: amt,
+    status: MANDATE_WITHDRAWAL_STATUS.PENDING,
+    expectedDate: addBusinessDays(mandateConfig.withdrawalNoticeDays),
+    completedAt: null,
+    rejectReason: null,
+    createdAt: formatNow(),
+    handledAt: null,
+    handledBy: null,
+  };
+  mandateWithdrawals.unshift(req);
+  pushNotification({
+    type: 'wallet',
+    title: '提取申请已提交',
+    body: '委托账户 {cur} {amt} 提取申请已提交，按协议约定不少于 {days} 个营业日处理，预计 {date} 前划入现金账户。',
+    args: { cur, amt: formatExactAmount(amt), days: mandateConfig.withdrawalNoticeDays, date: req.expectedDate },
+  });
+  logAudit({
+    operator: currentUser.name || '投资人',
+    category: 'mandate',
+    action: 'apply',
+    target: account.userName,
+    targetId: req.id,
+    note: `提交委托提取申请 ${req.no} ${cur} ${formatExactAmount(amt)}（预计到账 ${req.expectedDate}）`,
+  });
+  Storage.save();
+  return { ok: true, request: req };
+}
+
+// 后台审核：approve → in_progress（管理人变现）；reject → rejected（仅 pending 可拒）。
+// 通过时复核余额与常设授权（④ 后台审核侧兜底）：变现期间余额可能已被手录流水改动。
+export function reviewMandateWithdrawal(id, action, { reason } = {}, operator = '') {
+  const req = mandateWithdrawals.find(w => w.id === id);
+  if (!req) return { ok: false, error: '提取申请不存在' };
+  if (req.status !== MANDATE_WITHDRAWAL_STATUS.PENDING) {
+    return { ok: false, error: '该申请已处理，不能重复审核' };
+  }
+  const op = operator || '运营后台';
+  if (action === 'reject') {
+    req.status = MANDATE_WITHDRAWAL_STATUS.REJECTED;
+    req.rejectReason = String(reason || '').trim() || '未说明原因';
+    req.handledAt = formatNow();
+    req.handledBy = op;
+    pushNotification({
+      type: 'wallet',
+      title: '提取申请未通过',
+      body: '您的委托提取申请未通过审核：{reason}', args: { reason: req.rejectReason },
+    }, req.userId);
+    logAudit({ operator: op, category: 'mandate', action: 'reject', target: req.userName, targetId: req.id, note: `委托提取申请拒绝 ${req.no}：${req.rejectReason}` });
+    Storage.save();
+    return { ok: true, request: req };
+  }
+  if (action !== 'approve') return { ok: false, error: '未知审核动作' };
+  // 侧栏复核（数据层兜底，UI 只是提前禁用）
+  const gate = canRequestMandateWithdrawal(req.accountId);
+  if (!gate.ok) return { ok: false, error: `复核未通过：${gate.error}` };
+  if (Number(req.amount) > getMandateAvailableCash(req.accountId, req.currency)) {
+    return { ok: false, error: '复核未通过：可提取金额不足（余额减去在途提取）' };
+  }
+  req.status = MANDATE_WITHDRAWAL_STATUS.IN_PROGRESS;
+  req.handledAt = formatNow();
+  req.handledBy = op;
+  pushNotification({
+    type: 'wallet',
+    title: '提取申请已通过',
+    body: '委托账户 {cur} {amt} 提取申请已通过，管理人正在处理，完成后划入现金账户。',
+    args: { cur: req.currency, amt: formatExactAmount(req.amount) },
+  }, req.userId);
+  logAudit({ operator: op, category: 'mandate', action: 'approve', target: req.userName, targetId: req.id, note: `委托提取申请通过 ${req.no} ${req.currency} ${formatExactAmount(req.amount)}` });
+  Storage.save();
+  return { ok: true, request: req };
+}
+
+// 完成登记（in_progress → completed）：一笔事务两腿——
+//   B 腿：委托 cashLedger 记 transfer_out 负流水（refType mandate-withdrawal，余额校验兜底）；
+//   A 腿：钱包入账（applyWalletDelta + transactions 流水，不入充值审核队列——内部划转平台总资金不变）。
+// 文案纪律：到账表述「已划入现金账户」，禁用「已付款/出金」——真实资金出银行只发生在 A→提现段。
+// T10 注：transactions 用独立 type「mandate_transfer_in」，不参与 R004/R006 出入金统计，
+// 也不触发 runAnomalyDetection——内部划转不是出入金事件，不会误报入出金倒挂。
+export function completeMandateWithdrawal(id, operator = '') {
+  const req = mandateWithdrawals.find(w => w.id === id);
+  if (!req) return { ok: false, error: '提取申请不存在' };
+  if (req.status !== MANDATE_WITHDRAWAL_STATUS.IN_PROGRESS) {
+    return { ok: false, error: '只有「提取中」的申请可以登记完成' };
+  }
+  const account = mandateAccounts.find(a => a.id === req.accountId);
+  if (!account) return { ok: false, error: '委托账户不存在' };
+  const amt = Number(req.amount);
+  if (getMandateCashBalance(req.accountId, req.currency) < amt) {
+    return { ok: false, error: `${req.currency} 余额不足，不能完成划转` };
+  }
+  const op = operator || '运营后台';
+  const entry = {
+    id: `cl${Date.now()}`,
+    accountId: req.accountId,
+    no: account.no,
+    userId: account.userId,
+    type: MANDATE_LEDGER_TYPES.TRANSFER_OUT,
+    currency: req.currency,
+    amount: -amt,
+    note: `提取 ${req.no} 划转至现金账户（已审核通过并完成划转）`,
+    refType: 'mandate-withdrawal',
+    refId: req.id,
+    at: formatNow(),
+    createdBy: op,
+  };
+  cashLedger.unshift(entry);
+  // A 腿：钱包入账。恒等式：委托资产 −amt、可用现金 +amt、总资产不变。
+  const moved = applyWalletDelta(req.userId, req.currency, amt);
+  if (!moved.ok) {
+    // 钱包腿失败则回滚 B 腿，两腿必须同批成功（mock 原型用数组移除模拟回滚）
+    cashLedger.splice(cashLedger.indexOf(entry), 1);
+    return { ok: false, error: '现金账户入账失败，划转未完成' };
+  }
+  if (moved.self) {
+    transactions.unshift({
+      id: `t${Date.now()}`,
+      orderNo: genOrderNo('TX'),
+      type: 'mandate_transfer_in',
+      amount: amt,
+      currency: req.currency,
+      status: 'completed',
+      createdAt: formatNow(),
+      method: '委托账户划转',
+      reference: req.no,
+      // 不带 reqId：委托提取没有 #fund-request 申请详情页，回链会让资金明细行跳到
+      // 「未找到该资金申请」——划入流水统一走 #transaction/:id 记账凭证页（2026-11-16 验收修正）
+    });
+    // 总资产不变（委托转现金，左右口袋），不调 updateLatestTotal——资产曲线无净变动。
+  }
+  req.status = MANDATE_WITHDRAWAL_STATUS.COMPLETED;
+  req.completedAt = formatNow();
+  req.handledAt = formatNow();
+  req.handledBy = op;
+  pushNotification({
+    type: 'wallet',
+    title: '提取已划入现金账户',
+    body: '委托账户 {cur} {amt} 已划入现金账户，可在资金流水中查看。如需汇出银行，请另发起现金出金。',
+    args: { cur: req.currency, amt: formatExactAmount(amt) },
+  }, req.userId);
+  logAudit({
+    operator: op,
+    category: 'mandate',
+    action: 'update',
+    target: account.userName,
+    targetId: req.id,
+    note: `委托提取完成登记 ${req.no}：委托 ${req.currency} -${formatExactAmount(amt)} → 现金账户 +${formatExactAmount(amt)}（平台总资金不变）`,
+  });
+  Storage.save();
+  return { ok: true, request: req };
+}
+
+// ---- 开户（闸门在数据层） ----
+
+export function canOpenMandateAccount(userId, agreementId) {
+  const ag = mandateAgreements.find(a => a.id === agreementId);
+  if (!ag) return { ok: false, error: '未登记委托协议，不能开户' };
+  if (ag.userId !== userId) return { ok: false, error: '该协议不属于此客户' };
+  if (ag.status !== 'active') return { ok: false, error: '协议未生效（草稿或已终止），不能开户' };
+  if (!ag.licensedRepCE) return { ok: false, error: '协议缺少持牌代表 CE 编号，不能开户' };
+  if (mandateAccounts.some(a => a.userId === userId && a.status !== MANDATE_ACCOUNT_STATUS.CLOSED)) {
+    return { ok: false, error: '该客户已有委托账户' };
+  }
+  if (Number(mandateConfig.minInvestment) > 0 && Number(ag.fees?.minimumValue || 0) < Number(mandateConfig.minInvestment)) {
+    return { ok: false, error: `协议最低投资额未达平台门槛 ${mandateConfig.minInvestment}` };
+  }
+  return { ok: true, agreement: ag };
+}
+
+function nextMandateAccountNo() {
+  const max = mandateAccounts.reduce((m, a) => {
+    const n = Number(String(a.no || '').replace(/^B/, ''));
+    return Number.isFinite(n) ? Math.max(m, n) : m;
+  }, 0);
+  return `B${String(max + 1).padStart(5, '0')}`;
+}
+
+export function createMandateAccount({ userId, agreementId, managerName, custodian }, operator = '') {
+  const gate = canOpenMandateAccount(userId, agreementId);
+  if (!gate.ok) return gate;
+  const ag = gate.agreement;
+  const account = {
+    id: `mb${Date.now()}`,
+    no: nextMandateAccountNo(),
+    userId,
+    userName: ag.userName,
+    agreementId,
+    managerName: String(managerName || '').trim(),
+    custodian: String(custodian || 'HighBlock Securities Limited').trim(),
+    status: MANDATE_ACCOUNT_STATUS.PENDING,
+    visibleInApp: false,
+    authRequestedBy: operator || '运营后台',
+    authReviewedBy: '',
+    authReviewedAt: null,
+    openedAt: formatNow(),
+    createdBy: operator || '运营后台',
+  };
+  mandateAccounts.unshift(account);
+  logAudit({
+    operator: operator || '运营后台',
+    category: 'mandate',
+    action: 'create',
+    target: account.userName,
+    targetId: account.id,
+    note: `开立委托账户 ${account.no}（协议 ${ag.no}），待合规复核授权后才在 APP 显示`,
+  });
+  Storage.save();
+  return { ok: true, account };
+}
+
+// Maker-Checker：复核人不得是发起人。这条不写在 UI 上（UI 只是禁用按钮），写在数据层。
+export function reviewMandateAccountAuth(accountId, { visibleInApp, reviewer }, operator = '') {
+  const account = mandateAccounts.find(a => a.id === accountId);
+  if (!account) return { ok: false, error: '账户不存在' };
+  const checker = String(reviewer || '').trim();
+  if (!checker) return { ok: false, error: '请填写复核人' };
+  if (checker === account.authRequestedBy) return { ok: false, error: '复核人不能与发起人相同（Maker-Checker）' };
+  if (account.status === MANDATE_ACCOUNT_STATUS.CLOSED) return { ok: false, error: '账户已关闭' };
+  account.visibleInApp = !!visibleInApp;
+  account.status = MANDATE_ACCOUNT_STATUS.ACTIVE;
+  account.authReviewedBy = checker;
+  account.authReviewedAt = formatNow();
+  logAudit({
+    operator: operator || checker,
+    category: 'mandate',
+    action: 'update',
+    target: account.userName,
+    targetId: account.id,
+    note: `委托账户 ${account.no} ${account.visibleInApp ? '授权在 APP 显示' : '取消 APP 显示'}（复核人 ${checker}，发起人 ${account.authRequestedBy}）`,
+  });
+  Storage.save();
+  return { ok: true, account };
+}
+
+// ---- 资金流水 ----
+
+export function addMandateCashEntry({ accountId, type, currency, amount, note, refType = 'manual', refId = '', allowNegative = false }, operator = '') {
+  const account = mandateAccounts.find(a => a.id === accountId);
+  if (!account) return { ok: false, error: '账户不存在' };
+  if (account.status === MANDATE_ACCOUNT_STATUS.CLOSED) return { ok: false, error: '账户已关闭，不能再记账' };
+  if (!Object.values(MANDATE_LEDGER_TYPES).includes(type)) return { ok: false, error: '未知流水类型' };
+  const cur = String(currency || '').toUpperCase();
+  if (!CURRENCY_META[cur]) return { ok: false, error: '不支持的币种' };
+  const amt = Number(amount);
+  if (!Number.isFinite(amt) || amt === 0) return { ok: false, error: '金额需为非零数字' };
+  // 出金/转出不允许把余额记成负数：流水是唯一事实源，负余额只能说明少记了一笔入金。
+  // allowNegative 仅供「作废交易的冲正」与「协议费用扣减」使用——冲正必须发生，
+  // 否则账会永久停在错误状态；这类负数在流水备注与审计里都会标明原因。
+  if (amt < 0 && !allowNegative && getMandateCashBalance(accountId, cur) + amt < 0) {
+    return { ok: false, error: `${cur} 余额不足（当前 ${getMandateCashBalance(accountId, cur)}）` };
+  }
+  const entry = {
+    id: `cl${Date.now()}`,
+    accountId,
+    no: account.no,
+    userId: account.userId,
+    type,
+    currency: cur,
+    amount: Math.round(amt * 100) / 100,
+    note: String(note || '').trim(),
+    refType,
+    refId,
+    at: formatNow(),
+    createdBy: operator || '运营后台',
+  };
+  cashLedger.unshift(entry);
+  logAudit({
+    operator: operator || '运营后台',
+    category: 'mandate',
+    action: 'update',
+    target: account.userName,
+    targetId: entry.id,
+    note: `委托账户 ${account.no} ${MANDATE_LEDGER_LABELS[type] || type} ${cur} ${entry.amount}`,
+  });
+  Storage.save();
+  return { ok: true, entry };
+}
+
+// ---- 后台配置 ----
+
+export function updateMandateConfig(patch = {}, operator = '') {
+  const next = { ...mandateConfig, ...patch };
+  const feeKeys = ['managementPct', 'inceptionPct', 'performancePct', 'hurdlePct'];
+  for (const k of feeKeys) {
+    const n = Number(next.fees?.[k]);
+    if (!Number.isFinite(n) || n < 0 || n > 100) return { ok: false, error: '费率需在 0~100 之间（百分数）' };
+  }
+  const minValue = Number(next.fees?.minimumValue);
+  if (!Number.isFinite(minValue) || minValue < 0) return { ok: false, error: '最低投资额需为不小于 0 的数字' };
+  for (const k of ['singleCompanyPct', 'singleIssuerPct', 'borrowingPct']) {
+    const n = Number(next.limits?.[k]);
+    if (!Number.isFinite(n) || n < 0 || n > 100) return { ok: false, error: '投资限制需在 0~100 之间（百分数）' };
+  }
+  const minInv = Number(next.minInvestment);
+  if (!Number.isFinite(minInv) || minInv < 0) return { ok: false, error: '开户门槛需为不小于 0 的数字' };
+  Object.assign(mandateConfig, next);
+  logAudit({ operator: operator || '系统管理员', category: 'config', action: 'update', target: '委托账户配置', targetId: '', note: '更新委托账户费率 / 投资限制 / 入口卡文案 / 邮件开关' });
+  Storage.save();
+  return { ok: true };
+}
+
+// ---- 协议档案 CRUD（后台） ----
+
+export function saveMandateAgreement(payload = {}, operator = '') {
+  const editing = payload.id ? mandateAgreements.find(a => a.id === payload.id) : null;
+  const base = editing ? { ...editing } : {
+    id: `mag${Date.now()}`,
+    status: 'draft',
+    terminatedAt: null,
+    scanUrl: null,
+    version: 'v1.0',
+    createdAt: formatNow(),
+    createdBy: operator || '合规后台',
+  };
+  // 新建时 payload.id 是 undefined（表单里的空串占位）——直接 spread 会把 base.id 覆盖成 undefined，
+  // 记录落库后没有主键，快照恢复时被过滤掉、审计也拿不到 targetId。必须剔除该键。
+  const { id: _payloadId, limits: _formLimits, ...rest } = payload;
+  const next = {
+    ...base,
+    ...rest,
+    no: String(payload.no || base.no || '').trim(),
+    userName: String(payload.userName || base.userName || '').trim(),
+    licensedRepCE: String(payload.licensedRepCE || '').trim(),
+  };
+  if (!next.no) return { ok: false, error: '请填写协议编号' };
+  if (!next.userId) return { ok: false, error: '请选择客户' };
+  if (!next.licensedRepCE) return { ok: false, error: '请填写持牌代表 CE 编号' };
+  if (mandateAgreements.some(a => a.id !== next.id && a.no === next.no)) return { ok: false, error: '协议编号重复' };
+  if (editing) Object.assign(editing, next);
+  else mandateAgreements.unshift(next);
+  logAudit({ operator: operator || '合规后台', category: 'mandate', action: editing ? 'update' : 'create', target: next.userName, targetId: next.id, note: `委托协议 ${next.no} ${editing ? '更新' : '登记'}（CE ${next.licensedRepCE}）` });
+  Storage.save();
+  return { ok: true, agreement: next };
+}
+
+export function setMandateAgreementStatus(id, status, terminatedAt = null, operator = '') {
+  const ag = mandateAgreements.find(a => a.id === id);
+  if (!ag) return { ok: false, error: '协议不存在' };
+  if (!['draft', 'active', 'terminated'].includes(status)) return { ok: false, error: '未知状态' };
+  if (status === 'active') {
+    if (!ag.licensedRepCE) return { ok: false, error: '缺少持牌代表 CE 编号，不能生效' };
+    if (!ag.signedAt) return { ok: false, error: '缺少签署日期，不能生效' };
+    ag.effectiveAt = ag.effectiveAt || formatNow();
+  }
+  if (status === 'terminated') {
+    ag.terminatedAt = terminatedAt || formatNow();
+    // 协议终止 → 账户同步终止（协议是账户存在的法律依据）
+    mandateAccounts.forEach(a => {
+      if (a.agreementId === id && a.status !== MANDATE_ACCOUNT_STATUS.CLOSED) {
+        a.status = MANDATE_ACCOUNT_STATUS.CLOSED;
+        a.visibleInApp = false;
+      }
+    });
+  }
+  ag.status = status;
+  logAudit({ operator: operator || '合规后台', category: 'mandate', action: 'update', target: ag.userName, targetId: ag.id, note: `委托协议 ${ag.no} → ${status}` });
+  Storage.save();
+  return { ok: true, agreement: ag };
+}
+
+// ========== 委托账户（2026-11-13 批 1b：交易 / 估值 / 费用 / 常设授权 / 日结单） ==========
+//
+// 三条口径（协议 + RO 会议）：
+//   ① 交易是持仓的唯一事实源：持仓数量与成本由 active 交易派生，不落独立持仓表。
+//      作废交易必须回退持仓——派生模型天然满足，存表则必须手写回退，迟早漏一处。
+//   ② 资金流水是余额的唯一事实源：交易复核生效时写一条 trade 流水（买入减、卖出增），
+//      作废时写一条反向流水。两条都要留，不能「删掉原来那条」——删了就查不出发生过什么。
+//   ③ 估值走留痕不阻断：价格天天变，逐笔复核会把运营淹掉；价格更新只记录 before/after + 操作人，
+//      合规事后审计。持仓市值 = 数量 × 最新标记价 × 该标记的汇率。
+//
+// 公司行为（拆股/分红再投资）本批不做：股息按「已收」直接记 cashLedger 的 dividend 流水。
+
+export const MANDATE_TRADE_STATUS = {
+  PENDING: 'pending',   // 待复核（不进持仓、不进日结单）
+  ACTIVE: 'active',     // 已复核生效
+  REJECTED: 'rejected',
+  VOID: 'void',         // 作废（保留原记录 + 反向流水）
+};
+
+export const MANDATE_TRADE_SIDES = { BUY: 'buy', SELL: 'sell' };
+
+export const MANDATE_VALUATION_METHODS = {
+  listed: '上市证券收盘价',
+  'unlisted-cost': '非上市按成本',
+  cis: '集体投资计划公布价',
+  accrued: '费用按已收',
+};
+
+export const MANDATE_FEE_TYPES = {
+  management: '管理费',
+  inception: '设立费',
+  performance: '表现费',
+};
+
+// 交易流水（持仓由它派生）
+export const mandateTrades = [
+  {
+    id: 'mt1', accountId: 'mb1', no: 'B00001', userId: 'u1',
+    tradeDate: '2026-11-06', settleDate: '2026-11-09',
+    side: 'buy', assetClass: 'us-equity', symbol: 'AAPL', name: 'Apple Inc.',
+    currency: 'USD', quantity: 10, price: 180, fee: 1, fxRate: 7.8,
+    status: MANDATE_TRADE_STATUS.ACTIVE,
+    createdBy: '王运营', reviewedBy: '李合规', reviewedAt: '2026-11-06 15:05:00',
+    note: 'IPO 后建仓', correctionOf: '',
+  },
+  {
+    id: 'mt2', accountId: 'mb1', no: 'B00001', userId: 'u1',
+    tradeDate: '2026-11-10', settleDate: '2026-11-12',
+    side: 'buy', assetClass: 'us-equity', symbol: 'NVDA', name: 'NVIDIA Corp.',
+    currency: 'USD', quantity: 5, price: 120, fee: 1, fxRate: 7.82,
+    status: MANDATE_TRADE_STATUS.ACTIVE,
+    createdBy: '王运营', reviewedBy: '李合规', reviewedAt: '2026-11-10 15:05:00',
+    note: '', correctionOf: '',
+  },
+  {
+    id: 'mt3', accountId: 'mb1', no: 'B00001', userId: 'u1',
+    tradeDate: '2026-11-13', settleDate: '2026-11-17',
+    side: 'buy', assetClass: 'us-equity', symbol: 'MSFT', name: 'Microsoft Corp.',
+    currency: 'USD', quantity: 3, price: 410, fee: 1, fxRate: 7.8,
+    status: MANDATE_TRADE_STATUS.PENDING,
+    createdBy: '王运营', reviewedBy: '', reviewedAt: null,
+    note: '待合规复核', correctionOf: '',
+  },
+];
+
+// 估值标记（只追加；最新一条 = 当前价）。不放进 holdings，因为 holdings 是派生视图。
+export const mandatePriceMarks = [
+  { id: 'mp1', accountId: 'mb1', symbol: 'AAPL', currency: 'USD', price: 185.5, fxRate: 7.8, method: 'listed', priceAt: '2026-11-12', updatedBy: '王财务', updatedAt: '2026-11-12 18:00:00' },
+  { id: 'mp2', accountId: 'mb1', symbol: 'NVDA', currency: 'USD', price: 128.2, fxRate: 7.82, method: 'listed', priceAt: '2026-11-12', updatedBy: '王财务', updatedAt: '2026-11-12 18:00:00' },
+];
+
+// 费用行（协议 12：三类费均从组合扣减，金额手录）
+export const mandateFees = [
+  {
+    id: 'mf1', accountId: 'mb1', no: 'B00001', userId: 'u1',
+    period: '2026-11', type: 'management', amount: 1200, currency: 'HKD',
+    status: 'approved', note: '2026-11 管理费',
+    createdBy: '王财务', reviewedBy: '李合规', reviewedAt: '2026-11-06 09:00:00',
+    ledgerId: 'cl2',
+  },
+];
+
+// 常设授权（协议 14.2，与投资授权分离）：只登记范围与有效期，资金划转动作在批 2 接
+export const mandateStandingAuth = [
+  {
+    id: 'msa1', accountId: 'mb1', userId: 'u1',
+    scope: ['transfer'], grantedAt: '2026-11-05', expiresAt: '2027-11-04',
+    fileRef: '常设授权书_2026-11-05.pdf', status: 'active',
+    createdBy: '李合规', createdAt: '2026-11-05 10:40:00',
+  },
+];
+
+// 日结单（覆盖三类账户；唯一允许持久化的派生快照——历史不能拿今天的净值重构）
+export const dailyStatements = [];
+
+let dailyStatementSeeded = false;
+
+// ---- 估值与持仓派生 ----
+
+export function latestMandatePrice(accountId, symbol) {
+  return mandatePriceMarks
+    .filter(m => m.accountId === accountId && m.symbol === symbol)
+    .sort((a, b) => String(b.priceAt || b.updatedAt || '').localeCompare(String(a.priceAt || a.updatedAt || '')))[0] || null;
+}
+
+// 派生持仓（含已清仓的符号，用于累计已实现收益）。不导出为状态，每次现算。
+export function deriveMandatePositions(accountId) {
+  const map = new Map();
+  mandateTrades
+    .filter(t => t.accountId === accountId && t.status === MANDATE_TRADE_STATUS.ACTIVE)
+    .slice()
+    .sort((a, b) => String(a.tradeDate).localeCompare(String(b.tradeDate)) || String(a.id).localeCompare(String(b.id)))
+    .forEach(t => {
+      const key = t.symbol;
+      const h = map.get(key) || {
+        symbol: t.symbol, name: t.name, assetClass: t.assetClass, currency: t.currency,
+        quantity: 0, costHKD: 0, realizedHKD: 0, tradeCount: 0,
+      };
+      const fx = Number(t.fxRate) || 1;
+      const qty = Number(t.quantity) || 0;
+      const grossHKD = qty * (Number(t.price) || 0) * fx;
+      const feeHKD = (Number(t.fee) || 0) * fx;
+      if (t.side === MANDATE_TRADE_SIDES.BUY) {
+        h.quantity += qty;
+        h.costHKD += grossHKD + feeHKD;
+      } else {
+        const avgCost = h.quantity > 0 ? h.costHKD / h.quantity : 0;
+        const sold = Math.min(qty, h.quantity);
+        // 卖出不改每股成本口径：已实现 =（成交价 − 卖出前均价）× 数量 − 费用
+        h.realizedHKD += (Number(t.price) * fx - avgCost) * sold - feeHKD;
+        h.costHKD -= avgCost * sold;
+        h.quantity -= sold;
+      }
+      h.tradeCount += 1;
+      map.set(key, h);
+    });
+  return Array.from(map.values());
+}
+
+export function getMandateHoldings(accountId) {
+  return deriveMandatePositions(accountId)
+    .filter(h => h.quantity > 1e-9)
+    .map(h => {
+      const mark = latestMandatePrice(accountId, h.symbol);
+      const price = mark ? Number(mark.price) : 0;
+      const fxRate = mark ? Number(mark.fxRate) || 1 : 1;
+      const marketValueHKD = h.quantity * price * fxRate;
+      return {
+        ...h,
+        price,
+        fxRate,
+        valued: !!mark && mark.price != null,
+        priceAt: mark?.priceAt || '',
+        valuationMethod: mark?.method || 'listed',
+        marketValueHKD,
+        unrealizedHKD: marketValueHKD - h.costHKD,
+        pnlPct: h.costHKD > 0 ? ((marketValueHKD - h.costHKD) / h.costHKD) * 100 : 0,
+      };
+    });
+}
+
+export function getMandatePortfolio(accountId) {
+  const positions = getMandateHoldings(accountId);
+  const all = deriveMandatePositions(accountId);
+  const cash = getMandateCashByCurrency(accountId).map(c => ({
+    ...c,
+    balanceHKD: convertToHKD(c.balance, c.currency),
+  }));
+  const cashHKD = cash.reduce((s, c) => s + c.balanceHKD, 0);
+  const marketValueHKD = positions.reduce((s, p) => s + p.marketValueHKD, 0);
+  const costHKD = positions.reduce((s, p) => s + p.costHKD, 0);
+  const realizedHKD = all.reduce((s, p) => s + p.realizedHKD, 0);
+  const unrealizedHKD = marketValueHKD - costHKD;
+  return {
+    positions,
+    cash,
+    cashHKD,
+    marketValueHKD,
+    costHKD,
+    realizedHKD,
+    unrealizedHKD,
+    pnlHKD: unrealizedHKD + realizedHKD,
+    pnlPct: costHKD > 0 ? (unrealizedHKD / costHKD) * 100 : 0,
+    totalHKD: cashHKD + marketValueHKD,
+  };
+}
+
+// APP 侧单一读取入口：state = none（无协议）/ signed（已签约未授权）/ active（已授权可见）
+export function getMandateSummaryForUser(userId = currentUser.id) {
+  const agreement = getMandateAgreementForUser(userId);
+  const account = getMandateAccountForUser(userId);
+  if (!account) {
+    return { state: agreement ? 'signed' : 'none', account: null, agreement, portfolio: null };
+  }
+  return { state: 'active', account, agreement, portfolio: getMandatePortfolio(account.id) };
+}
+
+// ---- 投资限制软校验（附录 A；超限提示 + 留痕，不阻断） ----
+
+export function checkMandateLimits(accountId, candidate = {}) {
+  const account = mandateAccounts.find(a => a.id === accountId);
+  const agreement = mandateAgreements.find(a => a.id === account?.agreementId);
+  const limits = {
+    ...mandateConfig.limits,
+    ...(agreement?.strategy?.limits || {}),
+  };
+  const warnings = [];
+  const portfolio = getMandatePortfolio(accountId);
+  const fx = Number(candidate.fxRate) || 1;
+  const qty = Number(candidate.quantity) || 0;
+  const price = Number(candidate.price) || 0;
+  const side = candidate.side;
+  const same = portfolio.positions.find(p => p.symbol === candidate.symbol);
+  const sameQty = Math.max(0, (same?.quantity || 0) + (side === MANDATE_TRADE_SIDES.BUY ? qty : -qty));
+  const sameValue = sameQty * (price || same?.price || 0) * (fx || same?.fxRate || 1);
+  const totalAfter = portfolio.totalHKD;
+  if (Number(limits.singleCompanyPct) > 0 && totalAfter > 0 && sameValue / totalAfter * 100 > Number(limits.singleCompanyPct)) {
+    warnings.push(`单一公司占比 ${(sameValue / totalAfter * 100).toFixed(1)}% 超过协议上限 ${limits.singleCompanyPct}%`);
+  }
+  if (Number(limits.singleIssuerPct) > 0 && totalAfter > 0 && sameValue / totalAfter * 100 > Number(limits.singleIssuerPct)) {
+    warnings.push(`单一发行人占比超过协议上限 ${limits.singleIssuerPct}%`);
+  }
+  // 借贷/杠杆本批无融资功能：出现「借贷上限 0」而交易为买入时只提示一次，不当作错误
+  if (Number(limits.borrowingPct) === 0 && side === MANDATE_TRADE_SIDES.BUY && portfolio.cashHKD < qty * price * fx) {
+    warnings.push('现金不足，该笔买入将动用融资（协议借贷上限为 0）');
+  }
+  return warnings;
+}
+
+// ---- 交易 ----
+
+export function createMandateTrade(payload = {}, operator = '') {
+  const account = mandateAccounts.find(a => a.id === payload.accountId);
+  if (!account) return { ok: false, error: '账户不存在' };
+  if (account.status === MANDATE_ACCOUNT_STATUS.CLOSED) return { ok: false, error: '账户已关闭' };
+  if (!['buy', 'sell'].includes(payload.side)) return { ok: false, error: '请选择交易方向' };
+  if (!String(payload.symbol || '').trim()) return { ok: false, error: '请填写证券代码' };
+  if (!String(payload.name || '').trim()) return { ok: false, error: '请填写证券名称' };
+  const quantity = Number(payload.quantity);
+  const price = Number(payload.price);
+  const fee = Number(payload.fee || 0);
+  const fxRate = Number(payload.fxRate);
+  if (!Number.isFinite(quantity) || quantity <= 0) return { ok: false, error: '数量需大于 0' };
+  if (!Number.isFinite(price) || price <= 0) return { ok: false, error: '成交价需大于 0' };
+  if (!Number.isFinite(fee) || fee < 0) return { ok: false, error: '费用需为不小于 0 的数字' };
+  if (!Number.isFinite(fxRate) || fxRate <= 0) return { ok: false, error: '成交日汇率需大于 0（折算 HKD 的唯一依据）' };
+  if (!payload.tradeDate) return { ok: false, error: '请填写交易日' };
+  if (!CURRENCY_META[String(payload.currency || '').toUpperCase()]) return { ok: false, error: '不支持的币种' };
+  if (payload.side === 'sell') {
+    const held = getMandateHoldings(account.id).find(h => h.symbol === payload.symbol);
+    if (!held || held.quantity + 1e-9 < quantity) {
+      return { ok: false, error: `可卖数量不足（当前持有 ${held?.quantity || 0} 股）` };
+    }
+  }
+  const warnings = checkMandateLimits(account.id, { ...payload, fxRate, quantity, price });
+  const trade = {
+    id: `mt${Date.now()}`,
+    accountId: account.id,
+    no: account.no,
+    userId: account.userId,
+    tradeDate: String(payload.tradeDate),
+    settleDate: String(payload.settleDate || ''),
+    side: payload.side,
+    assetClass: String(payload.assetClass || 'us-equity'),
+    symbol: String(payload.symbol).trim().toUpperCase(),
+    name: String(payload.name).trim(),
+    currency: String(payload.currency || 'USD').toUpperCase(),
+    quantity,
+    price,
+    fee,
+    fxRate,
+    status: MANDATE_TRADE_STATUS.PENDING,
+    createdBy: operator || '运营后台',
+    reviewedBy: '',
+    reviewedAt: null,
+    note: String(payload.note || '').trim(),
+    correctionOf: String(payload.correctionOf || ''),
+    limitWarnings: warnings,
+  };
+  mandateTrades.unshift(trade);
+  logAudit({
+    operator: operator || '运营后台',
+    category: 'mandate',
+    action: 'create',
+    target: account.userName,
+    targetId: trade.id,
+    note: `委托交易录入 ${trade.side === 'buy' ? '买入' : '卖出'} ${trade.symbol} ${trade.quantity} 股 @ ${trade.price} ${trade.currency}${warnings.length ? `；超限提示：${warnings.join('；')}` : ''}`,
+  });
+  Storage.save();
+  return { ok: true, trade, warnings };
+}
+
+export function reviewMandateTrade(id, { decision = 'approve', reviewer = '', reason = '' } = {}, operator = '') {
+  const trade = mandateTrades.find(t => t.id === id);
+  if (!trade) return { ok: false, error: '交易不存在' };
+  if (trade.status !== MANDATE_TRADE_STATUS.PENDING) return { ok: false, error: '仅待复核交易可处理' };
+  const checker = String(reviewer || '').trim();
+  if (!checker) return { ok: false, error: '请填写复核人' };
+  if (checker === trade.createdBy) return { ok: false, error: '复核人不能与录入人相同（Maker-Checker）' };
+  const account = mandateAccounts.find(a => a.id === trade.accountId);
+  if (!account) return { ok: false, error: '账户不存在' };
+
+  if (decision === 'reject') {
+    trade.status = MANDATE_TRADE_STATUS.REJECTED;
+    trade.reviewedBy = checker;
+    trade.reviewedAt = formatNow();
+    trade.rejectReason = String(reason || '').trim() || '未说明原因';
+    logAudit({ operator: operator || checker, category: 'mandate', action: 'reject', target: account.userName, targetId: trade.id, note: `委托交易驳回：${trade.rejectReason}` });
+    Storage.save();
+    return { ok: true, trade };
+  }
+
+  // 生效前复核持仓：录入后可能已有其它卖出把可卖数量用掉了
+  if (trade.side === 'sell') {
+    const held = getMandateHoldings(account.id).find(h => h.symbol === trade.symbol);
+    if (!held || held.quantity + 1e-9 < trade.quantity) {
+      return { ok: false, error: `可卖数量不足（当前持有 ${held?.quantity || 0} 股），请驳回后重录` };
+    }
+  }
+  const grossHKD = trade.quantity * trade.price * trade.fxRate;
+  const feeHKD = (Number(trade.fee) || 0) * trade.fxRate;
+  const delta = trade.side === 'buy' ? -(grossHKD + feeHKD) : grossHKD - feeHKD;
+  if (delta < 0 && getMandateCashBalance(account.id, 'HKD') + delta < 0) {
+    return { ok: false, error: `委托账户可用资金不足（需 HK$${Math.abs(delta).toFixed(2)}），请先入金或驳回` };
+  }
+  const booked = addMandateCashEntry({
+    accountId: account.id,
+    type: MANDATE_LEDGER_TYPES.TRADE,
+    currency: 'HKD',
+    amount: Math.round(delta * 100) / 100,
+    note: `${trade.side === 'buy' ? '买入' : '卖出'} ${trade.symbol} ${trade.quantity} 股 @ ${trade.price} ${trade.currency}（含费 ${trade.fee}，汇率 ${trade.fxRate}）${trade.correctionOf ? ' · 更正重录' : ''}`,
+    refType: 'trade',
+    refId: trade.id,
+  }, operator || checker);
+  if (!booked.ok) return booked;
+
+  trade.status = MANDATE_TRADE_STATUS.ACTIVE;
+  trade.reviewedBy = checker;
+  trade.reviewedAt = formatNow();
+  trade.ledgerId = booked.entry.id;
+  // 成交通知邮件（协议 11.2）：复核生效后才发——录入值可能被驳回，提前发等于通知一个不存在的事实
+  if (mandateConfig.adviceEmail) {
+    trade.adviceMail = {
+      at: formatNow(),
+      to: currentUser.email || '',
+      status: 'queued',
+      template: 'mandate-advice',
+    };
+  }
+  logAudit({
+    operator: operator || checker,
+    category: 'mandate',
+    action: 'approve',
+    target: account.userName,
+    targetId: trade.id,
+    note: `委托交易生效：${trade.symbol} ${trade.quantity} 股，资金变动 HK$${delta.toFixed(2)}${trade.adviceMail ? '；成交通知邮件已排队' : ''}`,
+  });
+  Storage.save();
+  return { ok: true, trade };
+}
+
+// 作废：active → void，并写一条反向流水（不删原流水，审计要看到「发生过什么」）
+export function voidMandateTrade(id, { reason = '', reviewer = '' } = {}, operator = '') {
+  const trade = mandateTrades.find(t => t.id === id);
+  if (!trade) return { ok: false, error: '交易不存在' };
+  if (trade.status !== MANDATE_TRADE_STATUS.ACTIVE) return { ok: false, error: '仅已生效交易可作废' };
+  const checker = String(reviewer || '').trim();
+  if (!checker) return { ok: false, error: '请填写复核人' };
+  if (checker === trade.createdBy) return { ok: false, error: '复核人不能与录入人相同（Maker-Checker）' };
+  const account = mandateAccounts.find(a => a.id === trade.accountId);
+  const grossHKD = trade.quantity * trade.price * trade.fxRate;
+  const feeHKD = (Number(trade.fee) || 0) * trade.fxRate;
+  const original = trade.side === 'buy' ? -(grossHKD + feeHKD) : grossHKD - feeHKD;
+  const booked = addMandateCashEntry({
+    accountId: account.id,
+    type: MANDATE_LEDGER_TYPES.TRADE,
+    currency: 'HKD',
+    amount: Math.round(-original * 100) / 100,
+    note: `作废冲正：${trade.symbol} ${trade.quantity} 股 · ${String(reason || '').trim() || '未说明原因'}`,
+    refType: 'trade-void',
+    refId: trade.id,
+    allowNegative: true,
+  }, operator || checker);
+  if (!booked.ok) return booked;
+  trade.status = MANDATE_TRADE_STATUS.VOID;
+  trade.voidedAt = formatNow();
+  trade.voidedBy = checker;
+  trade.voidReason = String(reason || '').trim();
+  trade.voidLedgerId = booked.entry.id;
+  logAudit({ operator: operator || checker, category: 'mandate', action: 'update', target: account?.userName || '', targetId: trade.id, note: `委托交易作废并冲正：${trade.voidReason || '未说明原因'}` });
+  Storage.save();
+  return { ok: true, trade };
+}
+
+// ---- 估值更新（留痕不阻断） ----
+
+export function updateMandatePrice({ accountId, symbol, price, fxRate, priceAt, method = 'listed' }, operator = '') {
+  const account = mandateAccounts.find(a => a.id === accountId);
+  if (!account) return { ok: false, error: '账户不存在' };
+  const held = getMandateHoldings(accountId).find(h => h.symbol === symbol);
+  if (!held) return { ok: false, error: '该账户没有此持仓' };
+  const p = Number(price);
+  const fx = Number(fxRate);
+  if (!Number.isFinite(p) || p < 0) return { ok: false, error: '价格需为不小于 0 的数字' };
+  if (!Number.isFinite(fx) || fx <= 0) return { ok: false, error: '汇率需大于 0' };
+  const before = latestMandatePrice(accountId, symbol);
+  const mark = {
+    id: `mp${Date.now()}`,
+    accountId, symbol: held.symbol, currency: held.currency,
+    price: p, fxRate: fx, method, priceAt: priceAt || new Date().toISOString().slice(0, 10),
+    updatedBy: operator || '财务后台', updatedAt: formatNow(),
+  };
+  mandatePriceMarks.unshift(mark);
+  logAudit({
+    operator: operator || '财务后台',
+    category: 'mandate',
+    action: 'update',
+    target: account.userName,
+    targetId: mark.id,
+    note: `估值更新 ${held.symbol}：${before ? before.price : '—'} → ${p}（汇率 ${fx}，${mark.priceAt}）`,
+  });
+  Storage.save();
+  return { ok: true, mark };
+}
+
+// ---- 费用 ----
+
+export function createMandateFee(payload = {}, operator = '') {
+  const account = mandateAccounts.find(a => a.id === payload.accountId);
+  if (!account) return { ok: false, error: '账户不存在' };
+  const amount = Number(payload.amount);
+  if (!Number.isFinite(amount) || amount <= 0) return { ok: false, error: '金额需大于 0' };
+  if (!MANDATE_FEE_TYPES[payload.type]) return { ok: false, error: '请选择费用类型' };
+  if (!/^\d{4}-\d{2}$/.test(String(payload.period || ''))) return { ok: false, error: '期间格式为 YYYY-MM' };
+  const fee = {
+    id: `mf${Date.now()}`,
+    accountId: account.id, no: account.no, userId: account.userId,
+    period: payload.period, type: payload.type, amount, currency: String(payload.currency || 'HKD').toUpperCase(),
+    status: 'pending', note: String(payload.note || '').trim(),
+    createdBy: operator || '财务后台', reviewedBy: '', reviewedAt: null, ledgerId: '',
+  };
+  mandateFees.unshift(fee);
+  logAudit({ operator: operator || '财务后台', category: 'mandate', action: 'create', target: account.userName, targetId: fee.id, note: `费用录入 ${MANDATE_FEE_TYPES[fee.type]} ${fee.currency} ${fee.amount}（${fee.period}）` });
+  Storage.save();
+  return { ok: true, fee };
+}
+
+export function reviewMandateFee(id, { decision = 'approve', reviewer = '' } = {}, operator = '') {
+  const fee = mandateFees.find(f => f.id === id);
+  if (!fee) return { ok: false, error: '费用行不存在' };
+  if (fee.status !== 'pending') return { ok: false, error: '该费用行已处理' };
+  const checker = String(reviewer || '').trim();
+  if (!checker) return { ok: false, error: '请填写复核人' };
+  if (checker === fee.createdBy) return { ok: false, error: '复核人不能与录入人相同（Maker-Checker）' };
+  const account = mandateAccounts.find(a => a.id === fee.accountId);
+  if (decision === 'reject') {
+    fee.status = 'rejected';
+    fee.reviewedBy = checker;
+    fee.reviewedAt = formatNow();
+    logAudit({ operator: operator || checker, category: 'mandate', action: 'reject', target: account?.userName || '', targetId: fee.id, note: `费用行驳回：${fee.id}` });
+    Storage.save();
+    return { ok: true, fee };
+  }
+  // 费用从组合扣减：允许负余额（协议义务不能因为现金刚好不够就不扣）
+  const booked = addMandateCashEntry({
+    accountId: fee.accountId,
+    type: MANDATE_LEDGER_TYPES.FEE,
+    currency: fee.currency,
+    amount: -Math.abs(fee.amount),
+    note: `${MANDATE_FEE_TYPES[fee.type]} ${fee.period}`,
+    refType: 'fee',
+    refId: fee.id,
+    allowNegative: true,
+  }, operator || checker);
+  if (!booked.ok) return booked;
+  fee.status = 'approved';
+  fee.reviewedBy = checker;
+  fee.reviewedAt = formatNow();
+  fee.ledgerId = booked.entry.id;
+  logAudit({ operator: operator || checker, category: 'mandate', action: 'approve', target: account?.userName || '', targetId: fee.id, note: `费用生效并从组合扣减：${MANDATE_FEE_TYPES[fee.type]} ${fee.currency} ${fee.amount}` });
+  Storage.save();
+  return { ok: true, fee };
+}
+
+// ---- 常设授权 ----
+
+export function getStandingAuthOf(accountId) {
+  return mandateStandingAuth.filter(a => a.accountId === accountId && a.status === 'active');
+}
+
+export function createStandingAuth({ accountId, scope = [], grantedAt, expiresAt, fileRef = '' } = {}, operator = '') {
+  const account = mandateAccounts.find(a => a.id === accountId);
+  if (!account) return { ok: false, error: '账户不存在' };
+  const valid = ['transfer', 'repledge', 'lending'];
+  const scopes = (Array.isArray(scope) ? scope : []).filter(s => valid.includes(s));
+  if (!scopes.length) return { ok: false, error: '请至少选择一项授权范围' };
+  if (!expiresAt) return { ok: false, error: '请填写授权到期日' };
+  const auth = {
+    id: `msa${Date.now()}`, accountId, userId: account.userId,
+    scope: scopes, grantedAt: grantedAt || new Date().toISOString().slice(0, 10),
+    expiresAt, fileRef: String(fileRef || '').trim(), status: 'active',
+    createdBy: operator || '合规后台', createdAt: formatNow(),
+  };
+  mandateStandingAuth.unshift(auth);
+  logAudit({ operator: operator || '合规后台', category: 'mandate', action: 'create', target: account.userName, targetId: auth.id, note: `常设授权登记：${scopes.join('/')} · 至 ${expiresAt}` });
+  Storage.save();
+  return { ok: true, auth };
+}
+
+export function revokeStandingAuth(id, operator = '') {
+  const auth = mandateStandingAuth.find(a => a.id === id);
+  if (!auth) return { ok: false, error: '授权不存在' };
+  auth.status = 'revoked';
+  auth.revokedAt = formatNow();
+  logAudit({ operator: operator || '合规后台', category: 'mandate', action: 'update', target: auth.userId, targetId: auth.id, note: '常设授权撤销' });
+  Storage.save();
+  return { ok: true, auth };
+}
+
+// ---- 日结单（三类账户） ----
+
+const todayStr = () => {
+  const d = new Date();
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+};
+
+export function buildDailyStatement(userId = currentUser.id, date = todayStr(), prevTotalHKD = null) {
+  const fund = getFundPortfolio(userId);
+  const summary = getMandateSummaryForUser(userId);
+  const mandate = summary.portfolio;
+  const pending = [];
+
+  fundOrders
+    .filter(o => o.userId === userId && o.status === FUND_ORDER_STATUS.PENDING)
+    .forEach(o => pending.push({
+      kind: 'fund-order',
+      label: `${o.type === 'subscribe' ? '申购' : '赎回'} ${o.fundName} · ${o.currency} ${formatExactAmount(o.amount)}`,
+      id: o.id,
+    }));
+
+  mandateTrades
+    .filter(t => t.userId === userId && t.status === MANDATE_TRADE_STATUS.PENDING)
+    .forEach(t => pending.push({
+      kind: 'mandate-trade',
+      label: `委托${t.side === 'buy' ? '买入' : '卖出'} ${t.symbol} ${t.quantity} 股（待复核）`,
+      id: t.id,
+    }));
+
+  withdrawRequests
+    .filter(r => r.userId === userId && r.status === 'pending')
+    .forEach(r => pending.push({
+      kind: 'withdraw',
+      label: `提现 ${r.currency} ${formatExactAmount(r.amount)} 处理中`,
+      id: r.id,
+    }));
+
+  const locked = fund.cash.filter(c => c.frozen > 0).map(c => ({
+    currency: c.currency,
+    amount: c.frozen,
+    note: '基金申购冻结 / 在途提现',
+  }));
+
+  const mandateSection = mandate && summary.account ? {
+    accountNo: summary.account.no,
+    cash: mandate.cash.map(c => ({ currency: c.currency, balance: c.balance })),
+    positions: mandate.positions.map(p => ({
+      symbol: p.symbol,
+      name: p.name,
+      quantity: p.quantity,
+      price: p.price,
+      priceAt: p.priceAt,
+      method: p.valuationMethod,
+      marketValueHKD: p.marketValueHKD,
+    })),
+    marketValueHKD: mandate.marketValueHKD,
+    cashHKD: mandate.cashHKD,
+    totalHKD: mandate.totalHKD,
+  } : null;
+
+  return {
+    id: `ds-${userId}-${date}`,
+    userId,
+    date,
+    cashA: fund.cash.map(c => ({ currency: c.currency, balance: c.balance, frozen: c.frozen, available: c.available })),
+    cashAHKD: fund.cashHKD,
+    fund: {
+      positions: fund.rows.map(r => ({
+        fundId: r.fundId,
+        fundName: r.fundName,
+        currency: r.currency,
+        shares: r.shares,
+        nav: r.nav,
+        marketValue: r.marketValue,
+        // 未估值日沿用上一净值：净值披露日 ≠ 结单日 即标注（私募周/月频，日结单不能凭空造日波动）
+        staleNav: String(funds.find(f => f.id === r.fundId)?.navMeta?.lastNavDate || '').slice(0, 10) !== date,
+      })),
+      marketValueHKD: fund.marketValueHKD,
+    },
+    mandate: mandateSection,
+    pending,
+    locked,
+    totalHKD: fund.totalHKD + (mandate?.totalHKD || 0),
+    prevTotalHKD,
+    generatedAt: formatNow(),
+    generatedBy: '',
+  };
+}
+
+function seedDailyStatementsOnce() {
+  if (dailyStatementSeeded || dailyStatements.length) { dailyStatementSeeded = true; return; }
+  dailyStatementSeeded = true;
+  if (currentUser.id !== 'u1') return;
+  const d1 = '2026-11-11';
+  const d2 = '2026-11-12';
+  // 两天的估值没有变化（净值/标记价只在 11-12 更新），所以两天总额相同是事实，不伪造差额
+  const s1 = buildDailyStatement('u1', d1, null);
+  s1.generatedBy = '系统（日终）';
+  s1.pending = []; // 历史日没有在途指令（种子只造资产快照，不造当日在途队列）
+  const s2 = buildDailyStatement('u1', d2, s1.totalHKD);
+  s2.generatedBy = '系统（日终）';
+  s2.pending = [];
+  dailyStatements.push(s2, s1);
+}
+
+export function getDailyStatements(userId = currentUser.id) {
+  seedDailyStatementsOnce();
+  return dailyStatements
+    .filter(s => s.userId === userId)
+    .slice()
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+}
+
+export function generateDailyStatement({ userId = currentUser.id, date = todayStr() } = {}, operator = '') {
+  seedDailyStatementsOnce();
+  const pendingTrades = mandateTrades.filter(t => t.userId === userId && t.status === MANDATE_TRADE_STATUS.PENDING);
+  // E5：待复核交易不进账，带着它们生成日结单会缺当日成交，且第二天无法解释差额
+  if (pendingTrades.length > 0) {
+    return { ok: false, error: `当日有 ${pendingTrades.length} 笔委托交易待复核，先复核后再生成日结单` };
+  }
+  const prev = dailyStatements
+    .filter(s => s.userId === userId && String(s.date) < String(date))
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)))[0];
+  const stmt = buildDailyStatement(userId, date, prev ? prev.totalHKD : null);
+  stmt.generatedBy = operator || '系统（日终）';
+  const idx = dailyStatements.findIndex(s => s.userId === userId && s.date === date);
+  if (idx >= 0) dailyStatements[idx] = stmt;
+  else dailyStatements.unshift(stmt);
+  logAudit({ operator: operator || '系统（日终）', category: 'mandate', action: 'create', target: userId, targetId: stmt.id, note: `生成日结单 ${date}：总资产 HK$${formatExactAmount(stmt.totalHKD)}` });
+  Storage.save();
+  return { ok: true, statement: stmt };
+}
+
+export function getDailyStatementById(id) {
+  seedDailyStatementsOnce();
+  return dailyStatements.find(s => s.id === id) || null;
+}
+
+// 月报：协议 11.3 合同义务。由当月日结单汇总，不另存第二份真相。
+export function buildMandateMonthlyReport(accountId, month) {
+  seedDailyStatementsOnce();
+  const account = mandateAccounts.find(a => a.id === accountId);
+  if (!account) return null;
+  const inMonth = dailyStatements
+    .filter(s => s.userId === account.userId && String(s.date).slice(0, 7) === month)
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  const fees = mandateFees.filter(f => f.accountId === accountId && f.period === month && f.status === 'approved');
+  const portfolio = getMandatePortfolio(accountId);
+  const first = inMonth[0];
+  const last = inMonth[inMonth.length - 1];
+  const feeHKD = fees.reduce((s, f) => s + convertToHKD(f.amount, f.currency), 0);
+  return {
+    accountId,
+    accountNo: account.no,
+    month,
+    days: inMonth.length,
+    openingHKD: first?.mandate?.totalHKD ?? null,
+    closingHKD: last?.mandate?.totalHKD ?? portfolio.totalHKD,
+    changeHKD: first && last ? last.mandate.totalHKD - first.mandate.totalHKD : null,
+    fees,
+    feeHKD,
+    positions: (last?.mandate?.positions) || portfolio.positions.map(p => ({
+      symbol: p.symbol, name: p.name, quantity: p.quantity, price: p.price,
+      priceAt: p.priceAt, method: p.valuationMethod, marketValueHKD: p.marketValueHKD,
+    })),
+    cash: last?.mandate?.cash || portfolio.cash.map(c => ({ currency: c.currency, balance: c.balance })),
+    statements: inMonth.map(s => ({ id: s.id, date: s.date, totalHKD: s.mandate?.totalHKD ?? 0 })),
+    generatedAt: formatNow(),
+  };
+}
+
+// 日结单种子在模块加载时生成一次（2026-11-13）：
+// 历史快照必须反映「当时」的持仓，而不是用户点开页面那一刻的状态。
+// 若改成首次读取时懒生成，先复核一笔交易再打开结算页，历史单会凭空包含新交易。
+seedDailyStatementsOnce();
+
+// ========== 特殊申购（降档）后台审批（2026-11-13 · 11-13 会议 §3） ==========
+//
+// 会议口径：首笔 100 万是常态；经董事签字批准的例外（如首笔 50 万）必须走后台人工审批，
+// **前端不放开设特殊申购**。所以这不是给客户的入口，而是给运营的留痕与代下单台：
+//   ① 审批记录 = 谁批的（董事姓名）、批了多少、依据哪个签字文件；
+//   ② 复核生效后才能「按批准额度录入申购单」，生成一张普通待确认申购单，走既有确认链路；
+//   ③ 一张批准只能对应一笔申购单（used），避免同一份签字被重复使用。
+// 演示边界：申购单扣款走 demo 账户钱包，因此代下单只对当前演示客户开放（其他客户提示不受理）。
+
+export const SPECIAL_SUB_STATUS = {
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
+  USED: 'used',
+};
+
+export const specialSubscriptionApprovals = [];
+
+export function createSpecialSubscriptionApproval(payload = {}, operator = '') {
+  const user = getInvestorUsers().find(u => u.userId === payload.userId);
+  const fund = funds.find(f => f.id === payload.fundId);
+  if (!user) return { ok: false, error: '请选择客户' };
+  if (!fund) return { ok: false, error: '请选择基金' };
+  const amount = Number(payload.approvedAmount);
+  if (!Number.isFinite(amount) || amount <= 0) return { ok: false, error: '批准金额需大于 0' };
+  if (amount >= Number(fund.minInvestment)) {
+    return { ok: false, error: `批准金额须低于产品起投额（${fund.minInvestment.toLocaleString()}）；达到起投额不需要特殊审批` };
+  }
+  const directorName = String(payload.directorName || '').trim();
+  const approvalRef = String(payload.approvalRef || '').trim();
+  if (!directorName) return { ok: false, error: '请填写批准董事姓名' };
+  if (!approvalRef) return { ok: false, error: '请填写签字文件编号（审计追溯用）' };
+  const rec = {
+    id: `ssa${Date.now()}`,
+    userId: user.userId,
+    userName: user.name,
+    fundId: fund.id,
+    fundName: fund.name,
+    currency: String(payload.currency || fund.currency?.[0] || 'HKD').toUpperCase(),
+    approvedAmount: amount,
+    directorName,
+    approvalRef,
+    evidenceName: String(payload.evidenceName || '').trim(),
+    note: String(payload.note || '').trim(),
+    status: SPECIAL_SUB_STATUS.PENDING,
+    createdBy: operator || '运营后台',
+    createdAt: formatNow(),
+    reviewedBy: '',
+    reviewedAt: null,
+    orderId: '',
+  };
+  specialSubscriptionApprovals.unshift(rec);
+  logAudit({ operator: operator || '运营后台', category: 'subscription', action: 'create', target: user.name, targetId: rec.id, note: `特殊申购审批登记：${fund.name} · 批准 ${rec.currency} ${amount.toLocaleString()}（董事 ${directorName} / 文件 ${approvalRef}）` });
+  Storage.save();
+  return { ok: true, approval: rec };
+}
+
+export function reviewSpecialSubscriptionApproval(id, { decision = 'approve', reviewer = '', reason = '' } = {}, operator = '') {
+  const rec = specialSubscriptionApprovals.find(r => r.id === id);
+  if (!rec) return { ok: false, error: '审批记录不存在' };
+  if (rec.status !== SPECIAL_SUB_STATUS.PENDING) return { ok: false, error: '该审批已处理' };
+  const checker = String(reviewer || '').trim();
+  if (!checker) return { ok: false, error: '请填写复核人' };
+  if (checker === rec.createdBy) return { ok: false, error: '复核人不能与登记人相同（Maker-Checker）' };
+  if (decision === 'reject') {
+    rec.status = SPECIAL_SUB_STATUS.REJECTED;
+    rec.rejectReason = String(reason || '').trim() || '未说明原因';
+  } else {
+    rec.status = SPECIAL_SUB_STATUS.APPROVED;
+  }
+  rec.reviewedBy = checker;
+  rec.reviewedAt = formatNow();
+  logAudit({ operator: operator || checker, category: 'subscription', action: decision === 'reject' ? 'reject' : 'approve', target: rec.userName, targetId: rec.id, note: `特殊申购${decision === 'reject' ? '驳回' : '审批通过'}：${rec.fundName} · ${rec.currency} ${rec.approvedAmount.toLocaleString()}` });
+  Storage.save();
+  return { ok: true, approval: rec };
+}
+
+// 按批准额度代客录入申购单：生成普通待确认单，进入既有确认链路（净值/费/份额/结单全复用）
+export function createOrderFromSpecialApproval(id, operator = '') {
+  const rec = specialSubscriptionApprovals.find(r => r.id === id);
+  if (!rec) return { ok: false, error: '审批记录不存在' };
+  if (rec.status !== SPECIAL_SUB_STATUS.APPROVED) return { ok: false, error: '仅审批通过的记录可录入申购单' };
+  if (rec.orderId) return { ok: false, error: '该批准已生成过申购单' };
+  if (rec.userId !== currentUser.id) {
+    return { ok: false, error: '原型仅支持为当前演示客户代下单（其他客户请线下处理）' };
+  }
+  const fund = funds.find(f => f.id === rec.fundId);
+  if (!fund) return { ok: false, error: '基金不存在' };
+  if (fund.status !== 'open') return { ok: false, error: '该基金暂不开放申购' };
+  if (rec.approvedAmount > getAvailableCash(rec.currency)) return { ok: false, error: '客户可用余额不足' };
+  const now = formatNow();
+  const order = {
+    id: `fo${Date.now()}`,
+    type: 'subscribe',
+    fundId: fund.id,
+    fundName: fund.name,
+    userId: rec.userId,
+    currency: rec.currency,
+    amount: rec.approvedAmount,
+    feeRate: FUND_FEE_RATE.subscribe,
+    status: FUND_ORDER_STATUS.PENDING,
+    specialApprovalId: rec.id,
+    createdAt: now,
+    updatedAt: now,
+    history: [
+      { type: 'submitted', timestamp: now, actor: operator || '运营后台', note: `特殊申购代下单（董事批准 ${rec.approvalRef}）` },
+    ],
+  };
+  fundOrders.unshift(order);
+  rec.status = SPECIAL_SUB_STATUS.USED;
+  rec.orderId = order.id;
+  rec.orderCreatedAt = now;
+  logAudit({ operator: operator || '运营后台', category: 'subscription', action: 'create', target: rec.userName, targetId: order.id, note: `特殊申购代下单：${fund.name} ${rec.currency} ${rec.approvedAmount.toLocaleString()}（批准 ${rec.approvalRef}）` });
+  pushNotification({
+    type: 'fund',
+    title: '申购申请已提交',
+    body: '{fund} {cur} {amt} 申购申请已提交，财务确认后份额入账。',
+    args: { fund: fund.name, cur: rec.currency, amt: rec.approvedAmount.toLocaleString() },
+  }, rec.userId);
+  Storage.save();
+  return { ok: true, order, approval: rec };
 }

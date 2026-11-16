@@ -82,9 +82,9 @@ export default function Transactions({ navigate, goBack }) {
     ...withdrawRequests.filter(r => r.userId === currentUser.id && r.status !== 'approved').map(r => toReqRow(r, 'withdraw')),
   ];
 
-  // 只取已记账的资金流水
+  // 只取已记账的资金流水；委托账户划入（2026-11-16）同为「已记账」事实，入列展示
   const txRows = transactions
-    .filter(tx => (tx.type === 'deposit' || tx.type === 'withdraw') && tx.status === 'completed')
+    .filter(tx => (tx.type === 'deposit' || tx.type === 'withdraw' || tx.type === 'mandate_transfer_in') && tx.status === 'completed')
     .map(tx => ({
       key: `tx-${tx.id}`,
       id: tx.id,
@@ -152,7 +152,7 @@ export default function Transactions({ navigate, goBack }) {
       <div className="subpage-sticky transactions-sticky">
         <div className="page-header">
           <button className="back-btn" onClick={() => goBack('#asset')}><ArrowLeft size={20} /></button>
-          <h1>{t('资金明细')}</h1>
+          <h1>{t('资金流水')}</h1>
         </div>
 
         <div className="segmented-control transaction-tabs">
@@ -199,7 +199,10 @@ export default function Transactions({ navigate, goBack }) {
             <div className="transaction-group-title">{g.date}</div>
             {g.items.map(row => {
               const meta = STATUS_META[row.status];
-              const sign = row.kind === 'deposit' ? '+' : '-';
+              // 委托账户划入是入账方向（2026-11-16）：与充值同号「+」
+              const positive = row.kind === 'deposit' || row.kind === 'mandate_transfer_in';
+              const sign = positive ? '+' : '-';
+              const typeLabel = row.kind === 'deposit' ? '充值' : row.kind === 'mandate_transfer_in' ? '委托账户划入' : '提现';
               const symbol = walletAccountOf(row.currency)?.symbol || '';
               // 两路统一跳详情（2026-11-02 定稿）：申请单行带 reqId → 申请详情；流水行带 id → 交易详情
               const href = row.reqId ? `#fund-request/${row.reqId}` : `#transaction/${row.id}`;
@@ -211,13 +214,14 @@ export default function Transactions({ navigate, goBack }) {
                 >
                   <div className="wallet-transaction-header">
                     <span className="transaction-type-group">
-                      <span className={`transaction-type ${row.kind}`}>{t(row.kind === 'deposit' ? '充值' : '提现')}</span>
+                      <span className={`transaction-type ${row.kind}`}>{t(typeLabel)}</span>
                       {meta && <span className={`tag ${meta.cls} transaction-status-tag`}>{t(meta.labelKey)}</span>}
                     </span>
                     <span className="transaction-row-right">
                       {row.extra && <span className="wallet-transaction-extra">{row.extra}</span>}
-                      {/* 回单入口只挂已完成流水：申请单还在途，没有凭证可出 */}
-                      {row.status === 'completed' && (
+                      {/* 回单入口只挂已完成流水：申请单还在途，没有凭证可出；
+                          委托划入是平台内部记账，不出银行回单 */}
+                      {row.status === 'completed' && row.kind !== 'mandate_transfer_in' && (
                         <button
                           type="button"
                           className="transaction-receipt"

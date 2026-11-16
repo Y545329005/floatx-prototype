@@ -1,9 +1,10 @@
 import { ArrowLeft } from 'lucide-react';
 import {
   RECEIPT_TYPES, buildPeriodStatement, fundStatements, receiptOf,
+  mandateTrades, mandateAccounts,
 } from '../mock/data';
 import { useLang } from '../i18n';
-import { confirmationEmailDoc, periodEmailDoc, receiptEmailDoc } from '../mock/emailDocs';
+import { confirmationEmailDoc, periodEmailDoc, receiptEmailDoc, adviceEmailDoc } from '../mock/emailDocs';
 import { renderEmailHtml } from '../mock/emailTemplates';
 
 /* ─────────────────────────────────────────────────────────────
@@ -13,6 +14,7 @@ import { renderEmailHtml } from '../mock/emailTemplates';
      · 回单：deposit / withdraw / crypto-deposit / crypto-withdraw + 单据 id
      · 确认单：confirmation + statement id
      · 期间结单：period/{from}/{to}
+   · 成交通知：mandate-advice/{tradeId}
    ───────────────────────────────────────────────────────────── */
 
 export default function MailPreview({ type, id, to, goBack }) {
@@ -27,6 +29,9 @@ export default function MailPreview({ type, id, to, goBack }) {
     if (s) doc = confirmationEmailDoc(s, t);
   } else if (type === 'period') {
     doc = periodEmailDoc(buildPeriodStatement({ from: id, to }), t);
+  } else if (type === 'mandate-advice') {
+    const trade = mandateTrades.find(x => x.id === id);
+    if (trade) doc = adviceEmailDoc(trade, mandateAccounts.find(a => a.id === trade.accountId), t);
   }
 
   return (

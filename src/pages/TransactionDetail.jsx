@@ -9,7 +9,9 @@ export default function TransactionDetail({ id, goBack }) {
   const { t } = useLang();
   const tx = transactions.find(x => x.id === id);
 
-  if (!tx || (tx.type !== 'deposit' && tx.type !== 'withdraw')) {
+  // 委托账户划入（2026-11-16）：平台内部记账流水，无对方银行账户，纯只读凭证
+  const isMandate = tx?.type === 'mandate_transfer_in';
+  if (!tx || (tx.type !== 'deposit' && tx.type !== 'withdraw' && !isMandate)) {
     return (
       <div className="page">
         <div className="subpage-sticky">
@@ -39,7 +41,7 @@ export default function TransactionDetail({ id, goBack }) {
 
       <div className="fund-detail-hero">
         <div className="fund-detail-hero-amount">
-          {isDeposit ? '+' : '-'}{symbol}{formatExactAmount(tx.amount)}
+          {isDeposit || isMandate ? '+' : '-'}{symbol}{formatExactAmount(tx.amount)}
         </div>
         <span className="tag tag-success">{t('已完成')}</span>
       </div>
@@ -47,7 +49,7 @@ export default function TransactionDetail({ id, goBack }) {
       <div className="card fund-detail-card">
         <div className="subscription-info-row">
           <span className="text-muted">{t('交易类型')}</span>
-          <strong>{t(isDeposit ? '充值' : '提现')}</strong>
+          <strong>{t(isMandate ? '委托账户划入' : isDeposit ? '充值' : '提现')}</strong>
         </div>
         <div className="subscription-info-row">
           <span className="text-muted">{t('币种')}</span>

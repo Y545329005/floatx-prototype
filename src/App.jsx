@@ -27,6 +27,11 @@ const AdminMyClients = lazy(() => import('./admin/AdminMyClients'));
 const AdminSubscriptions = lazy(() => import('./admin/AdminSubscriptions'));
 const AdminFundProducts = lazy(() => import('./admin/AdminFundProducts'));
 const AdminFundTrades = lazy(() => import('./admin/AdminFundTrades'));
+const AdminMandateAgreements = lazy(() => import('./admin/AdminMandateAgreements'));
+const AdminMandateAccounts = lazy(() => import('./admin/AdminMandateAccounts'));
+const AdminMandateTrades = lazy(() => import('./admin/AdminMandateTrades'));
+const AdminMandateReports = lazy(() => import('./admin/AdminMandateReports'));
+const AdminSpecialSubs = lazy(() => import('./admin/AdminSpecialSubs'));
 const AdminFunds = lazy(() => import('./admin/AdminFunds'));
 const AdminKYC = lazy(() => import('./admin/AdminKYC'));
 const AdminPI = lazy(() => import('./admin/AdminPI'));
@@ -313,6 +318,13 @@ export default function App() {
                 2026-10-28 教训：渲染分支必须把 navigate/detailId 传全——少传不报错、功能静默失效 */}
             {effectiveSub === 'fund-products' && <AdminFundProducts admin={adminUser} detailId={hash.param2} navigate={navigate} />}
             {effectiveSub === 'fund-trades' && <AdminFundTrades admin={adminUser} detailId={hash.param2} navigate={navigate} />}
+            {/* 委托账户（2026-11-13 批 1a）：抽屉走 param2（#admin/mandate-…/{id}）。
+                教训沿用：渲染分支必须把 navigate/detailId 传全——少传不报错、动作静默失效 */}
+            {effectiveSub === 'mandate-agreements' && <AdminMandateAgreements admin={adminUser} detailId={hash.param2} navigate={navigate} />}
+            {effectiveSub === 'mandate-accounts' && <AdminMandateAccounts admin={adminUser} detailId={hash.param2} navigate={navigate} />}
+            {effectiveSub === 'mandate-trades' && <AdminMandateTrades admin={adminUser} detailId={hash.param2} correctionOf={hash.param3} navigate={navigate} />}
+            {effectiveSub === 'mandate-reports' && <AdminMandateReports admin={adminUser} detailId={hash.param2} navigate={navigate} />}
+            {effectiveSub === 'special-subs' && <AdminSpecialSubs admin={adminUser} detailId={hash.param2} navigate={navigate} />}
             {/* 资金审核：tab 走 param2、抽屉走 param3（#admin/funds/{tab}/{id}）；
                 2026-10-28 修复：此前只渲染 <AdminFunds /> 未透传 navigate/tab/detailId，
                 导致点行只改 hash、抽屉永远打不开 → 整个核销动作不可达 */}

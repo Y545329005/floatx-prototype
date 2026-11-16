@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { ArrowLeft, Bitcoin, ClipboardList, ChevronRight, CreditCard, Download, Eye, EyeOff, FileText, History, Upload } from 'lucide-react';
+import { ArrowLeft, Bitcoin, ClipboardList, ChevronRight, CreditCard, Download, Eye, EyeOff, FileText, History, Landmark, Upload } from 'lucide-react';
 import { keyed } from '../lib';
 import {
   getFundPortfolio, myFundOrders, formatExactAmount, formatShares, CURRENCY_META, cryptoModuleEnabled,
+  getMandateSummaryForUser, getMandateWithdrawFrozen,
 } from '../mock/data';
 import { useLang } from '../i18n';
 
@@ -35,6 +36,28 @@ import { useLang } from '../i18n';
 //   ⑭ 收益率替代「较上周/昨日」：私募净值周频或月频、更新时间不稳定，
 //      百分比（累计收益/成本）任意时点都成立；
 //   ⑮ hero 累计收益合并一行 + 括号收益率；移除迷你走势（盈亏分析前期不做，不提供跳转）。
+//
+// 明细 Tab 化（2026-11-16）：
+//   ⑯ hero 是跨账户聚合层（回答「我有多少钱」），恒定不进页签；操作瓦片（资金域动作，
+//      回答「要做什么」）上移到 hero 直下，高频可达；
+//   ⑰ 明细区改互斥页签「基金持仓｜委托账户」——**当轮推翻（同日 v3）**：
+//      委托与基金持仓是两本账，不该共用列表容器；页签容器是全员结构成本，
+//      违反「特例不入侵多数人」原则，整块撤除；
+//   ⑱ 委托入口卡连同「已签约未授权」提示一并移除（拍板：签约进度改纯线下告知，
+//      后台 AdminConfig 的入口卡文案配置保留，待未来其他触点使用）；
+//   ⑲ 委托面板「单据」链接删除——与动作区「结单」重复指向 #fund-statements；
+//   ⑳ 页签状态不持久化：回页重置到「基金持仓」默认。
+//
+// 委托账户降级金刚区入口（2026-11-16 v3 定版）：
+//   ㉑ 委托在资产页的唯一存在形式 = 金刚区一个条件格子（mandateActive 才渲染，
+//      结单之后、数字资产之前），想查看跳专属页 #mandate-detail/{id}；
+//   ㉒ hero「委托资产」分解行保留（条件渲染）——否则总资产恒等式破洞（差一块对不上账）；
+//      顺序定版：可用现金 → 持仓市值 → 委托资产 → 冻结中（两个条件项靠尾，前两位全员恒定）；
+//   ㉓ 金刚区口径放宽为「资金动作 + 账户入口」，4 列布局，上限 8 格，超出先讨论准入；
+//      同日文案/排序定版：域分行（行1 现金域，行2 域入口+凭证压轴）、
+//      「我的交易」→「基金交易」（v3 后委托域独立，旧名语义漂移）、
+//      「资金明细」→「资金流水」（与「结单」分工：逐笔进出 vs 定期汇总）；
+//   ㉔ 明细卡恢复全员简单态：card-header「基金持仓」无条件常驻，委托面板及配套样式删除。
 
 const money = (currency, value) => {
   const symbol = CURRENCY_META[String(currency || '').toUpperCase()]?.symbol || '';
@@ -45,6 +68,14 @@ export default function AssetOverview({ navigate, goBack, embed = false }) {
   const { t, lang } = useLang();
   const [hidden, setHidden] = useState(false);
   const p = getFundPortfolio();
+  // 委托账户（2026-11-16 v3 定版）：仅「已授权」客户可见，存在形式 = 金刚区一个格子
+  // （㉑）+ hero 分解行（㉒，恒等式必要项）；未授权（含已签约未授权）资产页无委托痕迹。
+  const mandate = getMandateSummaryForUser();
+  const mandateActive = mandate.state === 'active' && !!mandate.portfolio;
+  const totalHKD = p.totalHKD + (mandateActive ? mandate.portfolio.totalHKD : 0);
+  // 收益合计口径：基金盈亏 + 委托盈亏（仅投资部分，不含委托现金）——与 hero 金额同一口径
+  const pnlHKD = p.pnlHKD + (mandateActive ? mandate.portfolio.pnlHKD : 0);
+  const costHKD = p.costHKD + (mandateActive ? mandate.portfolio.costHKD : 0);
   const pendingCount = myFundOrders().filter(o => o.status === 'pending_confirm').length;
   const holdingCount = p.rows.length;
   // 现金构成（2026-11-03 多币种）：只列「可用 > 0」的币种，且至少两种才显示。
@@ -53,13 +84,22 @@ export default function AssetOverview({ navigate, goBack, embed = false }) {
   const mask = '••••';
   // 累计收益率 = 累计收益（含已实现）/ 成本；与显示金额同一口径，
   // 不能沿用 p.pnlPct（那只是未实现/成本，会出现金额与括号百分比对不上）。
-  const heroPct = p.costHKD > 0 ? (p.pnlHKD / p.costHKD) * 100 : 0;
+  const heroPct = costHKD > 0 ? (pnlHKD / costHKD) * 100 : 0;
 
-  // 分解行 = 总资产的恒等式（可用现金 + 持仓市值 + 冻结 = 总资产）。
-  // 冻结为 0 时不占一行：一行没有金额，读起来像漏了一项。
+  // 分解行 = 总资产的恒等式（㉒ 顺序定版：可用现金 → 持仓市值 → 委托资产 → 冻结中，
+  // 两个条件项靠尾，前两位全员恒定）。委托资产只在「已授权可见」时占一行：
+  // 未授权客户看到的分解行与今天完全一致（两行），不出现「有入口没金额」的空行。
   const parts = [
     { key: '可用现金', value: p.availableHKD },
     { key: '持仓市值', value: p.marketValueHKD },
+    // 委托提取标注（2026-11-16）：在途提取仍计入委托资产（恒等式①），只标注不减值
+    ...(mandateActive ? [{
+      key: '委托资产',
+      value: mandate.portfolio.totalHKD,
+      sub: mandate.account && mandate.portfolio.cash.some(c => getMandateWithdrawFrozen(mandate.account.id, c.currency) > 0)
+        ? t('含提取处理中')
+        : '',
+    }] : []),
     { key: '冻结中', value: p.frozenHKD },
   ].filter(part => part.key !== '冻结中' || part.value > 0);
 
@@ -99,7 +139,7 @@ export default function AssetOverview({ navigate, goBack, embed = false }) {
             {hidden ? <EyeOff size={14} /> : <Eye size={14} />}
           </button>
         </span>
-        <div className="asset-hero-value">{hidden ? `${mask}${mask}` : formatExactAmount(p.totalHKD)}</div>
+        <div className="asset-hero-value">{hidden ? `${mask}${mask}` : formatExactAmount(totalHKD)}</div>
         {/* 累计收益合并一行 + 括号收益率（2026-11-02 用户定版）：这一项只有一个事实，
             拆两行是机械执行「统一上下」；收益率给金额一个量级参照。 */}
         <div className="asset-hero-change">
@@ -107,9 +147,9 @@ export default function AssetOverview({ navigate, goBack, embed = false }) {
           {hidden ? (
             <strong className="is-masked">{mask}</strong>
           ) : (
-            <span className={`asset-hero-change-v ${p.pnlHKD >= 0 ? 'up' : 'down'}`}>
+            <span className={`asset-hero-change-v ${pnlHKD >= 0 ? 'up' : 'down'}`}>
               <b>
-                {p.pnlHKD >= 0 ? '+' : '-'}{formatExactAmount(Math.abs(p.pnlHKD))}
+                {pnlHKD >= 0 ? '+' : '-'}{formatExactAmount(Math.abs(pnlHKD))}
               </b>
               <em className="asset-hero-change-pct">
                 {lang === 'en' ? '(' : '（'}{heroPct >= 0 ? '+' : ''}{heroPct.toFixed(2)}%{lang === 'en' ? ')' : '）'}
@@ -123,6 +163,7 @@ export default function AssetOverview({ navigate, goBack, embed = false }) {
             <div key={part.key} className="asset-hero-part">
               <span className="asset-hero-part-k">{t(part.key)}</span>
               <strong className="asset-hero-part-v">{hidden ? mask : formatExactAmount(part.value)}</strong>
+              {part.sub && !hidden && <span className="asset-hero-part-sub">{part.sub}</span>}
             </div>
           ))}
         </div>
@@ -136,9 +177,11 @@ export default function AssetOverview({ navigate, goBack, embed = false }) {
         )}
       </div>
 
-      {/* 操作：入金 / 出金 / 资金明细 / 银行卡 / 我的交易 / 基金结单（2026-10-29 3×2）
-          资金域的归属地就是这里：#wallet 全仓无链接（死页）。
-          资金申请页已并入「资金明细」（同一笔钱只出一次），空出的格子给银行卡管理。 */}
+      {/* 操作（金刚区，2026-11-16 v3 + 同日文案/排序定版）：4 列、上限 8 格，超出先讨论准入。
+          域分行体系：行1 = 现金域（入金/出金/资金流水/银行卡），行2 = 域入口 + 全账户凭证压轴
+          （基金交易/委托账户/数字资产/结单）。命名构词归一：现金动作、域名词、记录凭证。
+          资金申请页已并入「资金流水」（同一笔钱只出一次），空出的格子给银行卡管理。
+          2026-11-16 上移到 hero 直下：动作区不随明细切换，高频入口紧贴总资产。 */}
       <div className="asset-actions">
         <button className="asset-action" onClick={() => navigate('#fund-operation/deposit')}>
           <span className="asset-action-icon"><Download size={18} /></span>
@@ -150,7 +193,7 @@ export default function AssetOverview({ navigate, goBack, embed = false }) {
         </button>
         <button className="asset-action" onClick={() => navigate('#transactions')}>
           <span className="asset-action-icon"><History size={18} /></span>
-          <span>{t('资金明细')}</span>
+          <span>{t('资金流水')}</span>
         </button>
         <button className="asset-action" onClick={() => navigate('#bank-cards')}>
           <span className="asset-action-icon"><CreditCard size={18} /></span>
@@ -161,15 +204,16 @@ export default function AssetOverview({ navigate, goBack, embed = false }) {
             <ClipboardList size={18} />
             {pendingCount > 0 && <i className="asset-action-dot" aria-hidden="true">{pendingCount}</i>}
           </span>
-          <span>{t('我的交易')}</span>
+          <span>{t('基金交易')}</span>
         </button>
-        {/* 结单入口回资产页（2026-11-13 第二次迁移）：结单是全账户凭证
-            （法币+数字资产+基金+资金往来），挂基金域属语义错位；
-            资产页动作区是它的 2026-11-05 前历史落点，「看我的钱 / 核对我的钱」同域 */}
-        <button className="asset-action" onClick={() => navigate('#fund-statements')}>
-          <span className="asset-action-icon"><FileText size={18} /></span>
-          <span>{t('结单')}</span>
-        </button>
+        {/* 委托账户格（2026-11-16 v3 ㉑）：委托在资产页的唯一入口，仅授权客户渲染；
+            内容归专属页，格子只承载「你有两本账」这一个事实 */}
+        {mandateActive && (
+          <button className="asset-action" onClick={() => navigate(`#mandate-detail/${mandate.account.id}`)}>
+            <span className="asset-action-icon"><Landmark size={18} /></span>
+            <span>{t('委托账户')}</span>
+          </button>
+        )}
         {/* 数字资产格（2026-11-05 标注）：集团钱包入口；未开放时该格不渲染 */}
         {cryptoModuleEnabled && (
           <button className="asset-action" onClick={() => navigate('#crypto')}>
@@ -177,10 +221,20 @@ export default function AssetOverview({ navigate, goBack, embed = false }) {
             <span>{t('数字资产')}</span>
           </button>
         )}
+        {/* 结单压轴（2026-11-16 文案/排序定版）：金刚区按域分行——行1 现金域（进/出/流水/工具），
+            行2 域入口 + 凭证；结单是全账户凭证（法币+数字资产+基金+资金往来），
+            置于所有域入口之后 = 「点完具体域，核对总账时来这里」。挂基金域（#fund-statements
+            由它承载）属历史落点，2026-11-13 已裁定入口归资产页 */}
+        <button className="asset-action" onClick={() => navigate('#fund-statements')}>
+          <span className="asset-action-icon"><FileText size={18} /></span>
+          <span>{t('结单')}</span>
+        </button>
       </div>
 
+      {/* 明细卡（2026-11-16 v3 ㉔）：恢复全员简单态——card-header 常驻，
+          单一「基金持仓」列表；委托内容归 #mandate-detail 专属页。 */}
       <div className="card">
-        {/* 不再给「去基金」：底部 tab 就是基金入口，页面内的第二个跳转是重复 */}        <div className="card-header">
+        <div className="card-header">
           <h3 className="card-title no-margin">{t('基金持仓')}</h3>
         </div>
         {holdingCount === 0 && (

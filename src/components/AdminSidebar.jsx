@@ -1,5 +1,5 @@
 import { Fragment, useState } from 'react';
-import { FolderKanban, CalendarCheck, ClipboardList, ClipboardCheck, UserCheck, PackageOpen, Users, Landmark, Wallet, Coins, TrendingDown, Bell, ScrollText, Shield, Settings, LogOut, ChevronDown, KeyRound, X, BadgeCheck, HeartHandshake, LockKeyhole, Headphones, ShieldCheck, AlertTriangle, FileWarning, ZoomIn, FileSearch } from 'lucide-react';
+import { FolderKanban, CalendarCheck, ClipboardList, ClipboardCheck, UserCheck, PackageOpen, Users, Landmark, Wallet, Coins, TrendingDown, Bell, ScrollText, Shield, Settings, LogOut, ChevronDown, KeyRound, X, BadgeCheck, HeartHandshake, LockKeyhole, Headphones, ShieldCheck, AlertTriangle, FileWarning, ZoomIn, FileSearch, FileSignature, CircleDollarSign, ChartLine, FileSpreadsheet, FileCheck } from 'lucide-react';
 import { ADMIN_MENUS, getRoleMenuKeys, changeAdminPassword, getMenuBadges } from '../mock/data';
 
 // 菜单排序 = 业务联动性配对 + 生命周期（2026-08-12 定稿）：
@@ -37,6 +37,11 @@ const MENU_ICONS = {
   subscriptions: ClipboardList,
   'fund-products': PackageOpen, // 基金产品维护（条款/文件/净值）
   'fund-trades': Coins,   // 基金交易确认（2026-10-28 一期闭环）
+  'special-subs': FileCheck, // 特殊申购（降档）后台审批（2026-11-13）
+  'mandate-agreements': FileSignature, // 委托协议档案（2026-11-13）
+  'mandate-accounts': CircleDollarSign, // 委托账户与资金流水（2026-11-13）
+  'mandate-trades': ChartLine,      // 委托交易与估值
+  'mandate-reports': FileSpreadsheet, // 日结单与月报
   funds: Landmark,
   transactions: Wallet,
   'transaction-monitor': ShieldCheck,

@@ -8,7 +8,7 @@ import {
   wallet, walletAccountOf, bankCards, BANK_CARD_STATUS, platformAccounts, platformDepositAccount,
   depositRequests, withdrawRequests, submitDepositRequest, submitWithdrawRequest,
   getAvailableCash, getFreezeState, depositRefCode, formatExactAmount,
-  getWithdrawQuote, getMinWithdraw, currentUser,
+  getWithdrawQuote, getMinWithdraw, currentUser, getMandateSummaryForUser,
 } from '../mock/data';
 import { useLang } from '../i18n';
 import AccountRow from '../components/AccountRow';
@@ -50,6 +50,11 @@ export default function FundOperation({ mode, navigate, goBack }) {
   const [copiedKey, setCopiedKey] = useState('');
   const [error, setError] = useState('');
   const [cardPickerOpen, setCardPickerOpen] = useState(false); // 选卡底部弹层（2026-10-29：原生 select 是 Web 交互，手机端应为 APP 风格选项列表）
+  // 资金去向（2026-11-13 RO 补充会议）：A 现金账户（默认）/ B 委托账户。
+  // 只有「已授权可见」的委托账户才作为选项——未授权账户连入金去向都不该出现。
+  const [depositTarget, setDepositTarget] = useState('cash');
+  const mandate = getMandateSummaryForUser();
+  const mandateTarget = depositTarget === 'mandate' ? mandate.account : null;
   const fileRef = useRef(null);
   const copyTimer = useRef(null);
 
@@ -172,6 +177,9 @@ export default function FundOperation({ mode, navigate, goBack }) {
         refCode,
         refNo: payerRef,
         transferDate: transferDate ? transferDate.replace('T', ' ').slice(0, 16) : '',
+        // 资金去向（2026-11-13）：cash = A 现金账户；mandate = B 委托账户
+        accountType: mandateTarget ? 'mandate' : 'cash',
+        mandateAccountId: mandateTarget?.id || '',
       });
     } else {
       ok = submitWithdrawRequest(opts);
@@ -375,6 +383,33 @@ export default function FundOperation({ mode, navigate, goBack }) {
           <p className="fund-field-hint">{t('HKD 到账仅可申购港币份额基金；USD 到账仅可申购美元份额基金。')}</p>
         </div>
 
+        {mandate.state === 'active' && mandate.account && (
+          <div className="form-group">
+            <label className="form-label">{t('资金去向')}</label>
+            <div className="fund-target-options">
+              <button
+                type="button"
+                className={depositTarget === 'cash' ? 'is-active' : ''}
+                aria-pressed={depositTarget === 'cash'}
+                onClick={() => setDepositTarget('cash')}
+              >
+                <strong>{t('现金账户')}</strong>
+                <span>{t('用于基金申购与日常出入金')}</span>
+              </button>
+              <button
+                type="button"
+                className={depositTarget === 'mandate' ? 'is-active' : ''}
+                aria-pressed={depositTarget === 'mandate'}
+                onClick={() => setDepositTarget('mandate')}
+              >
+                <strong>{t('委托账户')}</strong>
+                <span>{mandate.account.no} · {t('由基金经理管理')}</span>
+              </button>
+            </div>
+            <p className="fund-field-hint">{t('资金到账后按所选账户入账；入账后不可更改，如需调整请联系客户经理。')}</p>
+          </div>
+        )}
+
         {renderAmountField(t('请按银行回执填写实际转账金额'))}
 
         <div className="form-group">
@@ -503,7 +538,7 @@ export default function FundOperation({ mode, navigate, goBack }) {
           <button className="back-btn" onClick={() => goBack('#asset')}><ArrowLeft size={20} /></button>
           <h1>{isDeposit ? t('充值入金') : t('提现出金')}</h1>
           {isDeposit && (
-            <button className="btn-icon" title={t('资金明细')} onClick={() => navigate('#transactions')}>
+            <button className="btn-icon" title={t('资金流水')} onClick={() => navigate('#transactions')}>
               <ReceiptText size={18} />
             </button>
           )}

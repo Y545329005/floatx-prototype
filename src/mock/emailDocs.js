@@ -84,3 +84,34 @@ export function periodEmailDoc(stmt, t) {
 function formatQty(n) {
   return String(Math.round((Number(n) || 0) * 1000000) / 1000000);
 }
+
+// 成交通知单邮件（2026-11-13 批 3 · 协议 11.2）
+// 触发点：交易复核生效后。正文先行，PDF 附件位保留——正式环境由服务端生成受控 PDF 并作为附件，
+// 原型阶段没有 PDF 生成能力（与基金结单同一条链路，不重复造）。
+export function adviceEmailDoc(trade, account, t) {
+  const amountHKD = trade.quantity * trade.price * trade.fxRate;
+  const rows = [
+    { label: t('委托账户'), value: account?.no || '—' },
+    { label: t('证券名称'), value: `${trade.name}（${trade.symbol}）` },
+    { label: t('交易方向'), value: trade.side === 'buy' ? t('买入') : t('卖出') },
+    { label: t('交易日'), value: trade.tradeDate },
+    { label: t('交收日'), value: trade.settleDate || '—' },
+    { label: t('数量'), value: `${formatShares(trade.quantity)} ${t('股')}` },
+    { label: t('成交价'), value: `${trade.price} ${trade.currency}` },
+    { label: t('费用'), value: `${trade.fee || 0} ${trade.currency}` },
+    { label: t('汇率（折 HKD）'), value: String(trade.fxRate) },
+    { label: t('成交金额（折合 HKD）'), value: `HK$ ${formatExactAmount(amountHKD)}` },
+  ];
+  return {
+    subject: `${t('成交通知单')} · ${trade.symbol} ${trade.tradeDate}`,
+    title: t('您的委托账户成交通知'),
+    intro: trade.correctionOf
+      ? t('您在 {date} 的委托交易已更正成交，原成交通知作废，以本通知为准。').replace('{date}', trade.tradeDate)
+      : t('您在 {date} 的委托交易已成交，明细如下。').replace('{date}', trade.tradeDate),
+    rows,
+    ctaLabel: t('查看成交通知单'),
+    ctaHref: CTA_HREF,
+    note: t('正式环境将随本邮件附上受控 PDF 成交通知单。如对成交内容有疑问，请于收到后 7 天内联系客户经理。'),
+    footer: emailFooterText(t),
+  };
+}

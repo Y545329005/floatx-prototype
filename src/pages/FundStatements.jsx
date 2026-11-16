@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ArrowLeft, ChevronRight, FileText, History } from 'lucide-react';
-import { fundStatements, formatExactAmount, periodMonths } from '../mock/data';
+import { fundStatements, formatExactAmount, periodMonths, getDailyStatements } from '../mock/data';
 import { useLang } from '../i18n';
 
 /* ─────────────────────────────────────────────────────────────
@@ -15,13 +15,25 @@ import { useLang } from '../i18n';
    ───────────────────────────────────────────────────────────── */
 
 const TABS = [
+  { key: 'daily', label: '日结单' },
   { key: 'period', label: '账户结单' },
   { key: 'trade', label: '交易确认单' },
 ];
 
 export default function FundStatements({ navigate, goBack }) {
   const { t, lang } = useLang();
-  const [tab, setTab] = useState('period');
+  const [tab, setTab] = useState(() => (getDailyStatements().length ? 'daily' : 'period'));
+  // 日结单（2026-11-13 批 3）：覆盖三类账户的每日快照。按自然月分组，行内只给日期与总额。
+  const dailyList = useMemo(() => getDailyStatements(), []);
+  const dailyGroups = useMemo(() => {
+    const map = new Map();
+    dailyList.forEach(s => {
+      const month = String(s.date).slice(0, 7);
+      if (!map.has(month)) map.set(month, []);
+      map.get(month).push(s);
+    });
+    return Array.from(map.entries());
+  }, [dailyList]);
 
   // 账户结单列表：「上个月」起往前 24 个自然月——当月还没过完，出了也立刻过期。
   // 24 个月演示「结单持续增长」的组织方式：按年分白卡组（标注 2026-11-13 需要日期筛选，
@@ -81,13 +93,16 @@ export default function FundStatements({ navigate, goBack }) {
           <button className="back-btn" onClick={() => goBack('#funds')} aria-label={t('返回')}>
             <ArrowLeft size={20} />
           </button>
-          <h1>{t('结单')}</h1>
-          {/* 页面级任务出口放 header：月结单持续增加，列表底部入口会被推到很深 */}
-          <div className="page-header-actions">
-            <button className="btn-icon" aria-label={t('导出记录')} onClick={() => navigate('#fund-statement-exports')}>
-              <History size={19} />
-            </button>
-          </div>
+          <h1>{t('单据中心')}</h1>
+          {/* 页面级任务出口放 header：月结单持续增加，列表底部入口会被推到很深。
+              日结单页签不显示——导出记录是基金结单的申请/生成/下载台账，与日结单无关。 */}
+          {tab !== 'daily' && (
+            <div className="page-header-actions">
+              <button className="btn-icon" aria-label={t('导出记录')} onClick={() => navigate('#fund-statement-exports')}>
+                <History size={19} />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* 与「我的交易」同形的分段控件：切的是对象类型，不是筛选参数 */}
@@ -104,6 +119,49 @@ export default function FundStatements({ navigate, goBack }) {
           ))}
         </div>
       </div>
+
+      {tab === 'daily' && (
+        <>
+          <p className="p-statements-daily-note">{t('日结单为每日资产快照；委托账户月报于每月结束后 15 个营业日内提供。')}</p>
+          {dailyGroups.length === 0 ? (
+          <div className="p-statements-empty">
+            <FileText size={22} />
+            <p className="p-statements-empty-title">{t('暂无日结单')}</p>
+            <p className="p-statements-empty-hint">{t('每个交易日结束后会生成一份资产快照')}</p>
+          </div>
+        ) : (
+          dailyGroups.map(([month, rows]) => (
+            <section key={month} className="p-statements-group">
+              <h2 className="p-statements-year">{month}</h2>
+              <div className="p-statements-card">
+                {rows.map(s => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    className="p-statements-row"
+                    onClick={() => navigate(`#daily-statement/${s.id}`)}
+                  >
+                    <span className="p-statements-main">
+                      <span className="p-statements-fund">{String(s.date).slice(5)}</span>
+                      <span className="p-statements-line2">
+                        <span className="p-statements-when">
+                          <span className="p-statements-kind">{t('总资产')}</span>
+                        </span>
+                        <span className="p-statements-amount">
+                          <em>HKD</em>
+                          <b>{formatExactAmount(s.totalHKD)}</b>
+                        </span>
+                      </span>
+                    </span>
+                    <ChevronRight size={18} className="p-statements-go" />
+                  </button>
+                ))}
+              </div>
+            </section>
+          ))
+        )}
+        </>
+      )}
 
       {tab === 'period' && (
         monthGroups.map(([year, rows]) => (

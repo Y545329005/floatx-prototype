@@ -406,6 +406,13 @@ function RequestDrawer({ kind, req, onClose, onApprove, onReject, onRequestEvide
           <div className="card-title">申请信息</div>
           <div className="kyc-review-row"><span>金额</span><strong className="admin-fund-amount">{formatExactAmount(req.amount)}</strong></div>
           <div className="kyc-review-row"><span>币种</span><strong>{req.currency}</strong></div>
+          {/* 2026-11-13：资金去向（A 现金账户 / B 委托账户）。核销按去向入账，财务必须看得到 */}
+          {kind === 'deposit' && (
+            <div className="kyc-review-row">
+              <span>资金去向</span>
+              <strong>{req.accountType === 'mandate' ? `委托账户 ${req.mandateAccountNo || req.mandateAccountId}` : '现金账户'}</strong>
+            </div>
+          )}
           {/* 2026-10-29：参考代码是财务把银行入账对上账户的最强键（用户已写进汇款备注），放在金额之后紧邻核销动作 */}
           {kind === 'deposit' && req.refCode && <div className="kyc-review-row"><span>参考代码</span><strong className="date-iso">{req.refCode}</strong></div>}
           {/* 2026-11-09：核销即卡资料核对点——到账付款人姓名必须与本行实名一致（银行入账记录，伪造不了） */}

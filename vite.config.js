@@ -17,8 +17,11 @@ export default defineConfig({
       },
       output: {
         // 正式法务文本（约 76KB）单独成块：不挤占 router 主块（2026-10-22）
+        // 数据层（2026-11-13）：委托账户体系把 data.js 撑过 500KB 阈值，拆独立块——
+        // 它被所有懒加载页面共享，单独成块既消警告又提高缓存命中（改页面不必重下整包）。
         manualChunks(id) {
           if (id.includes('mock/legalTexts')) return 'legal';
+          if (id.includes('mock/data')) return 'data';
         },
       },
     },

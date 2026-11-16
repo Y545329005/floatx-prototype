@@ -10,6 +10,7 @@ import {
   termsState, bumpTermsVersion,
   agreements, updateAgreementSections,
   faqItems, addFaqItem, updateFaqItem, removeFaqItem,
+  mandateConfig, updateMandateConfig,
 } from '../mock/data';
 
 // 配置项目录（清单行）：key / 名称 / 图标 / 说明 / 当前值摘要（实时派生）
@@ -24,6 +25,9 @@ const CONFIG_ITEMS = [
   { key: 'faq', name: '帮助 FAQ', icon: HelpCircle, desc: '用户侧帮助中心的常见问题（简/繁/英三语）', summary: () => `${faqItems.length} 条` },
   { key: 'accounts', name: '平台资金账户', icon: Landmark, desc: '充值入金收款 + 提现出金打款账户', summary: () => `收款+打款 · ${platformAccounts.deposit.bank}`, sensitive: true },
   { key: 'brand', name: '平台品牌信息', icon: Building2, desc: '公司名 / 牌照 / 版本号（About / 登录页 / 法务文本）', summary: () => `${platformBrand.nameZh} · ${platformBrand.licenseType} · v${platformBrand.appVersion}`, sensitive: true },
+  // 委托账户（2026-11-13 批 1a）：协议里所有 [ ] 空值、入口卡文案、成交通知邮件开关都收在这里。
+  // 合规未填时值为 0，业务上等于「待填」，不当作免费——改配置不发版。
+  { key: 'mandate', name: '委托账户', icon: FileText, desc: '入口卡文案 / 协议费率与限制默认值 / 成交通知邮件开关', summary: () => `管理费 ${mandateConfig.fees.managementPct}% · 表现费 ${mandateConfig.fees.performancePct}% · 邮件${mandateConfig.adviceEmail ? '开' : '关'}`, sensitive: true },
 ];
 
 export default function AdminConfig({ admin }) {
@@ -60,6 +64,9 @@ export default function AdminConfig({ admin }) {
   const [accountErr, setAccountErr] = useState('');
   const [brand, setBrand] = useState({ ...platformBrand });
   const [brandErr, setBrandErr] = useState('');
+  // 委托账户配置（2026-11-13）：深拷贝，抽屉里改到一半取消不影响全局配置
+  const [mandate, setMandateState] = useState(() => JSON.parse(JSON.stringify(mandateConfig)));
+  const [mandateErr, setMandateErr] = useState('');
 
   // ---- FAQ 抽屉（即时写回型：新增/编辑/删除即保存，"完成"关闭） ----
   const EMPTY_FAQ_FORM = { qCN: '', qHK: '', qEN: '', aCN: '', aHK: '', aEN: '' };
@@ -105,6 +112,7 @@ export default function AdminConfig({ admin }) {
     if (key === 'contact') setContact({ ...businessContact });
     if (key === 'accounts') setAccounts({ deposit: { ...platformAccounts.deposit }, depositUsd: { ...(platformAccounts.depositUsd || {}) }, withdraw: { ...platformAccounts.withdraw }, withdrawUsd: { ...(platformAccounts.withdrawUsd || {}) } });
     if (key === 'brand') setBrand({ ...platformBrand });
+    if (key === 'mandate') { setMandateState(JSON.parse(JSON.stringify(mandateConfig))); setMandateErr(''); }
     if (key === 'terms') { setLegalDocId('user-agreement'); setLegalLang('zh-CN'); loadLegalDraft('user-agreement', 'zh-CN'); setTermsTag(''); }
     if (key === 'faq') { setFaqEditing(null); setFaqForm({ ...EMPTY_FAQ_FORM }); }
     setPresetErr(''); setSectorErr(''); setRatesErr(''); setContactErr(''); setAccountErr(''); setBrandErr(''); setFaqErr('');
@@ -221,6 +229,39 @@ export default function AdminConfig({ admin }) {
     const res = updatePlatformBrand(brand, operator);
     if (!res.ok) { setBrandErr(res.error); return; }
     setBrandErr(''); flash('brand'); closeEdit();
+  };
+
+  // ---- 委托账户配置（2026-11-13）：费率/限制/入口卡文案/邮件开关 ----
+  const setMandateField = (path, value) => {
+    setMandateState(prev => {
+      const next = JSON.parse(JSON.stringify(prev));
+      if (path.length === 1) next[path[0]] = value;
+      if (path.length === 2) next[path[0]][path[1]] = value;
+      if (path.length === 3) next[path[0]][path[1]][path[2]] = value;
+      return next;
+    });
+  };
+  const handleMandateSave = () => {
+    const res = updateMandateConfig({
+      entryCard: mandate.entryCard,
+      fees: {
+        managementPct: Number(mandate.fees.managementPct) || 0,
+        inceptionPct: Number(mandate.fees.inceptionPct) || 0,
+        performancePct: Number(mandate.fees.performancePct) || 0,
+        hurdlePct: Number(mandate.fees.hurdlePct) || 0,
+        minimumValue: Number(mandate.fees.minimumValue) || 0,
+      },
+      limits: {
+        singleCompanyPct: Number(mandate.limits.singleCompanyPct) || 0,
+        singleIssuerPct: Number(mandate.limits.singleIssuerPct) || 0,
+        borrowingPct: Number(mandate.limits.borrowingPct) || 0,
+      },
+      minInvestment: Number(mandate.minInvestment) || 0,
+      adviceEmail: !!mandate.adviceEmail,
+      applyChannel: mandate.applyChannel,
+    }, operator);
+    if (!res.ok) { setMandateErr(res.error); return; }
+    setMandateErr(''); flash('mandate'); closeEdit();
   };
 
   // ---- 条款版本（2026-09-15 · 对齐公司实践"条款更新→重新同意"）：发布新版 → 用户端登录后弹窗重新勾选 ----
@@ -606,6 +647,118 @@ export default function AdminConfig({ admin }) {
               <button className="btn btn-primary btn-md" onClick={() => handleAccountSave('withdrawUsd')}><Save size={15} /> 保存美元打款账户</button>
             </div>
             {accountErr && <p className="form-error">{accountErr}</p>}
+          </>
+        );
+      case 'mandate':
+        return (
+          <>
+            <div className="admin-config-account-title">入口卡文案（三语，对所有 PI 客户展示）</div>
+            <p className="admin-form-hint">只做服务介绍与联系路径：不出现「立即投资」「开通即享」类行动词，不承诺收益。文案由法务定稿后在此维护，改字不发版。</p>
+            {[
+              { key: 'title', label: '标题' },
+              { key: 'desc', label: '说明' },
+              { key: 'cta', label: '按钮文案' },
+            ].map(f => (
+              f.key === 'desc' ? (
+                <div key={f.key}>
+                  {[['zh-CN', '简体'], ['zh-HK', '繁體'], ['en', 'English']].map(([lang, label]) => (
+                    <div key={lang} className="form-group">
+                      <label className="form-label">{f.label}（{label}）</label>
+                      <textarea
+                        className="form-input"
+                        rows={3}
+                        value={mandate.entryCard[f.key][lang]}
+                        onChange={e => setMandateField(['entryCard', f.key, lang], e.target.value)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div key={f.key} className="form-group">
+                  <label className="form-label">{f.label}</label>
+                  <input className="form-input" value={mandate.entryCard[f.key]['zh-CN']} onChange={e => setMandateField(['entryCard', f.key, 'zh-CN'], e.target.value)} />
+                  <div className="form-row mandate-i18n-row">
+                    <div className="form-group">
+                      <label className="form-label">繁體</label>
+                      <input className="form-input" value={mandate.entryCard[f.key]['zh-HK']} onChange={e => setMandateField(['entryCard', f.key, 'zh-HK'], e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">English</label>
+                      <input className="form-input" value={mandate.entryCard[f.key].en} onChange={e => setMandateField(['entryCard', f.key, 'en'], e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+              )
+            ))}
+
+            <div className="admin-config-account-title">协议费率默认值（新建协议时带出，单份可改）</div>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">管理费 %/年（按 NAV）</label>
+                <input className="form-input" type="number" step="any" value={mandate.fees.managementPct} onChange={e => setMandateField(['fees', 'managementPct'], e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">设立费 %（按供款额）</label>
+                <input className="form-input" type="number" step="any" value={mandate.fees.inceptionPct} onChange={e => setMandateField(['fees', 'inceptionPct'], e.target.value)} />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">表现费 %（超门槛部分）</label>
+                <input className="form-input" type="number" step="any" value={mandate.fees.performancePct} onChange={e => setMandateField(['fees', 'performancePct'], e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">门槛回报率 %/年</label>
+                <input className="form-input" type="number" step="any" value={mandate.fees.hurdlePct} onChange={e => setMandateField(['fees', 'hurdlePct'], e.target.value)} />
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">协议最低投资额（默认）</label>
+              <input className="form-input" type="number" step="any" value={mandate.fees.minimumValue} onChange={e => setMandateField(['fees', 'minimumValue'], e.target.value)} />
+            </div>
+
+            <div className="admin-config-account-title">附录 A · 投资限制默认值（0 = 不校验）</div>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">单一公司上限 % of NAV</label>
+                <input className="form-input" type="number" step="any" value={mandate.limits.singleCompanyPct} onChange={e => setMandateField(['limits', 'singleCompanyPct'], e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">单一发行人上限 %</label>
+                <input className="form-input" type="number" step="any" value={mandate.limits.singleIssuerPct} onChange={e => setMandateField(['limits', 'singleIssuerPct'], e.target.value)} />
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">借贷上限 % of 市值</label>
+              <input className="form-input" type="number" step="any" value={mandate.limits.borrowingPct} onChange={e => setMandateField(['limits', 'borrowingPct'], e.target.value)} />
+            </div>
+
+            <div className="admin-config-account-title">运营开关</div>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">开户最低投资额（0 = 不校验）</label>
+                <input className="form-input" type="number" step="any" value={mandate.minInvestment} onChange={e => setMandateField(['minInvestment'], e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">成交通知单邮件</label>
+                <select className="form-input" value={mandate.adviceEmail ? 'on' : 'off'} onChange={e => setMandateField(['adviceEmail'], e.target.value === 'on')}>
+                  <option value="on">复核生效后发送（协议 11.2 义务）</option>
+                  <option value="off">不发送（仅 APP 内可查）</option>
+                </select>
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">入口卡按钮去向</label>
+              <select className="form-input" value={mandate.applyChannel} onChange={e => setMandateField(['applyChannel'], e.target.value)}>
+                <option value="manager">联系客户经理</option>
+                <option value="service">联系客服</option>
+              </select>
+            </div>
+            <div className="admin-form-hint">所有值为 0 表示「待合规填写」，业务上不当作免费。协议逐份可覆盖这里的默认值。</div>
+            {mandateErr && <p className="form-error">{mandateErr}</p>}
+            <div className="admin-form-actions">
+              <button className="btn btn-primary btn-md" onClick={handleMandateSave}><Save size={15} /> 保存委托账户配置</button>
+            </div>
           </>
         );
       case 'brand':

@@ -39,11 +39,9 @@ const prettyReturn = (v) => String(v).replace(/(\d)-(\d)/g, '$1–$2');
 const pct = (rate) => (rate == null ? '-' : `${(rate * 100).toFixed(2)}%`);
 // 起投额是金额，走全站金额口径（2 位小数）；否则与申购页的「HKD 1,000,000.00」两种写法
 const money = (amount, currency) => `${String(currency || 'HKD').toUpperCase() === 'USD' ? 'US$' : 'HK$'} ${formatExactAmount(amount)}`;
-// 参与方：填了值的逐行展示，缺值的收成一行「详见基金文件」（逐个重复同一句占位＝空区块）
-// 2026-11-13：行政管理人/核数师已按 Term Sheet 模板提级进「关键条款一览」，此处只剩模板未列的托管人
-const PARTY_ROWS = [
-  { key: 'custodian', label: '托管人' },
-];
+// 参与方：填了值的逐行展示，缺值显示「详见基金文件」（逐个重复同一句占位＝空区块）
+// 2026-11-13：行政管理人/核数师/托管人全部按 Term Sheet 模板提级进「关键条款一览」，
+// 档案卡不再承载机构信息（同一事实不在两处落地）——托管人原先只藏在折叠里，模板要求它进「参与机构」组。
 
 // 开放日枚举 → 文案（数据层存枚举，后台将来用下拉框，不填死文本）
 const OPEN_FREQ = {
@@ -104,7 +102,7 @@ export default function FundDetail({ id, navigate, goBack }) {
   // 折叠（2026-10-28 二轮「学富途」）：条款细则默认收起，费用/锁定期/到账常显——
   // 页面 2036px 里条款卡占 600px，是「长」的主因；但费用与锁定期不能藏到页签里，只能同屏折叠。
   const [termsOpen, setTermsOpen] = useState(false);
-  // 档案卡只有一个折叠（2026-10-28 三轮）：托管人/审计师 + 平台条款收在同一个展开区里，
+  // 档案卡只有一个折叠（2026-10-28 三轮；2026-11-13 托管人迁出）：平台条款与法律文件收在展开区里，
   // 不套第二层折叠——两层折叠叠在一起，用户不知道点哪个才能找到文件。
   const [archiveOpen, setArchiveOpen] = useState(false);
   // 换基金时收起：路由只是换参数，组件实例不重建，不清的话 f1 展开的条款会带到 f3
@@ -138,8 +136,6 @@ export default function FundDetail({ id, navigate, goBack }) {
   const dealing = fund.dealing || {};
   const economics = fund.economics || {};
   const fundDocs = fund.fundDocuments || [];
-  const filledParties = PARTY_ROWS.filter(p => parties[p.key]);
-  const missingPartyLabels = PARTY_ROWS.filter(p => !parties[p.key]).map(p => t(p.label)).join(' / ');
 
   return (
     <div className="page fund-detail-page">
@@ -245,6 +241,7 @@ export default function FundDetail({ id, navigate, goBack }) {
 
         <div className="p-fund-detail-group">{t('参与机构')}</div>
         <dl className="p-fund-detail-rows">
+          <div><dt>{t('托管人')}</dt><dd className={parties.custodian ? '' : 'is-empty'}>{parties.custodian ? t(parties.custodian) : t('详见基金文件')}</dd></div>
           <div><dt>{t('行政管理人')}</dt><dd className={parties.administrator ? '' : 'is-empty'}>{parties.administrator ? t(parties.administrator) : t('详见基金文件')}</dd></div>
           <div><dt>{t('会计核数师')}</dt><dd className={parties.auditor ? '' : 'is-empty'}>{parties.auditor ? t(parties.auditor) : t('详见基金文件')}</dd></div>
         </dl>
@@ -331,7 +328,7 @@ export default function FundDetail({ id, navigate, goBack }) {
       </div>
 
       {/* 基金档案与文件（2026-10-28 三轮）：常显只留管理人 + 基金文件；
-          托管人/行政管理人/审计师与平台条款收进同一个折叠（一层，不套娃）。
+          托管人/行政管理人/审计师已提级进「关键条款一览」（2026-11-13），此处只剩平台条款与法律文件。
           托管/审计是尽调信息，机构客户会看，首屏不需要——富途也把这类内容收在「简况」页签里。 */}
       <div className="card p-fund-detail-card">
         <div className="p-fund-detail-cardhead">
@@ -375,18 +372,6 @@ export default function FundDetail({ id, navigate, goBack }) {
 
         {archiveOpen && (
           <>
-            <dl className="p-fund-detail-rows">
-              {filledParties.map(p => (
-                <div key={p.key}><dt>{t(p.label)}</dt><dd>{parties[p.key]}</dd></div>
-              ))}
-              {missingPartyLabels && (
-                <div>
-                  <dt>{missingPartyLabels}</dt>
-                  <dd className="is-empty">{t('详见基金文件')}</dd>
-                </div>
-              )}
-            </dl>
-
             <p className="p-fund-detail-note">{t('平台法务文本，非本基金发售文件')}</p>
             {(fund.documents || []).map(d => (
               <button key={d.type} className="p-fund-detail-doc" onClick={() => openLegal(d.type)}>
@@ -403,7 +388,7 @@ export default function FundDetail({ id, navigate, goBack }) {
           aria-expanded={archiveOpen}
           onClick={() => setArchiveOpen(v => !v)}
         >
-          <span>{archiveOpen ? t('收起') : t('托管人、审计师与平台条款')}</span>
+          <span>{archiveOpen ? t('收起') : t('平台条款与法律文件')}</span>
           <ChevronDown size={16} className={archiveOpen ? 'is-open' : ''} />
         </button>
 
