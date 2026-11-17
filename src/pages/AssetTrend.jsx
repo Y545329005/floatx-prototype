@@ -47,7 +47,7 @@ export default function AssetTrend({ navigate, goBack }) {
 
       <div className="card">
         <div className="range-card-head">
-          <h3 className="card-title">{t('资产趋势')}</h3>
+          <h2 className="card-title">{t('资产趋势')}</h2>
           <div className="range-tabs">
             {RANGES.map(r => (
               <button key={r.key} className={range === r.key ? 'active' : ''} onClick={() => setRange(r.key)}>

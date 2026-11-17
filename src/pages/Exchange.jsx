@@ -42,7 +42,7 @@ export default function Exchange({ navigate, goBack }) {
       </div>
 
       <div className="card">
-        <h3 className="card-title">{t('选择币种对')}</h3>
+        <h2 className="card-title">{t('选择币种对')}</h2>
         <div className="chips">
           {pairs.map(p => (
             <button key={p} className={`chip ${pair === p ? 'active' : ''}`} onClick={() => { setPair(p); setAmount(''); }}>

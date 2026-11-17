@@ -34,8 +34,10 @@ function OnboardingGate({ onAgreed, onDecline }) {
   return (
     <div className="terms-gate-mask">
       <div className="terms-gate-card" role="dialog" aria-modal="true" aria-label={t('服务协议与风险披露')}>
-        <div className="terms-gate-icon"><ShieldCheck size={22} /></div>
-        <h3>{t('服务协议与风险披露')}</h3>
+        <div className="terms-gate-head">
+          <div className="terms-gate-icon"><ShieldCheck size={18} /></div>
+          <h2>{t('服务协议与风险披露')}</h2>
+        </div>
         <p className="terms-gate-desc">
           {t('欢迎使用本平台服务。完成身份认证后，请查阅并同意下列协议，以建立服务关系：')}
         </p>

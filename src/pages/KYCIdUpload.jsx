@@ -379,7 +379,7 @@ const [backFile, setBackFile] = useState(null);
    )}
 
    {ekycState === EKYC_STATE.PASSED && ekycResult && (
-     <div style={{ padding: 'var(--space-3)', background: 'var(--success-light)', borderRadius: 'var(--radius-md)', border: '1px solid var(--success-border)' }}>
+     <div className="kyc-notice-ok">
        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
          <Check size={16} style={{ color: 'var(--success)' }} />
          <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--success)' }}>{t('核验通过')}</span>
@@ -392,7 +392,7 @@ const [backFile, setBackFile] = useState(null);
    )}
 
    {ekycState === EKYC_STATE.FAILED && ekycResult && (
-     <div style={{ padding: 'var(--space-3)', background: 'var(--danger-light)', borderRadius: 'var(--radius-md)', border: '1px solid var(--danger-border)' }}>
+     <div className="kyc-notice-risk">
        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
          <AlertCircle size={16} style={{ color: 'var(--danger)' }} />
          <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--danger)' }}>{t('核验未通过')}</span>

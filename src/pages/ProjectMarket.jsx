@@ -33,7 +33,7 @@ export default function ProjectMarket({ navigate, embed = false, goBack }) {
           <span className={`card-status-badge ${p.status}`}>{t(projectStatusLabels[p.status])}</span>
         </div>
         <div className="project-card-body">
-          <h3>{p.title}</h3>
+          <h2>{p.title}</h2>
           <div className="project-card-meta-line">
             {mySub && <span className="sub-mark">{t('已提交问卷')}</span>}
             {mySub && ' · '}

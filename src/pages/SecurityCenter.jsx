@@ -157,7 +157,7 @@ export default function SecurityCenter({ navigate, goBack, setToast, setIsLogged
 
       {/* GA */}
       <div className="card card-secondary">
-        <h3 className="card-title">{t('谷歌验证器（GA）')}</h3>
+        <h2 className="card-title">{t('谷歌验证器（GA）')}</h2>
         <div className="settings-status-row">
           <div className={`settings-status-icon ${gaBound ? 'verified' : ''}`}>
             <KeyRound size={18} />
@@ -174,7 +174,7 @@ export default function SecurityCenter({ navigate, goBack, setToast, setIsLogged
 
       {/* 通行密钥 */}
       <div className="card card-secondary">
-        <h3 className="card-title">{t('通行密钥（Passkey）')} <span className="sc-count">{passkeys.length}/3</span></h3>
+        <h2 className="card-title">{t('通行密钥（Passkey）')} <span className="sc-count">{passkeys.length}/3</span></h2>
         {passkeys.map(pk => (
           <div key={pk.id} className="settings-status-row">
             <div className="settings-status-icon verified"><Fingerprint size={18} /></div>
@@ -194,7 +194,7 @@ export default function SecurityCenter({ navigate, goBack, setToast, setIsLogged
 
       {/* 登录邮箱（INV-2：找回密码/安全通知主通道；换绑为敏感操作，收编自 Settings 2026-09-23） */}
       <div className="card card-secondary">
-        <h3 className="card-title">{t('登录邮箱')}</h3>
+        <h2 className="card-title">{t('登录邮箱')}</h2>
         <div className="settings-status-row">
           <div className="settings-status-icon verified"><Mail size={18} /></div>
           <div className="settings-status-body">
@@ -209,7 +209,7 @@ export default function SecurityCenter({ navigate, goBack, setToast, setIsLogged
 
       {/* 修改密码 */}
       <div className="card card-secondary">
-        <h3 className="card-title">{t('登录密码')}</h3>
+        <h2 className="card-title">{t('登录密码')}</h2>
         <div className="settings-status-row">
           <div className="settings-status-icon verified"><Lock size={18} /></div>
           <div className="settings-status-body">
@@ -224,7 +224,7 @@ export default function SecurityCenter({ navigate, goBack, setToast, setIsLogged
 
       {/* 安全设置历史（X-4） */}
       <div className="card card-secondary">
-        <h3 className="card-title"><History size={15} /> {t('安全设置历史')}</h3>
+        <h2 className="card-title"><History size={15} /> {t('安全设置历史')}</h2>
         {sec.history.length === 0
           ? <p className="text-muted text-sm">{t('暂无安全项变动记录')}</p>
           : sec.history.map((h, i) => (
@@ -241,7 +241,7 @@ export default function SecurityCenter({ navigate, goBack, setToast, setIsLogged
 
       {/* 删除账户（Apple 5.1.1(v)：支持注册即须支持 app 内删除；危险区置底） */}
       <div className="card card-secondary">
-        <h3 className="card-title">{t('删除账户')}</h3>
+        <h2 className="card-title">{t('删除账户')}</h2>
         <div className="settings-status-row">
           <div className="settings-status-icon"><Trash2 size={18} /></div>
           <div className="settings-status-body">

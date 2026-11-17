@@ -208,13 +208,13 @@ export default function EventDetail({ id, navigate, goBack, setToast }) {
       </div>
 
       <div className="card card-secondary">
-        <h3 className="card-title">{t('活动介绍')}</h3>
+        <h2 className="card-title">{t('活动介绍')}</h2>
         <p className="text-body">{t(event.description)}</p>
       </div>
 
       {event.agenda && event.agenda.length > 0 && (
         <div className="card card-secondary">
-          <h3 className="card-title">{t('活动议程')}</h3>
+          <h2 className="card-title">{t('活动议程')}</h2>
           <div className="agenda-list">
             {event.agenda.map((a, i) => (
               <div key={i} className="agenda-item">
@@ -228,7 +228,7 @@ export default function EventDetail({ id, navigate, goBack, setToast }) {
 
       {event.highlights && event.highlights.length > 0 && (
         <div className="card card-secondary">
-          <h3 className="card-title">{t('活动看点')}</h3>
+          <h2 className="card-title">{t('活动看点')}</h2>
           <ul className="highlight-list">
             {event.highlights.map((h, i) => (
               <li key={i} className="highlight-item">
@@ -241,7 +241,7 @@ export default function EventDetail({ id, navigate, goBack, setToast }) {
       )}
 
       <div className="card card-secondary">
-        <h3 className="card-title">{t('主讲人')}</h3>
+        <h2 className="card-title">{t('主讲人')}</h2>
         <div className="speaker-card">
           <div className="speaker-avatar">{event.speaker[0]}</div>
           <div className="speaker-info">

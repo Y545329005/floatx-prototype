@@ -48,8 +48,7 @@ export default function KYCSubmitted({ navigate, goBack }) {
               {primaryAction.label}
             </button>
             <button
-              className="kyc-btn kyc-btn-secondary"
-              style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+              className="kyc-btn kyc-btn-secondary kyc-btn-ghost"
               onClick={() => navigate('profile')}
             >
               {t('返回我的')}
@@ -78,8 +77,7 @@ export default function KYCSubmitted({ navigate, goBack }) {
               <RefreshCcw size={16} /> {t('重新提交认证')}
             </button>
             <button
-              className="kyc-btn kyc-btn-secondary"
-              style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+              className="kyc-btn kyc-btn-secondary kyc-btn-ghost"
               onClick={() => navigate('profile')}
             >
               {t('返回我的')}
@@ -109,8 +107,7 @@ export default function KYCSubmitted({ navigate, goBack }) {
               <RefreshCcw size={16} /> {t('补充材料并重新提交')}
             </button>
             <button
-              className="kyc-btn kyc-btn-secondary"
-              style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+              className="kyc-btn kyc-btn-secondary kyc-btn-ghost"
               onClick={() => navigate('profile')}
             >
               {t('返回我的')}
@@ -178,8 +175,7 @@ export default function KYCSubmitted({ navigate, goBack }) {
             </button>
           )}
           <button
-            className="kyc-btn kyc-btn-secondary"
-            style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+            className="kyc-btn kyc-btn-secondary kyc-btn-ghost"
             onClick={() => navigate('profile')}
           >
             {t('返回我的')}

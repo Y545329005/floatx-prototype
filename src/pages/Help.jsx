@@ -26,7 +26,7 @@ export default function Help({ navigate, goBack }) {
       </div>
 
       <div className="card card-secondary">
-        <h3 className="card-title">{t('常见问题')}</h3>
+        <h2 className="card-title">{t('常见问题')}</h2>
         <div className="faq-list">
           {faqItems.map((item, i) => (
             <div key={i} className={`faq-item ${openIdx === i ? 'open' : ''}`}>

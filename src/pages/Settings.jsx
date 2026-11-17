@@ -91,7 +91,7 @@ export default function Settings({ navigate, goBack }) {
       </div>
 
       <div className="card card-secondary">
-        <h3 className="card-title">{t('个人信息')}</h3>
+        <h2 className="card-title">{t('个人信息')}</h2>
         <div className="detail-stat-row">
           <div className="detail-stat">
             <span className="detail-stat-label">{t('姓名')}</span>
@@ -108,7 +108,7 @@ export default function Settings({ navigate, goBack }) {
 
       {piCard && (
         <div className="card card-secondary">
-          <h3 className="card-title">{t('PI 认证')}</h3>
+          <h2 className="card-title">{t('PI 认证')}</h2>
           <div className={`settings-status-row ${piCard.state}`}>
             <div className={`settings-status-icon ${piCard.state}`}>
               <PiCardIcon size={18} />
@@ -143,7 +143,7 @@ export default function Settings({ navigate, goBack }) {
       )}
 
       <div className="card card-secondary">
-        <h3 className="card-title">{t('登录安全')}</h3>
+        <h2 className="card-title">{t('登录安全')}</h2>
         <div className="menu-list settings-security">
           <div className="menu-item" {...clickable(() => navigate('security-center'))}>
             <Shield size={18} />
@@ -168,7 +168,7 @@ export default function Settings({ navigate, goBack }) {
       </div>
 
       <div className="card card-secondary">
-        <h3 className="card-title">{t('语言设置')}</h3>
+        <h2 className="card-title">{t('语言设置')}</h2>
         <div className="menu-list settings-security">
           {LANGUAGES.map(l => (
             <div key={l.code} className={`menu-item ${lang === l.code ? 'lang-active' : ''}`} {...clickable(() => setLang(l.code))}>
@@ -186,7 +186,7 @@ export default function Settings({ navigate, goBack }) {
           评审看到的设置页是产品语言；打开开关才出现模拟推进按钮、验证码提示与重置入口。
           重置会把快照整个清掉，演示模式也随之回到种子默认（关）。 */}
       <div className="card card-secondary">
-        <h3 className="card-title">{t('演示维护')}</h3>
+        <h2 className="card-title">{t('演示维护')}</h2>
         <div className="settings-demo-row">
           <div className="settings-demo-text">
             <div className="list-item-title">{t('演示模式')}</div>

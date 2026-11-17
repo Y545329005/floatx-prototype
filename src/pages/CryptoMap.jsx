@@ -36,7 +36,7 @@ export default function CryptoMap({ goBack }) {
       </CryptoCallout>
 
       <section className="card crypto-map-card">
-        <h3 className="card-title">{t('一、托管能力现状')}</h3>
+        <h2 className="card-title">{t('一、托管能力现状')}</h2>
         <div className="crypto-map-caps">
           {cryptoCapabilities.map(c => (
             <div key={c.key} className="crypto-map-cap">
@@ -52,7 +52,7 @@ export default function CryptoMap({ goBack }) {
       </section>
 
       <section className="card crypto-map-card">
-        <h3 className="card-title">{t('二、五个待确认假设')}</h3>
+        <h2 className="card-title">{t('二、五个待确认假设')}</h2>
         <p className="text-muted text-sm crypto-map-intro">
           {t('页面不直接读托管字段，只读假设后的结果；答案变化时改一处适配层，不改页面。')}
         </p>
@@ -67,7 +67,7 @@ export default function CryptoMap({ goBack }) {
       </section>
 
       <section className="card crypto-map-card">
-        <h3 className="card-title">{t('三、状态映射')}</h3>
+        <h2 className="card-title">{t('三、状态映射')}</h2>
         <p className="text-muted text-sm crypto-map-intro">
           {t('左列是我们页面上展示的状态，右列需要托管给出对应状态或原因码。')}
         </p>
@@ -96,7 +96,7 @@ export default function CryptoMap({ goBack }) {
       </section>
 
       <section className="card crypto-map-card">
-        <h3 className="card-title">{t('四、我们要的接口契约')}</h3>
+        <h2 className="card-title">{t('四、我们要的接口契约')}</h2>
         <div className="crypto-map-contract">
           {cryptoApiContract.map(c => (
             <div key={c.method} className="crypto-map-method">
@@ -112,7 +112,7 @@ export default function CryptoMap({ goBack }) {
       </section>
 
       <section className="card crypto-map-card">
-        <h3 className="card-title">{t('五、本次会话的调用记录')}</h3>
+        <h2 className="card-title">{t('五、本次会话的调用记录')}</h2>
         {calls.length === 0 && <p className="text-muted text-sm">{t('还没有调用记录。返回上一页操作后回来查看。')}</p>}
         {calls.map((c, i) => (
           <div key={`${c.at}-${i}`} className="crypto-dev-call">

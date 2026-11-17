@@ -235,7 +235,7 @@ export default function AssetOverview({ navigate, goBack, embed = false }) {
           单一「基金持仓」列表；委托内容归 #mandate-detail 专属页。 */}
       <div className="card">
         <div className="card-header">
-          <h3 className="card-title no-margin">{t('基金持仓')}</h3>
+          <h2 className="card-title no-margin">{t('基金持仓')}</h2>
         </div>
         {holdingCount === 0 && (
           <div className="empty-state">

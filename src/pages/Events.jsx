@@ -62,7 +62,7 @@ export default function Events({ navigate, setToast, isLoggedIn = false, embed =
           )}
         </div>
         <div className="event-card-body-lg">
-          <h3>{t(e.title)}</h3>
+          <h2>{t(e.title)}</h2>
           <div className="project-card-meta-line">
             {isEventRegistered(e.id) && <><span className="sub-mark">{t('已报名')}</span> · </>}
             {t(heroSector)}{proj && proj.stage ? ` · ${t(proj.stage)}` : ''}

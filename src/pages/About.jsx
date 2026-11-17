@@ -37,7 +37,7 @@ export default function About({ navigate, goBack, setToast }) {
       </div>
 
       <div className="card card-secondary">
-        <h3 className="card-title">{t('公司政策文件')}</h3>
+        <h2 className="card-title">{t('公司政策文件')}</h2>
         {companyPolicies.map(p => {
           const agreementId = POLICY_AGREEMENT_MAP[p.id];
           return (

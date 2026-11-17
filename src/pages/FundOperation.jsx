@@ -269,7 +269,7 @@ export default function FundOperation({ mode, navigate, goBack }) {
           const min = getMinWithdraw(activeCurrency);
           return (
             <div className="card fund-operation-card">
-              <h3 className="card-title">{t('费用与到账')}</h3>
+              <h2 className="card-title">{t('费用与到账')}</h2>
               <div className="kyc-review-row"><span>{t('出金费率')}</span><strong>{quote.rate}% · {quote.isCross ? t('跨境汇款') : t('本地出金')}</strong></div>
               <div className="kyc-review-row"><span>{t('手续费')}</span><strong>{cur.symbol}{formatExactAmount(quote.fee)}</strong></div>
               <div className="kyc-review-row"><span>{t('预计到账')}</span><strong>{cur.symbol}{formatExactAmount(quote.net > 0 ? quote.net : 0)}</strong></div>

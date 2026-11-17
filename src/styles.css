@@ -33,7 +33,7 @@
   --bg-card:       #ffffff;
   --text:          #18181B;  /* Zinc-900 */
   --text-secondary: #51525C; /* kit 辅助文字 */
-  --text-tertiary:  #A0A0AB; /* Zinc-400（placeholder 同源） */
+  --text-tertiary:  #66666E; /* Zinc 深档：白/浅灰/tint 底 ≥4.5:1（2026-11-17 audit，原 #A0A0AB 仅 2.4~2.6:1） */
   --border:        #D1D1D6;  /* kit 输入框强边框 */
   --border-light:  #E4E4E7;  /* Zinc-200 弱边框 */
   --primary:       #3660FF;  /* Primary 按钮/focus/链接（白字对比度 4.9:1，AA 过线） */
@@ -42,6 +42,7 @@
   --accent-light:  #F4EBFF;  /* Untitled UI purple-50 浅紫底 */
   --accent-hover:  #6941C6;  /* purple-700 */
   --success:       #16A34A;  /* Green-600（涨/成功） */
+  --success-strong: #15803D; /* Green-700：白字标签/徽章底（≥4.5:1，2026-11-17 audit） */
   --danger:        #DC2626;  /* Red-600 */
   --warning:       #EA580C;  /* Orange-600 */
   --warning-text:  #C2410C;  /* Orange-700：白底小字号 AA 达标档 */
@@ -215,8 +216,9 @@ input, select, textarea {
   flex-shrink: 0;
   color: var(--primary);
   border-radius: 50%;
-  width: 36px;
-  height: 36px;
+  width: 44px;   /* 44px 触控目标；负外边距保持 36px 视觉占位（2026-11-17 audit） */
+  height: 44px;
+  margin: -4px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -406,8 +408,8 @@ input, select, textarea {
   min-width: 0;
 }
 .search-icon-btn {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -437,7 +439,7 @@ input, select, textarea {
   height: 40px;
   padding: 0 12px;
   background: var(--primary-light);
-  color: var(--primary);
+  color: var(--primary-hover); /* 浅主色底上的文字用深端（#3660FF 仅 4.4:1，2026-11-17 audit） */
   border: none;
   border-radius: var(--radius-xl);
   font-size: var(--text-sm);
@@ -561,7 +563,7 @@ input, select, textarea {
   transition: color 0.2s;
 }
 .segmented-control button.active {
-  color: var(--primary);
+  color: var(--primary-hover); /* 灰底上 #3660FF 仅 4.47:1（2026-11-17 audit） */
 }
 .segmented-control button.active::after {
   content: '';
@@ -846,7 +848,7 @@ input, select, textarea {
   padding: 4px 10px;
   border-radius: var(--radius-xl);
   background: var(--primary-light);
-  color: var(--primary);
+  color: var(--primary-hover); /* 浅主色底用深端文字（2026-11-17 audit） */
   font-size: var(--text-sm);
   font-weight: 600;
   flex-shrink: 0;
@@ -855,8 +857,8 @@ input, select, textarea {
 .pi-badge.pi-muted { background: var(--border-light); color: var(--text-tertiary); }
 .pi-badge.clickable { cursor: pointer; }
 /* PI 审核中 / 未通过·已过期（2026-09-20 · 对称 kycMeta 全状态 badge）：配色对齐 KYC 同语义档 */
-.pi-badge.pi-pending { background: var(--warning-light); color: var(--warning); }
-.pi-badge.pi-error { background: var(--danger-light); color: var(--danger); }
+.pi-badge.pi-pending { background: var(--warning-light); color: var(--warning-text); }
+.pi-badge.pi-error { background: var(--danger-light); color: var(--compliance); }
 
 /* KYC 状态 badge（2026-09-11 · Profile 页 KYC 认证状态直达展示；点击引导对应 KYC 页） */
 .kyc-badge {
@@ -869,9 +871,9 @@ input, select, textarea {
   font-weight: 600;
   flex-shrink: 0;
 }
-.kyc-badge.kyc-approved { background: var(--success-light); color: var(--success); }
-.kyc-badge.kyc-pending { background: var(--warning-light); color: var(--warning); }
-.kyc-badge.kyc-error { background: var(--danger-light); color: var(--danger); }
+.kyc-badge.kyc-approved { background: var(--success-light); color: var(--success-text); }
+.kyc-badge.kyc-pending { background: var(--warning-light); color: var(--warning-text); }
+.kyc-badge.kyc-error { background: var(--danger-light); color: var(--compliance); }
 .kyc-badge.kyc-muted { background: var(--border-light); color: var(--text-tertiary); }
 .kyc-badge.clickable { cursor: pointer; }
 
@@ -915,7 +917,8 @@ input, select, textarea {
 .asset-hero-eye {
   display: inline-flex;
   align-items: center;
-  padding: 0;
+  padding: 5px;    /* 命中区 ≥24px，负外边距保持视觉占位（2026-11-17 audit：裸图标仅 14×14） */
+  margin: -5px;
   border: none;
   background: none;
   color: var(--text-tertiary);
@@ -965,7 +968,7 @@ input, select, textarea {
   font-style: normal;
   font-size: var(--text-sm);
   font-weight: 400;
-  opacity: 0.85;
+  /* opacity: 0.85 已移除——压掉 --success-text 后仅 4.3:1（2026-11-17 audit） */
 }
 
 .asset-hero-change .up { color: var(--success-text); }
@@ -1298,7 +1301,7 @@ input, select, textarea {
 }
 
 .card-status-badge.raising {
-  background: var(--success);
+  background: var(--success-strong); /* 白字 ≥4.5:1（2026-11-17 audit） */
 }
 
 .card-status-badge.upcoming {
@@ -1323,7 +1326,7 @@ input, select, textarea {
   padding: var(--space-4);
 }
 
-.project-card h3 {
+.project-card h2 {
   font-size: var(--text-xl);
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -1438,7 +1441,7 @@ input, select, textarea {
 }
 
 .event-date-pill-live {
-  background: var(--success);
+  background: var(--success-strong); /* 白字 ≥4.5:1（2026-11-17 audit） */
   color: #fff;
   font-weight: 700;
   letter-spacing: 0.5px;
@@ -1446,6 +1449,14 @@ input, select, textarea {
 
 .event-card-body-lg {
   padding: var(--space-3);
+}
+
+/* 卡片标题 h2（2026-11-17 audit 修标题跳级；原为无样式的 h3 走 UA 默认） */
+.event-card-body-lg h2 {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0 0 var(--space-2);
 }
 
 .event-card-body-lg .event-meta {
@@ -4398,8 +4409,7 @@ input, select, textarea {
 }
 
 .bank-currency-tabs button.active .segment-count {
-  color: var(--primary);
-  opacity: 0.75;
+  color: var(--primary-hover); /* opacity 0.75 压到 3.0:1，改深端全不透明（2026-11-17 audit） */
 }
 
 /* 该币种有「等首充加白」的卡：小圆点提示，避免卡藏在别的页签里被漏掉（图标尺寸，非间距 token） */
@@ -4499,8 +4509,8 @@ input, select, textarea {
   flex-shrink: 0;
 }
 
-.bank-status-chip.is-ok { background: var(--success-light); color: var(--success); }
-.bank-status-chip.is-warn { background: var(--warning-light); color: var(--warning); }
+.bank-status-chip.is-ok { background: var(--success-light); color: var(--success-text); }
+.bank-status-chip.is-warn { background: var(--warning-light); color: var(--warning-text); }
 .bank-status-chip.is-off { background: var(--border); color: var(--text-secondary); }
 .bank-status-chip.is-bad { background: var(--danger-light); color: var(--compliance); }
 
@@ -5775,14 +5785,14 @@ input, select, textarea {
 }
 
 /* 基金风险等级 */
-.tag-risk-low { background: var(--success); color: #fff; }
-.tag-risk-mid { background: var(--warning); color: #fff; }
+.tag-risk-low { background: var(--success-strong); color: #fff; } /* 白字 ≥4.5:1（2026-11-17 audit） */
+.tag-risk-mid { background: var(--warning-light); color: var(--warning-text); } /* 白字压 Orange-600 仅 3.6:1，改浅底深字（2026-11-17 audit） */
 .tag-risk-high { background: var(--danger); color: #fff; }
 .tag-purchasable { color: var(--success); }
 
 /* tag 修饰类（白卡 / 深色卡通用） */
-.tag-currency { background: var(--primary-light); color: var(--primary); }
-.tag-success { background: var(--success); color: #fff; }
+.tag-currency { background: var(--primary-light); color: var(--primary-hover); } /* 浅主色底用深端文字（2026-11-17 audit） */
+.tag-success { background: var(--success-strong); color: #fff; } /* 白字 ≥4.5:1（2026-11-17 audit） */
 
 /* 融资阶段 tag（hero 内白字色，已半透明白底） */
 .tag-stage-b, .tag-stage-c, .tag-stage-c-plus, .tag-stage-pre-ipo {
@@ -6698,6 +6708,27 @@ input, select, textarea {
   border: 1px solid var(--primary);
 }
 
+/* 幽灵变体：次级动作弱化（2026-11-17 audit：替代 4 处重复内联覆盖） */
+.kyc-btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+/* 提示盒：成功/风险（2026-11-17 audit：替代 KYCIdUpload 重复内联） */
+.kyc-notice-ok {
+  padding: var(--space-3);
+  background: var(--success-light);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--success-border);
+}
+.kyc-notice-risk {
+  padding: var(--space-3);
+  background: var(--danger-light);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--danger-border);
+}
+
 /* 资格类型单选选项卡（2026-09-20 · token 合规化 + 默认选中资产达标） */
 .kyc-pi-type-group { display: flex; flex-direction: column; gap: var(--space-2); }
 .kyc-pi-type {
@@ -7163,7 +7194,7 @@ input, select, textarea {
 
 
 /* ---- 前台钱包：资金申请（审核制） ---- */
-.tag-warning { background: var(--warning); color: #fff; }
+.tag-warning { background: var(--warning-light); color: var(--warning-text); } /* 同上（2026-11-17 audit） */
 .tag-danger { background: var(--compliance); color: #fff; }
 /* 资金申请列表 chevron（FundRequests 行式列表右侧箭头，2026-08-19） */
 .wallet-request-chevron {
@@ -7652,18 +7683,26 @@ input, select, textarea {
   max-height: 80vh;
   overflow-y: auto;
 }
-.terms-gate-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-md);
-  background: var(--primary-light);
-  color: var(--primary);
+/* 图标与标题同行（2026-11-17 audit：原 44px 图标砖叠标题被判 icon-tile-stack 反模式） */
+.terms-gate-head {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto var(--space-3);
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
 }
-.terms-gate-card h3 {
+.terms-gate-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background: var(--primary-light);
+  color: var(--primary-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.terms-gate-card h2 {
   text-align: center;
   font-size: var(--text-lg);
   margin-bottom: var(--space-2);
@@ -7684,7 +7723,7 @@ input, select, textarea {
 .terms-gate-doc-link {
   text-align: left;
   font-size: var(--text-sm);
-  color: var(--primary);
+  color: var(--primary-hover); /* 浅主色底用深端文字（2026-11-17 audit） */
   background: var(--primary-light);
   border-radius: var(--radius-sm);
   padding: var(--space-2) var(--space-3);
@@ -7965,6 +8004,28 @@ input, select, textarea {
 }
 .rebind-divider::before, .rebind-divider::after { content: ''; flex: 1; height: 1px; background: var(--border-light); }
 .rebind-passkey { margin-bottom: var(--space-4); }
+
+/* 通行密钥行删除按钮（2026-11-17 audit：类名此前无 CSS 定义，裸图标命中区仅 15×18 < 24px） */
+.sc-remove-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  margin: -5px;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+}
+
+/* 减弱动效（2026-11-17 audit）：循环/入场动画即时完成，状态变化保留（瞬时呈现）；
+   过渡保留 0.12s 以免吞掉交互反馈（toast/sheet 的出现仍可感知）。 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.12s !important;
+    scroll-behavior: auto !important;
+  }
+}
 
 /* APP 端路由懒加载占位（与 admin-lazy-loading 同语义，2026-09-24 Phase 1） */
 .p-lazy-loading {

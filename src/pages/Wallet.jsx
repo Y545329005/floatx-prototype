@@ -120,7 +120,7 @@ export default function Wallet({ navigate, goBack }) {
 
       {/* 币种余额 */}
       <div className="card">
-        <h3 className="card-title">{t('币种余额')}</h3>
+        <h2 className="card-title">{t('币种余额')}</h2>
         <div className="wallet-balance-list">
           {CURRENCIES.map(currency => {
             const acc = wallet[currency.walletKey];

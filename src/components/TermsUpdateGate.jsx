@@ -29,8 +29,10 @@ function TermsUpdateGate({ onAgreed }) {
   return (
     <div className="terms-gate-mask">
       <div className="terms-gate-card" role="dialog" aria-modal="true" aria-label={t('条款已更新')}>
-        <div className="terms-gate-icon"><FileText size={22} /></div>
-        <h3>{t('条款已更新')}</h3>
+        <div className="terms-gate-head">
+          <div className="terms-gate-icon"><FileText size={18} /></div>
+          <h2>{t('条款已更新')}</h2>
+        </div>
         <p className="terms-gate-desc">
           {t('我们更新了平台服务相关协议（当前版本 {}），请查阅并重新确认。').replace('{}', termsState.currentVersion)}
         </p>
