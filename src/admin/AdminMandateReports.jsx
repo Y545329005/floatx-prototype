@@ -37,7 +37,7 @@ export default function AdminMandateReports({ admin, detailId, navigate }) {
   const statements = useMemo(() => getDailyStatements('u1'), [tick]);
   const selected = detailId ? dailyStatements.find(s => s.id === detailId) : null;
   const drawerOpen = !!selected;
-  const closeDrawer = () => navigate && navigate('#admin/mandate-reports');
+  const closeDrawer = () => navigate && navigate('#admin/mandate/reports');
   const drawerRef = useDrawerFocus(drawerOpen, closeDrawer);
 
   useEffect(() => {
@@ -71,9 +71,8 @@ export default function AdminMandateReports({ admin, detailId, navigate }) {
   })();
 
   return (
-    <div className="admin-page admin-page--mandate-reports">
-      <div className="admin-page-header">
-        <h1>日结单与月报</h1>
+    <div className="mandate-panel mandate-panel--reports">
+      <div className="mandate-panel-bar">
         <span className="admin-header-summary">
           日结单 {statements.length} 份 · 覆盖现金 / 委托 / 基金三类账户 ·
           日结单是每日快照，月报由它汇总
@@ -104,8 +103,8 @@ export default function AdminMandateReports({ admin, detailId, navigate }) {
               className="admin-table-row"
               role="button"
               tabIndex={0}
-              onClick={() => navigate(`#admin/mandate-reports/${s.id}`)}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`#admin/mandate-reports/${s.id}`); } }}
+              onClick={() => navigate(`#admin/mandate/reports/${s.id}`)}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`#admin/mandate/reports/${s.id}`); } }}
             >
               <span>{s.date}</span>
               <span className="col-amount">{formatExactAmount(s.totalHKD)}</span>

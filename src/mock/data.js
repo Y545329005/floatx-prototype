@@ -6040,14 +6040,14 @@ export const ADMIN_MENUS = [
   // 项目模块未来若下线，删「项目」组即可，基金不受牵连。
   { key: 'fund-products', label: '基金产品', hash: '#admin/fund-products', group: '基金' },
   { key: 'fund-trades', label: '基金交易', hash: '#admin/fund-trades', group: '基金' },
-  // 特殊申购（2026-11-13 会议 §3）：前端不放开降档，例外只在这里留痕并代下单
-  { key: 'special-subs', label: '特殊申购', hash: '#admin/special-subs', group: '基金' },
+  // 特殊申购（2026-11-13 会议 §3）：前端不放开降档，例外只在这里留痕并代下单。
+  // 2026-11-17 IA 收敛（方案 A）：异常通道与常规交易同域，降级为基金交易第 3 个页签
+  //（#admin/fund-trades/special），不再占一级菜单。
   // 2026-11-13 RO 补充会议：委托账户（B 号）独立成组——它是 9 号牌下的全权委托业务，
-  // 与基金（C 号）和资金审核（A 号）分属三本账，菜单也不合并。
-  { key: 'mandate-agreements', label: '委托协议', hash: '#admin/mandate-agreements', group: '委托' },
-  { key: 'mandate-accounts', label: '委托账户', hash: '#admin/mandate-accounts', group: '委托' },
-  { key: 'mandate-trades', label: '交易与估值', hash: '#admin/mandate-trades', group: '委托' },
-  { key: 'mandate-reports', label: '日结单与月报', hash: '#admin/mandate-reports', group: '委托' },
+  // 与基金（C 号）和资金审核（A 号）分属三本账，组不与基金/资金合并。
+  // 2026-11-17 IA 收敛（方案 A）：组内 4 菜单收成一页多签（#admin/mandate/{accounts|trades|reports}），
+  // 协议台账并入账户签（协议是开户流程第一步，不是独立管理域）——按运营任务切，不按数据表切。
+  { key: 'mandate', label: '委托业务', hash: '#admin/mandate', group: '委托' },
   { key: 'funds', label: '资金审核', hash: '#admin/funds', group: '资金' },
   { key: 'broadcast', label: '通知触达', hash: '#admin/broadcast', group: '运营' },
   { key: 'messages', label: '客户消息', hash: '#admin/messages', group: '运营' }, // 客服工作台（2026-08-24）：响应式 1v1 咨询，与广播（主动触达）相邻成对；service+super
@@ -6063,16 +6063,18 @@ export const ADMIN_MENUS = [
 export const roleMenuKeys = {
   // 超级管理员 = 最高权限：全部菜单（2026-08-15 用户确认"所有页面所有功能都有"——my-clients 原 advisor 专属，补上）；锁定不可编辑
   // 2026-10-16 口径修订：问卷记录恢复（意向收集链），其余资金/交易/投后 10 key 保持摘除
-  super: ['kyc', 'pi', 'users', 'my-clients', 'projects', 'events', 'registrations', 'subscriptions', 'fund-products', 'fund-trades', 'special-subs', 'mandate-agreements', 'mandate-accounts', 'mandate-trades', 'mandate-reports', 'funds', 'broadcast', 'messages', 'audit', 'roles', 'admins', 'config'],
-  ops: ['projects', 'events', 'registrations', 'subscriptions', 'fund-products', 'fund-trades', 'special-subs', 'mandate-accounts', 'mandate-trades', 'funds', 'broadcast', 'users', 'config'],
+  // 2026-11-17 IA 收敛：mandate-* 四 key + special-subs → mandate / fund-trades
+  super: ['kyc', 'pi', 'users', 'my-clients', 'projects', 'events', 'registrations', 'subscriptions', 'fund-products', 'fund-trades', 'mandate', 'funds', 'broadcast', 'messages', 'audit', 'roles', 'admins', 'config'],
+  ops: ['projects', 'events', 'registrations', 'subscriptions', 'fund-products', 'fund-trades', 'mandate', 'funds', 'broadcast', 'users', 'config'],
   // 合规角色：KYC审核 + PI认证 + 用户管理 + 问卷记录 + 审计日志（交易监控类 7 key 随资金流下线摘除）
   // 2026-11-13：委托协议归合规（协议档案由合规登记、super 复核）+ 委托账户授权复核（Maker-Checker 的 Checker）
-  compliance: ['kyc', 'pi', 'users', 'subscriptions', 'special-subs', 'mandate-agreements', 'mandate-accounts', 'mandate-trades', 'audit'],
+  // 2026-11-17：委托域收成一页（mandate），协议台账在账户签内，合规仍管登记与授权复核
+  compliance: ['kyc', 'pi', 'users', 'subscriptions', 'mandate', 'audit'],
   // 客服：看问卷 + 客户账户 + 通知触达（主动）+ 客户消息（响应式 1v1 咨询，2026-08-24）；不跟进线索（线索是顾问的职责）
   service: ['subscriptions', 'users', 'broadcast', 'messages'],
   // 财务专员：资金核销（充值到账/提现打款/换汇确认）+ 基金交易确认（2026-10-28 一期闭环恢复）
-  // 2026-11-13：委托交易与估值、日结单与月报归财务（估值留痕 + 费用扣减 + 每日快照）
-  finance: ['funds', 'fund-trades', 'mandate-trades', 'mandate-reports'],
+  // 2026-11-13：委托交易与估值、日结单与月报归财务（估值留痕 + 费用扣减 + 每日快照）→ 2026-11-17 收进 mandate 一页
+  finance: ['funds', 'fund-trades', 'mandate'],
   // 专属顾问：「我的客户」单一工作视图（2026-08-15 方案 A——顾问工作单元 = 客户而非模块，
   // 名下客户列表 + 跨模块任务聚合 + 客户详情；替代报名管理，线索跟进并入我的客户「跟进」）
   advisor: ['my-clients'],
@@ -6082,9 +6084,11 @@ export const roleMenuKeys = {
 // 2026-10-28：key 升 v3。v2 快照缺少新增的 fund-products（getRoleMenuKeys 只做 VALID 过滤、不补默认值），
 // 沿用会让新菜单在存过角色配置的浏览器里整片消失——与 v1→v2 同源事故，新菜单必须升版。
 // 2026-11-13：key 升 v6（新增 mandate-* 四菜单 + special-subs）。
+// 2026-11-17：key 升 v7（IA 收敛：mandate-* 四 key + special-subs 合并为 mandate/fund-trades——
+// 旧覆盖表只含旧 key，VALID 过滤后 mandate 消失，与 v3/v6 同源，升 key 让覆盖失效回默认值）。
 // 与 v1→v2、v2→v3、v3→v4 同源：getRoleMenuKeys 只做 VALID 过滤、不补默认值，
 // 老浏览器里存过的覆盖表不含新 key，不升版新菜单会整片消失。
-const ROLE_MENUS_KEY = 'zhifu-admin-role-menus-v6';
+const ROLE_MENUS_KEY = 'zhifu-admin-role-menus-v7';
 function getRoleMenuOverrides() {
   try {
     const raw = localStorage.getItem(ROLE_MENUS_KEY);
@@ -6327,16 +6331,16 @@ export function getMenuBadges(role, admin) {
     kyc: pendingKyc,
     pi: pendingPi + piExpiring,
     funds: pendingDeposits + pendingWithdraws,
-    // 基金交易待确认（2026-10-28）：申购/赎回单据，财务/运营的日常待办
-    'fund-trades': fundOrders.filter(o => o.status === FUND_ORDER_STATUS.PENDING).length,
-    // 委托账户待授权（2026-11-13）：已开户但未复核授权 → APP 不可见，属合规/运营的待办；
-    // 并入提取待办（2026-11-16：待审核 + 提取中都在本页抽屉审核，宿主菜单同计数）
-    'mandate-accounts': mandateAccounts.filter(a => a.status === MANDATE_ACCOUNT_STATUS.PENDING).length
+    // 基金交易待确认（2026-10-28）：申购/赎回单据，财务/运营的日常待办；
+    // 2026-11-17 IA 收敛：特殊申购待复核并入（特殊申购降级为本页第 3 个页签）
+    'fund-trades': fundOrders.filter(o => o.status === FUND_ORDER_STATUS.PENDING).length
+      + specialSubscriptionApprovals.filter(r => r.status === SPECIAL_SUB_STATUS.PENDING).length,
+    // 委托业务待办（2026-11-17 IA 收敛）：账户待授权 + 提取待办 + 交易待复核，
+    // 全在委托业务一页内处理，宿主菜单同计数（原 mandate-accounts/mandate-trades 两 key 合并）
+    mandate: mandateAccounts.filter(a => a.status === MANDATE_ACCOUNT_STATUS.PENDING).length
       + mandateWithdrawals.filter(w =>
-        w.status === MANDATE_WITHDRAWAL_STATUS.PENDING || w.status === MANDATE_WITHDRAWAL_STATUS.IN_PROGRESS).length,
-    // 委托交易待复核（2026-11-13 批 1b）
-    'mandate-trades': mandateTrades.filter(t => t.status === MANDATE_TRADE_STATUS.PENDING).length,
-    'special-subs': specialSubscriptionApprovals.filter(r => r.status === SPECIAL_SUB_STATUS.PENDING).length,
+        w.status === MANDATE_WITHDRAWAL_STATUS.PENDING || w.status === MANDATE_WITHDRAWAL_STATUS.IN_PROGRESS).length
+      + mandateTrades.filter(t => t.status === MANDATE_TRADE_STATUS.PENDING).length,
     subscriptions: pendingAlloc + pendingSignSubs,
     dividends: pendingDividends,
     exits: pendingExits,

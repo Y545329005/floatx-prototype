@@ -15,7 +15,9 @@ export function parseHash(hash) {
   const param2 = parts[2] || null;
   // param3：三级参数（后台 tabs+详情 URL 化 #admin/{module}/{tab}/{id}，资金运营 2026-08-14）
   const param3 = parts[3] || null;
-  return { path, param, param2, param3, full: h };
+  // param4：四级参数（2026-11-17 委托业务合并页更正重录：#admin/mandate/trades/new/{原交易id}）
+  const param4 = parts[4] || null;
+  return { path, param, param2, param3, param4, full: h };
 }
 
 // KYC 流程路由（已通过用户重访时重定向走，#kyc-submitted 状态页例外）

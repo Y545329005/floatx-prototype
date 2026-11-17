@@ -26,13 +26,19 @@ import {
   formatExactAmount,
 } from '../mock/data';
 import { useDrawerFocus } from './useDrawerFocus';
+import MandateAgreementLedger from './AdminMandateAgreements';
 
-// 委托账户（2026-11-13 批 1a · B 号账户 + 资金流水）
+// 委托账户（2026-11-13 批 1a · B 号账户 + 资金流水；2026-11-17 IA 收敛为「委托业务」账户签）
 //
 // 三条约束来自「钱与授权都不能靠 UI 守」：
 //   ① 开户闸门在 data.js：协议未登记 / 未生效 / 缺 CE 号一律失败。本页只把失败原因显示出来。
 //   ② 授权是 Maker-Checker：发起人与复核人不得同一人，数据层拒绝，UI 只是提前禁用。
+//      2026-11-17：常驻表单卡改「状态行 + 变更授权折叠」——复核是动作不是常驻信息，
+//      平时只看状态，点「变更授权」才展开表单。
 //   ③ 余额不落库：列表与抽屉里的余额都由 cashLedger 现算，页面没有任何地方能改余额。
+//
+// 协议台账（MandateAgreementLedger）嵌在本签顶部：协议是开户流程第一步，
+// 开户闸门失败时指路上方台账，不再跳独立菜单。
 
 const STATUS_META = {
   [MANDATE_ACCOUNT_STATUS.PENDING]: { label: '待授权', cls: 'admin-status-pending' },
@@ -58,6 +64,7 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
   const [ledgerForm, setLedgerForm] = useState(emptyLedgerForm);
   const [reviewer, setReviewer] = useState('');
   const [visible, setVisible] = useState(true);
+  const [authEditOpen, setAuthEditOpen] = useState(false);
   const [error, setError] = useState('');
   const [ledgerMsg, setLedgerMsg] = useState('');
   const [authForm, setAuthForm] = useState({ scope: ['transfer'], expiresAt: '', fileRef: '' });
@@ -70,7 +77,7 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
   const selected = detailId && !isNew ? mandateAccounts.find(a => a.id === detailId) : null;
   const drawerOpen = isNew || !!selected;
   const investors = useMemo(() => getInvestorUsers(), [tick]);
-  const closeDrawer = () => navigate && navigate('#admin/mandate-accounts');
+  const closeDrawer = () => navigate && navigate('#admin/mandate/accounts');
   const drawerRef = useDrawerFocus(drawerOpen, closeDrawer);
 
   useEffect(() => {
@@ -90,6 +97,7 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
     setAccountForm(acc ? { ...acc } : null);
     setLedgerForm(emptyLedgerForm());
     setReviewer('');
+    setAuthEditOpen(false);
     // 待授权账户默认勾「授权显示」：复核这动作的常态就是批准可见；
     // 已生效账户默认沿用当前值，避免复核其他事项时顺手改掉可见性。
     setVisible(acc ? (acc.status === MANDATE_ACCOUNT_STATUS.PENDING ? true : !!acc.visibleInApp) : true);
@@ -117,7 +125,7 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
     if (!res.ok) { setError(res.error); return; }
     setError('');
     refresh();
-    navigate(`#admin/mandate-accounts/${res.account.id}`);
+    navigate(`#admin/mandate/accounts/${res.account.id}`);
   };
 
   const handleReview = () => {
@@ -125,6 +133,7 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
     const res = reviewMandateAccountAuth(selected.id, { visibleInApp: visible, reviewer }, operator);
     if (!res.ok) { setError(res.error); return; }
     setError('');
+    setAuthEditOpen(false);
     refresh();
   };
 
@@ -195,18 +204,19 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
   };
 
   return (
-    <div className="admin-page admin-page--mandate-accounts">
-      <div className="admin-page-header">
-        <h1>委托账户</h1>
+    <div className="mandate-panel mandate-panel--accounts">
+      <div className="mandate-panel-bar">
         <span className="admin-header-summary">
           {mandateAccounts.length} 个账户 · 待授权 {mandateAccounts.filter(a => a.status === MANDATE_ACCOUNT_STATUS.PENDING).length} 个 ·
           待办提取 {mandateWithdrawals.filter(w => w.status === MANDATE_WITHDRAWAL_STATUS.PENDING || w.status === MANDATE_WITHDRAWAL_STATUS.IN_PROGRESS).length} 单 ·
           余额由资金流水派生，账户不存余额
         </span>
-        <button className="btn btn-md btn-primary" onClick={() => navigate('#admin/mandate-accounts/new')}>
+        <button className="btn btn-md btn-primary" onClick={() => navigate('#admin/mandate/accounts/new')}>
           <Plus size={16} /> 开立委托账户
         </button>
       </div>
+
+      <MandateAgreementLedger admin={admin} onChanged={refresh} />
 
       <div className="admin-table admin-table--mandate-accounts">
         <div className="admin-table-header">
@@ -226,8 +236,8 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
               className="admin-table-row"
               role="button"
               tabIndex={0}
-              onClick={() => navigate(`#admin/mandate-accounts/${acc.id}`)}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`#admin/mandate-accounts/${acc.id}`); } }}
+              onClick={() => navigate(`#admin/mandate/accounts/${acc.id}`)}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`#admin/mandate/accounts/${acc.id}`); } }}
             >
               <span className="col-name">
                 <strong>{acc.no}</strong>
@@ -293,7 +303,7 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
                   </select>
                 </div>
                 {accountForm.userId && agreementsOfUser.length === 0 && (
-                  <div className="mandate-gate-warn"><AlertTriangle size={15} /> 该客户没有登记委托协议，不能开户。请先到「委托协议」登记并生效。</div>
+                  <div className="mandate-gate-warn"><AlertTriangle size={15} /> 该客户没有登记委托协议，不能开户。请先在上方「委托协议台账」登记并生效。</div>
                 )}
                 {gate && !gate.ok && <div className="mandate-gate-warn"><AlertTriangle size={15} /> {gate.error}</div>}
                 {gate && gate.ok && <div className="admin-form-hint">协议校验通过，可以开户。开户后为「待授权」，需合规复核后才在 APP 显示。</div>}
@@ -324,30 +334,42 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
                 </div>
 
                 <div className="card">
-                  <div className="card-title"><ShieldCheck size={15} /> 授权（Maker-Checker）</div>
+                  <div className="card-title"><ShieldCheck size={15} /> 授权显示（Maker-Checker）</div>
+                  <div className="kyc-review-row"><span>当前状态</span><strong>{selected.visibleInApp ? '授权显示（客户可在资产页看到）' : '不显示（仅后台可见）'}</strong></div>
                   <div className="kyc-review-row"><span>发起人</span><strong>{selected.authRequestedBy || '—'}</strong></div>
                   {selected.authReviewedBy && (
                     <div className="kyc-review-row"><span>上次复核</span><strong>{selected.authReviewedBy} · {String(selected.authReviewedAt || '').slice(0, 16)}</strong></div>
                   )}
-                  <div className="form-group">
-                    <label className="form-label">复核人（不得与发起人相同）</label>
-                    <input className="form-input" value={reviewer} onChange={e => setReviewer(e.target.value)} placeholder="合规人员姓名" />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">APP 显示</label>
-                    <select className="form-input" value={visible ? 'yes' : 'no'} onChange={e => setVisible(e.target.value === 'yes')}>
-                      <option value="yes">授权显示（客户可在资产页看到委托账户）</option>
-                      <option value="no">不显示（仅后台可见）</option>
-                    </select>
-                  </div>
-                  <div className="admin-form-hint">未授权时 APP 查询层直接不返回该账户——不是把字段藏起来，客户页面上连入口都不会出现「已开通」字样之外的痕迹。</div>
-                  {reviewer && selected.authRequestedBy === reviewer && (
-                    <div className="mandate-gate-warn"><AlertTriangle size={15} /> 复核人与发起人相同，数据层会拒绝。</div>
+                  {!authEditOpen ? (
+                    <>
+                      <div className="admin-form-hint">未授权时 APP 查询层直接不返回该账户——不是把字段藏起来，客户页面上连入口都不会出现「已开通」字样之外的痕迹。变更须合规复核（复核人 ≠ 发起人）。</div>
+                      <div className="admin-form-actions">
+                        <button className="btn btn-md btn-outline" onClick={() => setAuthEditOpen(true)}><ShieldCheck size={16} /> 变更授权</button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="form-group">
+                        <label className="form-label">复核人（不得与发起人相同）</label>
+                        <input className="form-input" value={reviewer} onChange={e => setReviewer(e.target.value)} placeholder="合规人员姓名" />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">APP 显示</label>
+                        <select className="form-input" value={visible ? 'yes' : 'no'} onChange={e => setVisible(e.target.value === 'yes')}>
+                          <option value="yes">授权显示（客户可在资产页看到委托账户）</option>
+                          <option value="no">不显示（仅后台可见）</option>
+                        </select>
+                      </div>
+                      {reviewer && selected.authRequestedBy === reviewer && (
+                        <div className="mandate-gate-warn"><AlertTriangle size={15} /> 复核人与发起人相同，数据层会拒绝。</div>
+                      )}
+                      {error && <p className="form-error">{error}</p>}
+                      <div className="admin-form-actions">
+                        <button className="btn btn-md btn-outline" onClick={() => { setAuthEditOpen(false); setReviewer(''); setError(''); }}>取消</button>
+                        <button className="btn btn-md btn-primary" onClick={handleReview}><ShieldCheck size={16} /> 提交复核</button>
+                      </div>
+                    </>
                   )}
-                  {error && <p className="form-error">{error}</p>}
-                  <div className="admin-form-actions">
-                    <button className="btn btn-md btn-primary" onClick={handleReview}><ShieldCheck size={16} /> 提交复核</button>
-                  </div>
                 </div>
 
                 <div className="card">

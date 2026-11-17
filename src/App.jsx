@@ -27,11 +27,9 @@ const AdminMyClients = lazy(() => import('./admin/AdminMyClients'));
 const AdminSubscriptions = lazy(() => import('./admin/AdminSubscriptions'));
 const AdminFundProducts = lazy(() => import('./admin/AdminFundProducts'));
 const AdminFundTrades = lazy(() => import('./admin/AdminFundTrades'));
-const AdminMandateAgreements = lazy(() => import('./admin/AdminMandateAgreements'));
-const AdminMandateAccounts = lazy(() => import('./admin/AdminMandateAccounts'));
-const AdminMandateTrades = lazy(() => import('./admin/AdminMandateTrades'));
-const AdminMandateReports = lazy(() => import('./admin/AdminMandateReports'));
-const AdminSpecialSubs = lazy(() => import('./admin/AdminSpecialSubs'));
+// 委托业务合并页（2026-11-17 IA 收敛）：4 个独立后台页收成 AdminMandate 一页三签，
+// 协议台账并入账户签、特殊申购并入基金交易——旧整页组件不再被路由直接引用
+const AdminMandate = lazy(() => import('./admin/AdminMandate'));
 const AdminFunds = lazy(() => import('./admin/AdminFunds'));
 const AdminKYC = lazy(() => import('./admin/AdminKYC'));
 const AdminPI = lazy(() => import('./admin/AdminPI'));
@@ -299,9 +297,29 @@ export default function App() {
     // 路由守卫（2026-08-24 · 角色权限管理配套）：此前权限只挡侧边栏菜单不挡 URL，直敲 hash 可越权进无权模块。
     // 与 getRoleMenuKeys 同源校验；越权/未知路由（含已登录访问 #admin/login 的历史空白页问题）一律渲染欢迎首页，
     // 不做副作用重定向（与上方未登录处理同款模式）。
+    // 旧深链归一（2026-11-17 IA 收敛，渲染期纯计算、不改 hash、无导航副作用——与守卫「不做副作用重定向」同约束）：
+    // #admin/mandate-accounts/{id} → #admin/mandate/accounts/{id}；#admin/special-subs/{id} → #admin/fund-trades/special/{id}。
+    // 协议旧深链 #admin/mandate-agreements/{id} 落账户签（协议抽屉已组件 state 化，不再占 URL）。
+    const ADMIN_ROUTE_ALIAS = {
+      'mandate-agreements': { sub: 'mandate', tab: 'accounts' },
+      'mandate-accounts': { sub: 'mandate', tab: 'accounts' },
+      'mandate-trades': { sub: 'mandate', tab: 'trades' },
+      'mandate-reports': { sub: 'mandate', tab: 'reports' },
+      'special-subs': { sub: 'fund-trades', tab: 'special' },
+    };
+    const legacyRoute = ADMIN_ROUTE_ALIAS[subPath];
+    const effSubRaw = legacyRoute ? legacyRoute.sub : subPath;
+    const effTab = legacyRoute
+      ? (subPath === 'special-subs' ? 'special' : legacyRoute.tab)
+      : hash.param2;
+    const effDetail = legacyRoute
+      ? (subPath === 'mandate-agreements' ? null : hash.param2)
+      : hash.param3;
+    const effP4 = legacyRoute ? (subPath === 'mandate-trades' ? hash.param3 : null) : hash.param4;
+
     const allowedMenus = getRoleMenuKeys(adminUser.role);
-    const subAllowed = subPath === 'home' || allowedMenus.includes(subPath);
-    const effectiveSub = subAllowed ? subPath : ADMIN_HOME;
+    const subAllowed = effSubRaw === 'home' || allowedMenus.includes(effSubRaw);
+    const effectiveSub = subAllowed ? effSubRaw : ADMIN_HOME;
     return (
       <div className="admin-layout">
         <AdminSidebar current={effectiveSub} onNavigate={navigate} admin={adminUser} onLogout={handleAdminLogout} />
@@ -317,14 +335,22 @@ export default function App() {
             {/* 基金产品：抽屉走 param2（#admin/fund-products/{id}）。
                 2026-10-28 教训：渲染分支必须把 navigate/detailId 传全——少传不报错、功能静默失效 */}
             {effectiveSub === 'fund-products' && <AdminFundProducts admin={adminUser} detailId={hash.param2} navigate={navigate} />}
-            {effectiveSub === 'fund-trades' && <AdminFundTrades admin={adminUser} detailId={hash.param2} navigate={navigate} />}
-            {/* 委托账户（2026-11-13 批 1a）：抽屉走 param2（#admin/mandate-…/{id}）。
-                教训沿用：渲染分支必须把 navigate/detailId 传全——少传不报错、动作静默失效 */}
-            {effectiveSub === 'mandate-agreements' && <AdminMandateAgreements admin={adminUser} detailId={hash.param2} navigate={navigate} />}
-            {effectiveSub === 'mandate-accounts' && <AdminMandateAccounts admin={adminUser} detailId={hash.param2} navigate={navigate} />}
-            {effectiveSub === 'mandate-trades' && <AdminMandateTrades admin={adminUser} detailId={hash.param2} correctionOf={hash.param3} navigate={navigate} />}
-            {effectiveSub === 'mandate-reports' && <AdminMandateReports admin={adminUser} detailId={hash.param2} navigate={navigate} />}
-            {effectiveSub === 'special-subs' && <AdminSpecialSubs admin={adminUser} detailId={hash.param2} navigate={navigate} />}
+            {effectiveSub === 'fund-trades' && (
+              <AdminFundTrades
+                admin={adminUser}
+                tab={effTab}
+                // 订单抽屉深链 #admin/fund-trades/{orderId} 走 param2；
+                // 特殊申购签深链 #admin/fund-trades/special/{approvalId} 时 param3 才是单据 id
+                detailId={effTab === 'special' ? effDetail : hash.param2}
+                navigate={navigate}
+              />
+            )}
+            {/* 委托业务（2026-11-17 IA 收敛）：tab 走 param2、抽屉走 param3（#admin/mandate/{tab}/{id}）；
+                更正重录 #admin/mandate/trades/new/{原交易id} 用 param4。
+                教训沿用：渲染分支必须把 navigate/tab/detailId 传全——少传不报错、动作静默失效 */}
+            {effectiveSub === 'mandate' && (
+              <AdminMandate admin={adminUser} tab={effTab} detailId={effDetail} correctionOf={effP4} navigate={navigate} />
+            )}
             {/* 资金审核：tab 走 param2、抽屉走 param3（#admin/funds/{tab}/{id}）；
                 2026-10-28 修复：此前只渲染 <AdminFunds /> 未透传 navigate/tab/detailId，
                 导致点行只改 hash、抽屉永远打不开 → 整个核销动作不可达 */}

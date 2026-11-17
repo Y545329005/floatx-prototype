@@ -4208,3 +4208,35 @@
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+
+/* ===== 委托业务合并页（2026-11-17 IA 收敛 · 方案 A） =====
+   一页三签（账户/交易与估值/日结与月报，签用全站 .fund-tabs）；
+   子面板不再有 admin-page 外壳，顶行 = 摘要 + 主按钮（对齐原页头形态）。
+   协议台账（mandate-agr-ledger）嵌在账户签顶部：开户流程第一步，非独立管理域。 */
+.mandate-panel { margin-bottom: var(--space-4); }
+.mandate-panel-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+.mandate-panel-bar .admin-header-summary { margin-left: auto; margin-right: 0; }
+.mandate-agr-ledger { margin-bottom: var(--space-6); }
+
+/* 委托业务页内的子分栏（交易/估值/费用）：外层三签已占 .fund-tabs 原样式，
+   子分栏降一级视觉（矮一档、去卡片底、active 只着色不填底），避免两行同款页签上下堆叠读不出层级 */
+.fund-tabs--sub .fund-tab {
+  height: 32px;
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+  border-color: transparent;
+  background: none;
+}
+.fund-tabs--sub .fund-tab:hover { border-color: var(--primary-border); }
+.fund-tabs--sub .fund-tab.active { background: none; border-color: var(--primary); color: var(--primary); font-weight: 600; }
+.fund-tabs--sub .fund-tab.active .fund-tab-count { background: var(--primary); color: var(--bg-card); }
+
+/* ===== 特殊申购签重设计（2026-11-17 拍板②~⑦） =====
+   顶行去重（声明左/按钮右）、5 列行内动作表、三步进度条、表单实时起投额对照、空态引导。 */

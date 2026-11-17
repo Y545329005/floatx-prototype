@@ -15,8 +15,11 @@ import {
   formatExactAmount,
   formatShares,
   formatListDateTime,
+  specialSubscriptionApprovals,
+  SPECIAL_SUB_STATUS,
 } from '../mock/data';
 import { useDrawerFocus } from './useDrawerFocus';
+import AdminSpecialSubs from './AdminSpecialSubs';
 
 // 基金交易（2026-10-28 基金一期闭环的后台确认台；2026-10-29 重构）
 // 这是闭环里唯一把「申请」变成「持仓」的地方：确认即扣款 + 份额入账 + 出结单，
@@ -27,6 +30,12 @@ import { useDrawerFocus } from './useDrawerFocus';
 //   2) 抽屉按运营的决策顺序排列：申请信息（谁/什么/多少）→ 成交预览（净值 → 费/份额/回款）→ 操作；
 //   3) 已成交/已驳回单据回答的是另一个问题（发生了什么），所以给「成交结果 + 处理轨迹」，
 //      与待确认的「预览 + 决策」不混用同一套行样式。
+//
+// 2026-11-17 IA 收敛（方案 A）：特殊申购（降档例外）与常规申购同域——降级为本页第 3 个
+// 页签（#admin/fund-trades/special/{id}），不再占一级菜单。
+// 页签位置：special 由 URL 承载（深链可达）；申购/赎回是模块级记忆（不写 localStorage）——
+// URL 不承载它们（点签不写 hash），抽屉深链（tab=订单 id）与返回（tab=null）都不动记忆签，
+// 避免「赎回签开抽屉、返回甩回申购签」。规则出处：AGENTS.md「同路由重挂的页签要模块级记忆」。
 const STATUS_META = {
   [FUND_ORDER_STATUS.PENDING]: { label: '待确认', cls: 'admin-status-pending' },
   [FUND_ORDER_STATUS.CONFIRMED]: { label: '已成交', cls: 'admin-status-approved' },
@@ -52,12 +61,26 @@ const waitLabel = (createdAt) => {
   return `已等待 ${Math.floor(hrs / 24)} 天`;
 };
 
-export default function AdminFundTrades({ admin, detailId, navigate }) {
+// 页签记忆（模块级，跨挂载保留）：申购/赎回签位置；special 不记（由 URL 承载）
+let lastRegularTab = 'subscribe';
+
+export default function AdminFundTrades({ admin, tab, detailId, navigate }) {
   const [tick, setTick] = useState(0);
   const [filter, setFilter] = useState(FUND_ORDER_STATUS.PENDING);
   // 类型分栏（2026-10-28 P2）：申购与赎回同属基金单据，但列语义不同
   // （申购看金额、赎回看份额×净值），混在一张表里同一列会有两种意思，所以分两栏、各自成表
-  const [typeTab, setTypeTab] = useState('subscribe');
+  const [typeTab, setTypeTabState] = useState(tab === 'special' ? 'special' : lastRegularTab);
+
+  // URL 只承载 special：tab=special 强制进特殊申购签；tab=null（列表/返回）恢复记忆签；
+  // tab=订单 id（抽屉深链）不动，保留用户当前签
+  useEffect(() => {
+    if (tab === 'special') setTypeTabState('special');
+    else if (tab == null) setTypeTabState(lastRegularTab);
+  }, [tab]);
+  const setTypeTab = (key) => {
+    if (key !== 'special') lastRegularTab = key;
+    setTypeTabState(key);
+  };
   const [keyword, setKeyword] = useState('');
   const [navInput, setNavInput] = useState('');
   const [rejectOpen, setRejectOpen] = useState(false);
@@ -117,6 +140,7 @@ export default function AdminFundTrades({ admin, detailId, navigate }) {
 
   const pendingOf = (type) => fundOrders.filter(o => o.type === type && o.status === FUND_ORDER_STATUS.PENDING).length;
   const pendingTotal = pendingOf('subscribe') + pendingOf('redeem');
+  const specialPendingCount = specialSubscriptionApprovals.filter(r => r.status === SPECIAL_SUB_STATUS.PENDING).length;
   const pendingCount = pendingOf(typeTab);
   const confirmedCount = fundOrders.filter(o => o.type === typeTab && o.status === FUND_ORDER_STATUS.CONFIRMED).length;
   const isRedeem = selected?.type === 'redeem';
@@ -188,20 +212,33 @@ export default function AdminFundTrades({ admin, detailId, navigate }) {
         {[
           { key: 'subscribe', label: '申购' },
           { key: 'redeem', label: '赎回' },
+          { key: 'special', label: '特殊申购' },
         ].map(x => (
           <button
             key={x.key}
             role="tab"
             aria-selected={typeTab === x.key}
             className={`fund-tab ${typeTab === x.key ? 'active' : ''}`}
-            onClick={() => { setTypeTab(x.key); setFilter(FUND_ORDER_STATUS.PENDING); }}
+            onClick={() => {
+              if (navigate) navigate(x.key === 'special' ? '#admin/fund-trades/special' : '#admin/fund-trades');
+              setTypeTab(x.key);
+              setFilter(FUND_ORDER_STATUS.PENDING);
+            }}
           >
             {x.label}
-            {pendingOf(x.key) > 0 && <span className="fund-tab-count">{pendingOf(x.key)}</span>}
+            {x.key !== 'special' && pendingOf(x.key) > 0 && <span className="fund-tab-count">{pendingOf(x.key)}</span>}
+            {x.key === 'special' && specialPendingCount > 0 && <span className="fund-tab-count">{specialPendingCount}</span>}
           </button>
         ))}
       </div>
 
+      {/* 特殊申购签：独立面板（自己的筛选/表/抽屉），不与申购/赎回单据列表混排 */}
+      {typeTab === 'special' && (
+        <AdminSpecialSubs admin={admin} detailId={detailId} navigate={navigate} />
+      )}
+
+      {typeTab !== 'special' && (
+      <>
       <div className="admin-view-row">
         <div className="admin-filter-row">
           {FILTERS.map(f => (
@@ -429,6 +466,8 @@ export default function AdminFundTrades({ admin, detailId, navigate }) {
             </div>
           )}
         </div>
+      )}
+      </>
       )}
     </div>
   );

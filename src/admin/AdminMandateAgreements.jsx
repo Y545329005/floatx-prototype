@@ -9,14 +9,17 @@ import {
 } from '../mock/data';
 import { useDrawerFocus } from './useDrawerFocus';
 
-// 委托协议（2026-11-13 批 1a）
+// 委托协议台账（2026-11-13 批 1a 登记页 → 2026-11-17 IA 收敛为账户签内嵌台账）
 //
-// 这页不是「协议列表」，是开户资格的法律底稿：账户只能从一份生效协议上开出来
+// 这不是「协议列表」，是开户资格的法律底稿：账户只能从一份生效协议上开出来
 //（闸门在 data.js 的 canOpenMandateAccount，不在按钮上）。所以协议本身必须完整：
 // 编号可追溯、双方见证、持牌代表 + CE 号、语言版本、费率与附录限制。
 //
 // 协议里所有 [ ] 空值（费率/限制/最低投资额）都做成可配字段：合规填之前是 0，
 // 0 在业务上等于「待填」，不当作免费——展示层必须保留「待合规填写」的提示。
+//
+// IA 收敛（2026-11-17 方案 A）：协议是开户流程的第一步，不是独立管理域——
+// 台账嵌在委托业务「账户」签顶部，抽屉走组件内 state（低频台账，不占 URL 深链）。
 
 const STATUS_META = {
   draft: { label: '草稿', cls: 'admin-status-pending' },
@@ -78,18 +81,21 @@ const toForm = (ag) => ({
   effectiveAt: String(ag.effectiveAt || '').slice(0, 10),
 });
 
-export default function AdminMandateAgreements({ admin, detailId, navigate }) {
+export default function MandateAgreementLedger({ admin, onChanged }) {
   const [tick, setTick] = useState(0);
+  // 抽屉驱动：state（'new' | agreementId | null）。协议是低频台账，
+  // 不走 URL——URL param 已被账户/交易抽屉占用（#admin/mandate/{tab}/{id}）
+  const [openId, setOpenId] = useState(null);
   const [form, setForm] = useState(null);
   const [error, setError] = useState('');
   const [doneMsg, setDoneMsg] = useState('');
   const operator = admin?.name || '合规后台';
-  const isNew = detailId === 'new';
-  const selected = detailId && !isNew ? mandateAgreements.find(a => a.id === detailId) : null;
-  const drawerOpen = isNew || !!selected;
+  const isNew = openId === 'new';
+  const selected = openId && !isNew ? mandateAgreements.find(a => a.id === openId) : null;
+  const drawerOpen = openId != null && (isNew || !!selected);
 
   const investors = useMemo(() => getInvestorUsers(), [tick]);
-  const closeDrawer = () => navigate && navigate('#admin/mandate-agreements');
+  const closeDrawer = () => setOpenId(null);
   const drawerRef = useDrawerFocus(drawerOpen, closeDrawer);
 
   useEffect(() => {
@@ -100,14 +106,15 @@ export default function AdminMandateAgreements({ admin, detailId, navigate }) {
   }, [drawerOpen]);
 
   useEffect(() => {
-    if (detailId === 'new') { setForm(emptyForm()); setError(''); setDoneMsg(''); return; }
-    const ag = mandateAgreements.find(a => a.id === detailId);
+    if (openId == null) { setForm(null); return; }
+    if (openId === 'new') { setForm(emptyForm()); setError(''); setDoneMsg(''); return; }
+    const ag = mandateAgreements.find(a => a.id === openId);
     setForm(ag ? toForm(ag) : null);
     setError('');
     setDoneMsg('');
-  }, [detailId]);
+  }, [openId]);
 
-  const refresh = () => setTick(t => t + 1);
+  const refresh = () => { setTick(t => t + 1); onChanged?.(); };
   const set = (key, value) => setForm(prev => (prev ? { ...prev, [key]: value } : prev));
   const setFee = (key, value) => setForm(prev => (prev ? { ...prev, fees: { ...prev.fees, [key]: value } } : prev));
   const setLimit = (key, value) => setForm(prev => (prev ? {
@@ -158,14 +165,13 @@ export default function AdminMandateAgreements({ admin, detailId, navigate }) {
   };
 
   return (
-    <div className="admin-page admin-page--mandate-agreements">
-      <div className="admin-page-header">
-        <h1>委托协议</h1>
+    <div className="mandate-agr-ledger">
+      <div className="mandate-panel-bar">
         <span className="admin-header-summary">
-          {mandateAgreements.length} 份 · 生效 {mandateAgreements.filter(a => a.status === 'active').length} 份 ·
+          委托协议台账 · {mandateAgreements.length} 份 · 生效 {mandateAgreements.filter(a => a.status === 'active').length} 份 ·
           协议是开户的唯一法律依据，未登记协议不能开户
         </span>
-        <button className="btn btn-md btn-primary" onClick={() => navigate('#admin/mandate-agreements/new')}>
+        <button className="btn btn-md btn-primary" onClick={() => setOpenId('new')}>
           <Plus size={16} /> 登记委托协议
         </button>
       </div>
@@ -187,8 +193,8 @@ export default function AdminMandateAgreements({ admin, detailId, navigate }) {
               className="admin-table-row"
               role="button"
               tabIndex={0}
-              onClick={() => navigate(`#admin/mandate-agreements/${ag.id}`)}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`#admin/mandate-agreements/${ag.id}`); } }}
+              onClick={() => setOpenId(ag.id)}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenId(ag.id); } }}
             >
               <span className="col-name">
                 <strong>{ag.no}</strong>
@@ -202,7 +208,7 @@ export default function AdminMandateAgreements({ admin, detailId, navigate }) {
               <span className="col-amount">{Number(ag.fees?.minimumValue || 0).toLocaleString()}</span>
               <span><span className={`status-badge ${meta.cls}`}>{meta.label}</span></span>
               <span className="col-actions">
-                <button className="btn-icon" title="编辑" onClick={e => { e.stopPropagation(); navigate(`#admin/mandate-agreements/${ag.id}`); }}>
+                <button className="btn-icon" title="编辑" onClick={e => { e.stopPropagation(); setOpenId(ag.id); }}>
                   <Power size={16} />
                 </button>
               </span>

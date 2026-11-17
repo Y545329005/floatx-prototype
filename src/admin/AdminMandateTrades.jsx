@@ -71,7 +71,7 @@ export default function AdminMandateTrades({ admin, detailId, correctionOf, navi
   const isNew = detailId === 'new';
   const selected = detailId && !isNew ? mandateTrades.find(t => t.id === detailId) : null;
   const drawerOpen = isNew || !!selected;
-  const closeDrawer = () => navigate && navigate('#admin/mandate-trades');
+  const closeDrawer = () => navigate && navigate('#admin/mandate/trades');
   const drawerRef = useDrawerFocus(drawerOpen, closeDrawer);
 
   useEffect(() => {
@@ -129,7 +129,7 @@ export default function AdminMandateTrades({ admin, detailId, correctionOf, navi
     if (!res.ok) { setError(res.error); return; }
     setError('');
     refresh();
-    navigate(`#admin/mandate-trades/${res.trade.id}`);
+    navigate(`#admin/mandate/trades/${res.trade.id}`);
   };
 
   const handleReview = (decision) => {
@@ -193,19 +193,18 @@ export default function AdminMandateTrades({ admin, detailId, correctionOf, navi
   };
 
   return (
-    <div className="admin-page admin-page--mandate-trades">
-      <div className="admin-page-header">
-        <h1>委托交易与估值</h1>
+    <div className="mandate-panel mandate-panel--trades">
+      <div className="mandate-panel-bar">
         <span className="admin-header-summary">
           {mandateTrades.length} 笔交易 · 待复核 {pendingCount} 笔 ·
           持仓由交易派生，作废即回退
         </span>
-        <button className="btn btn-md btn-primary" onClick={() => navigate('#admin/mandate-trades/new')}>
+        <button className="btn btn-md btn-primary" onClick={() => navigate('#admin/mandate/trades/new')}>
           <Plus size={16} /> 录入交易
         </button>
       </div>
 
-      <div className="fund-tabs" role="tablist" aria-label="委托交易分区">
+      <div className="fund-tabs fund-tabs--sub" role="tablist" aria-label="委托交易分区">
         {TABS.map(x => (
           <button
             key={x.key}
@@ -240,8 +239,8 @@ export default function AdminMandateTrades({ admin, detailId, correctionOf, navi
                 className="admin-table-row"
                 role="button"
                 tabIndex={0}
-                onClick={() => navigate(`#admin/mandate-trades/${t.id}`)}
-                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`#admin/mandate-trades/${t.id}`); } }}
+                onClick={() => navigate(`#admin/mandate/trades/${t.id}`)}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`#admin/mandate/trades/${t.id}`); } }}
               >
                 <span>
                   {t.tradeDate}
@@ -567,7 +566,7 @@ export default function AdminMandateTrades({ admin, detailId, correctionOf, navi
                     <div className="card-title">更正重录</div>
                     <p className="admin-form-hint">原交易已作废并冲正。重录时保留更正来源，成交通知单会标注「更正」，客户能分清哪张有效。</p>
                     <div className="admin-form-actions">
-                      <button className="btn btn-md btn-primary" onClick={() => navigate(`#admin/mandate-trades/new/${selected.id}`)}>
+                      <button className="btn btn-md btn-primary" onClick={() => navigate(`#admin/mandate/trades/new/${selected.id}`)}>
                         <Plus size={16} /> 更正重录
                       </button>
                     </div>
