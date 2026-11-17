@@ -270,6 +270,8 @@ export default function AdminConfig({ admin }) {
     { id: 'user-agreement', name: '使用条款' },
     { id: 'risk-disclosure', name: '风险披露' },
     { id: 'privacy-policy', name: '隐私政策' },
+    // 2026-11-16：委托协议正文也归法务，纯文本维护（{{占位符}} 保留原样，运行时注入本人参数）
+    { id: 'mandate-agreement', name: '全权委托协议' },
   ];
   const LEGAL_LANGS = [
     { key: 'zh-CN', label: '简体' },

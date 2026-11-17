@@ -418,3 +418,49 @@ export const privacyPolicySections = [
     ],
   },
 ];
+
+/* ===== 全权委托投资管理协议 Discretionary Investment Management Agreement =====
+   2026-11-16：委托协议由「前端 KV 字段重排」改为纯文本正文——
+   条款文字由法务在后台「协议文案维护」以纯文本维护，前端只负责渲染。
+   ⚠️ 本段为原型简稿（依 agreements 字段自拟，稿源为合规提供的
+   `全權委託投資管理協議_HighBlock+Securities+Limited.docx`，未进仓库），上线前必须法务确认。
+   {{PLACEHOLDER}} 由 getAgreementById 的 params 注入本人协议参数（费率/限额/当事人），
+   法务编辑时保留占位符原样即可，不要改写为固定数字。 */
+export const mandateAgreementSections = [
+  {
+    h: T("一、委任与授权", "一、委任與授權", "1. Appointment and Authority"),
+    p: [
+      T("客户委任 {{BRAND}} 为全权委托投资管理人，由基金经理 {{MANAGER}} 及持牌代表 {{REP}}（中央编号 {{REP_CE}}）负责执行。在本协议约定的投资目标与限制范围内，管理人可自行决定买入、持有及卖出委托资产中的证券，无需就每笔交易事先取得客户同意。", "客戶委任 {{BRAND}} 為全權委託投資管理人，由基金經理 {{MANAGER}} 及持牌代表 {{REP}}（中央編號 {{REP_CE}}）負責執行。在本協議約定的投資目標與限制範圍內，管理人可自行決定買入、持有及賣出委託資產中的證券，無需就每筆交易事先取得客戶同意。", "The Client appoints {{BRAND}} as discretionary investment manager, acting through the fund manager {{MANAGER}} and the licensed representative {{REP}} (CE No. {{REP_CE}}). Within the objectives and limits set out in this Agreement, the Manager may buy, hold and sell securities in the Portfolio at its own discretion without obtaining the Client's prior consent for each transaction."),
+    ],
+  },
+  {
+    h: T("二、投资目标与限制", "二、投資目標與限制", "2. Objectives and Limits"),
+    p: [
+      T("委托组合以美股首次公开发行及上市后证券为主要投资方向，追求中长期资本增值。管理须遵守下列限制：单一公司持仓不超过组合资产净值的 {{SINGLE_COMPANY}}%；单一发行人不超过 {{SINGLE_ISSUER}}%；借贷占总资产比例不超过 {{BORROWING_LIMIT}}%。", "委託組合以美股首次公開發行及上市後證券為主要投資方向，追求中長期資本增值。管理須遵守下列限制：單一公司持倉不超過組合資產淨值的 {{SINGLE_COMPANY}}%；單一發行人不超過 {{SINGLE_ISSUER}}%；借貸佔總資產比例不超過 {{BORROWING_LIMIT}}%。", "The Portfolio focuses on US initial public offerings and listed securities, seeking medium- to long-term capital growth. The Manager must observe the following limits: exposure to a single company must not exceed {{SINGLE_COMPANY}}% of the Portfolio's net asset value; exposure to a single issuer must not exceed {{SINGLE_ISSUER}}%; borrowing must not exceed {{BORROWING_LIMIT}}% of total assets."),
+    ],
+  },
+  {
+    h: T("三、费用", "三、費用", "3. Fees"),
+    p: [
+      T("管理费按年费率 {{MGMT_PCT}}% 计收并按月从组合扣减；设立费为 {{INCEPT_PCT}}%，于协议生效时一次性从组合扣减；表现费为 {{PERF_PCT}}%，仅在组合收益超过门槛 {{HURDLE_PCT}}% 时就超出部分计提。最低委托金额为 HK$ {{MIN_VALUE}}。各项费用在结单中单列。", "管理費按年費率 {{MGMT_PCT}}% 計收並按月從組合扣減；設立費為 {{INCEPT_PCT}}%，於協議生效時一次性從組合扣減；表現費為 {{PERF_PCT}}%，僅在組合收益超過門檻 {{HURDLE_PCT}}% 時就超出部分計提。最低委託金額為 HK$ {{MIN_VALUE}}。各項費用在結單中單列。", "A management fee of {{MGMT_PCT}}% per annum is deducted from the Portfolio monthly; an inception fee of {{INCEPT_PCT}}% is deducted once when this Agreement takes effect; a performance fee of {{PERF_PCT}}% applies only to returns above the {{HURDLE_PCT}}% hurdle. The minimum mandate is HK$ {{MIN_VALUE}}. All fees are itemised in the statements."),
+    ],
+  },
+  {
+    h: T("四、估值与报告", "四、估值與報告", "4. Valuation and Reporting"),
+    p: [
+      T("组合至少每月估值一次，估值币种为 {{VAL_CCY}}。每个结算期末后 15 个营业日内，管理人向客户提供月报；每笔交易经复核生效后，向客户发出成交通知单。日结单为每日快照，不替代月报。", "組合至少每月估值一次，估值幣種為 {{VAL_CCY}}。每個結算期末後 15 個營業日內，管理人向客戶提供月報；每筆交易經覆核生效後，向客戶發出成交通知單。日結單為每日快照，不替代月報。", "The Portfolio is valued at least monthly, in {{VAL_CCY}}. The Manager provides a monthly report within 15 business days after each period end, and issues a trade advice for every executed transaction. Daily statements are snapshots and do not replace the monthly report."),
+    ],
+  },
+  {
+    h: T("五、常设授权", "五、常設授權", "5. Standing Authority"),
+    p: [
+      T("平台仅在客户另行签署常设授权书后，方可在授权范围内处理客户款项（包括资金划转）。授权须载明范围与有效期；期满或撤回后，平台不得继续据以行事。", "平台僅在客戶另行簽署常設授權書後，方可在授權範圍內處理客戶款項（包括資金劃轉）。授權須載明範圍與有效期；期滿或撤回後，平台不得繼續據以行事。", "The Platform may handle client monies (including fund transfers) only within the scope of a standing authority separately signed by the Client. Each authority states its scope and validity period; once it expires or is withdrawn, the Platform may no longer rely on it."),
+    ],
+  },
+  {
+    h: T("六、托管与终止", "六、託管與終止", "6. Custody and Termination"),
+    p: [
+      T("委托资产由托管人持有，平台仅作记录与展示，不代客户保管资产。任何一方可提前书面通知终止本协议；终止后，管理人完成已开立交易并向客户交付最终报告。", "委託資產由託管人持有，平台僅作記錄與展示，不代客戶保管資產。任何一方可提前書面通知終止本協議；終止後，管理人完成已開立交易並向客戶交付最終報告。", "Portfolio assets are held by the custodian; the Platform only records and displays them and does not hold client assets. Either party may terminate this Agreement by prior written notice; upon termination the Manager completes open trades and delivers a final report to the Client."),
+    ],
+  },
+];
