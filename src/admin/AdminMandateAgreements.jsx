@@ -9,7 +9,7 @@ import {
 } from '../mock/data';
 import { useDrawerFocus } from './useDrawerFocus';
 
-// 委托协议台账（2026-11-13 批 1a 登记页 → 2026-11-17 IA 收敛为账户签内嵌台账）
+// 委托协议台账（2026-11-13 批 1a 登记页 → 2026-11-17 IA 收敛 → 同日二次拍板独立成签）
 //
 // 这不是「协议列表」，是开户资格的法律底稿：账户只能从一份生效协议上开出来
 //（闸门在 data.js 的 canOpenMandateAccount，不在按钮上）。所以协议本身必须完整：
@@ -18,8 +18,8 @@ import { useDrawerFocus } from './useDrawerFocus';
 // 协议里所有 [ ] 空值（费率/限制/最低投资额）都做成可配字段：合规填之前是 0，
 // 0 在业务上等于「待填」，不当作免费——展示层必须保留「待合规填写」的提示。
 //
-// IA 收敛（2026-11-17 方案 A）：协议是开户流程的第一步，不是独立管理域——
-// 台账嵌在委托业务「账户」签顶部，抽屉走组件内 state（低频台账，不占 URL 深链）。
+// IA 二次拍板（2026-11-17）：协议是开户流程的第一步，签序 = 流程序，台账独立成「协议」签。
+// 抽屉走组件内 state（低频台账，不占 URL 深链；旧深链由 ADMIN_ROUTE_ALIAS 落本签）。
 
 const STATUS_META = {
   draft: { label: '草稿', cls: 'admin-status-pending' },
@@ -165,12 +165,11 @@ export default function MandateAgreementLedger({ admin, onChanged }) {
   };
 
   return (
-    <div className="mandate-agr-ledger">
+    <div className="mandate-panel mandate-panel--agreements">
       <div className="mandate-panel-bar">
-        <span className="admin-header-summary">
-          委托协议台账 · {mandateAgreements.length} 份 · 生效 {mandateAgreements.filter(a => a.status === 'active').length} 份 ·
-          协议是开户的唯一法律依据，未登记协议不能开户
-        </span>
+        {/* 2026-11-17 二次拍板：台账独立成签（原嵌账户签顶部，两表同屏互相挤压）。
+            panel-bar 只讲定位声明，份数不在此重复——草稿数在签 badge。 */}
+        <span className="admin-header-summary">协议是开户的唯一法律依据：未登记不能开户，未生效不能授权</span>
         <button className="btn btn-md btn-primary" onClick={() => setOpenId('new')}>
           <Plus size={16} /> 登记委托协议
         </button>
@@ -208,9 +207,13 @@ export default function MandateAgreementLedger({ admin, onChanged }) {
               <span className="col-amount">{Number(ag.fees?.minimumValue || 0).toLocaleString()}</span>
               <span><span className={`status-badge ${meta.cls}`}>{meta.label}</span></span>
               <span className="col-actions">
-                <button className="btn-icon" title="编辑" onClick={e => { e.stopPropagation(); setOpenId(ag.id); }}>
-                  <Power size={16} />
-                </button>
+                {/* 操作列 = 下一步动作（btn-icon + 动词 tooltip）：草稿的唯一下一步是生效，点击落抽屉完成；
+                    生效/已终止无下一步动作，列留空。原「编辑」btn-icon 删除——行本身可点即详情入口，双入口冗余。 */}
+                {ag.status === 'draft' && (
+                  <button className="btn-icon" title="生效" aria-label="生效（打开协议完成生效）" onClick={e => { e.stopPropagation(); setOpenId(ag.id); }}>
+                    <Power size={16} />
+                  </button>
+                )}
               </span>
             </div>
           );

@@ -3990,11 +3990,9 @@
 .admin-action-danger:hover { background: var(--danger-bg); color: var(--danger); }
 .admin-action-confirm p { margin-bottom: var(--space-2); }
 
-/* ===== 委托账户（2026-11-13 批 1a）：协议档案 + 账户与资金流水 =====
-   两张表都遵循「一行只回答一个问题」：
-   协议行 = 编号/客户（副行给语言版本）、签署日、持牌代表（副行给 CE）、最低投资额、状态；
-   账户行 = 账号/客户、协议、基金经理、余额、APP 显示、状态。
-   余额列可能有多币种（「HKD 298,800.00 · USD 0.00」），给足宽度优先于对齐美观。 */
+/* ===== 委托业务（2026-11-17 IA 收敛 · 同日二次拍板）：一页四签 =====
+   签序 = 流程序：协议（mandate-panel--agreements）→ 账户 → 交易与估值 → 日结与月报。
+   协议台账独立成签（原嵌账户签顶部，两表同屏互相挤压，用户标注质疑成立）。 */
 .admin-table--mandate-agreements .admin-table-header,
 .admin-table--mandate-agreements .admin-table-row {
   grid-template-columns:
@@ -4009,13 +4007,13 @@
 
 .admin-table--mandate-accounts .admin-table-header,
 .admin-table--mandate-accounts .admin-table-row {
+  /* 2026-11-17 工作台化：删「APP 显示」死列（并进状态次行），6→5 列 */
   grid-template-columns:
-    minmax(180px, 18fr)
-    minmax(130px, 13fr)
-    minmax(110px, 11fr)
-    minmax(200px, 20fr)
-    minmax(80px, 8fr)
-    minmax(88px, 9fr);
+    minmax(200px, 22fr)
+    minmax(130px, 14fr)
+    minmax(120px, 13fr)
+    minmax(200px, 22fr)
+    minmax(120px, 14fr);
   gap: 16px;
 }
 
@@ -4121,18 +4119,30 @@
 
 .admin-table--mandate-fees .admin-table-header,
 .admin-table--mandate-fees .admin-table-row {
+  /* 2026-11-17：复核改「btn-icon → 行内展开」，操作列收窄到动作宽（对齐 special-subs 72px） */
   grid-template-columns:
     minmax(76px, 7fr)
     minmax(90px, 9fr)
     minmax(130px, 13fr)
     minmax(84px, 8fr)
     minmax(150px, 15fr)
-    minmax(200px, 20fr);
+    72px;
   gap: 16px;
   margin-top: var(--space-4);
 }
-.mandate-fee-review { display: flex; gap: 6px; align-items: center; }
-.mandate-fee-review .form-input { min-width: 90px; }
+.mandate-fee-item:last-child .admin-table-row { border-bottom: none; } /* wrapper 打断 :last-child，边界线补在这里 */
+.mandate-fee-expand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3);
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  margin: 2px 0 var(--space-2);
+}
+.mandate-fee-expand .form-label { margin: 0; white-space: nowrap; font-weight: 500; }
+.mandate-fee-expand .form-input { width: 180px; }
 
 .admin-table--daily-statements .admin-table-header,
 .admin-table--daily-statements .admin-table-row {
@@ -4144,10 +4154,28 @@
     minmax(130px, 13fr);
   gap: 16px;
 }
-.mandate-report-generate { display: flex; gap: 8px; align-items: center; }
-.mandate-report-generate .form-input { width: 150px; }
+.mandate-gen-row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  margin-bottom: var(--space-4);
+}
+.mandate-gen-row .form-input { width: 150px; }
 
-.mandate-monthly-card { margin-top: var(--space-5); }
+/* ===== 月报索引（2026-11-17 二次拍板）：每账户当期一行 + 抽屉全文 ===== */
+.admin-table--mandate-monthly .admin-table-header,
+.admin-table--mandate-monthly .admin-table-row {
+  grid-template-columns:
+    minmax(170px, 20fr)
+    minmax(120px, 14fr)
+    minmax(120px, 14fr)
+    minmax(110px, 13fr)
+    minmax(110px, 13fr)
+    minmax(120px, 15fr);
+  gap: 16px;
+  margin-top: var(--space-4);
+}
+.mandate-month-input { width: 130px; }
 .mandate-report-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
@@ -4217,13 +4245,63 @@
 .mandate-panel-bar {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   flex-wrap: wrap;
   gap: var(--space-4);
   margin-bottom: var(--space-4);
 }
-.mandate-panel-bar .admin-header-summary { margin-left: auto; margin-right: 0; }
-.mandate-agr-ledger { margin-bottom: var(--space-6); }
+.mandate-panel-bar .admin-header-summary { margin-left: 0; margin-right: auto; }
+
+/* 页头待办入口（2026-11-17 工作台化）：数字化三项可点跳签，0 待办给一句弱文字。
+   与 tab badge 分工——页头按状态细分，badge 做签内聚合，同屏同一数字不重复第二遍。 */
+.mandate-header-main { display: flex; flex-direction: column; gap: 4px; }
+.mandate-flow-hint { font-size: var(--text-xs); color: var(--text-tertiary); }
+.mandate-todo-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.mandate-todo-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border: 1px solid var(--warning-border);
+  border-radius: var(--radius-sm);
+  background: var(--warning-light);
+  color: var(--warning-text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.mandate-todo-chip:hover { border-color: var(--warning-text); }
+.mandate-todo-none { font-size: var(--text-sm); color: var(--text-tertiary); }
+
+/* 状态格：badge + 次行事实（APP 显示），与 special-status-cell 同构 */
+.mandate-status-cell { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+
+/* 列表余额：主币种主行 + 其余币种次行小字（多币种串一行读不出主次） */
+.mandate-bal strong { font-variant-numeric: tabular-nums; }
+
+/* 提取三步进度条（申请 → 通过 → 完成登记）：与 special-steps 同语言，done 实心 / current 空心 / error 红 / todo 灰 */
+.mandate-steps { display: flex; align-items: flex-start; gap: var(--space-2); margin-top: var(--space-2); }
+.mandate-step { display: flex; align-items: flex-start; gap: var(--space-2); flex: 0 0 auto; }
+.mandate-step-dot {
+  flex: 0 0 auto;
+  width: 10px; height: 10px;
+  margin-top: 3px;
+  border-radius: 50%;
+  background: var(--border-light);
+}
+.mandate-step--done .mandate-step-dot { background: var(--primary); }
+.mandate-step--current .mandate-step-dot { background: var(--bg-card); border: 2px solid var(--primary); }
+.mandate-step--error .mandate-step-dot { background: var(--compliance); }
+.mandate-step-label { font-size: var(--text-sm); font-weight: 600; color: var(--text); line-height: 1.4; }
+.mandate-step--todo .mandate-step-label { color: var(--text-tertiary); font-weight: 500; }
+.mandate-step-line { flex: 1 1 20px; min-width: 16px; height: 1px; margin-top: 8px; background: var(--border-light); }
+.mandate-step-line--done { background: var(--primary); }
 
 /* 委托业务页内的子分栏（交易/估值/费用）：外层三签已占 .fund-tabs 原样式，
    子分栏降一级视觉（矮一档、去卡片底、active 只着色不填底），避免两行同款页签上下堆叠读不出层级 */
@@ -4239,9 +4317,8 @@
 .fund-tabs--sub .fund-tab.active .fund-tab-count { background: var(--primary); color: var(--bg-card); }
 
 /* ===== 特殊申购签重设计（2026-11-17 拍板②~⑦） =====
-   顶行去重（声明左/按钮右）、5 列行内动作表、三步进度条、表单实时起投额对照、空态引导。 */
-.special-bar { justify-content: space-between; }
-.special-bar .admin-header-summary { margin-left: 0; margin-right: auto; }
+   顶行去重（声明左/按钮右）、5 列行内动作表、三步进度条、表单实时起投额对照、空态引导。
+   声明左/按钮右已收进 .mandate-panel-bar 基础定义，本签无额外覆盖。 */
 
 /* 列表 6→5 列：死「复核」列删除（复核人并入状态次行），「申购单」列并入状态次行；
    操作列 = KYC 同款 btn-icon（动词 tooltip） */

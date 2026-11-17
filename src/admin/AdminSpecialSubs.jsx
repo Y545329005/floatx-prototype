@@ -162,7 +162,7 @@ export default function AdminSpecialSubs({ admin, detailId, navigate }) {
   return (
     <div className="mandate-panel mandate-panel--special">
       {/* 顶行（2026-11-17 拍板②）：删「N 份批准 · 待复核 M」统计（与页签角标同数字重复），定位声明左置 */}
-      <div className="mandate-panel-bar special-bar">
+      <div className="mandate-panel-bar">
         <span className="admin-header-summary">
           客户前端不开放降档，例外只在此留痕并代下单
         </span>

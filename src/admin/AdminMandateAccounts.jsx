@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { X, Save, Plus, ShieldCheck, AlertTriangle } from 'lucide-react';
 import {
   mandateAccounts,
@@ -26,7 +26,6 @@ import {
   formatExactAmount,
 } from '../mock/data';
 import { useDrawerFocus } from './useDrawerFocus';
-import MandateAgreementLedger from './AdminMandateAgreements';
 
 // 委托账户（2026-11-13 批 1a · B 号账户 + 资金流水；2026-11-17 IA 收敛为「委托业务」账户签）
 //
@@ -37,8 +36,8 @@ import MandateAgreementLedger from './AdminMandateAgreements';
 //      平时只看状态，点「变更授权」才展开表单。
 //   ③ 余额不落库：列表与抽屉里的余额都由 cashLedger 现算，页面没有任何地方能改余额。
 //
-// 协议台账（MandateAgreementLedger）嵌在本签顶部：协议是开户流程第一步，
-// 开户闸门失败时指路上方台账，不再跳独立菜单。
+// 协议台账已独立成「协议」签（2026-11-17 二次拍板，签序=流程序）；开户闸门（canOpenMandateAccount）
+// 仍在数据层，本签声明与抽屉指路「协议」签。
 
 const STATUS_META = {
   [MANDATE_ACCOUNT_STATUS.PENDING]: { label: '待授权', cls: 'admin-status-pending' },
@@ -56,6 +55,28 @@ const balanceLabel = (accountId) => {
   const rows = getMandateCashByCurrency(accountId);
   if (!rows.length) return '—';
   return rows.map(r => `${r.currency} ${formatExactAmount(r.balance)}`).join(' · ');
+};
+
+// 列表余额：主币种一行（优先非零最大），其余币种次行小字——多币种串成一行读不出主次
+const balanceMain = (accountId) => {
+  const rows = getMandateCashByCurrency(accountId);
+  if (!rows.length) return null;
+  const nonzero = rows.filter(r => r.balance > 0);
+  const pool = nonzero.length ? nonzero : rows;
+  const main = pool.reduce((a, b) => (Math.abs(b.balance) > Math.abs(a.balance) ? b : a));
+  return { main, rest: rows.filter(r => r !== main) };
+};
+
+// 提取三步进度条（登记 → 合规复核 → 产出 同款语言）：申请 → 通过 → 完成登记。
+// pending: 通过中；in_progress: 变现中待登记；rejected: 卡在「通过」环节。
+const WD_STEPS = ['申请', '通过', '完成登记'];
+const wdStepStates = (w) => {
+  switch (w.status) {
+    case MANDATE_WITHDRAWAL_STATUS.COMPLETED: return ['done', 'done', 'done'];
+    case MANDATE_WITHDRAWAL_STATUS.IN_PROGRESS: return ['done', 'done', 'current'];
+    case MANDATE_WITHDRAWAL_STATUS.REJECTED: return ['done', 'error', 'todo'];
+    default: return ['done', 'current', 'todo'];
+  }
 };
 
 export default function AdminMandateAccounts({ admin, detailId, navigate }) {
@@ -206,17 +227,11 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
   return (
     <div className="mandate-panel mandate-panel--accounts">
       <div className="mandate-panel-bar">
-        <span className="admin-header-summary">
-          {mandateAccounts.length} 个账户 · 待授权 {mandateAccounts.filter(a => a.status === MANDATE_ACCOUNT_STATUS.PENDING).length} 个 ·
-          待办提取 {mandateWithdrawals.filter(w => w.status === MANDATE_WITHDRAWAL_STATUS.PENDING || w.status === MANDATE_WITHDRAWAL_STATUS.IN_PROGRESS).length} 单 ·
-          余额由资金流水派生，账户不存余额
-        </span>
+        <span className="admin-header-summary">开户须有生效协议（见「协议」签），授权显示须合规复核</span>
         <button className="btn btn-md btn-primary" onClick={() => navigate('#admin/mandate/accounts/new')}>
           <Plus size={16} /> 开立委托账户
         </button>
       </div>
-
-      <MandateAgreementLedger admin={admin} onChanged={refresh} />
 
       <div className="admin-table admin-table--mandate-accounts">
         <div className="admin-table-header">
@@ -224,12 +239,12 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
           <span>协议</span>
           <span>基金经理</span>
           <span className="col-amount">资金余额</span>
-          <span>APP 显示</span>
           <span>状态</span>
         </div>
         {mandateAccounts.map(acc => {
           const meta = STATUS_META[acc.status] || STATUS_META[MANDATE_ACCOUNT_STATUS.PENDING];
           const ag = mandateAgreements.find(a => a.id === acc.agreementId);
+          const bal = balanceMain(acc.id);
           return (
             <div
               key={acc.id}
@@ -245,9 +260,21 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
               </span>
               <span>{ag?.no || '—'}</span>
               <span>{acc.managerName || '—'}</span>
-              <span className="col-amount">{balanceLabel(acc.id)}</span>
-              <span>{acc.visibleInApp ? '显示' : '不显示'}</span>
-              <span><span className={`status-badge ${meta.cls}`}>{meta.label}</span></span>
+              <span className="col-amount mandate-bal">
+                {bal ? (
+                  <>
+                    <strong>{bal.main.currency} {formatExactAmount(bal.main.balance)}</strong>
+                    {bal.rest.length > 0 && (
+                      <span className="mandate-subline">{bal.rest.map(r => `${r.currency} ${formatExactAmount(r.balance)}`).join(' · ')}</span>
+                    )}
+                  </>
+                ) : '—'}
+              </span>
+              <span className="mandate-status-cell">
+                <span className={`status-badge ${meta.cls}`}>{meta.label}</span>
+                <span className="mandate-subline">{acc.visibleInApp ? 'APP 显示' : 'APP 不显示'}</span>
+              </span>
+
             </div>
           );
         })}
@@ -424,11 +451,23 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
                         [MANDATE_WITHDRAWAL_STATUS.COMPLETED]: 'admin-status-approved',
                         [MANDATE_WITHDRAWAL_STATUS.REJECTED]: 'admin-status-closed',
                       }[w.status] || 'admin-status-pending';
+                      const stepStates = wdStepStates(w);
                       return (
                         <div key={w.id} className="mandate-wd-row">
                           <div className="mandate-wd-main">
                             <strong>{w.currency} {formatExactAmount(w.amount)}</strong>
                             <span className="mandate-subline">{w.no} · 申请 {String(w.createdAt).slice(0, 16)}</span>
+                            <div className="mandate-steps" aria-label="提取进度">
+                              {WD_STEPS.map((label, i) => (
+                                <Fragment key={label}>
+                                  {i > 0 && <span className={`mandate-step-line ${stepStates[i - 1] === 'done' ? 'mandate-step-line--done' : ''}`} />}
+                                  <div className={`mandate-step mandate-step--${stepStates[i]}`}>
+                                    <span className="mandate-step-dot" />
+                                    <span className="mandate-step-label">{label}</span>
+                                  </div>
+                                </Fragment>
+                              ))}
+                            </div>
                             {(w.status === MANDATE_WITHDRAWAL_STATUS.PENDING || w.status === MANDATE_WITHDRAWAL_STATUS.IN_PROGRESS) && w.expectedDate && (
                               <span className="mandate-subline">预计到账 {w.expectedDate}（不少于 {mandateConfig.withdrawalNoticeDays} 个营业日）</span>
                             )}

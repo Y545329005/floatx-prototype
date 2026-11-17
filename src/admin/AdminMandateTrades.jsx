@@ -64,6 +64,9 @@ export default function AdminMandateTrades({ admin, detailId, correctionOf, navi
   const [feeMsg, setFeeMsg] = useState('');
   const [feeReview, setFeeReview] = useState({ id: '', reviewer: '' });
   const [priceAccount, setPriceAccount] = useState('');
+  // 低频录入表单折叠：估值/费用录入不是常驻信息，点主按钮展开、收起后列表上移（与「变更授权」折叠同模式）
+  const [priceOpen, setPriceOpen] = useState(false);
+  const [feeOpen, setFeeOpen] = useState(false);
   const operator = admin?.name || '运营后台';
 
   const accounts = mandateAccounts.filter(a => a.status !== MANDATE_ACCOUNT_STATUS.CLOSED);
@@ -195,13 +198,22 @@ export default function AdminMandateTrades({ admin, detailId, correctionOf, navi
   return (
     <div className="mandate-panel mandate-panel--trades">
       <div className="mandate-panel-bar">
-        <span className="admin-header-summary">
-          {mandateTrades.length} 笔交易 · 待复核 {pendingCount} 笔 ·
-          持仓由交易派生，作废即回退
-        </span>
-        <button className="btn btn-md btn-primary" onClick={() => navigate('#admin/mandate/trades/new')}>
-          <Plus size={16} /> 录入交易
-        </button>
+        <span className="admin-header-summary">录入即待复核，复核生效后才进持仓与日结单</span>
+        {tab === 'trades' && (
+          <button className="btn btn-md btn-primary" onClick={() => navigate('#admin/mandate/trades/new')}>
+            <Plus size={16} /> 录入交易
+          </button>
+        )}
+        {tab === 'prices' && (
+          <button className="btn btn-md btn-outline" onClick={() => { setPriceOpen(v => !v); setPriceMsg(''); }}>
+            {priceOpen ? '收起' : <><Plus size={16} /> 更新估值</>}
+          </button>
+        )}
+        {tab === 'fees' && (
+          <button className="btn btn-md btn-outline" onClick={() => { setFeeOpen(v => !v); setFeeMsg(''); }}>
+            {feeOpen ? '收起' : <><Plus size={16} /> 录入费用</>}
+          </button>
+        )}
       </div>
 
       <div className="fund-tabs fund-tabs--sub" role="tablist" aria-label="委托交易分区">
@@ -228,7 +240,7 @@ export default function AdminMandateTrades({ admin, detailId, correctionOf, navi
             <span className="col-amount">数量 × 价格</span>
             <span className="col-amount">金额 HKD</span>
             <span>状态</span>
-            <span className="col-actions">复核</span>
+            <span className="col-actions">操作</span>
           </div>
           {tradeRows.map(t => {
             const meta = TRADE_STATUS[t.status] || TRADE_STATUS[MANDATE_TRADE_STATUS.PENDING];
@@ -256,7 +268,11 @@ export default function AdminMandateTrades({ admin, detailId, correctionOf, navi
                 <span><span className={`status-badge ${meta.cls}`}>{meta.label}</span></span>
                 <span className="col-actions">
                   {t.status === MANDATE_TRADE_STATUS.PENDING
-                    ? <CheckCircle size={16} />
+                    ? (
+                      <button className="btn-icon" title="复核" aria-label="复核（打开交易抽屉）" onClick={e => { e.stopPropagation(); navigate(`#admin/mandate/trades/${t.id}`); }}>
+                        <CheckCircle size={16} />
+                      </button>
+                    )
                     : <span className="mandate-reviewer">{t.reviewedBy || '—'}</span>}
                 </span>
               </div>
@@ -270,51 +286,54 @@ export default function AdminMandateTrades({ admin, detailId, correctionOf, navi
 
       {tab === 'prices' && (
         <>
-          <div className="card">
-            <div className="card-title">更新估值（只留痕，不阻断交易）</div>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">账户</label>
-                <select className="form-input" value={selectedAccount()} onChange={e => { setPriceAccount(e.target.value); setPriceMsg(''); setPriceForm(p => ({ ...p, symbol: '' })); }}>
-                  {accounts.map(a => <option key={a.id} value={a.id}>{a.no} · {a.userName}</option>)}
-                </select>
+          {priceMsg && <p className="admin-form-hint">{priceMsg}</p>}
+          {priceOpen && (
+            <div className="card">
+              <div className="card-title">更新估值（只留痕，不阻断交易）</div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">账户</label>
+                  <select className="form-input" value={selectedAccount()} onChange={e => { setPriceAccount(e.target.value); setPriceMsg(''); setPriceForm(p => ({ ...p, symbol: '' })); }}>
+                    {accounts.map(a => <option key={a.id} value={a.id}>{a.no} · {a.userName}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">持仓</label>
+                  <select className="form-input" value={priceForm.symbol} onChange={e => setPriceForm(p => ({ ...p, symbol: e.target.value }))}>
+                    <option value="">请选择</option>
+                    {priceHoldings.map(h => <option key={h.symbol} value={h.symbol}>{h.symbol} · 现价 {h.price || '未标记'}</option>)}
+                  </select>
+                </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">持仓</label>
-                <select className="form-input" value={priceForm.symbol} onChange={e => setPriceForm(p => ({ ...p, symbol: e.target.value }))}>
-                  <option value="">请选择</option>
-                  {priceHoldings.map(h => <option key={h.symbol} value={h.symbol}>{h.symbol} · 现价 {h.price || '未标记'}</option>)}
-                </select>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">最新价（原币）</label>
+                  <input className="form-input" type="number" step="any" value={priceForm.price} onChange={e => setPriceForm(p => ({ ...p, price: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">汇率（折 HKD）</label>
+                  <input className="form-input" type="number" step="any" value={priceForm.fxRate} onChange={e => setPriceForm(p => ({ ...p, fxRate: e.target.value }))} />
+                </div>
               </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">估值日</label>
+                  <input className="form-input" type="date" value={priceForm.priceAt} onChange={e => setPriceForm(p => ({ ...p, priceAt: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">估值方法</label>
+                  <select className="form-input" value={priceForm.method} onChange={e => setPriceForm(p => ({ ...p, method: e.target.value }))}>
+                    {Object.entries(MANDATE_VALUATION_METHODS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="admin-form-actions">
+                <button className="btn btn-md btn-outline" onClick={() => setPriceOpen(false)}>收起</button>
+                <button className="btn btn-md btn-primary" onClick={handlePrice}><Save size={16} /> 更新估值</button>
+              </div>
+              <p className="admin-form-hint">价格天天变，逐笔复核会把运营淹掉：这里只记录 before/after 与操作人，合规事后审计。日结单取「当日或之前最新一条」标记价。</p>
             </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">最新价（原币）</label>
-                <input className="form-input" type="number" step="any" value={priceForm.price} onChange={e => setPriceForm(p => ({ ...p, price: e.target.value }))} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">汇率（折 HKD）</label>
-                <input className="form-input" type="number" step="any" value={priceForm.fxRate} onChange={e => setPriceForm(p => ({ ...p, fxRate: e.target.value }))} />
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">估值日</label>
-                <input className="form-input" type="date" value={priceForm.priceAt} onChange={e => setPriceForm(p => ({ ...p, priceAt: e.target.value }))} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">估值方法</label>
-                <select className="form-input" value={priceForm.method} onChange={e => setPriceForm(p => ({ ...p, method: e.target.value }))}>
-                  {Object.entries(MANDATE_VALUATION_METHODS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                </select>
-              </div>
-            </div>
-            {priceMsg && <p className="admin-form-hint">{priceMsg}</p>}
-            <div className="admin-form-actions">
-              <button className="btn btn-md btn-outline" onClick={handlePrice}><Save size={16} /> 更新估值</button>
-            </div>
-            <p className="admin-form-hint">价格天天变，逐笔复核会把运营淹掉：这里只记录 before/after 与操作人，合规事后审计。日结单取「当日或之前最新一条」标记价。</p>
-          </div>
+          )}
 
           <div className="admin-table admin-table--mandate-prices">
             <div className="admin-table-header">
@@ -341,43 +360,46 @@ export default function AdminMandateTrades({ admin, detailId, correctionOf, navi
 
       {tab === 'fees' && (
         <>
-          <div className="card">
-            <div className="card-title">录入费用（协议 12，从组合扣减）</div>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">账户</label>
-                <select className="form-input" value={feeForm.accountId} onChange={e => setFeeForm(p => ({ ...p, accountId: e.target.value }))}>
-                  <option value="">请选择</option>
-                  {accounts.map(a => <option key={a.id} value={a.id}>{a.no} · {a.userName}</option>)}
-                </select>
+          {feeMsg && <p className="admin-form-hint">{feeMsg}</p>}
+          {feeOpen && (
+            <div className="card">
+              <div className="card-title">录入费用（协议 12，从组合扣减）</div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">账户</label>
+                  <select className="form-input" value={feeForm.accountId} onChange={e => setFeeForm(p => ({ ...p, accountId: e.target.value }))}>
+                    <option value="">请选择</option>
+                    {accounts.map(a => <option key={a.id} value={a.id}>{a.no} · {a.userName}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">期间（YYYY-MM）</label>
+                  <input className="form-input" value={feeForm.period} onChange={e => setFeeForm(p => ({ ...p, period: e.target.value }))} placeholder="2026-11" />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">费用类型</label>
+                  <select className="form-input" value={feeForm.type} onChange={e => setFeeForm(p => ({ ...p, type: e.target.value }))}>
+                    {Object.entries(MANDATE_FEE_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">金额</label>
+                  <input className="form-input" type="number" step="any" value={feeForm.amount} onChange={e => setFeeForm(p => ({ ...p, amount: e.target.value }))} />
+                </div>
               </div>
               <div className="form-group">
-                <label className="form-label">期间（YYYY-MM）</label>
-                <input className="form-input" value={feeForm.period} onChange={e => setFeeForm(p => ({ ...p, period: e.target.value }))} placeholder="2026-11" />
+                <label className="form-label">备注</label>
+                <input className="form-input" value={feeForm.note} onChange={e => setFeeForm(p => ({ ...p, note: e.target.value }))} />
               </div>
-            </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">费用类型</label>
-                <select className="form-input" value={feeForm.type} onChange={e => setFeeForm(p => ({ ...p, type: e.target.value }))}>
-                  {Object.entries(MANDATE_FEE_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                </select>
+              <div className="admin-form-actions">
+                <button className="btn btn-md btn-outline" onClick={() => setFeeOpen(false)}>收起</button>
+                <button className="btn btn-md btn-primary" onClick={handleFeeCreate}><Plus size={16} /> 录入费用</button>
               </div>
-              <div className="form-group">
-                <label className="form-label">金额</label>
-                <input className="form-input" type="number" step="any" value={feeForm.amount} onChange={e => setFeeForm(p => ({ ...p, amount: e.target.value }))} />
-              </div>
+              <p className="admin-form-hint">收益一律费前，费用在结单单列——把费用混进收益会让客户把费用当成亏损。</p>
             </div>
-            <div className="form-group">
-              <label className="form-label">备注</label>
-              <input className="form-input" value={feeForm.note} onChange={e => setFeeForm(p => ({ ...p, note: e.target.value }))} />
-            </div>
-            {feeMsg && <p className="admin-form-hint">{feeMsg}</p>}
-            <div className="admin-form-actions">
-              <button className="btn btn-md btn-outline" onClick={handleFeeCreate}><Plus size={16} /> 录入费用</button>
-            </div>
-            <p className="admin-form-hint">收益一律费前，费用在结单单列——把费用混进收益会让客户把费用当成亏损。</p>
-          </div>
+          )}
 
           <div className="admin-table admin-table--mandate-fees">
             <div className="admin-table-header">
@@ -388,30 +410,42 @@ export default function AdminMandateTrades({ admin, detailId, correctionOf, navi
               <span>录入 / 复核</span>
               <span className="col-actions">操作</span>
             </div>
-            {mandateFees.map(f => (
-              <div key={f.id} className="admin-table-row">
-                <span>{f.period}</span>
-                <span>{MANDATE_FEE_TYPES[f.type] || f.type}</span>
-                <span className="col-amount">{f.currency} {formatExactAmount(f.amount)}</span>
-                <span><span className={`status-badge ${f.status === 'approved' ? 'admin-status-approved' : f.status === 'rejected' ? 'admin-status-rejected' : 'admin-status-pending'}`}>
-                  {f.status === 'approved' ? '已生效' : f.status === 'rejected' ? '已驳回' : '待复核'}
-                </span></span>
-                <span>{f.createdBy} / {f.reviewedBy || '—'}</span>
-                <span className="col-actions">
-                  {f.status === 'pending' && (
-                    <span className="mandate-fee-review">
+            {mandateFees.map(f => {
+              const expanded = feeReview.id === f.id;
+              return (
+                <div key={f.id} className="mandate-fee-item">
+                  <div className="admin-table-row">
+                    <span>{f.period}</span>
+                    <span>{MANDATE_FEE_TYPES[f.type] || f.type}</span>
+                    <span className="col-amount">{f.currency} {formatExactAmount(f.amount)}</span>
+                    <span><span className={`status-badge ${f.status === 'approved' ? 'admin-status-approved' : f.status === 'rejected' ? 'admin-status-rejected' : 'admin-status-pending'}`}>
+                      {f.status === 'approved' ? '已生效' : f.status === 'rejected' ? '已驳回' : '待复核'}
+                    </span></span>
+                    <span>{f.createdBy} / {f.reviewedBy || '—'}</span>
+                    <span className="col-actions">
+                      {f.status === 'pending' && (
+                        <button className="btn-icon" title="复核" aria-label="复核（行内展开填写复核人）" onClick={() => setFeeReview({ id: f.id, reviewer: '' })}>
+                          <CheckCircle size={16} />
+                        </button>
+                      )}
+                    </span>
+                  </div>
+                  {expanded && (
+                    <div className="mandate-fee-expand">
+                      <label className="form-label">复核人（不得与录入人相同）</label>
                       <input
                         className="form-input"
-                        placeholder="复核人"
-                        value={feeReview.id === f.id ? feeReview.reviewer : ''}
+                        placeholder="合规人员姓名"
+                        value={feeReview.reviewer}
                         onChange={e => setFeeReview({ id: f.id, reviewer: e.target.value })}
                       />
-                      <button className="btn btn-md btn-outline" onClick={() => handleFeeReview(f.id)}>通过</button>
-                    </span>
+                      <button className="btn btn-md btn-primary" onClick={() => handleFeeReview(f.id)}>通过</button>
+                      <button className="btn btn-md btn-outline" onClick={() => setFeeReview({ id: '', reviewer: '' })}>取消</button>
+                    </div>
                   )}
-                </span>
-              </div>
-            ))}
+                </div>
+              );
+            })}
             {mandateFees.length === 0 && (
               <div className="admin-table-row"><span className="admin-table-empty">暂无费用行</span></div>
             )}
@@ -517,27 +551,7 @@ export default function AdminMandateTrades({ admin, detailId, correctionOf, navi
 
             {!isNew && selected && (
               <>
-                <div className="card">
-                  <div className="card-title">交易信息</div>
-                  <div className="kyc-review-row"><span>账户</span><strong>{selected.no} · {selected.userId}</strong></div>
-                  <div className="kyc-review-row"><span>证券</span><strong>{selected.name}（{selected.symbol}）</strong></div>
-                  <div className="kyc-review-row"><span>方向 / 数量</span><strong>{selected.side === 'buy' ? '买入' : '卖出'} {formatShares(selected.quantity)} 股</strong></div>
-                  <div className="kyc-review-row"><span>成交价 / 汇率</span><strong>{selected.price} {selected.currency} × {selected.fxRate}</strong></div>
-                  <div className="kyc-review-row"><span>金额（折 HKD）</span><strong>{formatExactAmount(selected.quantity * selected.price * selected.fxRate)}</strong></div>
-                  <div className="kyc-review-row"><span>交易日 / 交收日</span><strong>{selected.tradeDate} → {selected.settleDate || '—'}</strong></div>
-                  <div className="kyc-review-row"><span>录入 / 复核</span><strong>{selected.createdBy} / {selected.reviewedBy || '—'}</strong></div>
-                  {selected.rejectReason && <div className="kyc-review-row"><span>驳回原因</span><strong>{selected.rejectReason}</strong></div>}
-                  {selected.voidReason && <div className="kyc-review-row"><span>作废原因</span><strong>{selected.voidReason}</strong></div>}
-                  {selected.adviceMail && <div className="kyc-review-row"><span>成交通知</span><strong>{selected.adviceMail.status === 'queued' ? '邮件已排队' : selected.adviceMail.status} · {String(selected.adviceMail.at || '').slice(0, 16)}</strong></div>}
-                </div>
-
-                {selected.limitWarnings?.length > 0 && (
-                  <div className="mandate-gate-warn">
-                    <AlertTriangle size={15} />
-                    <span>{selected.limitWarnings.join('；')}<br />软提示不阻断——超限已留痕，合规可事后审计。</span>
-                  </div>
-                )}
-
+                {/* pending 时复核是唯一的下一步动作，置顶；交易信息 KV 随后作核对底稿 */}
                 {selected.status === MANDATE_TRADE_STATUS.PENDING && (
                   <div className="card">
                     <div className="card-title">复核（Maker-Checker）</div>
@@ -558,6 +572,27 @@ export default function AdminMandateTrades({ admin, detailId, correctionOf, navi
                       <button className="btn btn-md btn-primary" onClick={() => handleReview('approve')}><CheckCircle size={16} /> 生效</button>
                     </div>
                     <p className="admin-form-hint">生效时自动写一条交易流水（买入减、卖出增）并发送成交通知邮件{mandateConfig.adviceEmail ? '' : '（当前邮件开关关闭，仅 APP 可查）'}。</p>
+                  </div>
+                )}
+
+                <div className="card">
+                  <div className="card-title">交易信息</div>
+                  <div className="kyc-review-row"><span>账户</span><strong>{selected.no} · {selected.userId}</strong></div>
+                  <div className="kyc-review-row"><span>证券</span><strong>{selected.name}（{selected.symbol}）</strong></div>
+                  <div className="kyc-review-row"><span>方向 / 数量</span><strong>{selected.side === 'buy' ? '买入' : '卖出'} {formatShares(selected.quantity)} 股</strong></div>
+                  <div className="kyc-review-row"><span>成交价 / 汇率</span><strong>{selected.price} {selected.currency} × {selected.fxRate}</strong></div>
+                  <div className="kyc-review-row"><span>金额（折 HKD）</span><strong>{formatExactAmount(selected.quantity * selected.price * selected.fxRate)}</strong></div>
+                  <div className="kyc-review-row"><span>交易日 / 交收日</span><strong>{selected.tradeDate} → {selected.settleDate || '—'}</strong></div>
+                  <div className="kyc-review-row"><span>录入 / 复核</span><strong>{selected.createdBy} / {selected.reviewedBy || '—'}</strong></div>
+                  {selected.rejectReason && <div className="kyc-review-row"><span>驳回原因</span><strong>{selected.rejectReason}</strong></div>}
+                  {selected.voidReason && <div className="kyc-review-row"><span>作废原因</span><strong>{selected.voidReason}</strong></div>}
+                  {selected.adviceMail && <div className="kyc-review-row"><span>成交通知</span><strong>{selected.adviceMail.status === 'queued' ? '邮件已排队' : selected.adviceMail.status} · {String(selected.adviceMail.at || '').slice(0, 16)}</strong></div>}
+                </div>
+
+                {selected.limitWarnings?.length > 0 && (
+                  <div className="mandate-gate-warn">
+                    <AlertTriangle size={15} />
+                    <span>{selected.limitWarnings.join('；')}<br />软提示不阻断——超限已留痕，合规可事后审计。</span>
                   </div>
                 )}
 

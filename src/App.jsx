@@ -299,9 +299,9 @@ export default function App() {
     // 不做副作用重定向（与上方未登录处理同款模式）。
     // 旧深链归一（2026-11-17 IA 收敛，渲染期纯计算、不改 hash、无导航副作用——与守卫「不做副作用重定向」同约束）：
     // #admin/mandate-accounts/{id} → #admin/mandate/accounts/{id}；#admin/special-subs/{id} → #admin/fund-trades/special/{id}。
-    // 协议旧深链 #admin/mandate-agreements/{id} 落账户签（协议抽屉已组件 state 化，不再占 URL）。
+    // 协议旧深链 #admin/mandate-agreements/{id} 落协议签（协议抽屉已组件 state 化，不再占 URL）。
     const ADMIN_ROUTE_ALIAS = {
-      'mandate-agreements': { sub: 'mandate', tab: 'accounts' },
+      'mandate-agreements': { sub: 'mandate', tab: 'agreements' },
       'mandate-accounts': { sub: 'mandate', tab: 'accounts' },
       'mandate-trades': { sub: 'mandate', tab: 'trades' },
       'mandate-reports': { sub: 'mandate', tab: 'reports' },

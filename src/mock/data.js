@@ -12540,6 +12540,37 @@ export const mandateAgreements = [
     createdAt: '2026-11-04 15:20:00',
     createdBy: '李合规',
   },
+  // 第二份协议（2026-11-17 月报索引拍板）：黄志诚为委托域演示客户（仅存在于本域种子，
+  // 不在 getInvestorUsers 名单，不进 APP）。月报索引需要第二个账户演示「已汇总 / 未出具」两态：
+  // 他名下无日结单（buildMandateMonthlyReport 按 userId 过滤）→ days=0 → 未出具。
+  {
+    id: 'mag2',
+    no: 'HB-DA-2026-002',
+    userId: 'u20',
+    userName: '黄志诚',
+    status: 'active',
+    signedAt: '2026-11-16 14:30:00',
+    effectiveAt: '2026-11-17 00:00:00',
+    terminatedAt: null,
+    clientWitness: '区家盛',
+    managerDirector: '黎国基',
+    licensedRepName: '林景湖',
+    licensedRepCE: 'BJW789',
+    language: 'zh-HK',
+    scanUrl: null,
+    version: 'v1.0',
+    fees: { managementPct: 1.5, inceptionPct: 0, performancePct: 20, hurdlePct: 8, minimumValue: 500000 },
+    strategy: {
+      objectives: '以港股及亚太上市证券为主，追求稳健收益。',
+      policy: '由持牌基金经理全权决定买入、持有与卖出。',
+      limits: { singleCompanyPct: 20, singleIssuerPct: 30, borrowingPct: 0 },
+    },
+    valuationCurrency: 'HKD',
+    valuationCycle: 'monthly',
+    reportingPeriod: 'monthly',
+    createdAt: '2026-11-16 14:30:00',
+    createdBy: '李合规',
+  },
 ];
 
 // 委托账户 B 号。auth 双人：ops 发起授权、compliance 复核，两人不得同一人（Maker-Checker）。
@@ -12558,6 +12589,25 @@ export const mandateAccounts = [
     authReviewedBy: '李合规',
     authReviewedAt: '2026-11-05 10:30:00',
     openedAt: '2026-11-05 09:40:00',
+    createdBy: '王运营',
+  },
+  // 第二账户（2026-11-17）：与 mag2 配对。无现金流水、无交易、无提取——
+  // 账户表余额显示「—」，月报索引显示「未出具」。已授权但 APP 显示关闭（未注资不显示），
+  // 顺带覆盖「APP 不显示」次行分支。
+  {
+    id: 'mb2',
+    no: 'B00002',
+    userId: 'u20',
+    userName: '黄志诚',
+    agreementId: 'mag2',
+    managerName: '林景湖',
+    custodian: 'HighBlock Securities Limited',
+    status: MANDATE_ACCOUNT_STATUS.ACTIVE,
+    visibleInApp: false,
+    authRequestedBy: '王运营',
+    authReviewedBy: '李合规',
+    authReviewedAt: '2026-11-17 09:30:00',
+    openedAt: '2026-11-17 09:00:00',
     createdBy: '王运营',
   },
 ];
