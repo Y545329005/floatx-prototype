@@ -11083,10 +11083,15 @@ export const Storage = {
         if (Number.isFinite(Number(cfg.withdrawalNoticeDays))) mandateConfig.withdrawalNoticeDays = Number(cfg.withdrawalNoticeDays);
         if (typeof cfg.lockUpEnabled === 'boolean') mandateConfig.lockUpEnabled = cfg.lockUpEnabled;
       }
+      // 按 id 覆盖，**不整表重建**（2026-11-17）：先清空再按快照回填，会把代码后来新增的种子条目
+      // 从所有「有旧快照」的浏览器里抹掉——协议正文曾因此渲染成空卡（当时只修了 agreements）。
+      // 规则见 AGENTS.md「持久化快照只叠加不重建」。委托域这些表没有删除入口，复活旧行不成问题。
       const restoreMandateArray = (target, source) => {
         if (!Array.isArray(source)) return;
-        target.length = 0;
-        source.forEach(item => { if (item && item.id) target.push(item); });
+        const byId = new Map(source.filter(i => i && i.id).map(i => [i.id, i]));
+        target.forEach((item, i) => { if (byId.has(item.id)) target[i] = byId.get(item.id); });
+        const known = new Set(target.map(i => i.id));
+        byId.forEach(item => { if (!known.has(item.id)) target.push(item); });
       };
       restoreMandateArray(mandateAgreements, data.mandateAgreements);
       restoreMandateArray(mandateAccounts, data.mandateAccounts);
@@ -13916,7 +13921,51 @@ export const SPECIAL_SUB_STATUS = {
   USED: 'used',
 };
 
-export const specialSubscriptionApprovals = [];
+// 特殊申购种子（2026-11-17 重设计拍板①）：四态各 1 条——空数组曾使列表/复核/代下单全部分支不可见。
+// ssa-seed-2 用 u1（张三）：数据层限制仅当前演示客户可代下单（createOrderFromSpecialApproval）。
+// ssa-seed-3 用 u2（李四，KYC 未完成）：驳回原因与 KYC 状态自洽。
+// restoreMandateArray 按 id 合并，旧快照浏览器也能看到这批种子。
+export const specialSubscriptionApprovals = [
+  {
+    id: 'ssa-seed-1', userId: 'u1', userName: '张三',
+    fundId: 'f1', fundName: 'AIDC 基金', currency: 'HKD', approvedAmount: 800000,
+    directorName: '陈志明', approvalRef: 'DIR-2026-1116-02', evidenceName: '董事批准函.pdf',
+    note: '客户经理线下跟进，分两笔到位',
+    status: SPECIAL_SUB_STATUS.PENDING,
+    createdBy: '王运营', createdAt: '2026-11-16 10:20:00',
+    reviewedBy: '', reviewedAt: null, rejectReason: '', orderId: '',
+  },
+  {
+    id: 'ssa-seed-2', userId: 'u1', userName: '张三',
+    fundId: 'f1', fundName: 'AIDC 基金', currency: 'HKD', approvedAmount: 900000,
+    directorName: '陈志明', approvalRef: 'DIR-2026-1114-01', evidenceName: '董事批准函.pdf',
+    note: '',
+    status: SPECIAL_SUB_STATUS.APPROVED,
+    createdBy: '王运营', createdAt: '2026-11-14 14:05:00',
+    reviewedBy: '李合规', reviewedAt: '2026-11-14 16:40:00', rejectReason: '', orderId: '',
+  },
+  {
+    id: 'ssa-seed-3', userId: 'u2', userName: '李四',
+    fundId: 'f1', fundName: 'AIDC 基金', currency: 'HKD', approvedAmount: 700000,
+    directorName: '陈志明', approvalRef: 'DIR-2026-1112-03', evidenceName: '',
+    note: '',
+    status: SPECIAL_SUB_STATUS.REJECTED,
+    createdBy: '王运营', createdAt: '2026-11-12 09:30:00',
+    reviewedBy: '李合规', reviewedAt: '2026-11-12 11:15:00',
+    rejectReason: '客户 KYC 未完成，先行驳回，完成后再重新登记',
+    orderId: '',
+  },
+  {
+    id: 'ssa-seed-4', userId: 'u1', userName: '张三',
+    fundId: 'f1', fundName: 'AIDC 基金', currency: 'HKD', approvedAmount: 850000,
+    directorName: '陈志明', approvalRef: 'DIR-2026-1110-01', evidenceName: '董事批准函.pdf',
+    note: '',
+    status: SPECIAL_SUB_STATUS.USED,
+    createdBy: '王运营', createdAt: '2026-11-10 15:00:00',
+    reviewedBy: '李合规', reviewedAt: '2026-11-10 17:20:00', rejectReason: '',
+    orderId: 'fo-seed-1',
+  },
+];
 
 export function createSpecialSubscriptionApproval(payload = {}, operator = '') {
   const user = getInvestorUsers().find(u => u.userId === payload.userId);

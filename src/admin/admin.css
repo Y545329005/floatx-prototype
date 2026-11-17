@@ -4240,3 +4240,58 @@
 
 /* ===== 特殊申购签重设计（2026-11-17 拍板②~⑦） =====
    顶行去重（声明左/按钮右）、5 列行内动作表、三步进度条、表单实时起投额对照、空态引导。 */
+.special-bar { justify-content: space-between; }
+.special-bar .admin-header-summary { margin-left: 0; margin-right: auto; }
+
+/* 列表 6→5 列：死「复核」列删除（复核人并入状态次行），「申购单」列并入状态次行；
+   操作列 = KYC 同款 btn-icon（动词 tooltip） */
+.admin-table--special-subs .admin-table-header,
+.admin-table--special-subs .admin-table-row {
+  grid-template-columns:
+    minmax(200px, 24fr)
+    minmax(130px, 14fr)
+    minmax(160px, 16fr)
+    minmax(220px, 30fr)
+    72px;
+  gap: 16px;
+}
+.special-status-cell .mandate-subline {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 空态引导：一句定位 + 第一步动作（种子补齐后空态非主形态，保留兜底） */
+.special-empty { padding: var(--space-6) var(--space-4); text-align: center; }
+.special-empty p {
+  max-width: 560px;
+  margin: 0 auto var(--space-4);
+  font-size: var(--text-sm);
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+
+/* 三步流水线（登记 → 合规复核 → 生成申购单）：done 实心 / current 空心 / error 红 / todo 灰 */
+.special-steps { display: flex; align-items: flex-start; gap: var(--space-2); margin-bottom: var(--space-4); }
+.special-step { display: flex; align-items: flex-start; gap: var(--space-2); flex: 0 0 auto; }
+.special-step-dot {
+  flex: 0 0 auto;
+  width: 10px; height: 10px;
+  margin-top: 3px;
+  border-radius: 50%;
+  background: var(--border-light);
+}
+.special-step--done .special-step-dot { background: var(--primary); }
+.special-step--current .special-step-dot { background: var(--bg-card); border: 2px solid var(--primary); }
+.special-step--error .special-step-dot { background: var(--compliance); }
+.special-step-label { display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text); line-height: 1.4; }
+.special-step--todo .special-step-label { color: var(--text-tertiary); font-weight: 500; }
+.special-step-meta { display: block; margin-top: 2px; font-size: var(--text-xs); color: var(--text-secondary); }
+.special-step--error .special-step-meta { color: var(--compliance); }
+.special-step-line { flex: 1 1 20px; min-width: 16px; height: 1px; margin-top: 8px; background: var(--border-light); }
+.special-step-line--done { background: var(--primary); }
+
+/* 表单实时起投额对照：默认灰，达到起投额转红 */
+.special-amt-hint { margin-top: 6px; font-size: var(--text-xs); color: var(--text-secondary); }
+.special-amt-hint.is-over { color: var(--compliance); }

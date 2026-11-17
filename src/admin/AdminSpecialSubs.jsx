@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { X, Plus, Save, CheckCircle, XCircle, ClipboardCheck } from 'lucide-react';
+import { X, Plus, Save, CheckCircle, XCircle, ClipboardCheck, Eye, FilePlus } from 'lucide-react';
 import {
   specialSubscriptionApprovals,
   SPECIAL_SUB_STATUS,
@@ -17,6 +17,9 @@ import { useDrawerFocus } from './useDrawerFocus';
 // 这是「前端不做」的那一半：客户在 APP 里永远走 100 万起投，例外只在这里留痕并代下单。
 // 三步不可跳过：登记董事签字 → 合规复核 → 按批准额度生成申购单（一张批准只能用一次）。
 // 这样做的原因：特殊申购一旦能让前端自选金额，「首笔 100 万」就名存实亡，也没有人能说清谁批的。
+//
+// IA 收敛（2026-11-17 方案 A）：异常通道与常规交易同域——本组件降级为「基金交易」第 3 个
+// 页签的面板（#admin/fund-trades/special/{id}），不再占一级菜单。深链与抽屉语义不变。
 
 const STATUS_META = {
   [SPECIAL_SUB_STATUS.PENDING]: { label: '待复核', cls: 'admin-status-pending' },
@@ -24,6 +27,58 @@ const STATUS_META = {
   [SPECIAL_SUB_STATUS.REJECTED]: { label: '已驳回', cls: 'admin-status-rejected' },
   [SPECIAL_SUB_STATUS.USED]: { label: '已生成申购单', cls: 'admin-status-closed' },
 };
+
+// 状态次行 = 徽章之外的一个关联事实（2026-11-17 拍板③）：登记人 / 复核人 / 驳回原因 / 单号，
+// 不重复徽章文字。单号只在这里出现一处（原「申购单」列已并入）。
+const statusFact = (r) => {
+  switch (r.status) {
+    case SPECIAL_SUB_STATUS.PENDING: return `登记 ${r.createdBy}`;
+    case SPECIAL_SUB_STATUS.APPROVED: return `复核 ${r.reviewedBy || '—'}`;
+    case SPECIAL_SUB_STATUS.REJECTED: return r.rejectReason || '未说明原因';
+    case SPECIAL_SUB_STATUS.USED: return `申购单 ${r.orderId || '—'}`;
+    default: return '';
+  }
+};
+
+// 行内操作按钮（对齐 KYC 列表惯例：btn-icon + 动词 tooltip）。点击落抽屉，动作卡在抽屉内。
+const SUB_ACTION = {
+  [SPECIAL_SUB_STATUS.PENDING]: { title: '复核', Icon: ClipboardCheck },
+  [SPECIAL_SUB_STATUS.APPROVED]: { title: '生成申购单', Icon: FilePlus },
+};
+
+// 三步流水线（2026-11-17 拍板④）：登记 → 合规复核 → 生成申购单。三步不可跳过（数据层保证），进度在此可见。
+function SpecialSteps({ rec }) {
+  const rejected = rec.status === SPECIAL_SUB_STATUS.REJECTED;
+  const used = rec.status === SPECIAL_SUB_STATUS.USED;
+  const nodeState = used
+    ? ['done', 'done', 'done']
+    : rejected
+      ? ['done', 'error', 'todo']
+      : rec.status === SPECIAL_SUB_STATUS.APPROVED
+        ? ['done', 'done', 'current']
+        : ['done', 'current', 'todo'];
+  const nodes = [
+    { label: '登记', meta: rec.createdBy ? `${rec.createdBy} · ${(rec.createdAt || '').slice(5, 10)}` : '' },
+    { label: '合规复核', meta: rec.reviewedBy ? `${rec.reviewedBy} · ${(rec.reviewedAt || '').slice(5, 10)}` : (rejected ? '已驳回' : '待复核') },
+    { label: '生成申购单', meta: used ? `申购单 ${rec.orderId || '—'}` : '一批一单' },
+  ];
+  return (
+    <div className="special-steps" aria-label="审批进度">
+      {nodes.map((n, i) => (
+        <div key={n.label} style={{ display: 'contents' }}>
+          <div className={`special-step special-step--${nodeState[i]}`}>
+            <span className="special-step-dot" />
+            <span>
+              <span className="special-step-label">{n.label}</span>
+              <span className="special-step-meta">{n.meta}</span>
+            </span>
+          </div>
+          {i < nodes.length - 1 && <span className={`special-step-line${nodeState[i] === 'done' ? ' special-step-line--done' : ''}`} />}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const emptyForm = () => ({
   userId: '',
@@ -46,11 +101,14 @@ export default function AdminSpecialSubs({ admin, detailId, navigate }) {
   const [doneMsg, setDoneMsg] = useState('');
   const operator = admin?.name || '运营后台';
 
+
   const investors = useMemo(() => getInvestorUsers(), [tick]);
+  // 实时对照用：当前表单选中的基金（拍板⑥）
+  const selFund = form ? funds.find(f => f.id === form.fundId) : null;
   const isNew = detailId === 'new';
   const selected = detailId && !isNew ? specialSubscriptionApprovals.find(r => r.id === detailId) : null;
   const drawerOpen = isNew || !!selected;
-  const closeDrawer = () => navigate && navigate('#admin/special-subs');
+  const closeDrawer = () => navigate && navigate('#admin/fund-trades/special');
   const drawerRef = useDrawerFocus(drawerOpen, closeDrawer);
 
   useEffect(() => {
@@ -79,7 +137,7 @@ export default function AdminSpecialSubs({ admin, detailId, navigate }) {
     if (!res.ok) { setError(res.error); return; }
     setError('');
     refresh();
-    navigate(`#admin/special-subs/${res.approval.id}`);
+    navigate(`#admin/fund-trades/special/${res.approval.id}`);
   };
 
   const handleReview = (decision) => {
@@ -97,22 +155,19 @@ export default function AdminSpecialSubs({ admin, detailId, navigate }) {
     const res = createOrderFromSpecialApproval(selected.id, operator);
     if (!res.ok) { setError(res.error); return; }
     setError('');
-    setDoneMsg(`已生成申购单 ${res.order.id}，请到「基金交易」确认成交。`);
+    setDoneMsg(`已生成申购单 ${res.order.id}，请到「申购」签确认成交。`);
     refresh();
   };
 
-  const pendingCount = specialSubscriptionApprovals.filter(r => r.status === SPECIAL_SUB_STATUS.PENDING).length;
-
   return (
-    <div className="admin-page admin-page--special-subs">
-      <div className="admin-page-header">
-        <h1>特殊申购</h1>
+    <div className="mandate-panel mandate-panel--special">
+      {/* 顶行（2026-11-17 拍板②）：删「N 份批准 · 待复核 M」统计（与页签角标同数字重复），定位声明左置 */}
+      <div className="mandate-panel-bar special-bar">
         <span className="admin-header-summary">
-          {specialSubscriptionApprovals.length} 份批准 · 待复核 {pendingCount} ·
           客户前端不开放降档，例外只在此留痕并代下单
         </span>
-        <button className="btn btn-md btn-primary" onClick={() => navigate('#admin/special-subs/new')}>
-          <Plus size={16} /> 登记特殊申购批准
+        <button className="btn btn-md btn-primary" onClick={() => navigate('#admin/fund-trades/special/new')}>
+          <Plus size={16} /> 登记批准
         </button>
       </div>
 
@@ -122,19 +177,19 @@ export default function AdminSpecialSubs({ admin, detailId, navigate }) {
           <span className="col-amount">批准金额</span>
           <span>董事 / 文件</span>
           <span>状态</span>
-          <span>复核</span>
-          <span className="col-actions">申购单</span>
+          <span className="col-actions">操作</span>
         </div>
         {specialSubscriptionApprovals.map(r => {
           const meta = STATUS_META[r.status] || STATUS_META[SPECIAL_SUB_STATUS.PENDING];
+          const act = SUB_ACTION[r.status] || { title: '查看详情', Icon: Eye };
           return (
             <div
               key={r.id}
               className="admin-table-row"
               role="button"
               tabIndex={0}
-              onClick={() => navigate(`#admin/special-subs/${r.id}`)}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`#admin/special-subs/${r.id}`); } }}
+              onClick={() => navigate(`#admin/fund-trades/special/${r.id}`)}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`#admin/fund-trades/special/${r.id}`); } }}
             >
               <span className="col-name">
                 <strong>{r.userName}</strong>
@@ -145,23 +200,36 @@ export default function AdminSpecialSubs({ admin, detailId, navigate }) {
                 {r.directorName}
                 <span className="mandate-subline">{r.approvalRef}</span>
               </span>
-              <span><span className={`status-badge ${meta.cls}`}>{meta.label}</span></span>
-              <span>{r.reviewedBy || '—'}</span>
-              <span className="col-actions">{r.orderId || '—'}</span>
+              <span className="special-status-cell">
+                <span className={`status-badge ${meta.cls}`}>{meta.label}</span>
+                <span className="mandate-subline">{statusFact(r)}</span>
+              </span>
+              <span className="col-actions">
+                <button className="btn-icon" title={act.title} aria-label={act.title} onClick={e => { e.stopPropagation(); navigate(`#admin/fund-trades/special/${r.id}`); }}>
+                  <act.Icon size={16} />
+                </button>
+              </span>
             </div>
           );
         })}
         {specialSubscriptionApprovals.length === 0 && (
-          <div className="admin-table-row"><span className="admin-table-empty">暂无特殊申购批准</span></div>
+          <div className="special-empty">
+            <p>
+              低于起投额的例外申购不开放给客户前端。须先取得董事签字批准，在此登记并经合规复核（复核人不得与登记人相同）后，由平台按批准额度代客下单。
+            </p>
+            <button className="btn btn-md btn-primary" onClick={() => navigate('#admin/fund-trades/special/new')}>
+              <Plus size={16} /> 登记批准
+            </button>
+          </div>
         )}
       </div>
 
       {drawerOpen && <div className="admin-drawer-mask" onClick={closeDrawer} />}
       {drawerOpen && (form || selected) && (
-        <div className="admin-drawer admin-drawer--wide" ref={drawerRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={isNew ? '登记特殊申购批准' : `特殊申购 ${selected?.id}`}>
+        <div className="admin-drawer admin-drawer--wide" ref={drawerRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={isNew ? '登记批准' : `特殊申购 ${selected?.id}`}>
           <div className="admin-drawer-head">
             <h3>
-              {isNew ? '登记特殊申购批准' : selected.fundName}
+              {isNew ? '登记批准' : selected.fundName}
               {!isNew && <span className={`status-badge ${STATUS_META[selected.status]?.cls} fund-product-head-badge`}>{STATUS_META[selected.status]?.label}</span>}
             </h3>
             <button className="btn-icon" title="关闭" onClick={closeDrawer}><X size={18} /></button>
@@ -169,6 +237,8 @@ export default function AdminSpecialSubs({ admin, detailId, navigate }) {
 
           <div className="admin-drawer-body">
             {doneMsg && <div className="fund-trade-done">{doneMsg}</div>}
+
+            {!isNew && selected && <SpecialSteps rec={selected} />}
 
             {isNew && form && (
               <div className="card">
@@ -196,8 +266,19 @@ export default function AdminSpecialSubs({ admin, detailId, navigate }) {
                 </div>
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">批准金额（须低于起投额）</label>
+                    <label className="form-label">批准金额</label>
                     <input className="form-input" type="number" step="any" value={form.approvedAmount} onChange={e => setForm(p => ({ ...p, approvedAmount: e.target.value }))} />
+                    {/* 实时对照（2026-11-17 拍板⑥）：选基金即显示起投额；达到起投额当场提示，不等提交报错 */}
+                    {selFund && form.approvedAmount !== '' && Number(form.approvedAmount) >= Number(selFund.minInvestment) && (
+                      <div className="special-amt-hint is-over">
+                        批准金额已达到起投额（{selFund.currency?.[0]} {selFund.minInvestment.toLocaleString()}），走常规申购即可，无需特殊审批
+                      </div>
+                    )}
+                    {selFund && !(form.approvedAmount !== '' && Number(form.approvedAmount) >= Number(selFund.minInvestment)) && (
+                      <div className="special-amt-hint">
+                        该基金起投额 {selFund.currency?.[0]} {selFund.minInvestment.toLocaleString()} · 批准金额须低于此值
+                      </div>
+                    )}
                   </div>
                   <div className="form-group">
                     <label className="form-label">币种</label>
@@ -227,7 +308,7 @@ export default function AdminSpecialSubs({ admin, detailId, navigate }) {
                     <input className="form-input" value={form.note} onChange={e => setForm(p => ({ ...p, note: e.target.value }))} />
                   </div>
                 </div>
-                <div className="admin-form-hint">批准金额必须低于该基金起投额；达到起投额不需要特殊审批。登记后需合规复核。</div>
+                <div className="admin-form-hint">登记后需合规复核（Maker-Checker）：复核人不得与登记人相同。</div>
                 {error && <p className="form-error">{error}</p>}
                 <div className="admin-form-actions">
                   <button className="btn btn-md btn-primary" onClick={handleCreate}><Save size={16} /> 登记批准</button>
@@ -244,6 +325,7 @@ export default function AdminSpecialSubs({ admin, detailId, navigate }) {
                   <div className="kyc-review-row"><span>批准金额</span><strong>{selected.currency} {formatExactAmount(selected.approvedAmount)}</strong></div>
                   <div className="kyc-review-row"><span>董事 / 文件</span><strong>{selected.directorName} · {selected.approvalRef}</strong></div>
                   {selected.evidenceName && <div className="kyc-review-row"><span>签字文件</span><strong>{selected.evidenceName}</strong></div>}
+                  {selected.note && <div className="kyc-review-row"><span>备注</span><strong>{selected.note}</strong></div>}
                   <div className="kyc-review-row"><span>登记 / 复核</span><strong>{selected.createdBy} / {selected.reviewedBy || '—'}</strong></div>
                   {selected.rejectReason && <div className="kyc-review-row"><span>驳回原因</span><strong>{selected.rejectReason}</strong></div>}
                   {selected.orderId && <div className="kyc-review-row"><span>申购单</span><strong>{selected.orderId}</strong></div>}
