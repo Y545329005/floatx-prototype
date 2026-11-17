@@ -15,6 +15,17 @@ import { useLang } from '../i18n';
 // 触发口径：交易复核生效后才生成——录入值可能被驳回，提前出单就是通知一个不存在的事实。
 // 作废后重录的交易标「更正」：客户会同时持有两张单，必须能分清哪张有效。
 
+// 编号回退（2026-11-16）：同一批生效交易按交易日排序取序号，格式 ADV-2026-11-00N
+function derivedAdviceNo(trade) {
+  const actives = mandateTrades
+    .filter(x => x.status === MANDATE_TRADE_STATUS.ACTIVE)
+    .slice()
+    .sort((a, b) => `${a.tradeDate}${a.id}`.localeCompare(`${b.tradeDate}${b.id}`));
+  const idx = actives.findIndex(x => x.id === trade.id);
+  const seq = String((idx < 0 ? actives.length : idx) + 1).padStart(3, '0');
+  return `ADV-${String(trade.tradeDate).slice(0, 7)}-${seq}`;
+}
+
 export default function MandateAdvice({ id, goBack }) {
   const { t } = useLang();
   const [printNote, setPrintNote] = useState('');
@@ -52,6 +63,11 @@ export default function MandateAdvice({ id, goBack }) {
 
   const amountHKD = trade.quantity * trade.price * trade.fxRate;
   const feeHKD = (Number(trade.fee) || 0) * trade.fxRate;
+  // 净额（2026-11-16）：账户实际扣/收的是这个数，缺了它客户拿单对不上账
+  const netHKD = trade.side === 'buy' ? amountHKD + feeHKD : amountHKD - feeHKD;
+  // 对客编号：复核生效即定号（adviceNo）。旧快照里的交易没有该字段，按「交易日 + 生效顺序」派生，
+  // 与种子编号同一格式；绝不把内部 id（mt2）印在给客户的单据上。
+  const docNo = trade.adviceNo || derivedAdviceNo(trade);
 
   return (
     <div className="page doc-page">
@@ -69,7 +85,7 @@ export default function MandateAdvice({ id, goBack }) {
             <div className="doc-title">{t('成交通知单')}</div>
           </div>
           <div className="doc-meta">
-            <span>{t('单据编号')} ADV-{trade.id.toUpperCase()}</span>
+            <span>{t('单据编号')} {docNo}</span>
             <span>{t('列印日期')} {String(trade.reviewedAt || '').slice(0, 10)}</span>
           </div>
         </header>
@@ -97,9 +113,13 @@ export default function MandateAdvice({ id, goBack }) {
               <tr><th>{t('交收日')}</th><td>{trade.settleDate || '—'}</td></tr>
               <tr><th>{t('数量')}</th><td>{formatShares(trade.quantity)} {t('股')}</td></tr>
               <tr><th>{t('成交价')}</th><td>{trade.price} {trade.currency}</td></tr>
-              <tr><th>{t('费用')}</th><td>{trade.fee} {trade.currency}（折合 HK$ {formatExactAmount(feeHKD)}）</td></tr>
+              <tr><th>{t('费用')}</th><td>{trade.fee} {trade.currency}</td></tr>
               <tr><th>{t('汇率（折 HKD）')}</th><td>{trade.fxRate}</td></tr>
-              <tr><th>{t('发文日期')}</th><td>{String(trade.reviewedAt || '').slice(0, 10)}</td></tr>
+              {/* 成交金额不含费，净额才是账户实际变动；两者都在，才对得上结单与资金记录 */}
+              <tr>
+                <th>{trade.side === 'buy' ? t('应付金额（折合 HKD）') : t('应收金额（折合 HKD）')}</th>
+                <td><strong>HK$ {formatExactAmount(netHKD)}</strong></td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -110,8 +130,10 @@ export default function MandateAdvice({ id, goBack }) {
           </p>
         )}
 
+        {/* 2026-11-16 精简：删托管归属（账户结构，协议正文第一条已有；且托管人不对客点名）
+            与「不构成投资建议」（成交单不是营销材料），只留核对窗口这一句有行动价值的话 */}
         <p className="doc-legal">
-          {t('本通知仅作成交记录，不构成投资建议。委托资产由托管人持有，本平台仅作记录与展示。如对成交内容有疑问，请于收到后 7 天内联系客户经理。')}
+          {t('本通知为成交记录。如对成交内容有疑问，请于收到后 7 天内联系客户经理。')}
         </p>
         <footer className="doc-foot">
           <span>

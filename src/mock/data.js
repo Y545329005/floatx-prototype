@@ -1,5 +1,8 @@
 // 正式法务文本（2026-10-22 · 公司提供 docx 原文）
-import { termsOfUseSections, privacyPolicySections, riskDisclosureSections } from './legalTexts';
+import {
+  termsOfUseSections, privacyPolicySections, riskDisclosureSections,
+  mandateAgreementSections,
+} from './legalTexts';
 
 // ========== KYC 状态定义 ==========
 export const KYC_STATUS = {
@@ -5608,11 +5611,23 @@ export const agreements = [
       ) },
     ],
   },
+  // 全权委托协议正文（2026-11-16）：由「前端 KV 重排字段」改为纯文本章节——
+  // 条款文字归法务（后台「协议文案维护」可编辑），前端只渲染；
+  // 本人参数（经理/持牌代表/费率/限额/最低额）由 getAgreementById 的 params 注入 {{占位符}}。
+  {
+    id: 'mandate-agreement',
+    version: 'v1.0',
+    effectiveAt: '2026-11-05',
+    title: AG('全权委托投资管理协议', '全權委託投資管理協議', 'Discretionary Investment Management Agreement'),
+    sections: mandateAgreementSections,
+  },
 ];
 
-export function getAgreementById(id, translate = (s) => s) {
+export function getAgreementById(id, translate = (s) => s, params = null) {
   // 返回时做品牌插值（浅拷贝 sections）：协议 mock 源以 {{BRAND*}}/{{LICENSE_TYPE}} 占位，
   // 展示为 Admin 配置的真实主体名。version/effectiveAt 元数据原样保留（固化语义）。
+  // params（2026-11-16）：本人协议参数（经理/持牌代表/费率/限额/最低额），
+  // 供 {{占位符}} 注入——委托协议正文由法务维护，前端不写死数字。
   const found = agreements.find(a => a.id === id);
   if (!found) return null;
   return {
@@ -5620,22 +5635,30 @@ export function getAgreementById(id, translate = (s) => s) {
     // 递归插值：h/p 可能是字符串、三语字典，或段落数组（正式法务文本一段一条）
     sections: (found.sections || []).map(s => ({
       ...s,
-      h: resolveNode(s.h, translate),
-      p: resolveNode(s.p, translate),
+      h: resolveNode(s.h, translate, params),
+      p: resolveNode(s.p, translate, params),
     })),
   };
 }
 
 // 递归品牌插值：字符串 / 三语字典 / 段落数组
-function resolveNode(node, translate) {
-  if (typeof node === 'string') return resolveBrand(node, translate);
-  if (Array.isArray(node)) return node.map(x => resolveNode(x, translate));
+function resolveNode(node, translate, params) {
+  if (typeof node === 'string') return fillParams(resolveBrand(node, translate), params);
+  if (Array.isArray(node)) return node.map(x => resolveNode(x, translate, params));
   if (node && typeof node === 'object') {
     const out = {};
-    Object.keys(node).forEach(k => { out[k] = resolveNode(node[k], translate); });
+    Object.keys(node).forEach(k => { out[k] = resolveNode(node[k], translate, params); });
     return out;
   }
   return node;
+}
+
+// 本人参数注入：未提供的占位符保持原样（宁可在页面上露出 {{X}}，也不要静默变成空串）
+function fillParams(text, params) {
+  if (!params || typeof text !== 'string' || text.indexOf('{{') === -1) return text;
+  return text.replace(/\{\{([A-Z0-9_]+)\}\}/g, (m, k) => (
+    Object.prototype.hasOwnProperty.call(params, k) ? String(params[k]) : m
+  ));
 }
 
 // （2026-09-20：KYC_DECLARATION_TEXT / PI_CONFIRM_EXTRA_TEXT 上移至 agreements 数组之前——
@@ -11196,9 +11219,16 @@ export const Storage = {
         data.agreementRecords.forEach(r => agreementRecords.push(r));
       }
       // agreements：协议文案恢复（2026-11-03 · 后台法务维护；旧快照缺键 → 保持代码种子值，无需升版）
+      // 2026-11-16 修复：按 id 合并，不再整体重建。原先 `length = 0` + 全量 push 会把
+      // 「代码新增、快照里没有」的协议整条抹掉——委托协议正文因此在有旧快照的浏览器里渲染成空卡。
+      // 规范即「持久化快照只叠加不重建」：旧快照覆盖同名条目，代码新增的条目保留。
       if (Array.isArray(data.agreements)) {
-        agreements.length = 0;
-        data.agreements.forEach(a => agreements.push(a));
+        data.agreements.forEach(saved => {
+          if (!saved || !saved.id) return;
+          const live = agreements.find(a => a.id === saved.id);
+          if (live) Object.assign(live, saved);
+          else agreements.push(saved);
+        });
       }
       if (data.termsState) {
         termsState.currentVersion = data.termsState.currentVersion || termsState.currentVersion;
@@ -12566,6 +12596,14 @@ export const cashLedger = [
     note: '买入 NVDA 5 股 @ USD 120（含费 USD 1，汇率 7.82）',
     refType: 'trade', refId: 'mt2', at: '2026-11-10 15:05:00', createdBy: '王运营',
   },
+  // 买入 SpaceX（2026-11-16）：第二类资产的资金腿。无佣金，故无 fee 行。
+  // 恒等式：现金 −28,080、持仓 +28,080，委托资产总额不变（199,534.00）。
+  {
+    id: 'cl6', accountId: 'mb1', no: 'B00001', userId: 'u1',
+    type: MANDATE_LEDGER_TYPES.TRADE, currency: 'HKD', amount: -28080,
+    note: '买入 SpaceX 30 股 @ USD 120（无佣金，汇率 7.8）',
+    refType: 'trade', refId: 'mt4', at: '2026-11-07 15:05:00', createdBy: '王运营',
+  },
   // 委托提取划出（2026-11-16）：mw1 已完成单的 B→A 记账腿，与 wallet.hkd 的入账腿对齐
   // （mock wallet 为演示口径，种子 9,000,000 已含该笔划入 100,000，不做历史精确对账）。
   {
@@ -12581,6 +12619,24 @@ export const cashLedger = [
 // A 户钱包入账（wallet + transactions），恒等式「委托资产 −X、可用现金 +X、总资产不变」。
 // 种子自洽：mw1 为 completed 历史单，配套 cl5 划出流水；mw2 为 rejected，不涉资金移动。
 export const mandateWithdrawals = [
+  {
+    // 待审核一单（2026-11-17）：其余两条是终态，若没有在途单，「可提取 = 余额 − 在途」这个核心口径
+    // 在演示里永远看不见（两个数恒等），hero 的第二行也永远不出现。金额刻意小于余额，方便演示差额。
+    id: 'mw3',
+    no: 'MW20261116093000',
+    accountId: 'mb1',
+    userId: 'u1',
+    userName: '张三',
+    currency: 'HKD',
+    amount: 30000,
+    status: MANDATE_WITHDRAWAL_STATUS.PENDING,
+    expectedDate: '2026-11-30',   // 提交日 11-16 起 D+10 个营业日（工作日近似）
+    completedAt: null,
+    rejectReason: null,
+    createdAt: '2026-11-16 09:30:00',
+    handledAt: null,
+    handledBy: null,
+  },
   {
     id: 'mw1',
     no: 'MW20261112113000',
@@ -12647,6 +12703,25 @@ export function getMandateCashByCurrency(accountId) {
     .filter(e => e.accountId === accountId)
     .forEach(e => map.set(e.currency, (map.get(e.currency) || 0) + Number(e.amount || 0)));
   return Array.from(map.entries()).map(([currency, balance]) => ({ currency, balance }));
+}
+
+// 资金记录（2026-11-16）：客户侧可见的 B 户流水，新→旧，逐行带余额。
+// 余额由流水派生（同 getMandateCashBalance），因此「最新一行的余额」必然等于 hero 的现金。
+// 同一笔资金动作在 B 户只记一条（买入记 −成交额含费），不按费用/成交拆成两行。
+export function getMandateCashLedger(accountId) {
+  const asc = cashLedger
+    .filter(e => e.accountId === accountId)
+    .slice()
+    .sort((a, b) => String(a.at).localeCompare(String(b.at)));
+  // 余额按币种分别累计：跨币种直接相加会把 1 USD 当成 1 HKD（当前种子全是 HKD，
+  // 但一旦出现外币流水，逐行余额必须仍是原币口径，卡片总额才是折合口径）
+  const byCur = new Map();
+  return asc.map(e => {
+    const cur = String(e.currency || 'HKD').toUpperCase();
+    const balance = (byCur.get(cur) || 0) + Number(e.amount || 0);
+    byCur.set(cur, balance);
+    return { ...e, balance };
+  }).reverse();
 }
 
 // ---- 提取（协议 10 · B→A 两段式的第一段；第二段走现有现金提现，零新增） ----
@@ -12721,7 +12796,7 @@ export function canRequestMandateWithdrawal(accountId) {
     return { ok: false, error: '委托账户未授权，不能发起提取' };
   }
   if (!hasMandateTransferAuth(accountId)) {
-    return { ok: false, error: '缺少资金划转常设授权（协议 14.2），请联系客户经理补签' };
+    return { ok: false, error: '缺少资金划转常设授权，请联系客户经理补签' };
   }
   // 禁售期：协议附录 [ ] 空位，合规确认前不启用（mandateConfig.lockUpEnabled）。
   // 启用时在此加「禁售期内不能提取」拦截，UI 同步隐藏入口。
@@ -13150,7 +13225,7 @@ export const mandateTrades = [
     tradeDate: '2026-11-06', settleDate: '2026-11-09',
     side: 'buy', assetClass: 'us-equity', symbol: 'AAPL', name: 'Apple Inc.',
     currency: 'USD', quantity: 10, price: 180, fee: 1, fxRate: 7.8,
-    status: MANDATE_TRADE_STATUS.ACTIVE,
+    status: MANDATE_TRADE_STATUS.ACTIVE, adviceNo: 'ADV-2026-11-0001',
     createdBy: '王运营', reviewedBy: '李合规', reviewedAt: '2026-11-06 15:05:00',
     note: 'IPO 后建仓', correctionOf: '',
   },
@@ -13159,7 +13234,7 @@ export const mandateTrades = [
     tradeDate: '2026-11-10', settleDate: '2026-11-12',
     side: 'buy', assetClass: 'us-equity', symbol: 'NVDA', name: 'NVIDIA Corp.',
     currency: 'USD', quantity: 5, price: 120, fee: 1, fxRate: 7.82,
-    status: MANDATE_TRADE_STATUS.ACTIVE,
+    status: MANDATE_TRADE_STATUS.ACTIVE, adviceNo: 'ADV-2026-11-0003',
     createdBy: '王运营', reviewedBy: '李合规', reviewedAt: '2026-11-10 15:05:00',
     note: '', correctionOf: '',
   },
@@ -13168,9 +13243,21 @@ export const mandateTrades = [
     tradeDate: '2026-11-13', settleDate: '2026-11-17',
     side: 'buy', assetClass: 'us-equity', symbol: 'MSFT', name: 'Microsoft Corp.',
     currency: 'USD', quantity: 3, price: 410, fee: 1, fxRate: 7.8,
-    status: MANDATE_TRADE_STATUS.PENDING,
+    status: MANDATE_TRADE_STATUS.PENDING, adviceNo: '',
     createdBy: '王运营', reviewedBy: '', reviewedAt: null,
     note: '待合规复核', correctionOf: '',
+  },
+  // 第二类资产（2026-11-16）：上市前老股，按成本估值。
+  // 意义是把「非上市按成本」这条估值分支放进演示：市值 = 成本 → 浮动收益恒为 0，
+  // 卡片脚注随之失去统一口径，改为逐行标注（口径不一致的例外处理）。
+  {
+    id: 'mt4', accountId: 'mb1', no: 'B00001', userId: 'u1',
+    tradeDate: '2026-11-07', settleDate: '2026-11-09',
+    side: 'buy', assetClass: 'pre-ipo', symbol: 'SPACEX', name: 'SpaceX',
+    currency: 'USD', quantity: 30, price: 120, fee: 0, fxRate: 7.8,
+    status: MANDATE_TRADE_STATUS.ACTIVE, adviceNo: 'ADV-2026-11-0002',
+    createdBy: '王运营', reviewedBy: '李合规', reviewedAt: '2026-11-07 15:05:00',
+    note: '上市前老股受让（按成本估值）', correctionOf: '',
   },
 ];
 
@@ -13178,6 +13265,8 @@ export const mandateTrades = [
 export const mandatePriceMarks = [
   { id: 'mp1', accountId: 'mb1', symbol: 'AAPL', currency: 'USD', price: 185.5, fxRate: 7.8, method: 'listed', priceAt: '2026-11-12', updatedBy: '王财务', updatedAt: '2026-11-12 18:00:00' },
   { id: 'mp2', accountId: 'mb1', symbol: 'NVDA', currency: 'USD', price: 128.2, fxRate: 7.82, method: 'listed', priceAt: '2026-11-12', updatedBy: '王财务', updatedAt: '2026-11-12 18:00:00' },
+  // 非上市按成本：价格即成本，市值 = 成本；口径与上市证券并列时逐行标注
+  { id: 'mp3', accountId: 'mb1', symbol: 'SPACEX', currency: 'USD', price: 120, fxRate: 7.8, method: 'unlisted-cost', priceAt: '2026-11-12', updatedBy: '王财务', updatedAt: '2026-11-12 18:00:00' },
 ];
 
 // 费用行（协议 12：三类费均从组合扣减，金额手录）
@@ -13291,7 +13380,9 @@ export function getMandatePortfolio(accountId) {
     realizedHKD,
     unrealizedHKD,
     pnlHKD: unrealizedHKD + realizedHKD,
-    pnlPct: costHKD > 0 ? (unrealizedHKD / costHKD) * 100 : 0,
+    // 百分比必须与金额同源（2026-11-16 修）：此前只算未实现，卖出后有已实现收益时
+    // 同一行会出现「金额含已实现、百分比不含」的两种口径
+    pnlPct: costHKD > 0 ? ((unrealizedHKD + realizedHKD) / costHKD) * 100 : 0,
     totalHKD: cashHKD + marketValueHKD,
   };
 }

@@ -1,30 +1,24 @@
 import { useMemo, useState } from 'react';
-import { ArrowLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import {
   getMandateSummaryForUser,
   mandateTrades,
   MANDATE_TRADE_STATUS,
-  formatExactAmount,
-  formatShares,
 } from '../mock/data';
 import { useLang } from '../i18n';
+import MandateTradeRow from '../components/MandateTradeRow';
 
 // 交易流水（2026-11-13 批 2）
-// 客户看到的每一行都必须能回答「这笔钱去了哪」：待复核不进持仓、不进日结单，所以在这里标注「处理中」，
+// 客户看到的每一行都必须能回答「这笔钱去了哪」：待复核不进持仓、不进日结单，所以在这里标注「待成交」，
 // 避免客户以为成交了却看不到持仓。
+// 行式与详情页「近期交易」共用 MandateTradeRow（2026-11-17）：金额成列、状态用词统一，
+// 同一笔交易在两页不会出现两种叫法（此前这里是「处理中」）。
 // 成交通知单入口只挂在「已成交」行：未生效的交易没有通知单可看（协议 11.2 的通知对象是成交）。
-
-const STATUS_LABEL = {
-  [MANDATE_TRADE_STATUS.PENDING]: '处理中',
-  [MANDATE_TRADE_STATUS.ACTIVE]: '已成交',
-  [MANDATE_TRADE_STATUS.REJECTED]: '未成交',
-  [MANDATE_TRADE_STATUS.VOID]: '已作废',
-};
 
 const FILTERS = [
   { key: 'all', label: '全部' },
   { key: MANDATE_TRADE_STATUS.ACTIVE, label: '已成交' },
-  { key: MANDATE_TRADE_STATUS.PENDING, label: '处理中' },
+  { key: MANDATE_TRADE_STATUS.PENDING, label: '待成交' },
 ];
 
 export default function MandateTrades({ navigate, goBack }) {
@@ -72,30 +66,16 @@ export default function MandateTrades({ navigate, goBack }) {
       </div>
 
       <div className="card mandate-trades-card">
+        {rows.length > 0 && (
+          <div className="asset-hold-colhead">
+            <span>{t('交易')}</span>
+            <span>{t('成交金额 / 状态（HKD）')}</span>
+          </div>
+        )}
         {rows.length === 0 && <p className="text-muted text-sm">{t('暂无交易记录')}</p>}
-        {rows.map(tr => {
-          const active = tr.status === MANDATE_TRADE_STATUS.ACTIVE;
-          return (
-            <button
-              key={tr.id}
-              type="button"
-              className="mandate-trade-row"
-              onClick={() => active && navigate(`#mandate-advice/${tr.id}`)}
-              disabled={!active}
-            >
-              <span className="mandate-trade-main">
-                <strong>
-                  {tr.symbol} {tr.side === 'buy' ? t('买入') : t('卖出')}
-                  {tr.correctionOf ? <em className="mandate-correct-tag">{t('更正')}</em> : null}
-                </strong>
-                <span>{tr.tradeDate} · {formatShares(tr.quantity)} {t('股')} @ {tr.price} {tr.currency}</span>
-                <span className="mandate-trade-amount">HK$ {formatExactAmount(tr.quantity * tr.price * tr.fxRate)}</span>
-              </span>
-              <span className={`mandate-trade-status is-${tr.status}`}>{t(STATUS_LABEL[tr.status] || tr.status)}</span>
-              {active && <ChevronRight size={16} aria-hidden="true" />}
-            </button>
-          );
-        })}
+        {rows.map(tr => (
+          <MandateTradeRow key={tr.id} trade={tr} onOpen={x => navigate(`#mandate-advice/${x.id}`)} />
+        ))}
       </div>
 
       <p className="mandate-disclaimer">{t('交易由持牌基金经理执行，本平台按成交结果记录。点开已成交记录可查看成交通知单。')}</p>

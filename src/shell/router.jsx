@@ -49,6 +49,13 @@ const MandateDetail = lazy(() => import('../pages/MandateDetail'));
 const MandateWithdraw = lazy(() => import('../pages/MandateWithdraw'));
 const MandateTrades = lazy(() => import('../pages/MandateTrades'));
 const MandateAdvice = lazy(() => import('../pages/MandateAdvice'));
+// 委托域凭证（2026-11-16）：单据页只放委托自己的月报 + 成交通知单；合约事实进独立页
+const MandateStatements = lazy(() => import('../pages/MandateStatements'));
+const MandateAgreement = lazy(() => import('../pages/MandateAgreement'));
+// 全部持仓（2026-11-16）：详情页卡内只放前 5 只，全量走这一页
+const MandateHoldings = lazy(() => import('../pages/MandateHoldings'));
+// 资金记录（2026-11-16）：B 户现金流水（结果旁边的过程入口）
+const MandateCash = lazy(() => import('../pages/MandateCash'));
 const DailyStatement = lazy(() => import('../pages/DailyStatement'));
 // 资产 / 资金（2026-10-28 一期闭环恢复：资产只读聚合 + 资金公共模块最小 4 条路由）
 // 2026-11-02 资金审查收尾：#wallet 摘除——资金域归属地为 #asset，#wallet 全仓无正向入口
@@ -82,6 +89,8 @@ const SCREEN_GUARD_PATHS = new Set([
   // 委托账户与日结单同属「持仓/资产类敏感页」，一并纳入防切离展示；
   // 提取申请页（2026-11-16）是委托域资金动作页，同口径纳入
   'mandate-detail', 'mandate-withdraw', 'mandate-trades', 'mandate-advice', 'daily-statement',
+  // 委托域新增两页（2026-11-16）：委托单据 / 委托协议同属持仓与条款类敏感页
+  'mandate-statements', 'mandate-agreement', 'mandate-holdings', 'mandate-cash',
 ]);
 
 export function renderAppPage(path, param, ctx) {
@@ -153,6 +162,17 @@ function renderAppPageInner(path, param, ctx) {
       return <MandateTrades navigate={navigate} goBack={goBack} />;
     case 'mandate-advice':
       return <MandateAdvice id={param} goBack={goBack} />;
+    // 委托单据（2026-11-16）：月报 + 成交通知单；不接基金账户结单/交易确认单
+    case 'mandate-statements':
+      return <MandateStatements navigate={navigate} goBack={goBack} />;
+    case 'mandate-agreement':
+      return <MandateAgreement goBack={goBack} />;
+    // 全部委托持仓（2026-11-16）：详情页卡内预览 5 条，全量在此
+    case 'mandate-holdings':
+      return <MandateHoldings goBack={goBack} />;
+    // 资金记录（2026-11-16）：现金的过程；买入行可点进成交通知单
+    case 'mandate-cash':
+      return <MandateCash goBack={goBack} navigate={navigate} />;
     case 'daily-statement':
       return <DailyStatement id={param} goBack={goBack} />;
     // 资产 / 资金公共模块（2026-10-28 恢复；app/withdraw/bank-cards/transactions 资金路由全量接线——

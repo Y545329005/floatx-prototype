@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ArrowLeft, Info } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import {
   getMandateSummaryForUser,
   mandateConfig,
@@ -21,13 +21,11 @@ import { useLang } from '../i18n';
 //   金额口径（对抗性审查定版）：可提取上限 = B 户现金余额 − 在途提取合计。持仓不进可提取范围
 //   （协议 10.1「变现适当部分」是管理人义务条款，不是客户权利上限），大额变现联系客户经理。
 //   四层拦截：路由门控（router）→ 入口 UI（MandateDetail）→ 数据层（canRequestMandateWithdrawal）→ 后台复核。
-
-const STATUS_CLS = {
-  pending: 'tag-warning',
-  in_progress: 'tag-warning',
-  completed: 'tag-success',
-  rejected: 'tag-neutral',
-};
+//
+// 页面结构（2026-11-17 重排）：这页只回答四件事——能取多少、取多少、钱去哪、以前提交的怎么样了。
+//   因此只剩三段：① 可提取（hero）② 填金额并确认（一张卡）③ 提取记录（列表）+ 协议细节（细字）。
+//   原先的「提取须知」三张卡被拆掉：①② 变成确认区的两行事实（划入 / 到账），③ 变成页脚细字，
+//   协议条款一句没删，只是不再挡在表单和记录之间。
 
 export default function MandateWithdraw({ goBack, setToast }) {
   const { t } = useLang();
@@ -49,6 +47,28 @@ export default function MandateWithdraw({ goBack, setToast }) {
   const pendingTotal = active ? getMandateWithdrawFrozen(summary.account.id, currency) : 0;
   const balance = active ? getMandateCashBalance(summary.account.id, currency) : 0;
   const symbol = CURRENCY_META[currency]?.symbol || '';
+  // 只有真的有钱的币种才列出来：给出 zero-balance 的选项等于让客户先选错再被拒
+  const currencies = (summary.portfolio?.cash || [])
+    .filter(c => Number(c.balance) > 0.0001)
+    .map(c => c.currency);
+  const hasPending = pendingTotal > 0.0001;
+
+  // 记录行的日期列：同年只写 MM-DD，跨年才写全
+  const years = new Set(records.map(w => String(w.createdAt).slice(0, 4)));
+  const dateOf = (at) => (years.size > 1 ? String(at).slice(0, 10) : String(at).slice(5, 10));
+
+  // 记录行的第二行：状态 + 与状态相关的那一个事实（到账日 / 预计日 / 未通过原因）。
+  // 不再放状态胶囊——胶囊在 390px 占掉半行宽，且与这行说的是同一件事。
+  const sublineOf = (w) => {
+    const label = t(MANDATE_WITHDRAWAL_LABELS[w.status] || w.status);
+    // 拒绝原因是运营手写的自由文本；种子里的那句进词典，后台新写的原样显示
+    if (w.status === 'rejected') return w.rejectReason ? `${label} · ${t(w.rejectReason)}` : label;
+    if (w.expectedDate && (w.status === 'pending' || w.status === 'in_progress')) {
+      return `${label} · ${t('预计')} ${dateOf(w.expectedDate)}`;
+    }
+    if (w.status === 'completed' && w.completedAt) return `${label} · ${dateOf(w.completedAt)}`;
+    return label;
+  };
 
   const submit = () => {
     setError('');
@@ -87,104 +107,113 @@ export default function MandateWithdraw({ goBack, setToast }) {
         </div>
       </div>
 
-      {!authed && (
-        <div className="mandate-withdraw-gate">
-          <Info size={15} />
-          {t('缺少资金划转常设授权（协议 14.2），请联系客户经理补签后再发起提取。')}
-        </div>
-      )}
-
-      {/* 可用余额：主值 = 可提取（余额 − 在途）；余额与在途分列辅行，防止「余额和可用对不上」的困惑 */}
+      {/* ① 能取多少：主值是可提取（余额 − 在途）。有在途时补一行把差额讲清，
+          没有在途时两个数相同，就不摆第二个数（同一屏同一数字只讲一遍）。 */}
       <div className="mandate-hero mandate-withdraw-hero">
         <span className="mandate-hero-k">{t('可提取金额')}</span>
         <strong className="mandate-hero-v">{symbol} {formatExactAmount(Math.max(0, available))}</strong>
-        <div className="mandate-hero-sub">
-          <span>{t('余额')} {symbol} {formatExactAmount(balance)}</span>
-          <span>{t('提取处理中')} {symbol} {formatExactAmount(pendingTotal)}</span>
-        </div>
+        <p className="mandate-withdraw-hint">
+          {hasPending
+            ? `${t('余额')} ${symbol} ${formatExactAmount(balance)} · ${t('提取处理中')} ${symbol} ${formatExactAmount(pendingTotal)}`
+            : t('持仓不计入可提取金额')}
+        </p>
       </div>
 
-      {authed && (
-        <div className="card">
-          <div className="card-title">{t('申请金额')}</div>
-          <div className="form-group mandate-withdraw-amount">
-            <div className="mandate-withdraw-input">
-              <span className="mandate-withdraw-cur">{currency}</span>
-              <input
-                type="number"
-                inputMode="decimal"
-                step="any"
-                min="0"
-                value={amount}
-                onChange={e => setAmount(e.target.value)}
-                placeholder="0.00"
-                aria-label={t('申请金额')}
-              />
-            </div>
-            <button
-              type="button"
-              className="btn-link"
-              disabled={available <= 0}
-              onClick={() => setAmount(String(Math.max(0, available)))}
-            >
-              {t('全部提取')}
-            </button>
-          </div>
-          <div className="form-group">
-            <label className="form-label">{t('提取币种')}</label>
-            <select className="form-input" value={currency} onChange={e => setCurrency(e.target.value)}>
-              {(summary.portfolio.cash.length ? summary.portfolio.cash : [{ currency: 'HKD' }]).map(c => (
-                <option key={c.currency} value={c.currency}>{c.currency}</option>
-              ))}
-            </select>
-          </div>
-          <div className="mandate-withdraw-meta">
-            <span>{t('预计到账')}</span>
-            <strong>{t('提交后不少于')} {mandateConfig.withdrawalNoticeDays} {t('个营业日')}</strong>
-          </div>
-          {error && <p className="form-error">{error}</p>}
+      {/* ② 取多少 + 去哪：输入与确认在同一张卡里，客户按下提交前不用翻到别处找事实 */}
+      <div className="card">
+        <div className="mandate-withdraw-amount-head">
+          <span className="form-label">{t('提取金额')}</span>
           <button
             type="button"
-            className="btn btn-primary btn-lg mandate-withdraw-submit"
-            disabled={available <= 0}
-            onClick={submit}
+            className="btn-link"
+            disabled={!authed || available <= 0}
+            onClick={() => { setAmount(String(Math.max(0, available))); setError(''); }}
           >
-            {t('提交提取申请')}
+            {t('全部提取')}
           </button>
         </div>
-      )}
 
-      <div className="card mandate-withdraw-notice">
-        <div className="card-title">{t('提取须知')}</div>
-        <p className="text-muted text-sm">{t('提取资金将划入您的现金账户，不会直接汇出银行；如需汇出银行，请在到账后另发起现金出金。')}</p>
-        <p className="text-muted text-sm">{t('按协议约定，提取须提前提交书面通知，平台将在禁售期规限下不少于 10 个营业日内处理；遇暂停事件（协议 10.2）处理可能延迟。')}</p>
-        <p className="text-muted text-sm">{t('持仓不在可提取范围内；大额变现请联系客户经理。因变现产生的市场影响与成本由客户承担（协议 10.3）。')}</p>
+        <div className="mandate-withdraw-input">
+          <span className="mandate-withdraw-cur">{symbol || currency}</span>
+          <input
+            type="number"
+            inputMode="decimal"
+            step="any"
+            min="0"
+            value={amount}
+            disabled={!authed}
+            onChange={e => { setAmount(e.target.value); setError(''); }}
+            placeholder="0.00"
+            aria-label={t('提取金额')}
+          />
+        </div>
+
+        {/* 多币种账户才需要选币种；单币种时这个控件是空转的，直接不渲染 */}
+        {currencies.length > 1 && (
+          <div className="fund-method-chips mandate-withdraw-curs">
+            {currencies.map(c => (
+              <button
+                key={c}
+                type="button"
+                className={`chip ${currency === c ? 'active' : ''}`}
+                onClick={() => { setCurrency(c); setAmount(''); setError(''); }}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <dl className="mandate-withdraw-facts">
+          <div>
+            <dt>{t('划入')}</dt>
+            <dd>{t('现金账户')}</dd>
+          </div>
+          <div>
+            <dt>{t('到账时间')}</dt>
+            <dd>{t('提交后不少于')} {mandateConfig.withdrawalNoticeDays} {t('个营业日')}</dd>
+          </div>
+        </dl>
+        <p className="mandate-withdraw-hint">{t('资金不会直接汇到银行；如需汇出，到账后可在现金账户发起出金。')}</p>
+
+        {error && <p className="form-error">{error}</p>}
+        <button
+          type="button"
+          className="btn btn-primary btn-lg mandate-withdraw-submit"
+          disabled={!authed || available <= 0}
+          onClick={submit}
+        >
+          {t('提交提取申请')}
+        </button>
+        {/* 缺授权时按钮置灰、原因落一行（与详情页 hero 按钮的处理一致），而不是整块表单消失 */}
+        {!authed && (
+          <p className="mandate-withdraw-gate-note">
+            {t('尚未签署资金划转常设授权书，请联系客户经理补签后提交。')}
+          </p>
+        )}
       </div>
 
+      {/* ③ 以前提交的怎么样了：与资金记录同一套行式（日期 · 金额 · 状态） */}
       <div className="card">
         <div className="card-title">{t('提取记录')}</div>
         {records.length === 0 && <p className="text-muted text-sm">{t('暂无提取记录')}</p>}
         {records.map(w => (
-          <div key={w.id} className="mandate-withdraw-row">
-            <span className="mandate-withdraw-main">
-              <strong>{w.currency} {formatExactAmount(w.amount)}</strong>
-              <span className="text-muted text-sm">{String(w.createdAt).slice(0, 16)} · {w.no}</span>
-              {w.status === 'rejected' && w.rejectReason && (
-                <span className="text-muted text-sm">{t('未通过原因')}：{w.rejectReason}</span>
-              )}
-            </span>
-            <span className="mandate-withdraw-side">
-              <span className={`tag ${STATUS_CLS[w.status] || 'tag-neutral'}`}>{t(MANDATE_WITHDRAWAL_LABELS[w.status] || w.status)}</span>
-              {(w.status === 'pending' || w.status === 'in_progress') && w.expectedDate && (
-                <span className="text-muted text-sm">{t('预计')} {w.expectedDate}</span>
-              )}
+          <div key={w.id} className="mandate-trade-row is-static">
+            <span className="mandate-list-date">{dateOf(w.createdAt)}</span>
+            <span className="mandate-trade-main">
+              <strong>{CURRENCY_META[w.currency]?.symbol || w.currency} {formatExactAmount(w.amount)}</strong>
+              <span>{sublineOf(w)}</span>
             </span>
           </div>
         ))}
       </div>
 
+      {/* 页脚（2026-11-17 定版）：原来是把合同义务摘出来贴给客户看——主语是「提取」「变现」，
+          还夹着两个指不到任何条款的编号（协议正文是六节无编号）。改成客户视角的两句话：
+          可能更慢 / 想连持仓一起取要先卖、成本自担。事实一条没少。 */}
       <p className="mandate-disclaimer">
-        {t('「提取」指委托账户资金划转入现金账户；「出金」指现金账户资金汇出银行，两者为不同流程。')}
+        {t('遇上市况异常、暂停交易等情况，到账会比页面显示的时间更晚。')}
+        {t('想把持仓一起取出来，请联系客户经理——由管理人先卖出，卖出时的价格波动与交易成本由您承担。')}
       </p>
     </div>
   );
