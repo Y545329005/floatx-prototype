@@ -54,7 +54,7 @@ export default function DailyStatement({ id, goBack }) {
 
         <div className="doc-amount">
           <span>{t('总资产（折合 HKD）')}</span>
-          <b>HK$ {formatExactAmount(stmt.totalHKD)}</b>
+          <b>{formatExactAmount(stmt.totalHKD)}</b>
         </div>
 
         <section className="doc-section">
@@ -110,7 +110,7 @@ export default function DailyStatement({ id, goBack }) {
                 </tbody>
               </table>
             </div>
-            <p className="doc-section-total">{t('小计')} HK$ {formatExactAmount(stmt.mandate.totalHKD)}</p>
+            <p className="doc-section-total">{t('小计')} {formatExactAmount(stmt.mandate.totalHKD)}</p>
           </section>
         )}
 
@@ -119,7 +119,7 @@ export default function DailyStatement({ id, goBack }) {
           <div className="doc-table-wrap">
             <table className="doc-table doc-table--fit">
               <colgroup><col style={{ width: '28%' }} /><col style={{ width: '32%' }} /><col style={{ width: '16%' }} /><col style={{ width: '24%' }} /></colgroup>
-              <thead><tr><th>{t('基金')}</th><th className="is-num">{t('份额')}</th><th className="is-num">{t('净值')}</th><th className="is-num">{t('市值')}</th></tr></thead>
+              <thead><tr><th>{t('基金')}</th><th className="is-num">{t('份额')}</th><th className="is-num">{t('净值')}</th><th className="is-num">{t('市值（HKD）')}</th></tr></thead>
               <tbody>
                 {stmt.fund.positions.length === 0 && <tr><td colSpan={4}>{t('暂无基金持仓')}</td></tr>}
                 {stmt.fund.positions.map(p => (
@@ -127,13 +127,13 @@ export default function DailyStatement({ id, goBack }) {
                     <td className="doc-cell-wrap">{t(p.fundName)}</td>
                     <td className="is-num">{formatShares(p.shares)}</td>
                     <td className="is-num">{p.nav}{p.staleNav ? <span className="doc-sub">{t('未估值日沿用')}</span> : null}</td>
-                    <td className="is-num">{formatExactAmount(p.marketValue)}<span className="doc-sub">{p.currency}</span></td>
+                    <td className="is-num">{formatExactAmount(p.marketValue)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <p className="doc-section-total">{t('小计')} HK$ {formatExactAmount(stmt.fund.marketValueHKD)}</p>
+          <p className="doc-section-total">{t('小计')} {formatExactAmount(stmt.fund.marketValueHKD)}</p>
         </section>
 
         <section className="doc-section">
@@ -147,7 +147,7 @@ export default function DailyStatement({ id, goBack }) {
 
         <div className="doc-section-total">
           {t('较前一交易日')}：
-          {diff == null ? t('首份日结单') : `${diff >= 0 ? '+' : '−'}HK$ ${formatExactAmount(Math.abs(diff))}`}
+          {diff == null ? t('首份日结单') : `${diff >= 0 ? '+' : '−'}HKD ${formatExactAmount(Math.abs(diff))}`}
         </div>
 
         <p className="doc-legal">
