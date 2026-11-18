@@ -29,6 +29,18 @@ export function informationHub(c) {
     privacyText: 'Collection, use and protection of personal data',
     use: 'Terms of Use',
     useText: 'Terms applicable to access to and use of this website',
+    reviewLabel: 'Roadshow recap',
+    // Recap entries: source data prototype/src/mock/data.js events (e6 verbatim date; e1/e3/e5 derived and backdated).
+    // Past events only, recap-style narrative — no sign-ups, no announcements, no joining links.
+    // Illustrative content; keep both languages in sync when updating.
+    recaps: [
+      { date: '2026-07-20', dateText: '20 July 2026', title: 'GreenCell investor briefing (online)', text: 'GreenCell management shared progress on solid-state battery mass production and automaker partnerships, and answered participants’ questions on technology routes and capacity planning.' },
+      { date: '2026-07-08', dateText: '8 July 2026', title: 'Aurora FinTech RWA topic sharing (online)', text: 'The team explained the compliant structuring of real-world asset tokenisation and the market practice of secondary liquidity for private shares, together with the regulatory considerations involved.' },
+      { date: '2026-06-24', dateText: '24 June 2026', title: 'QuantumCore technology open day (Hong Kong Science Park)', text: 'An on-site visit to the quantum computing laboratory, where the technology team demonstrated the room-temperature qubit prototype and exchanged views with Professional Investors on the path to industrialisation.' },
+    ],
+    reviewNote: 'Event records are illustrative. To learn about upcoming events, please ',
+    reviewEnd: '.',
+    reviewLink: 'contact us',
   } : {
     title: '資訊',
     intro: '查閱持牌資料、基金動態及網站相關聲明',
@@ -56,6 +68,18 @@ export function informationHub(c) {
     privacyText: '有關個人資料的收集、使用及保護',
     use: '使用條款',
     useText: '瀏覽及使用本網站所適用的條款',
+    reviewLabel: '路演回顧',
+    // 路演回顧：資料出處 prototype/src/mock/data.js events（e6 沿用原日期；e1/e3/e5 降維衍生並回填示意日期）。
+    // 僅收錄已舉行活動的紀要式敘述——不含報名、預告與會議連結；剝離「上市／條款」類募集語境。
+    // 示意內容，更新時繁中／英文兩語同步維護。
+    recaps: [
+      { date: '2026-07-20', dateText: '2026 年 7 月 20 日', title: 'GreenCell 投資人交流會（線上）', text: 'GreenCell 管理層分享固態電池量產與車企合作的最新進展，並就技術路線與產能規劃回應參會者提問。' },
+      { date: '2026-07-08', dateText: '2026 年 7 月 8 日', title: 'Aurora FinTech RWA 主題分享（線上）', text: '團隊講解真實資產代幣化的合規結構設計、私募份額二級流動性的市場實踐，以及其中的監管考量。' },
+      { date: '2026-06-24', dateText: '2026 年 6 月 24 日', title: 'QuantumCore 技術開放日（香港科學園）', text: '線下參觀量子計算實驗室，技術團隊演示室溫量子比特原型，並與專業投資者就產業化路徑交流。' },
+    ],
+    reviewNote: '活動紀錄為示意內容。如欲了解即將舉行的活動，請',
+    reviewEnd: '。',
+    reviewLink: '與我們聯絡',
   };
   const doc = name => `legal/${name}${c.suffix}.html`;
   const sfc = `https://apps.sfc.hk/publicregWeb/corp/BWW124/details?locale=${en ? 'en' : 'zh'}`;
@@ -98,6 +122,9 @@ export function informationHub(c) {
           <div class="ih-update-prose"><p>${copy.updateFirst}</p><p>${copy.updateActivities}</p><p>${copy.updateConditions}</p></div>
           <aside class="ih-update-source"><p>${copy.source}</p><a href="${sfc}" target="_blank" rel="noopener">${copy.sourceLabel}</a></aside>
         </article>
+        <h3 class="ih-sublabel">${copy.reviewLabel}</h3>
+        ${copy.recaps.map(r => `<article class="ih-update ih-update--recap"><header class="ih-update-header"><time datetime="${r.date}">${r.dateText}</time><h3>${r.title}</h3></header><div class="ih-update-prose"><p>${r.text}</p></div></article>`).join('')}
+        <p class="ih-update-note">${copy.reviewNote}<span class="ih-note-tail"><a href="contact${c.suffix}.html">${copy.reviewLink}</a>${copy.reviewEnd}</span></p>
       </section>
       <section id="risk-disclosures" class="ih-section" data-information-panel aria-labelledby="risk-disclosures-heading">
         <h2 id="risk-disclosures-heading">${copy.risk}</h2>

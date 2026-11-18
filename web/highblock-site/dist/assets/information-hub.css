@@ -177,6 +177,49 @@ html[lang=en] .information-hub .ih-section > h2 { letter-spacing: -.01em; }
   .information-hub a, .information-hub button { transition: none; }
 }
 
+/* Roadshow recap inside the fund-updates category (past events only, recap-style). */
+.information-hub .ih-sublabel {
+  margin-top: 36px;
+  padding-top: 24px;
+  border-top: 1px solid var(--ih-border);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: .1em;
+  color: var(--muted);
+}
+.information-hub .ih-sublabel + .ih-update { margin-top: 16px; border-top: 0; padding-top: 0; }
+.information-hub .ih-update--recap { padding-top: 22px; }
+.information-hub .ih-update--recap .ih-update-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 18px; }
+.information-hub .ih-update--recap .ih-update-header h3 { margin-top: 0; font-size: 19px; font-weight: 500; line-height: 1.6; }
+.information-hub .ih-update--recap .ih-update-prose { max-width: 740px; }
+.information-hub .ih-update--recap .ih-update-prose p { font-size: 15px; line-height: 1.95; }
+.information-hub .ih-update-note {
+  margin-top: 26px;
+  padding-top: 22px;
+  border-top: 1px solid var(--ih-border);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.9;
+}
+.information-hub .ih-update-note a {
+  display: inline-block;
+  color: var(--gold);
+  border-bottom: 1px solid rgba(201,168,124,.4);
+  padding-bottom: 2px;
+  line-height: 1.7;
+}
+.information-hub .ih-update-note a:hover { border-bottom-color: var(--gold); }
+.information-hub .ih-note-tail { white-space: nowrap; }
+html[lang=en] .information-hub .ih-update--recap .ih-update-header h3 { letter-spacing: -.01em; }
+@media (max-width: 780px) {
+  .information-hub .ih-sublabel { margin-top: 30px; padding-top: 20px; }
+  .information-hub .ih-update--recap { padding-top: 18px; }
+  .information-hub .ih-update--recap .ih-update-header { gap: 6px 14px; }
+  .information-hub .ih-update--recap .ih-update-header h3 { font-size: 17px; }
+  .information-hub .ih-update--recap .ih-update-prose p { font-size: 14px; }
+  .information-hub .ih-update-note { margin-top: 20px; padding-top: 18px; font-size: 12px; }
+}
+
 .information-hub .ih-layout { align-items: start; }
 .information-hub .ih-tabs { width: 100%; }
 .information-hub .ih-navigation a { border: 1px solid transparent; }
