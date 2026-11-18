@@ -8910,6 +8910,14 @@ input, select, textarea {
   border-bottom: 1.5px solid var(--text);
 }
 
+.doc-head-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 8px;
+  min-width: 0;
+}
+
 .doc-brand {
   font-size: var(--text-xl);
   font-weight: 800;
@@ -8922,6 +8930,12 @@ input, select, textarea {
   font-size: var(--text-md);
   font-weight: 600;
   color: var(--text);
+}
+
+.doc-head-title .doc-title {
+  margin-top: 0;
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
 .doc-meta {
@@ -9438,6 +9452,8 @@ input, select, textarea {
   .doc-head { border-bottom: 1.5px solid #111; padding-bottom: 8px; }
   .doc-brand { font-size: 15pt; }
   .doc-title { font-size: 11pt; }
+  .doc-head-title .doc-title { color: #111; }
+  .doc-h3-meta { font-size: 8pt; color: #666; }
   .doc-meta { font-size: 7.5pt; color: #555; }
   .doc-client { margin: 10px 0 4px; gap: 4px 16px; }
   .doc-client span { font-size: 7.5pt; color: #888; }
@@ -11708,6 +11724,14 @@ button.kyc-form-input.picker-trigger {
 }
 .doc-section { margin: var(--space-4) 0; }
 .doc-section h3 { font-size: var(--text-md); margin: 0 0 var(--space-2); }
+/* 账户号是识别符，不是标题的一部分：跟着标题同级会读成「委托账户 B00001」这个名词 */
+.doc-h3-meta {
+  margin-left: 8px;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--text-tertiary);
+}
 .doc-section-total {
   margin: var(--space-2) 0;
   font-size: var(--text-sm);
@@ -11716,7 +11740,16 @@ button.kyc-form-input.picker-trigger {
   font-variant-numeric: tabular-nums;
 }
 .doc-sub { display: block; font-size: 10px; color: var(--text-secondary); font-weight: 400; }
-.doc-line { margin: 4px 0; font-size: var(--text-sm); }
+/* 在途指令：左侧事由、右侧数量/金额——两端口径，金额靠右成列（与表格数字列同一读法） */
+.doc-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: 4px 0;
+  font-size: var(--text-sm);
+}
+.doc-line-amt { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .doc-muted { color: var(--text-secondary); font-size: var(--text-sm); }
 
 /* ---- 入金「资金去向」 ---- */

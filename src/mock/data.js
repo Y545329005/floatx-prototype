@@ -13823,35 +13823,55 @@ export function buildDailyStatement(userId = currentUser.id, date = todayStr(), 
   const mandate = summary.portfolio;
   const pending = [];
 
+  // 只收「结算日收盘时仍在途」的指令：之后才提交的不属于这张快照（否则历史日会带出今天的指令）。
+  // 字段留给页面用 t() 拼文案——拼好的中文串进数据层，英文界面就永远是中文。
+  const inFlight = stamp => !stamp || dayOf(stamp) <= date;
+
   fundOrders
-    .filter(o => o.userId === userId && o.status === FUND_ORDER_STATUS.PENDING)
+    .filter(o => o.userId === userId && o.status === FUND_ORDER_STATUS.PENDING && inFlight(o.createdAt))
     .forEach(o => pending.push({
       kind: 'fund-order',
+      side: o.type,
+      fundName: o.fundName,
+      currency: o.currency,
+      amount: o.amount,
+      shares: o.shares,
       label: `${o.type === 'subscribe' ? '申购' : '赎回'} ${o.fundName} · ${o.currency} ${formatExactAmount(o.amount)}`,
       id: o.id,
     }));
 
   mandateTrades
-    .filter(t => t.userId === userId && t.status === MANDATE_TRADE_STATUS.PENDING)
+    .filter(t => t.userId === userId && t.status === MANDATE_TRADE_STATUS.PENDING && inFlight(t.tradeDate || t.createdAt))
     .forEach(t => pending.push({
       kind: 'mandate-trade',
+      side: t.side,
+      symbol: t.symbol,
+      quantity: t.quantity,
       label: `委托${t.side === 'buy' ? '买入' : '卖出'} ${t.symbol} ${t.quantity} 股（待复核）`,
       id: t.id,
     }));
 
   withdrawRequests
-    .filter(r => r.userId === userId && r.status === 'pending')
+    .filter(r => r.userId === userId && r.status === 'pending' && inFlight(r.createdAt))
     .forEach(r => pending.push({
       kind: 'withdraw',
+      currency: r.currency,
+      amount: r.amount,
       label: `提现 ${r.currency} ${formatExactAmount(r.amount)} 处理中`,
       id: r.id,
     }));
 
-  const locked = fund.cash.filter(c => c.frozen > 0).map(c => ({
-    currency: c.currency,
-    amount: c.frozen,
-    note: '基金申购冻结 / 在途提现',
-  }));
+  // 冻结按来源拆开写（后台对账要看来源；客户端只呈现「冻结」列 + 在途指令，不重复列金额）
+  const locked = fund.cash.filter(c => c.frozen > 0).map(c => {
+    const sources = [];
+    if (getFundFrozen(userId, c.currency) > 0) sources.push('基金申购待确认');
+    if (getWithdrawFrozen(userId, c.currency) > 0) sources.push('提现处理中');
+    return { currency: c.currency, amount: c.frozen, note: sources.join(' / ') || '—' };
+  });
+
+  // 与现金表同序（HKD → USD → CNH），无币种的委托指令排最后
+  const CURRENCY_RANK = { HKD: 0, USD: 1, CNH: 2 };
+  pending.sort((a, b) => (CURRENCY_RANK[a.currency] ?? 3) - (CURRENCY_RANK[b.currency] ?? 3));
 
   const mandateSection = mandate && summary.account ? {
     accountNo: summary.account.no,
@@ -13877,16 +13897,20 @@ export function buildDailyStatement(userId = currentUser.id, date = todayStr(), 
     cashA: fund.cash.map(c => ({ currency: c.currency, balance: c.balance, frozen: c.frozen, available: c.available })),
     cashAHKD: fund.cashHKD,
     fund: {
-      positions: fund.rows.map(r => ({
-        fundId: r.fundId,
-        fundName: r.fundName,
-        currency: r.currency,
-        shares: r.shares,
-        nav: r.nav,
-        marketValue: r.marketValue,
-        // 未估值日沿用上一净值：净值披露日 ≠ 结单日 即标注（私募周/月频，日结单不能凭空造日波动）
-        staleNav: String(funds.find(f => f.id === r.fundId)?.navMeta?.lastNavDate || '').slice(0, 10) !== date,
-      })),
+      positions: fund.rows.map(r => {
+        // 净值日与结算日不同 = 当日未估值、沿用上一公布净值。只记日期，解释归脚注
+        const navDate = String(funds.find(f => f.id === r.fundId)?.navMeta?.lastNavDate || '').slice(0, 10);
+        return {
+          fundId: r.fundId,
+          fundName: r.fundName,
+          currency: r.currency,
+          shares: r.shares,
+          nav: r.nav,
+          navDate,
+          marketValue: r.marketValue,
+          staleNav: !!navDate && navDate !== date,
+        };
+      }),
       marketValueHKD: fund.marketValueHKD,
     },
     mandate: mandateSection,
@@ -13905,13 +13929,12 @@ function seedDailyStatementsOnce() {
   if (currentUser.id !== 'u1') return;
   const d1 = '2026-11-11';
   const d2 = '2026-11-12';
-  // 两天的估值没有变化（净值/标记价只在 11-12 更新），所以两天总额相同是事实，不伪造差额
+  // 两天的估值没有变化（净值/标记价只在 11-12 更新），所以两天总额相同是事实，不伪造差额。
+  // 在途指令不手工清空：buildDailyStatement 已按结算日过滤，11-11 只会带出当天之前提交的提现。
   const s1 = buildDailyStatement('u1', d1, null);
   s1.generatedBy = '系统（日终）';
-  s1.pending = []; // 历史日没有在途指令（种子只造资产快照，不造当日在途队列）
   const s2 = buildDailyStatement('u1', d2, s1.totalHKD);
   s2.generatedBy = '系统（日终）';
-  s2.pending = [];
   dailyStatements.push(s2, s1);
 }
 
