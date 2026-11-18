@@ -4388,6 +4388,23 @@ export const transactions = [
     projectName: 'MediConnect Health',
     reference: 'T19-202608120955',
   },
+  // 2026-11-11 港币入金（2026-11-18 补）：日结单的「当日变动」要有入金分支可演示。
+  // 金额不另加进钱包余额——9,000,000 本来就是这些历史流水沉淀下来的总额，这笔是其中一段。
+  // 日期选 11-11 而不是 11-12：两条日结单共用同一份当前余额（仓库没有日终快照），
+  // 放在 11-12 就会出现「当天入金 20 万、差额却写 0.00」的自相矛盾。
+  {
+    id: 't23',
+    orderNo: genOrderNo('TX', '2026-11-11 10:20:00'),
+    type: 'deposit',
+    amount: 200000,
+    currency: 'HKD',
+    status: 'completed',
+    createdAt: '2026-11-11',
+    method: '银行转账',
+    bank: '汇丰银行',
+    cardNo: '6222 0234 5678 4567',
+    reference: 'T23-202611111020',
+  },
 ];
 
 // ── transaction amlFlags 归一化（T1）：string[] → object[]（模块加载执行一次） ──
@@ -13873,6 +13890,59 @@ export function buildDailyStatement(userId = currentUser.id, date = todayStr(), 
   const CURRENCY_RANK = { HKD: 0, USD: 1, CNH: 2 };
   pending.sort((a, b) => (CURRENCY_RANK[a.currency] ?? 3) - (CURRENCY_RANK[b.currency] ?? 3));
 
+  // 当日变动：只收「现金真的动了」的记录——余额的对账腿。
+  // 市价涨跌不在这里（没有成交就没有流水），它落在「较前一交易日」的差额里，差额行须注明含市值变动。
+  // 金额一律带方向存（支出为负），页面只负责排版，不再二次判断方向。
+  const movements = [];
+
+  // 现金账户：钱包只有演示账户一份，其他用户不取这条线（与钱包归属护栏同一口径）
+  if (userId === 'u1') {
+    transactions
+      .filter(tx => tx.status === 'completed'
+        && ['deposit', 'withdraw', 'mandate_transfer_in'].includes(tx.type)
+        && dayOf(tx.createdAt) === date)
+      .forEach(tx => {
+        const out = tx.type === 'withdraw';
+        movements.push({
+          kind: out ? 'withdraw' : tx.type === 'deposit' ? 'deposit' : 'mandate-transfer-in',
+          currency: tx.currency,
+          amount: out ? -Math.abs(Number(tx.amount) || 0) : Math.abs(Number(tx.amount) || 0),
+          at: tx.createdAt,
+          id: tx.id,
+        });
+      });
+  }
+
+  // 基金申赎：以确认单为凭（申购＝扣款，赎回＝到账净额），确认日当日计入
+  fundStatements
+    .filter(s => s.userId === userId && dayOf(s.confirmedAt || s.date) === date)
+    .forEach(s => {
+      const redeem = s.tradeType === '赎回';
+      const amt = Math.abs(Number(redeem ? (s.netAmount ?? s.amount) : s.amount) || 0);
+      movements.push({
+        kind: redeem ? 'fund-redeem' : 'fund-subscribe',
+        currency: s.currency,
+        amount: redeem ? amt : -amt,
+        fundName: s.fundName,
+        at: s.confirmedAt || s.date,
+        id: s.id,
+      });
+    });
+
+  // 委托账户：现金台账就是资金事实（交易结算 / 费用 / 划转都落腿），金额本身已带方向
+  cashLedger
+    .filter(e => e.userId === userId && dayOf(e.at) === date)
+    .forEach(e => movements.push({
+      kind: 'mandate-cash',
+      ledgerType: e.type,
+      currency: e.currency,
+      amount: Number(e.amount) || 0,
+      at: e.at,
+      id: e.id,
+    }));
+
+  movements.sort((a, b) => String(a.at).localeCompare(String(b.at)));
+
   const mandateSection = mandate && summary.account ? {
     accountNo: summary.account.no,
     cash: mandate.cash.map(c => ({ currency: c.currency, balance: c.balance })),
@@ -13916,6 +13986,7 @@ export function buildDailyStatement(userId = currentUser.id, date = todayStr(), 
     mandate: mandateSection,
     pending,
     locked,
+    movements,
     totalHKD: fund.totalHKD + (mandate?.totalHKD || 0),
     prevTotalHKD,
     generatedAt: formatNow(),

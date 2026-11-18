@@ -11750,6 +11750,7 @@ button.kyc-form-input.picker-trigger {
   font-size: var(--text-sm);
 }
 .doc-line-amt { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.doc-total-note { margin-left: 6px; font-size: var(--text-xs); font-weight: 400; color: var(--text-tertiary); }
 .doc-muted { color: var(--text-secondary); font-size: var(--text-sm); }
 
 /* ---- 入金「资金去向」 ---- */

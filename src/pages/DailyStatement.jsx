@@ -1,5 +1,5 @@
 import { ArrowLeft, Download } from 'lucide-react';
-import { getDailyStatementById, currentUser, platformBrand, formatExactAmount, formatShares, MANDATE_VALUATION_METHODS } from '../mock/data';
+import { getDailyStatementById, currentUser, platformBrand, formatExactAmount, formatShares, MANDATE_VALUATION_METHODS, MANDATE_LEDGER_LABELS } from '../mock/data';
 import { useLang } from '../i18n';
 
 // 日结单详情（2026-11-13 批 3）
@@ -36,8 +36,23 @@ function pendingRow(p, t) {
   return { text: p.label || '', amount: '' };
 }
 
+// 当日变动：左事由、右带方向金额（+ 收 / − 付），与在途指令同一套两端行式。
+// 现金账户用「充值 / 提现」，委托账户用其台账口径（入金/出金/交易结算…），
+// 两个账户各自沿用自己页面的词，靠前缀区分归属。
+function movementRow(m, t) {
+  const sign = m.amount < 0 ? '−' : '+';
+  const amount = `${sign}${m.currency} ${formatExactAmount(Math.abs(m.amount))}`;
+  if (m.kind === 'fund-subscribe') return { text: `${t('申购')} ${t(m.fundName)}`, amount };
+  if (m.kind === 'fund-redeem') return { text: `${t('赎回')} ${t(m.fundName)}`, amount };
+  if (m.kind === 'mandate-transfer-in') return { text: t('由委托账户划入'), amount };
+  if (m.kind === 'mandate-cash') {
+    return { text: `${t('委托账户')} · ${t(MANDATE_LEDGER_LABELS[m.ledgerType] || m.ledgerType)}`, amount };
+  }
+  return { text: t(m.kind === 'withdraw' ? '提现' : '充值'), amount };
+}
+
 export default function DailyStatement({ id, goBack }) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const stmt = getDailyStatementById(id);
 
   if (!stmt) {
@@ -190,9 +205,24 @@ export default function DailyStatement({ id, goBack }) {
           ))}
         </section>
 
+        <section className="doc-section">
+          <h3>{t('当日变动')}</h3>
+          {(stmt.movements || []).length === 0 && <p className="doc-muted">{t('无')}</p>}
+          {(stmt.movements || []).map((m, i) => {
+            const row = movementRow(m, t);
+            return (
+              <p key={m.id || i} className="doc-line">
+                <span>{row.text}</span>
+                <span className="doc-line-amt">{row.amount}</span>
+              </p>
+            );
+          })}
+        </section>
+
         <div className="doc-section-total">
-          {t('较前一交易日')}：
+          {t('较前一交易日')}{lang === 'en' ? ': ' : '：'}
           {diff == null ? t('首份日结单') : `${diff >= 0 ? '+' : '−'}HKD ${formatExactAmount(Math.abs(diff))}`}
+          {diff != null && <span className="doc-total-note">{t('（含市值变动）')}</span>}
         </div>
 
         <p className="doc-legal">
