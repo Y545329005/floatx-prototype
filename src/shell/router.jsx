@@ -236,7 +236,7 @@ function renderAppPageInner(path, param, ctx) {
     case 'support':
       return <Support navigate={navigate} goBack={goBack} />;
     case 'settings':
-      return <Settings navigate={navigate} goBack={goBack} />;
+      return <Settings navigate={navigate} goBack={goBack} setToast={setToast} setIsLoggedIn={setIsLoggedIn} />;
     case 'security-center':
       return <SecurityCenter navigate={navigate} goBack={goBack} setToast={setToast} setIsLoggedIn={setIsLoggedIn} />;
     case 'change-email':

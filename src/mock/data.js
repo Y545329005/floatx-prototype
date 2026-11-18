@@ -9323,7 +9323,9 @@ function sendSceneCode(store, account) {
   if (!codeDailyLimit(existing, now)) {
     return { success: false, message: '今日验证码发送次数已达上限，请24小时后重试' };
   }
-  const code = String(Math.floor(100000 + Math.random() * 900000));
+  // 固定演示码 123456（2026-11-18 Apple 审核口径：注册/密码重置场景审核员无法读取
+  // 随机码邮件，与全因子演示码 DEMO_OTP 对齐；先例：GA 演示码 123456，测试指南 §3.1）
+  const code = '123456';
   store[key] = {
     ...existing,
     code,

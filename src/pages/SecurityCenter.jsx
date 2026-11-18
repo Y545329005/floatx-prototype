@@ -6,12 +6,13 @@ import GaSetupFlow from '../components/GaSetupFlow';
 import {
   currentUser, getUserSecurity, listPasskeys, addPasskey, removePasskey,
   resolveSensitiveFactors, consumeAuthToken, isKyc1, getFreezeState,
-  requestGaReset, changeUserPassword, deleteUserAccount, isDemoMode,
+  requestGaReset, changeUserPassword, isDemoMode,
 } from '../mock/data';
 
 // 安全中心（2026-09-22 · 复刻规格 5.2/5.3：安全项生命周期管理）
 // 敏感操作前置验证（INV-4）：点操作入口立即弹安全验证，验证通过前操作内容不可见。
 // 验证矩阵（规格 5.2）：有 Passkey 单验 / GA+邮箱双验 / 仅邮箱（KYC1 叠加人脸）；无因子 → 阻断并联系客服。
+// （2026-11-18：删除账户模块上移至账户设置页 Settings.jsx——层级太深，本页不再承载删除流程）
 
 export default function SecurityCenter({ navigate, goBack, setToast, setIsLoggedIn }) {
   const { t } = useLang();
@@ -24,7 +25,6 @@ export default function SecurityCenter({ navigate, goBack, setToast, setIsLogged
   const [pwdForm, setPwdForm] = useState({ p1: '', p2: '' });
   const [gaResetRisk, setGaResetRisk] = useState(false);
   const [pkRemoveRisk, setPkRemoveRisk] = useState(null);
-  const [deleteRisk, setDeleteRisk] = useState(false);
   // （2026-10-15）tick/refresh 已随「操作后 toast 留原页」模式一并移除：
   // 改密/MFA 变更现全部改道强制重登页（UC 事件④⑤），无「留原页读新状态」场景
 
@@ -59,7 +59,6 @@ export default function SecurityCenter({ navigate, goBack, setToast, setIsLogged
     else if (kind === 'ga-reset') { setFlow(null); setGaResetRisk(true); }
     else if (kind === 'pk-add') { doAddPasskey(); }
     else if (kind === 'pk-remove') { doRemovePasskey(flow.passkey); } // 风险确认后的身份验证放行
-    else if (kind === 'delete-account') doDeleteAccount();
     else if (kind === 'pwd') setFlow({ kind: 'pwd-form' });
     else setFlow(null);
   };
@@ -119,24 +118,6 @@ export default function SecurityCenter({ navigate, goBack, setToast, setIsLogged
     setGaResetRisk(false);
     setFlow({ kind: 'ga-reset-flow' });
     return true;
-  };
-
-  // 删除账户（Apple 5.1.1(v)）：风险确认 → 身份验证 → 数据层校验 → 执行/拒绝
-  const confirmDeleteAccount = () => {
-    setDeleteRisk(false);
-    const factors = resolveSensitiveFactors();
-    if (factors.length === 0) {
-      setToast(t('账户状态异常，请联系客服'));
-      return;
-    }
-    setFlow({ kind: 'delete-account', factors });
-  };
-
-  const doDeleteAccount = () => {
-    const res = deleteUserAccount(currentUser.id);
-    setFlow(null);
-    if (!res.ok) { setToast(t(res.message)); return; }
-    forceRelogin(t('账户删除申请已提交，您的账户与全部数据将被永久删除。'));
   };
 
   return (
@@ -239,21 +220,6 @@ export default function SecurityCenter({ navigate, goBack, setToast, setIsLogged
         <Shield size={13} /> {t('双重验证不可关闭（合规要求），仅允许更改验证方式')}
       </p>
 
-      {/* 删除账户（Apple 5.1.1(v)：支持注册即须支持 app 内删除；危险区置底） */}
-      <div className="card card-secondary">
-        <h2 className="card-title">{t('删除账户')}</h2>
-        <div className="settings-status-row">
-          <div className="settings-status-icon"><Trash2 size={18} /></div>
-          <div className="settings-status-body">
-            <strong>{t('申请删除账户')}</strong>
-            <span className="text-muted text-sm">{t('注销后您的身份认证资料与平台数据将被永久删除，且不可恢复')}</span>
-          </div>
-        </div>
-        <button className="btn btn-danger btn-sm settings-pi-action" onClick={() => setDeleteRisk(true)}>
-          {t('删除账户')}
-        </button>
-      </div>
-
       {/* ===== 弹窗层 ===== */}
 
       {/* 通用前置安全验证（验证后阶段不重复显示 Sheet） */}
@@ -263,7 +229,7 @@ export default function SecurityCenter({ navigate, goBack, setToast, setIsLogged
           factors={flow.factors}
           onVerified={onVerified}
           onClose={() => setFlow(null)}
-          subtitle={t(flow.kind === 'delete-account' ? '验证通过后可删除账户' : '验证通过后可进行安全项变更')}
+          subtitle={t('验证通过后可进行安全项变更')}
         />
       )}
 
@@ -376,25 +342,6 @@ export default function SecurityCenter({ navigate, goBack, setToast, setIsLogged
       )}
 
       {/* 删除账户风险确认（5.3.1 同序：风险提示 → 身份验证 → 执行） */}
-      {deleteRisk && (
-        <>
-          <div className="sheet-mask" />
-          <div className="sheet">
-            <div className="sheet-header">
-              <h3>{t('删除账户')}</h3>
-            </div>
-            <div className="emergency-risk">
-              <AlertTriangle size={26} />
-              <p>{t('注销后，您的账户信息、身份认证资料与平台数据将被永久删除且不可恢复。进行中的问卷与未办结事项需先行处理。')}</p>
-            </div>
-            <div className="emergency-risk-actions">
-              <button className="btn btn-secondary" onClick={() => setDeleteRisk(false)}>{t('取消')}</button>
-              <button className="btn btn-danger" onClick={confirmDeleteAccount}>{t('我已了解，继续')}</button>
-            </div>
-          </div>
-        </>
-      )}
-
       {/* 全端失效固定文案页（UC §9.8 事件④⑤ · 流转7）：改密/MFA 变更后强制重新登录 */}
       {flow?.kind === 'relogin' && (
         <>

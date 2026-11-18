@@ -25,9 +25,9 @@ const SKIP_FILES = {
 const ALLOW_RANGES = [
   {
     file: 'src/pages/Settings.jsx',
-    from: 186,
-    to: 230,
-    reason: '演示维护卡：判据2 演示操作口，整体收进演示模式开关（阶段 1 落地）',
+    from: 217,
+    to: 267,
+    reason: '演示维护卡：判据2 演示操作口，整体收进演示模式开关（阶段 1 落地）。2026-11-18 删除账户模块上移插入约 30 行，卡片整体后移，行范围同步更新。',
   },
 ];
 

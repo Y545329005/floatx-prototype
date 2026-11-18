@@ -27,11 +27,17 @@ export const KYC_PATHS = new Set([
 
 // 合规门槛期白名单（2026-10-16 拍板「PI 认证通过才能浏览资讯」）：
 // KYC 未过 / PI 未过的用户仅可访问认证流程页与个人页（退出登录用）
+// security-center（2026-11-18）：安全中心内 GA/Passkey/改密等功能自带独立因子
+// 验证矩阵（pk-add 另有 KYC gate），未认证态可达无合规敞口
 export const COMPLIANCE_PATHS = new Set([
   'kyc-start', 'kyc-id-upload', 'kyc-address-proof', 'kyc-bank-transfer', 'kyc-submitted',
   'kyc-pi', 'pi-submitted',
   'login', 'register', 'forgot-password', 'reset-password',
-  'profile',
+  'profile', 'security-center',
+  // settings（2026-11-18）：删除账户模块自安全中心上移至账户设置页，Apple 5.1.1(v)
+  // 删除入口对未完成认证账号（KYC0）必须可达；Settings 页 PI 卡已有 kycApproved 分态
+  // 处理（未过不展示去认证入口，无超前引导），放行无合规敞口
+  'settings',
 ]);
 
 // 门控决策（纯函数）——四层判定（2026-10-16 首期裁剪拍板）：
