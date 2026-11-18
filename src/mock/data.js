@@ -2559,6 +2559,34 @@ export function buildPeriodStatement({ from, to, userId = currentUser.id } = {})
     .slice()
     .sort((a, b) => String(b.confirmedAt || b.date).localeCompare(String(a.confirmedAt || a.date)));
 
+  // 基金持仓（SFC 9.7 月结单要素：期末持有的证券数量）。期末取当前持仓，
+  // 期初按「期末 − 期间认购 + 期间赎回」反推，与法币 opening 同口径
+  // （仓库无日终快照，演示口径；真实系统须日终落持仓快照）。
+  // 市值按最新净值折算，计入总估值：总估值 = 法币 + 数字资产 + 基金市值。
+  const subShares = new Map();
+  const redShares = new Map();
+  trades.forEach(s => {
+    const n = Number(s.shares) || 0;
+    if (!n || !s.fundId) return;
+    const map = s.tradeType === '赎回' ? redShares : subShares;
+    map.set(s.fundId, (map.get(s.fundId) || 0) + n);
+  });
+  const fundPositions = getHoldings(userId).map(h => {
+    const fund = funds.find(f => f.id === h.fundId);
+    const nav = fund ? latestNav(fund) : 0;
+    const closing = round4(Number(h.shares) || 0);
+    const opening = round4(closing - (subShares.get(h.fundId) || 0) + (redShares.get(h.fundId) || 0));
+    return {
+      fundId: h.fundId,
+      fundName: h.fundName,
+      currency: h.currency,
+      nav,
+      opening,
+      closing,
+      closingHKD: Math.round(closing * nav * 100) / 100,
+    };
+  });
+
   const cash = [
     ...depositTx.map(tx => ({
       id: tx.id, time: tx.createdAt, direction: 'in', kind: 'deposit',
@@ -2586,8 +2614,10 @@ export function buildPeriodStatement({ from, to, userId = currentUser.id } = {})
     })),
   ].sort((a, b) => String(b.time).localeCompare(String(a.time)));
 
-  const closingHKD = Math.round(balances.reduce((s, b) => s + b.closingHKD, 0) * 100) / 100;
-  const openingHKD = Math.round(balances.reduce((s, b) => s + b.openingHKD, 0) * 100) / 100;
+  const closingHKD = Math.round((balances.reduce((s, b) => s + b.closingHKD, 0)
+    + fundPositions.reduce((s, p) => s + p.closingHKD, 0)) * 100) / 100;
+  const openingHKD = Math.round((balances.reduce((s, b) => s + b.openingHKD, 0)
+    + fundPositions.reduce((s, p) => s + p.opening * p.nav, 0)) * 100) / 100;
 
   return {
     from: start,
@@ -2596,6 +2626,7 @@ export function buildPeriodStatement({ from, to, userId = currentUser.id } = {})
     clientUid: String(currentUser.id).toUpperCase(),
     printedAt: formatNow(),
     balances,
+    fundPositions,
     openingHKD,
     closingHKD,
     trades,

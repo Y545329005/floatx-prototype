@@ -31,20 +31,8 @@ export default function FundStatementDetail({ id, navigate, goBack }) {
     );
   }
 
-  // 费率不落库、从单据自身反推：手续费 ÷ 计费基数。
-  // 认购按成交金额计费，赎回按赎回总额计费——两者都取单据快照里的数，改费率不会篡改历史单据。
-  const feeBase = s.tradeType === '赎回' ? (s.grossAmount || s.amount) : s.amount;
-  const feeRate = feeBase > 0 ? (Number(s.feeAmount) / Number(feeBase)) * 100 : 0;
-  const feeRateText = feeRate > 0 ? `${feeRate.toFixed(2)}%` : '';
-
   // 净值日与成交日相同则不重复展示
   const showNavDate = !!(s.navDate && s.navDate !== s.date);
-
-  // 纸面列印日期：取当天。结单是「什么时候打出来的」，不是成交日期——
-  // 两者都写，客户才能分辨这份纸是原件还是后补的。
-  const now = new Date();
-  const pad2 = n => String(n).padStart(2, '0');
-  const printDate = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
 
   // 嵌入壳（iframe）里 window.print 会被宿主拦截：提示而不是静默失败
   const handleDownload = () => {
@@ -90,7 +78,6 @@ export default function FundStatementDetail({ id, navigate, goBack }) {
           </div>
           <div className="statement-print-meta">
             <span>{t('编号')} {s.statementNo}</span>
-            <span>{t('列印日期')} {printDate}</span>
           </div>
         </div>
 
@@ -121,17 +108,11 @@ export default function FundStatementDetail({ id, navigate, goBack }) {
           <div className="statement-row"><span>{t('赎回总额')}</span><span>{s.currency} {formatExactAmount(s.grossAmount)}</span></div>
         )}
         {s.feeAmount > 0 && (
-          <>
-            <div className="statement-row">
-              <span>{t(s.tradeType === '赎回' ? '赎回手续费' : '认购手续费')}</span>
-              <span>{s.currency} {formatExactAmount(s.feeAmount)}</span>
-            </div>
-            {feeRateText && (
-              <div className="statement-row"><span>{t('费率')}</span><span>{feeRateText}</span></div>
-            )}
-          </>
+          <div className="statement-row">
+            <span>{t(s.tradeType === '赎回' ? '赎回手续费' : '认购手续费')}</span>
+            <span>{s.currency} {formatExactAmount(s.feeAmount)}</span>
+          </div>
         )}
-        <div className="statement-row"><span>{t('确认单编号')}</span><span>{s.statementNo}</span></div>
         {/* 两个日期职责不同（2026-11-13 会议口径）：交易日=市场事实（何时成交），发出时间=合规事实（何时送达）。
             confirmedAt 含时分秒，标签用「发出时间」而不是「发出日」——粒度和标签要一致 */}
         <div className="statement-row"><span>{t('交易日')}</span><span>{s.date}</span></div>

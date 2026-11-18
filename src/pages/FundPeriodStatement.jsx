@@ -92,6 +92,27 @@ export default function FundPeriodStatement({ from, to, goBack }) {
         })}
 
         <section>
+          <h2 className="doc-screen-group">{t('基金持仓')}</h2>
+          {stmt.fundPositions.length === 0 ? (
+            <div className="doc-screen-card">
+              <p className="doc-screen-empty">{t('暂无基金持仓')}</p>
+            </div>
+          ) : (
+            <div className="doc-screen-card">
+              {stmt.fundPositions.map(p => (
+                <div key={p.fundId} className="doc-screen-row">
+                  <span className="doc-screen-row-main">
+                    <span className="doc-screen-row-title">{t(p.fundName)}</span>
+                    <span className="doc-screen-row-sub">{fmtQty(p.closing)} {t('份')} · {t('净值')} {p.nav}</span>
+                  </span>
+                  <b className="doc-screen-amt">{p.currency} {formatExactAmount(p.closingHKD)}</b>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section>
           <h2 className="doc-screen-group">{t('基金交易')}</h2>
           {stmt.trades.length === 0 ? (
             <div className="doc-screen-card">
@@ -164,7 +185,6 @@ export default function FundPeriodStatement({ from, to, goBack }) {
         <div className="doc-client">
           <div><span>{t('客户名称')}</span><b>{t(stmt.clientName)}</b></div>
           <div><span>{t('客户 UID')}</span><b>{stmt.clientUid}</b></div>
-          <div><span>{t('结单期间')}</span><b>{stmt.from} – {stmt.to}</b></div>
           <div><span>{t('折算币种')}</span><b>HKD</b></div>
         </div>
 
@@ -198,6 +218,21 @@ export default function FundPeriodStatement({ from, to, goBack }) {
                 </tbody>
               );
             })}
+            {stmt.fundPositions.length > 0 && (
+              <tbody>
+                <tr className="doc-group">
+                  <td colSpan={4}>{t('基金持仓')}</td>
+                </tr>
+                {stmt.fundPositions.map(p => (
+                  <tr key={p.fundId}>
+                    <td className="wrap">{t(p.fundName)}</td>
+                    <td className="num">{fmtQty(p.opening)}</td>
+                    <td className="num">{fmtQty(p.closing)}</td>
+                    <td className="num">{formatExactAmount(p.closingHKD)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            )}
             <tbody>
               <tr className="doc-total">
                 <td colSpan={3}>{t('期末资产总估值')}</td>
@@ -276,7 +311,7 @@ export default function FundPeriodStatement({ from, to, goBack }) {
         )}
 
         <p className="doc-legal">
-          {t('本结单仅列示已完成记账的记录；处理中、待补凭证与失败的记录不列入，以免与期末余额不一致。数字资产数量按表内汇率折算为港元估值，仅供参考。本结单由电脑系统自动生成，无需签署。')}
+          {t('本结单仅列示已完成记账的记录；处理中、待补凭证与失败的记录不列入，以免与期末余额不一致。数字资产数量按表内汇率折算为港元估值，仅供参考。基金交易金额为含费净额，费用明细见各笔交易确认单。基金投资涉及风险，过往业绩不代表未来表现。本结单由电脑系统自动生成，无需签署。')}
         </p>
         <footer className="doc-foot">
           <span>
