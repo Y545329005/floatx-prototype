@@ -11,6 +11,8 @@ const cases = [
   {
     id: 'quantumcore',
     name: 'QuantumCore Technologies',
+    // Abstract illustrative artwork (not a photo of a real company); shared by the services card and this page.
+    image: 'assets/cases/quantumcore.svg',
     sector: t('量子計算', 'Quantum computing'),
     stage: t('C 輪', 'Series C'),
     location: t('香港', 'Hong Kong'),
@@ -42,6 +44,7 @@ const cases = [
   {
     id: 'bionova',
     name: 'BioNova Therapeutics',
+    image: 'assets/cases/bionova.svg',
     sector: t('生物醫藥', 'Biopharmaceuticals'),
     stage: t('C+ 輪', 'Series C+'),
     location: t('深圳', 'Shenzhen'),
@@ -73,6 +76,7 @@ const cases = [
   {
     id: 'skynet',
     name: 'SkyNet Robotics',
+    image: 'assets/cases/skynet.svg',
     sector: t('機器人', 'Robotics'),
     stage: t('B 輪', 'Series B'),
     location: t('新加坡', 'Singapore'),
@@ -103,6 +107,7 @@ const cases = [
   {
     id: 'greencell',
     name: 'GreenCell Energy',
+    image: 'assets/cases/greencell.svg',
     sector: t('新能源', 'New energy'),
     stage: t('Pre-IPO', 'Pre-IPO'),
     location: t('香港', 'Hong Kong'),
@@ -133,6 +138,7 @@ const cases = [
   {
     id: 'aurora',
     name: 'Aurora FinTech',
+    image: 'assets/cases/aurora.svg',
     sector: t('金融科技', 'Financial technology'),
     stage: t('B 輪', 'Series B'),
     location: t('香港', 'Hong Kong'),
@@ -163,6 +169,7 @@ const cases = [
   {
     id: 'mediconnect',
     name: 'MediConnect Health',
+    image: 'assets/cases/mediconnect.svg',
     sector: t('醫療健康', 'Healthcare'),
     stage: t('C 輪', 'Series C'),
     location: t('香港', 'Hong Kong'),

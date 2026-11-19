@@ -20,6 +20,7 @@
 
   const renderCase = entry => `
     <article class="detail-item">
+      ${entry.image ? `<figure class="detail-media"><img src="${esc(entry.image)}" alt="" width="1200" height="675"></figure>` : ''}
       <header class="detail-hero">
         <p class="detail-meta">${caseMeta(entry)}</p>
         <h1>${esc(entry.name)}<span class="detail-flag">${esc(L.flag)}</span></h1>

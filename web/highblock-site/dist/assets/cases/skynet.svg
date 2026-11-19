@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="85%">
+      <stop offset="0%" stop-color="#18233d"/><stop offset="45%" stop-color="#101a30"/><stop offset="100%" stop-color="#0a0e17"/>
+    </radialGradient>
+    <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="1.5" cy="1.5" r="1.5" fill="#c9a87c" fill-opacity=".2"/>
+    </pattern>
+    <linearGradient id="route" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#c9a87c" stop-opacity=".15"/><stop offset="100%" stop-color="#c9a87c" stop-opacity=".9"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="675" fill="url(#bg)"/>
+  <!-- warehouse floor grid -->
+  <g stroke="#c9a87c" stroke-opacity=".1" stroke-width="1">
+    <line x1="150" y1="150" x2="1050" y2="150"/><line x1="150" y1="270" x2="1050" y2="270"/>
+    <line x1="150" y1="390" x2="1050" y2="390"/><line x1="150" y1="510" x2="1050" y2="510"/>
+    <line x1="150" y1="150" x2="150" y2="510"/><line x1="375" y1="150" x2="375" y2="510"/>
+    <line x1="600" y1="150" x2="600" y2="510"/><line x1="825" y1="150" x2="825" y2="510"/>
+    <line x1="1050" y1="150" x2="1050" y2="510"/>
+  </g>
+  <!-- storage zones -->
+  <g fill="none" stroke="#c9a87c" stroke-opacity=".3" stroke-width="1.2">
+    <rect x="195" y="190" width="130" height="64" rx="6"/><rect x="195" y="430" width="130" height="64" rx="6"/>
+    <rect x="645" y="190" width="130" height="64" rx="6"/><rect x="870" y="430" width="130" height="64" rx="6"/>
+  </g>
+  <!-- AMR routes -->
+  <g fill="none" stroke="url(#route)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M260 254v96h225v96h340"/>
+    <path d="M935 462V350H710V254h-90" opacity=".7"/>
+  </g>
+  <g fill="#c9a87c">
+    <circle cx="260" cy="254" r="5.5"/><circle cx="825" cy="446" r="5.5"/>
+    <circle cx="620" cy="254" r="4.5" fill-opacity=".8"/><circle cx="935" cy="462" r="4.5" fill-opacity=".75"/>
+  </g>
+  <rect x="120" y="560" width="182" height="60" fill="url(#dots)" opacity=".8"/>
+  <circle cx="1000" cy="120" r="3" fill="#c9a87c" fill-opacity=".45"/>
+</svg>
