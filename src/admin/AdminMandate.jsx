@@ -6,10 +6,10 @@ import MandateAgreementLedger from './AdminMandateAgreements';
 
 // 委托业务（2026-11-17 IA 收敛 · 方案 A；同日工作台化重排）
 //
-// 第一性原理：后台页面 = 运营完成任务的工作台——今天有什么要办（页头待办入口）、
-// 每件事到哪一步（状态次行 / 进度条）、下一步点什么（操作列动词按钮）。
-// 数字统计不是页面的目的：同一数字同屏只讲一遍——页头待办按状态细分（可点跳签），
-// tab badge 做签内聚合指示，panel-bar 不再重复计数。
+// 第一性原理：后台页面 = 运营完成任务的工作台——每件事到哪一步（状态次行 / 进度条）、
+// 下一步点什么（操作列动词按钮）。数字统计不是页面的目的：同一数字同屏只讲一遍——
+// 侧边栏 badge（getMenuBadges 单一真源）与 tab badge 已覆盖待办计数，
+// 页头不再重复三层（2026-11-19 删页头待办行：chips 与 tab badge 同构、aria「今日待办」名不副实）。
 //
 // IA（2026-11-17 二次拍板）：一页四签，签序 = 流程序——
 // 协议（签协议）→ 账户（开户+授权）→ 交易与估值 → 日结与月报，与页头流程线一一对应。
@@ -34,7 +34,6 @@ export default function AdminMandate({ admin, tab, detailId, correctionOf, navig
   const pendingAuth = mandateAccounts.filter(a => a.status === MANDATE_ACCOUNT_STATUS.PENDING).length;
   const pendingWd = mandateWithdrawals.filter(w => w.status === MANDATE_WITHDRAWAL_STATUS.PENDING || w.status === MANDATE_WITHDRAWAL_STATUS.IN_PROGRESS).length;
   const pendingTrades = mandateTrades.filter(t => t.status === MANDATE_TRADE_STATUS.PENDING).length;
-  const pendingTotal = pendingAuth + pendingWd + pendingTrades;
   const draftAgreements = mandateAgreements.filter(a => a.status === 'draft').length;
 
   return (
@@ -43,23 +42,6 @@ export default function AdminMandate({ admin, tab, detailId, correctionOf, navig
         <div className="mandate-header-main">
           <h1>委托业务</h1>
           <span className="mandate-flow-hint">签协议 → 开户与授权 → 交易与估值 → 日结月报，按签操作</span>
-        </div>
-        <div className="mandate-todo-row" role="group" aria-label="今日待办">
-          {pendingTotal === 0 ? (
-            <span className="mandate-todo-none">今日无待办</span>
-          ) : (
-            <>
-              {pendingAuth > 0 && (
-                <button className="mandate-todo-chip" onClick={() => goTab('accounts')}>待授权 {pendingAuth}</button>
-              )}
-              {pendingWd > 0 && (
-                <button className="mandate-todo-chip" onClick={() => goTab('accounts')}>提取待办 {pendingWd}</button>
-              )}
-              {pendingTrades > 0 && (
-                <button className="mandate-todo-chip" onClick={() => goTab('trades')}>交易复核 {pendingTrades}</button>
-              )}
-            </>
-          )}
         </div>
       </div>
 

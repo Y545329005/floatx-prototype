@@ -4252,32 +4252,10 @@
 }
 .mandate-panel-bar .admin-header-summary { margin-left: 0; margin-right: auto; }
 
-/* 页头待办入口（2026-11-17 工作台化）：数字化三项可点跳签，0 待办给一句弱文字。
-   与 tab badge 分工——页头按状态细分，badge 做签内聚合，同屏同一数字不重复第二遍。 */
+/* 委托页头：标题 + 流程线提示。待办计数不进页头（2026-11-19 删待办行）——
+   侧边栏 badge 与 tab badge 已覆盖，同屏三层计数违反「同一数字只讲一遍」。 */
 .mandate-header-main { display: flex; flex-direction: column; gap: 4px; }
 .mandate-flow-hint { font-size: var(--text-xs); color: var(--text-tertiary); }
-.mandate-todo-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-.mandate-todo-chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  border: 1px solid var(--warning-border);
-  border-radius: var(--radius-sm);
-  background: var(--warning-light);
-  color: var(--warning-text);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  cursor: pointer;
-}
-.mandate-todo-chip:hover { border-color: var(--warning-text); }
-.mandate-todo-none { font-size: var(--text-sm); color: var(--text-tertiary); }
 
 /* 状态格：badge + 次行事实（APP 显示），与 special-status-cell 同构 */
 .mandate-status-cell { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
