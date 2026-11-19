@@ -23,7 +23,8 @@
 .detail-root { margin-top: 34px; }
 
 .detail-media {
-  margin: 0 0 36px;
+  margin: 30px 0 44px;
+  max-width: 560px;
   border: 1px solid var(--line);
   border-radius: var(--radius-card);
   overflow: hidden;
@@ -197,7 +198,7 @@
 @media (max-width: 780px) {
   .detail-shell { padding-top: 46px; padding-bottom: 70px; }
   .detail-root { margin-top: 26px; }
-  .detail-media { margin-bottom: 28px; }
+  .detail-media { margin: 24px 0 36px; }
   .detail-hero h1 { margin-top: 14px; font-size: 30px; }
   .detail-flag { margin-left: 12px; transform: translateY(-2px); }
   .detail-section { margin-top: 36px; padding-top: 28px; }

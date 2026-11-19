@@ -20,11 +20,11 @@
 
   const renderCase = entry => `
     <article class="detail-item">
-      ${entry.image ? `<figure class="detail-media"><img src="${esc(entry.image)}" alt="" width="1200" height="675"></figure>` : ''}
       <header class="detail-hero">
         <p class="detail-meta">${caseMeta(entry)}</p>
         <h1>${esc(entry.name)}<span class="detail-flag">${esc(L.flag)}</span></h1>
       </header>
+      ${entry.image ? `<figure class="detail-media"><img src="${esc(entry.image)}" alt="" width="1200" height="675"></figure>` : ''}
       <section class="detail-section"><h2>${esc(L.sections.about)}</h2>${entry.intro.map(p => `<p class="detail-prose">${tx(p)}</p>`).join('')}</section>
       <section class="detail-section"><h2>${esc(L.sections.highlights)}</h2><ul class="detail-list">${entry.highlights.map(h => `<li>${tx(h)}</li>`).join('')}</ul></section>
       ${entry.team.length ? `<section class="detail-section"><h2>${esc(L.sections.team)}</h2><div class="detail-team">${entry.team.map(m => `<div class="detail-team-row"><strong>${tx(m.name)}</strong><span class="detail-team-role">${esc(m.role)}</span><span class="detail-team-bg">${tx(m.bg)}</span></div>`).join('')}</div></section>` : ''}
