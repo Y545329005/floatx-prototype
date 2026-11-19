@@ -35,7 +35,7 @@ export function informationHub(c) {
     // Illustrative content; keep both languages in sync when updating.
     recaps: [
       { id: 'greencell-briefing', date: '2026-07-20', dateText: '20 July 2026', title: 'GreenCell investor briefing (online)', text: 'GreenCell management shared progress on solid-state battery mass production and automaker partnerships, and answered participants’ questions on technology routes and capacity planning.' },
-      { id: 'aurora-rwa', date: '2026-07-08', dateText: '8 July 2026', title: 'Aurora FinTech RWA topic sharing (online)', text: 'The team explained the compliant structuring of real-world asset tokenisation and the market practice of secondary liquidity for private shares, together with the regulatory considerations involved.' },
+      { id: 'aurora-rwa', date: '2026-07-08', dateText: '8 July 2026', title: 'Aurora FinTech RWA briefing (online)', text: 'The team explained the compliant structuring of real-world asset tokenisation and the market practice of secondary liquidity for private fund interests, together with the regulatory considerations involved.' },
       { id: 'quantumcore-openday', date: '2026-06-24', dateText: '24 June 2026', title: 'QuantumCore technology open day (Hong Kong Science Park)', text: 'An on-site visit to the quantum computing laboratory, where the technology team demonstrated the room-temperature qubit prototype and exchanged views with Professional Investors on the path to industrialisation.' },
     ],
     reviewNote: 'Event records are illustrative. To learn about upcoming events, please ',
@@ -73,9 +73,9 @@ export function informationHub(c) {
     // 僅收錄已舉行活動的紀要式敘述——不含報名、預告與會議連結；剝離「上市／條款」類募集語境。
     // 示意內容，更新時繁中／英文兩語同步維護。
     recaps: [
-      { id: 'greencell-briefing', date: '2026-07-20', dateText: '2026 年 7 月 20 日', title: 'GreenCell 投資人交流會（線上）', text: 'GreenCell 管理層分享固態電池量產與車企合作的最新進展，並就技術路線與產能規劃回應參會者提問。' },
-      { id: 'aurora-rwa', date: '2026-07-08', dateText: '2026 年 7 月 8 日', title: 'Aurora FinTech RWA 主題分享（線上）', text: '團隊講解真實資產代幣化的合規結構設計、私募份額二級流動性的市場實踐，以及其中的監管考量。' },
-      { id: 'quantumcore-openday', date: '2026-06-24', dateText: '2026 年 6 月 24 日', title: 'QuantumCore 技術開放日（香港科學園）', text: '線下參觀量子計算實驗室，技術團隊演示室溫量子比特原型，並與專業投資者就產業化路徑交流。' },
+      { id: 'greencell-briefing', date: '2026-07-20', dateText: '2026 年 7 月 20 日', title: 'GreenCell 投資者交流會（線上）', text: 'GreenCell 管理層分享固態電池量產與車廠合作的最新進展，並就技術路線與產能規劃回應與會者提問。' },
+      { id: 'aurora-rwa', date: '2026-07-08', dateText: '2026 年 7 月 8 日', title: 'Aurora FinTech RWA 主題分享（線上）', text: '團隊講解真實資產代幣化的合規結構設計、私募基金權益二級流動性的市場實踐，以及其中的監管考量。' },
+      { id: 'quantumcore-openday', date: '2026-06-24', dateText: '2026 年 6 月 24 日', title: 'QuantumCore 技術開放日（香港科學園）', text: '實地參觀量子計算實驗室，技術團隊示範室溫量子比特原型，並與專業投資者就產業化路徑交流。' },
     ],
     reviewNote: '活動紀錄為示意內容。如欲了解即將舉行的活動，請',
     reviewEnd: '。',
