@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, Search, Save } from 'lucide-react';
 import {
   dailyStatements,
   mandateAccounts,
@@ -34,12 +34,23 @@ export default function AdminMandateReports({ admin, detailId, navigate }) {
   const [month, setMonth] = useState(thisMonth());
   const [reportDrawer, setReportDrawer] = useState(null); // accountId，组件内 state
   const [genOpen, setGenOpen] = useState(false);
+  // 多客户/多账户：日结单按客户查，月报按账户逐行——不假设演示里只有 u1 一户
+  const [stmtUser, setStmtUser] = useState('u1');
+  const [stmtKeyword, setStmtKeyword] = useState('');
+  const [stmtPage, setStmtPage] = useState(1);
+  const [reportKeyword, setReportKeyword] = useState('');
+  const [reportPage, setReportPage] = useState(1);
   const operator = admin?.name || '运营后台';
 
   const accounts = mandateAccounts.filter(a => a.status !== MANDATE_ACCOUNT_STATUS.CLOSED);
-  // 原型只演示当前演示账户 u1 的日结单与月报（与钱包归属护栏同一口径）；
-  // 接后端后按账户/客户查询，不在前端拼全量。
-  const statements = useMemo(() => getDailyStatements('u1'), [tick]);
+  const stmtUsers = useMemo(() => {
+    const map = new Map();
+    mandateAccounts.forEach(a => {
+      if (a.userId && !map.has(a.userId)) map.set(a.userId, { userId: a.userId, name: a.userName || a.userId });
+    });
+    return Array.from(map.values());
+  }, []);
+  const statements = useMemo(() => getDailyStatements(stmtUser), [tick, stmtUser]);
   const selected = detailId ? dailyStatements.find(s => s.id === detailId) : null;
   const drawerOpen = !!selected;
   const closeDrawer = () => navigate && navigate('#admin/mandate/reports');
@@ -59,8 +70,29 @@ export default function AdminMandateReports({ admin, detailId, navigate }) {
 
   const refresh = () => setTick(t => t + 1);
 
+  // 视图控制行 + 分页（与 AdminUsers 同款）：日结按日期检索，月报按账户/客户检索
+  const filteredStatements = statements.filter(s => !stmtKeyword.trim() || String(s.date).includes(stmtKeyword.trim()));
+  const STMT_PAGE_SIZE = 8;
+  const stmtTotalPages = Math.max(1, Math.ceil(filteredStatements.length / STMT_PAGE_SIZE));
+  const stmtSafePage = Math.min(stmtPage, stmtTotalPages);
+  const stmtRows = filteredStatements.slice((stmtSafePage - 1) * STMT_PAGE_SIZE, stmtSafePage * STMT_PAGE_SIZE);
+
+  const reportRows = accounts.filter(a => {
+    const kw = reportKeyword.trim().toLowerCase();
+    if (!kw) return true;
+    return [a.no, a.userName, a.userId].filter(Boolean).some(v => String(v).toLowerCase().includes(kw));
+  });
+  const REPORT_PAGE_SIZE = 8;
+  const reportTotalPages = Math.max(1, Math.ceil(reportRows.length / REPORT_PAGE_SIZE));
+  const reportSafePage = Math.min(reportPage, reportTotalPages);
+  const reportPageRows = reportRows.slice((reportSafePage - 1) * REPORT_PAGE_SIZE, reportSafePage * REPORT_PAGE_SIZE);
+  const issuedCount = accounts.filter(a => {
+    const r = buildMandateMonthlyReport(a.id, month);
+    return r && r.days > 0;
+  }).length;
+
   const handleGenerate = () => {
-    const res = generateDailyStatement({ userId: 'u1', date }, operator);
+    const res = generateDailyStatement({ userId: stmtUser, date }, operator);
     if (!res.ok) { setError(res.error); setDoneMsg(''); return; }
     setError('');
     setDoneMsg(`已生成 ${date} 日结单：总资产 HK$${formatExactAmount(res.statement.totalHKD)}`);
@@ -77,26 +109,39 @@ export default function AdminMandateReports({ admin, detailId, navigate }) {
 
   return (
     <div className="mandate-panel mandate-panel--reports">
+      {/* 日结单：存量统计 + 生成抽屉入口；客户筛选在视图控制行（多客户/多账户） */}
       <div className="mandate-panel-bar">
-        <span className="admin-header-summary">日结单是每日快照（现金 / 委托 / 基金三类账户），月报由它汇总</span>
-        <button
-          className="btn btn-md btn-primary"
-          onClick={() => { setGenOpen(v => !v); setError(''); setDoneMsg(''); }}
-        >
-          <Plus size={16} /> {genOpen ? '收起' : '生成日结单'}
+        <span className="admin-header-summary">共 {statements.length} 份 · 最新 {statements[0]?.date || '—'}</span>
+        <button className="btn btn-md btn-primary" onClick={() => { setGenOpen(true); setError(''); setDoneMsg(''); }}>
+          <Plus size={16} /> 生成日结单
         </button>
       </div>
 
-      {genOpen && (
-        <div className="mandate-gen-row">
-          <input className="form-input date-iso" type="date" value={date} onChange={e => { setDate(e.target.value); setError(''); setDoneMsg(''); }} aria-label="日结单日期" />
-          <button className="btn btn-md btn-primary" onClick={handleGenerate}>生成 {date}</button>
+      <div className="admin-view-row">
+        <div className="admin-filter-row">
+          <select
+            className="form-input mandate-select"
+            aria-label="按客户筛选日结单"
+            value={stmtUser}
+            onChange={e => { setStmtUser(e.target.value); setStmtPage(1); }}
+          >
+            {stmtUsers.map(u => <option key={u.userId} value={u.userId}>{u.name}</option>)}
+          </select>
         </div>
-      )}
-
-      {(error || doneMsg) && (
-        <p className={error ? 'form-error' : 'admin-form-hint'}>{error || doneMsg}</p>
-      )}
+        <div className="admin-search-wrap">
+          <Search size={16} className="admin-search-icon" />
+          <input
+            className="admin-search-input"
+            aria-label="搜索日期"
+            placeholder="搜索日期"
+            value={stmtKeyword}
+            onChange={e => { setStmtKeyword(e.target.value); setStmtPage(1); }}
+          />
+          {stmtKeyword && (
+            <button className="btn-icon" title="清除" onClick={() => { setStmtKeyword(''); setStmtPage(1); }}><X size={16} /></button>
+          )}
+        </div>
+      </div>
 
       <div className="admin-table admin-table--daily-statements">
         <div className="admin-table-header">
@@ -106,7 +151,7 @@ export default function AdminMandateReports({ admin, detailId, navigate }) {
           <span>在途 / 锁定</span>
           <span>生成</span>
         </div>
-        {statements.map(s => {
+        {stmtRows.map(s => {
           const diff = s.prevTotalHKD != null ? s.totalHKD - s.prevTotalHKD : null;
           return (
             <div
@@ -127,22 +172,47 @@ export default function AdminMandateReports({ admin, detailId, navigate }) {
             </div>
           );
         })}
-        {statements.length === 0 && (
-          <div className="admin-table-row"><span className="admin-table-empty">暂无日结单，点右上角「生成日结单」</span></div>
+        {stmtRows.length === 0 && (
+          <div className="admin-table-row"><span className="admin-table-empty">{stmtKeyword ? '没有匹配的日结单' : '该客户暂无日结单，点右上角生成'}</span></div>
         )}
       </div>
 
-      {/* 月报索引（2026-11-17 二次拍板）：每账户当期一行，未出具的标出——跨账户回答「谁还没出报告」。
-          点行进抽屉看全文；期间筛选只此一处，同一数字不在行与抽屉重复第二遍。 */}
+      {filteredStatements.length > 0 && (
+        <div className="admin-pagination">
+          <button className="admin-page-btn" disabled={stmtSafePage === 1} onClick={() => setStmtPage(stmtSafePage - 1)}>‹ 上一页</button>
+          <span className="admin-page-info">第 {stmtSafePage}/{stmtTotalPages} 页 · 共 {filteredStatements.length} 份</span>
+          <button className="admin-page-btn" disabled={stmtSafePage === stmtTotalPages} onClick={() => setStmtPage(stmtSafePage + 1)}>下一页 ›</button>
+        </div>
+      )}
+
+      {/* 月报索引：每账户当期一行（未出具标出），期间与检索在视图控制行 */}
       <div className="mandate-panel-bar">
-        <span className="admin-header-summary">月报由当月日结单汇总，每账户每月一份（协议 11.3 · 期末 15 个营业日内出具）</span>
-        <input
-          className="form-input date-iso mandate-month-input"
-          value={month}
-          onChange={e => setMonth(e.target.value)}
-          placeholder="2026-11"
-          aria-label="月报期间"
-        />
+        <span className="admin-header-summary">共 {accounts.length} 户 · 已出具 {issuedCount} · 未出具 {accounts.length - issuedCount}</span>
+      </div>
+
+      <div className="admin-view-row">
+        <div className="admin-filter-row">
+          <input
+            className="form-input admin-tx-range"
+            type="month"
+            value={month}
+            onChange={e => { setMonth(e.target.value); setReportPage(1); }}
+            aria-label="月报期间"
+          />
+        </div>
+        <div className="admin-search-wrap">
+          <Search size={16} className="admin-search-icon" />
+          <input
+            className="admin-search-input"
+            aria-label="搜索账户号 / 客户"
+            placeholder="搜索账户号 / 客户"
+            value={reportKeyword}
+            onChange={e => { setReportKeyword(e.target.value); setReportPage(1); }}
+          />
+          {reportKeyword && (
+            <button className="btn-icon" title="清除" onClick={() => { setReportKeyword(''); setReportPage(1); }}><X size={16} /></button>
+          )}
+        </div>
       </div>
 
       <div className="admin-table admin-table--mandate-monthly">
@@ -154,7 +224,7 @@ export default function AdminMandateReports({ admin, detailId, navigate }) {
           <span className="col-amount">费用 HKD</span>
           <span>状态</span>
         </div>
-        {accounts.map(a => {
+        {reportPageRows.map(a => {
           const r = buildMandateMonthlyReport(a.id, month);
           const has = r && r.days > 0;
           return (
@@ -183,7 +253,51 @@ export default function AdminMandateReports({ admin, detailId, navigate }) {
             </div>
           );
         })}
+        {reportPageRows.length === 0 && (
+          <div className="admin-table-row"><span className="admin-table-empty">没有匹配的委托账户</span></div>
+        )}
       </div>
+
+      {reportRows.length > 0 && (
+        <div className="admin-pagination">
+          <button className="admin-page-btn" disabled={reportSafePage === 1} onClick={() => setReportPage(reportSafePage - 1)}>‹ 上一页</button>
+          <span className="admin-page-info">第 {reportSafePage}/{reportTotalPages} 页 · 共 {reportRows.length} 户</span>
+          <button className="admin-page-btn" disabled={reportSafePage === reportTotalPages} onClick={() => setReportPage(reportSafePage + 1)}>下一页 ›</button>
+        </div>
+      )}
+
+      {/* 生成日结单：统一右侧抽屉（低频动作不占常驻行） */}
+      {genOpen && <div className="admin-drawer-mask" onClick={() => setGenOpen(false)} />}
+      {genOpen && (
+        <div className="admin-drawer" role="dialog" aria-modal="true" aria-label="生成日结单">
+          <div className="admin-drawer-head">
+            <h3>生成日结单</h3>
+            <button className="btn-icon" title="关闭" onClick={() => setGenOpen(false)}><X size={18} /></button>
+          </div>
+          <div className="admin-drawer-body">
+            <div className="card">
+              <div className="card-title">日结单（现金 / 委托 / 基金三类账户快照）</div>
+              <div className="form-group">
+                <label className="form-label">客户</label>
+                <select className="form-input" value={stmtUser} onChange={e => { setStmtUser(e.target.value); setError(''); setDoneMsg(''); }}>
+                  {stmtUsers.map(u => <option key={u.userId} value={u.userId}>{u.name}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">结算日期</label>
+                <input className="form-input" type="date" value={date} onChange={e => { setDate(e.target.value); setError(''); setDoneMsg(''); }} />
+              </div>
+              {error && <p className="form-error">{error}</p>}
+              {doneMsg && <p className="admin-form-hint">{doneMsg}</p>}
+              <div className="admin-form-actions">
+                <button className="btn btn-md btn-primary" onClick={handleGenerate}><Save size={16} /> 生成 {date}</button>
+                <button className="btn btn-md btn-outline" onClick={() => setGenOpen(false)}>关闭</button>
+              </div>
+              <p className="admin-form-hint">有待复核交易时不能生成（会被拒绝）：待复核交易不进账，带着它们出单，第二天无法解释差额。</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {drawerOpen && <div className="admin-drawer-mask" onClick={closeDrawer} />}
       {drawerOpen && selected && (

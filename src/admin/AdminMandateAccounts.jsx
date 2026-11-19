@@ -1,5 +1,5 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
-import { X, Save, Plus, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { X, Save, Plus, ShieldCheck, AlertTriangle, Search } from 'lucide-react';
 import {
   mandateAccounts,
   mandateAgreements,
@@ -17,6 +17,7 @@ import {
   addMandateCashEntry,
   getMandateCashByCurrency,
   getMandateAvailableCash,
+  getMandateHoldings,
   reviewMandateWithdrawal,
   completeMandateWithdrawal,
   getInvestorUsers,
@@ -67,17 +68,22 @@ const balanceMain = (accountId) => {
   return { main, rest: rows.filter(r => r !== main) };
 };
 
-// 提取三步进度条（登记 → 合规复核 → 产出 同款语言）：申请 → 通过 → 完成登记。
-// pending: 通过中；in_progress: 变现中待登记；rejected: 卡在「通过」环节。
-const WD_STEPS = ['申请', '通过', '完成登记'];
-const wdStepStates = (w) => {
-  switch (w.status) {
-    case MANDATE_WITHDRAWAL_STATUS.COMPLETED: return ['done', 'done', 'done'];
-    case MANDATE_WITHDRAWAL_STATUS.IN_PROGRESS: return ['done', 'done', 'current'];
-    case MANDATE_WITHDRAWAL_STATUS.REJECTED: return ['done', 'error', 'todo'];
-    default: return ['done', 'current', 'todo'];
-  }
+// 提取状态由徽章 + 次行表达（2026-11-19 收掉抽屉内自创三步进度条：
+// 后台其余页面没有进度条语言，状态与下一步动作已由操作列讲清）。
+
+// 账户规模随客户增长：列表要能筛选、检索、分页，且不假设只有演示里的两户。
+// 账户号 / 客户 / 协议号都可检索；状态筛选与页签 badge 分工——badge 讲队列，筛选讲存量。
+const accountMatches = (acc, keyword) => {
+  const kw = keyword.trim().toLowerCase();
+  if (!kw) return true;
+  const ag = mandateAgreements.find(a => a.id === acc.agreementId);
+  return [acc.no, acc.userName, acc.userId, acc.managerName, ag?.no]
+    .filter(Boolean)
+    .some(v => String(v).toLowerCase().includes(kw));
 };
+
+const holdingValue = (accountId) => getMandateHoldings(accountId)
+  .reduce((sum, h) => sum + (Number(h.marketValueHKD) || 0), 0);
 
 export default function AdminMandateAccounts({ admin, detailId, navigate }) {
   const [tick, setTick] = useState(0);
@@ -92,6 +98,9 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
   const [authMsg, setAuthMsg] = useState('');
   const [wdReason, setWdReason] = useState('');
   const [wdMsg, setWdMsg] = useState('');
+  const [filter, setFilter] = useState('all');
+  const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(1);
   const operator = admin?.name || '运营后台';
 
   const isNew = detailId === 'new';
@@ -129,6 +138,22 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
   }, [detailId]);
 
   const refresh = () => setTick(t => t + 1);
+
+  // 视图控制行（筛选 + 检索）与分页：账户数量不假设为演示的 2 户
+  const PAGE_SIZE = 8;
+  const statusCounts = {
+    all: mandateAccounts.length,
+    [MANDATE_ACCOUNT_STATUS.ACTIVE]: mandateAccounts.filter(a => a.status === MANDATE_ACCOUNT_STATUS.ACTIVE).length,
+    [MANDATE_ACCOUNT_STATUS.PENDING]: mandateAccounts.filter(a => a.status === MANDATE_ACCOUNT_STATUS.PENDING).length,
+    [MANDATE_ACCOUNT_STATUS.SUSPENDED]: mandateAccounts.filter(a => a.status === MANDATE_ACCOUNT_STATUS.SUSPENDED).length,
+    [MANDATE_ACCOUNT_STATUS.CLOSED]: mandateAccounts.filter(a => a.status === MANDATE_ACCOUNT_STATUS.CLOSED).length,
+  };
+  const filteredAccounts = mandateAccounts.filter(acc => (
+    (filter === 'all' || acc.status === filter) && accountMatches(acc, keyword)
+  ));
+  const totalPages = Math.max(1, Math.ceil(filteredAccounts.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pageRows = filteredAccounts.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   // 客户可选协议：只列该客户的协议，并把不可用原因直接显示在选项后（少一次「存了才知道不行」）
   const agreementsOfUser = accountForm?.userId
@@ -226,11 +251,43 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
 
   return (
     <div className="mandate-panel mandate-panel--accounts">
-      <div className="mandate-panel-bar">
-        <span className="admin-header-summary">开户须有生效协议（见「协议」签），授权显示须合规复核</span>
+      <div className="mandate-panel-bar mandate-panel-bar--end">
         <button className="btn btn-md btn-primary" onClick={() => navigate('#admin/mandate/accounts/new')}>
           <Plus size={16} /> 开立委托账户
         </button>
+      </div>
+
+      <div className="admin-view-row">
+        <div className="admin-filter-row">
+          {[
+            { key: 'all', label: '全部' },
+            { key: MANDATE_ACCOUNT_STATUS.ACTIVE, label: '已生效' },
+            { key: MANDATE_ACCOUNT_STATUS.PENDING, label: '待授权' },
+            { key: MANDATE_ACCOUNT_STATUS.SUSPENDED, label: '已暂停' },
+            { key: MANDATE_ACCOUNT_STATUS.CLOSED, label: '已关闭' },
+          ].map(f => (
+            <button
+              key={f.key}
+              className={`admin-filter-btn ${filter === f.key ? 'active' : ''}`}
+              onClick={() => { setFilter(f.key); setPage(1); }}
+            >
+              {f.label} {statusCounts[f.key]}
+            </button>
+          ))}
+        </div>
+        <div className="admin-search-wrap">
+          <Search size={16} className="admin-search-icon" />
+          <input
+            className="admin-search-input"
+            aria-label="搜索账户号 / 客户 / 协议号"
+            placeholder="搜索账户号 / 客户 / 协议号"
+            value={keyword}
+            onChange={e => { setKeyword(e.target.value); setPage(1); }}
+          />
+          {keyword && (
+            <button className="btn-icon" title="清除" onClick={() => { setKeyword(''); setPage(1); }}><X size={16} /></button>
+          )}
+        </div>
       </div>
 
       <div className="admin-table admin-table--mandate-accounts">
@@ -239,12 +296,14 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
           <span>协议</span>
           <span>基金经理</span>
           <span className="col-amount">资金余额</span>
+          <span className="col-amount">持仓市值</span>
           <span>状态</span>
         </div>
-        {mandateAccounts.map(acc => {
+        {pageRows.map(acc => {
           const meta = STATUS_META[acc.status] || STATUS_META[MANDATE_ACCOUNT_STATUS.PENDING];
           const ag = mandateAgreements.find(a => a.id === acc.agreementId);
           const bal = balanceMain(acc.id);
+          const mv = holdingValue(acc.id);
           return (
             <div
               key={acc.id}
@@ -270,6 +329,9 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
                   </>
                 ) : '—'}
               </span>
+              <span className="col-amount mandate-bal">
+                {mv > 0 ? <strong>{formatExactAmount(mv)}</strong> : '—'}
+              </span>
               <span className="mandate-status-cell">
                 <span className={`status-badge ${meta.cls}`}>{meta.label}</span>
                 <span className="mandate-subline">{acc.visibleInApp ? 'APP 显示' : 'APP 不显示'}</span>
@@ -278,10 +340,18 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
             </div>
           );
         })}
-        {mandateAccounts.length === 0 && (
-          <div className="admin-table-row"><span className="admin-table-empty">暂无委托账户，点击右上角开立</span></div>
+        {pageRows.length === 0 && (
+          <div className="admin-table-row"><span className="admin-table-empty">{keyword ? '没有匹配的委托账户' : '暂无委托账户，点击右上角开立'}</span></div>
         )}
       </div>
+
+      {filteredAccounts.length > 0 && (
+        <div className="admin-pagination">
+          <button className="admin-page-btn" disabled={safePage === 1} onClick={() => setPage(safePage - 1)}>‹ 上一页</button>
+          <span className="admin-page-info">第 {safePage}/{totalPages} 页 · 共 {filteredAccounts.length} 户</span>
+          <button className="admin-page-btn" disabled={safePage === totalPages} onClick={() => setPage(safePage + 1)}>下一页 ›</button>
+        </div>
+      )}
 
       {drawerOpen && <div className="admin-drawer-mask" onClick={closeDrawer} />}
       {drawerOpen && accountForm && (
@@ -451,23 +521,11 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
                         [MANDATE_WITHDRAWAL_STATUS.COMPLETED]: 'admin-status-approved',
                         [MANDATE_WITHDRAWAL_STATUS.REJECTED]: 'admin-status-closed',
                       }[w.status] || 'admin-status-pending';
-                      const stepStates = wdStepStates(w);
                       return (
                         <div key={w.id} className="mandate-wd-row">
                           <div className="mandate-wd-main">
                             <strong>{w.currency} {formatExactAmount(w.amount)}</strong>
                             <span className="mandate-subline">{w.no} · 申请 {String(w.createdAt).slice(0, 16)}</span>
-                            <div className="mandate-steps" aria-label="提取进度">
-                              {WD_STEPS.map((label, i) => (
-                                <Fragment key={label}>
-                                  {i > 0 && <span className={`mandate-step-line ${stepStates[i - 1] === 'done' ? 'mandate-step-line--done' : ''}`} />}
-                                  <div className={`mandate-step mandate-step--${stepStates[i]}`}>
-                                    <span className="mandate-step-dot" />
-                                    <span className="mandate-step-label">{label}</span>
-                                  </div>
-                                </Fragment>
-                              ))}
-                            </div>
                             {(w.status === MANDATE_WITHDRAWAL_STATUS.PENDING || w.status === MANDATE_WITHDRAWAL_STATUS.IN_PROGRESS) && w.expectedDate && (
                               <span className="mandate-subline">预计到账 {w.expectedDate}（不少于 {mandateConfig.withdrawalNoticeDays} 个营业日）</span>
                             )}

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { X, Plus, CheckCircle, XCircle, AlertTriangle, Ban, Save } from 'lucide-react';
+import { X, Plus, CheckCircle, XCircle, AlertTriangle, Ban, Save, Search } from 'lucide-react';
 import {
   mandateAccounts,
   mandateTrades,
@@ -22,15 +22,16 @@ import {
 } from '../mock/data';
 import { useDrawerFocus } from './useDrawerFocus';
 
-// 委托交易与估值（2026-11-13 批 1b）
+// 委托交易（2026-11-13 批 1b；2026-11-19 收掉签内子页签）
 //
 // 本页的三条硬约束都在数据层，UI 只负责把话说清楚：
 //   ① 交易录入即 pending —— 不进持仓、不进日结单、APP 看不到；
 //   ② 复核人 ≠ 录入人；
 //   ③ 作废不是删除：保留原记录 + 一条反向资金流水，审计要看到「发生过什么」。
 //
-// 估值单独一栏：价格天天变，逐笔复核会把运营淹掉，所以估值只留痕不阻断。
-// 投资限制同理：超限黄字提示 + 审计留痕，不拦保存——估值波动导致的超限不该把正常交易卡死。
+// 估值与费用不是第三、第四个「签」：它们是低频录入动作，按后台统一语言收进右侧抽屉
+//（[更新估值] / [录入费用] → 抽屉内表单 + 近期记录），主区只保留交易记录一张表。
+// 投资限制：超限黄字提示 + 审计留痕，不拦保存——估值波动导致的超限不该把正常交易卡死。
 
 const TRADE_STATUS = {
   [MANDATE_TRADE_STATUS.PENDING]: { label: '待复核', cls: 'admin-status-pending' },
@@ -39,17 +40,10 @@ const TRADE_STATUS = {
   [MANDATE_TRADE_STATUS.VOID]: { label: '已作废', cls: 'admin-status-closed' },
 };
 
-const TABS = [
-  { key: 'trades', label: '交易' },
-  { key: 'prices', label: '估值' },
-  { key: 'fees', label: '费用' },
-];
-
 const today = () => new Date().toISOString().slice(0, 10);
 
 export default function AdminMandateTrades({ admin, detailId, correctionOf, navigate }) {
   const [tick, setTick] = useState(0);
-  const [tab, setTab] = useState('trades');
   const [error, setError] = useState('');
   const [doneMsg, setDoneMsg] = useState('');
   const [reviewer, setReviewer] = useState('');
@@ -64,9 +58,14 @@ export default function AdminMandateTrades({ admin, detailId, correctionOf, navi
   const [feeMsg, setFeeMsg] = useState('');
   const [feeReview, setFeeReview] = useState({ id: '', reviewer: '' });
   const [priceAccount, setPriceAccount] = useState('');
-  // 低频录入表单折叠：估值/费用录入不是常驻信息，点主按钮展开、收起后列表上移（与「变更授权」折叠同模式）
-  const [priceOpen, setPriceOpen] = useState(false);
-  const [feeOpen, setFeeOpen] = useState(false);
+  // 视图控制行（与 AdminUsers/AdminProjects 同款）：状态筛选 + 账户筛选 + 检索 + 分页
+  const [filter, setFilter] = useState('all');
+  const [accountFilter, setAccountFilter] = useState('');
+  const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(1);
+  // 估值/费用是低频录入动作，按后台统一语言进抽屉（不再是签内子页签）
+  const [priceDrawerOpen, setPriceDrawerOpen] = useState(false);
+  const [feeDrawerOpen, setFeeDrawerOpen] = useState(false);
   const operator = admin?.name || '运营后台';
 
   const accounts = mandateAccounts.filter(a => a.status !== MANDATE_ACCOUNT_STATUS.CLOSED);
@@ -119,6 +118,29 @@ export default function AdminMandateTrades({ admin, detailId, correctionOf, navi
   const tradeRows = useMemo(() => mandateTrades
     .slice()
     .sort((a, b) => String(b.tradeDate).localeCompare(String(a.tradeDate))), [tick]);
+
+  const accountOf = (id) => mandateAccounts.find(a => a.id === id);
+  const statusCounts = {
+    all: tradeRows.length,
+    [MANDATE_TRADE_STATUS.PENDING]: tradeRows.filter(t => t.status === MANDATE_TRADE_STATUS.PENDING).length,
+    [MANDATE_TRADE_STATUS.ACTIVE]: tradeRows.filter(t => t.status === MANDATE_TRADE_STATUS.ACTIVE).length,
+    [MANDATE_TRADE_STATUS.REJECTED]: tradeRows.filter(t => t.status === MANDATE_TRADE_STATUS.REJECTED).length,
+    [MANDATE_TRADE_STATUS.VOID]: tradeRows.filter(t => t.status === MANDATE_TRADE_STATUS.VOID).length,
+  };
+  const filteredTrades = tradeRows.filter(t => {
+    if (filter !== 'all' && t.status !== filter) return false;
+    if (accountFilter && t.accountId !== accountFilter) return false;
+    const kw = keyword.trim().toLowerCase();
+    if (!kw) return true;
+    const acc = accountOf(t.accountId);
+    return [t.symbol, t.name, t.no, acc?.userName, t.adviceNo]
+      .filter(Boolean)
+      .some(v => String(v).toLowerCase().includes(kw));
+  });
+  const PAGE_SIZE = 8;
+  const totalPages = Math.max(1, Math.ceil(filteredTrades.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pageRows = filteredTrades.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const handleCreate = () => {
     if (!form) return;
@@ -197,54 +219,81 @@ export default function AdminMandateTrades({ admin, detailId, correctionOf, navi
 
   return (
     <div className="mandate-panel mandate-panel--trades">
+      {/* 工具栏 = 存量统计 + 一个主按钮 + 两个低频录入抽屉入口（后台统一按钮语言） */}
       <div className="mandate-panel-bar">
-        <span className="admin-header-summary">录入即待复核，复核生效后才进持仓与日结单</span>
-        {tab === 'trades' && (
+        <span className="admin-header-summary">共 {tradeRows.length} 笔 · 待复核 {pendingCount}</span>
+        <div className="mandate-toolbar-actions">
+          <button className="btn btn-md btn-outline" onClick={() => { setPriceDrawerOpen(true); setPriceMsg(''); }}>
+            <Plus size={16} /> 更新估值
+          </button>
+          <button className="btn btn-md btn-outline" onClick={() => { setFeeDrawerOpen(true); setFeeMsg(''); }}>
+            <Plus size={16} /> 录入费用
+          </button>
           <button className="btn btn-md btn-primary" onClick={() => navigate('#admin/mandate/trades/new')}>
             <Plus size={16} /> 录入交易
           </button>
-        )}
-        {tab === 'prices' && (
-          <button className="btn btn-md btn-outline" onClick={() => { setPriceOpen(v => !v); setPriceMsg(''); }}>
-            {priceOpen ? '收起' : <><Plus size={16} /> 更新估值</>}
-          </button>
-        )}
-        {tab === 'fees' && (
-          <button className="btn btn-md btn-outline" onClick={() => { setFeeOpen(v => !v); setFeeMsg(''); }}>
-            {feeOpen ? '收起' : <><Plus size={16} /> 录入费用</>}
-          </button>
-        )}
+        </div>
       </div>
 
-      <div className="fund-tabs fund-tabs--sub" role="tablist" aria-label="委托交易分区">
-        {TABS.map(x => (
-          <button
-            key={x.key}
-            role="tab"
-            aria-selected={tab === x.key}
-            className={`fund-tab ${tab === x.key ? 'active' : ''}`}
-            onClick={() => setTab(x.key)}
+      <div className="admin-view-row">
+        <div className="admin-filter-row">
+          {[
+            { key: 'all', label: '全部' },
+            { key: MANDATE_TRADE_STATUS.PENDING, label: '待复核' },
+            { key: MANDATE_TRADE_STATUS.ACTIVE, label: '已生效' },
+            { key: MANDATE_TRADE_STATUS.REJECTED, label: '已驳回' },
+            { key: MANDATE_TRADE_STATUS.VOID, label: '已作废' },
+          ].map(f => (
+            <button
+              key={f.key}
+              className={`admin-filter-btn ${filter === f.key ? 'active' : ''}`}
+              onClick={() => { setFilter(f.key); setPage(1); }}
+            >
+              {f.label} {statusCounts[f.key]}
+            </button>
+          ))}
+        </div>
+        <div className="admin-view-row-right">
+          <select
+            className="form-input admin-tx-range"
+            aria-label="按账户筛选交易"
+            value={accountFilter}
+            onChange={e => { setAccountFilter(e.target.value); setPage(1); }}
           >
-            {x.label}
-            {x.key === 'trades' && pendingCount > 0 && <span className="fund-tab-count">{pendingCount}</span>}
-          </button>
-        ))}
+            <option value="">全部账户</option>
+            {accounts.map(a => <option key={a.id} value={a.id}>{a.no} · {a.userName}</option>)}
+          </select>
+          <div className="admin-search-wrap">
+            <Search size={16} className="admin-search-icon" />
+            <input
+              className="admin-search-input"
+              aria-label="搜索证券 / 账户号 / 客户"
+              placeholder="搜索证券 / 账户号 / 客户"
+              value={keyword}
+              onChange={e => { setKeyword(e.target.value); setPage(1); }}
+            />
+            {keyword && (
+              <button className="btn-icon" title="清除" onClick={() => { setKeyword(''); setPage(1); }}><X size={16} /></button>
+            )}
+          </div>
+        </div>
       </div>
 
-      {tab === 'trades' && (
-        <div className="admin-table admin-table--mandate-trades">
+      <div className="admin-table admin-table--mandate-trades">
           <div className="admin-table-header">
             <span>交易日</span>
             <span className="col-name">证券</span>
+            <span>账户</span>
             <span>方向</span>
             <span className="col-amount">数量 × 价格</span>
             <span className="col-amount">金额 HKD</span>
             <span>状态</span>
             <span className="col-actions">操作</span>
           </div>
-          {tradeRows.map(t => {
+          {pageRows.map(t => {
             const meta = TRADE_STATUS[t.status] || TRADE_STATUS[MANDATE_TRADE_STATUS.PENDING];
             const amountHKD = t.quantity * t.price * t.fxRate;
+            const acc = accountOf(t.accountId);
             return (
               <div
                 key={t.id}
@@ -254,13 +303,14 @@ export default function AdminMandateTrades({ admin, detailId, correctionOf, navi
                 onClick={() => navigate(`#admin/mandate/trades/${t.id}`)}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`#admin/mandate/trades/${t.id}`); } }}
               >
-                <span>
-                  {t.tradeDate}
-                  <span className="mandate-subline">{t.no}</span>
-                </span>
+                <span>{t.tradeDate}</span>
                 <span className="col-name">
                   <strong>{t.symbol}</strong>
                   <span className="mandate-subline">{t.name}{t.correctionOf ? ' · 更正重录' : ''}</span>
+                </span>
+                <span>
+                  {t.no}
+                  <span className="mandate-subline">{acc?.userName || '—'}</span>
                 </span>
                 <span className={t.side === 'buy' ? 'mandate-side-buy' : 'mandate-side-sell'}>{t.side === 'buy' ? '买入' : '卖出'}</span>
                 <span className="col-amount">{formatShares(t.quantity)} × {t.price}</span>
@@ -278,18 +328,30 @@ export default function AdminMandateTrades({ admin, detailId, correctionOf, navi
               </div>
             );
           })}
-          {tradeRows.length === 0 && (
-            <div className="admin-table-row"><span className="admin-table-empty">暂无交易</span></div>
+          {pageRows.length === 0 && (
+            <div className="admin-table-row"><span className="admin-table-empty">{keyword ? '没有匹配的交易' : '暂无交易'}</span></div>
           )}
+      </div>
+
+      {filteredTrades.length > 0 && (
+        <div className="admin-pagination">
+          <button className="admin-page-btn" disabled={safePage === 1} onClick={() => setPage(safePage - 1)}>‹ 上一页</button>
+          <span className="admin-page-info">第 {safePage}/{totalPages} 页 · 共 {filteredTrades.length} 笔</span>
+          <button className="admin-page-btn" disabled={safePage === totalPages} onClick={() => setPage(safePage + 1)}>下一页 ›</button>
         </div>
       )}
 
-      {tab === 'prices' && (
-        <>
-          {priceMsg && <p className="admin-form-hint">{priceMsg}</p>}
-          {priceOpen && (
+      {priceDrawerOpen && <div className="admin-drawer-mask" onClick={() => setPriceDrawerOpen(false)} />}
+      {priceDrawerOpen && (
+        <div className="admin-drawer admin-drawer--wide" role="dialog" aria-modal="true" aria-label="更新估值">
+          <div className="admin-drawer-head">
+            <h3>更新估值</h3>
+            <button className="btn-icon" title="关闭" onClick={() => setPriceDrawerOpen(false)}><X size={18} /></button>
+          </div>
+          <div className="admin-drawer-body">
+            {priceMsg && <p className="admin-form-hint">{priceMsg}</p>}
             <div className="card">
-              <div className="card-title">更新估值（只留痕，不阻断交易）</div>
+              <div className="card-title">估值标记（只留痕，不阻断交易）</div>
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">账户</label>
@@ -328,42 +390,50 @@ export default function AdminMandateTrades({ admin, detailId, correctionOf, navi
                 </div>
               </div>
               <div className="admin-form-actions">
-                <button className="btn btn-md btn-outline" onClick={() => setPriceOpen(false)}>收起</button>
-                <button className="btn btn-md btn-primary" onClick={handlePrice}><Save size={16} /> 更新估值</button>
+                <button className="btn btn-md btn-primary" onClick={handlePrice}><Save size={16} /> 保存估值</button>
+                <button className="btn btn-md btn-outline" onClick={() => setPriceDrawerOpen(false)}>完成</button>
               </div>
               <p className="admin-form-hint">价格天天变，逐笔复核会把运营淹掉：这里只记录 before/after 与操作人，合规事后审计。日结单取「当日或之前最新一条」标记价。</p>
             </div>
-          )}
 
-          <div className="admin-table admin-table--mandate-prices">
-            <div className="admin-table-header">
-              <span>估值日</span>
-              <span>证券</span>
-              <span className="col-amount">价格</span>
-              <span className="col-amount">汇率</span>
-              <span>方法</span>
-              <span>操作人</span>
-            </div>
-            {mandatePriceMarks.slice(0, 30).map(m => (
-              <div key={m.id} className="admin-table-row">
-                <span>{m.priceAt}</span>
-                <span>{m.symbol}</span>
-                <span className="col-amount">{m.price}</span>
-                <span className="col-amount">{m.fxRate}</span>
-                <span>{MANDATE_VALUATION_METHODS[m.method] || m.method}</span>
-                <span>{m.updatedBy}</span>
+            <div className="admin-table admin-table--mandate-prices">
+              <div className="admin-table-header">
+                <span>估值日</span>
+                <span>证券</span>
+                <span className="col-amount">价格</span>
+                <span className="col-amount">汇率</span>
+                <span>方法</span>
+                <span>操作人</span>
               </div>
-            ))}
+              {mandatePriceMarks.slice(0, 30).map(m => (
+                <div key={m.id} className="admin-table-row">
+                  <span>{m.priceAt}</span>
+                  <span>{m.symbol}</span>
+                  <span className="col-amount">{m.price}</span>
+                  <span className="col-amount">{m.fxRate}</span>
+                  <span>{MANDATE_VALUATION_METHODS[m.method] || m.method}</span>
+                  <span>{m.updatedBy}</span>
+                </div>
+              ))}
+              {mandatePriceMarks.length === 0 && (
+                <div className="admin-table-row"><span className="admin-table-empty">暂无估值记录</span></div>
+              )}
+            </div>
           </div>
-        </>
+        </div>
       )}
 
-      {tab === 'fees' && (
-        <>
-          {feeMsg && <p className="admin-form-hint">{feeMsg}</p>}
-          {feeOpen && (
+      {feeDrawerOpen && <div className="admin-drawer-mask" onClick={() => setFeeDrawerOpen(false)} />}
+      {feeDrawerOpen && (
+        <div className="admin-drawer admin-drawer--wide" role="dialog" aria-modal="true" aria-label="录入费用">
+          <div className="admin-drawer-head">
+            <h3>录入费用</h3>
+            <button className="btn-icon" title="关闭" onClick={() => setFeeDrawerOpen(false)}><X size={18} /></button>
+          </div>
+          <div className="admin-drawer-body">
+            {feeMsg && <p className="admin-form-hint">{feeMsg}</p>}
             <div className="card">
-              <div className="card-title">录入费用（协议 12，从组合扣减）</div>
+              <div className="card-title">费用行（协议 12，从组合扣减）</div>
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">账户</label>
@@ -394,63 +464,63 @@ export default function AdminMandateTrades({ admin, detailId, correctionOf, navi
                 <input className="form-input" value={feeForm.note} onChange={e => setFeeForm(p => ({ ...p, note: e.target.value }))} />
               </div>
               <div className="admin-form-actions">
-                <button className="btn btn-md btn-outline" onClick={() => setFeeOpen(false)}>收起</button>
                 <button className="btn btn-md btn-primary" onClick={handleFeeCreate}><Plus size={16} /> 录入费用</button>
+                <button className="btn btn-md btn-outline" onClick={() => setFeeDrawerOpen(false)}>完成</button>
               </div>
               <p className="admin-form-hint">收益一律费前，费用在结单单列——把费用混进收益会让客户把费用当成亏损。</p>
             </div>
-          )}
 
-          <div className="admin-table admin-table--mandate-fees">
-            <div className="admin-table-header">
-              <span>期间</span>
-              <span>类型</span>
-              <span className="col-amount">金额</span>
-              <span>状态</span>
-              <span>录入 / 复核</span>
-              <span className="col-actions">操作</span>
-            </div>
-            {mandateFees.map(f => {
-              const expanded = feeReview.id === f.id;
-              return (
-                <div key={f.id} className="mandate-fee-item">
-                  <div className="admin-table-row">
-                    <span>{f.period}</span>
-                    <span>{MANDATE_FEE_TYPES[f.type] || f.type}</span>
-                    <span className="col-amount">{f.currency} {formatExactAmount(f.amount)}</span>
-                    <span><span className={`status-badge ${f.status === 'approved' ? 'admin-status-approved' : f.status === 'rejected' ? 'admin-status-rejected' : 'admin-status-pending'}`}>
-                      {f.status === 'approved' ? '已生效' : f.status === 'rejected' ? '已驳回' : '待复核'}
-                    </span></span>
-                    <span>{f.createdBy} / {f.reviewedBy || '—'}</span>
-                    <span className="col-actions">
-                      {f.status === 'pending' && (
-                        <button className="btn-icon" title="复核" aria-label="复核（行内展开填写复核人）" onClick={() => setFeeReview({ id: f.id, reviewer: '' })}>
-                          <CheckCircle size={16} />
-                        </button>
-                      )}
-                    </span>
-                  </div>
-                  {expanded && (
-                    <div className="mandate-fee-expand">
-                      <label className="form-label">复核人（不得与录入人相同）</label>
-                      <input
-                        className="form-input"
-                        placeholder="合规人员姓名"
-                        value={feeReview.reviewer}
-                        onChange={e => setFeeReview({ id: f.id, reviewer: e.target.value })}
-                      />
-                      <button className="btn btn-md btn-primary" onClick={() => handleFeeReview(f.id)}>通过</button>
-                      <button className="btn btn-md btn-outline" onClick={() => setFeeReview({ id: '', reviewer: '' })}>取消</button>
+            <div className="admin-table admin-table--mandate-fees">
+              <div className="admin-table-header">
+                <span>期间</span>
+                <span>类型</span>
+                <span className="col-amount">金额</span>
+                <span>状态</span>
+                <span>录入 / 复核</span>
+                <span className="col-actions">操作</span>
+              </div>
+              {mandateFees.map(f => {
+                const expanded = feeReview.id === f.id;
+                return (
+                  <div key={f.id} className="mandate-fee-item">
+                    <div className="admin-table-row">
+                      <span>{f.period}</span>
+                      <span>{MANDATE_FEE_TYPES[f.type] || f.type}</span>
+                      <span className="col-amount">{f.currency} {formatExactAmount(f.amount)}</span>
+                      <span><span className={`status-badge ${f.status === 'approved' ? 'admin-status-approved' : f.status === 'rejected' ? 'admin-status-rejected' : 'admin-status-pending'}`}>
+                        {f.status === 'approved' ? '已生效' : f.status === 'rejected' ? '已驳回' : '待复核'}
+                      </span></span>
+                      <span>{f.createdBy} / {f.reviewedBy || '—'}</span>
+                      <span className="col-actions">
+                        {f.status === 'pending' && (
+                          <button className="btn-icon" title="复核" aria-label="复核（行内展开填写复核人）" onClick={() => setFeeReview({ id: f.id, reviewer: '' })}>
+                            <CheckCircle size={16} />
+                          </button>
+                        )}
+                      </span>
                     </div>
-                  )}
-                </div>
-              );
-            })}
-            {mandateFees.length === 0 && (
-              <div className="admin-table-row"><span className="admin-table-empty">暂无费用行</span></div>
-            )}
+                    {expanded && (
+                      <div className="mandate-fee-expand">
+                        <label className="form-label">复核人（不得与录入人相同）</label>
+                        <input
+                          className="form-input"
+                          placeholder="合规人员姓名"
+                          value={feeReview.reviewer}
+                          onChange={e => setFeeReview({ id: f.id, reviewer: e.target.value })}
+                        />
+                        <button className="btn btn-md btn-primary" onClick={() => handleFeeReview(f.id)}>通过</button>
+                        <button className="btn btn-md btn-outline" onClick={() => setFeeReview({ id: '', reviewer: '' })}>取消</button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {mandateFees.length === 0 && (
+                <div className="admin-table-row"><span className="admin-table-empty">暂无费用行</span></div>
+              )}
+            </div>
           </div>
-        </>
+        </div>
       )}
 
       {drawerOpen && <div className="admin-drawer-mask" onClick={closeDrawer} />}

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { X, Save, Plus, Power, Ban } from 'lucide-react';
+import { X, Save, Plus, Power, Ban, Search } from 'lucide-react';
 import {
   mandateAgreements,
   mandateConfig,
@@ -89,12 +89,36 @@ export default function MandateAgreementLedger({ admin, onChanged }) {
   const [form, setForm] = useState(null);
   const [error, setError] = useState('');
   const [doneMsg, setDoneMsg] = useState('');
+  const [filter, setFilter] = useState('all');
+  const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(1);
   const operator = admin?.name || '合规后台';
   const isNew = openId === 'new';
   const selected = openId && !isNew ? mandateAgreements.find(a => a.id === openId) : null;
   const drawerOpen = openId != null && (isNew || !!selected);
 
   const investors = useMemo(() => getInvestorUsers(), [tick]);
+
+  // 台账规模会随客户增长：状态筛选 + 检索 + 分页（对齐 AdminUsers 的视图控制行）
+  const PAGE_SIZE = 8;
+  const statusCounts = {
+    all: mandateAgreements.length,
+    active: mandateAgreements.filter(a => a.status === 'active').length,
+    draft: mandateAgreements.filter(a => a.status === 'draft').length,
+    terminated: mandateAgreements.filter(a => a.status === 'terminated').length,
+  };
+  const filtered = mandateAgreements.filter(ag => {
+    if (filter !== 'all' && ag.status !== filter) return false;
+    const kw = keyword.trim().toLowerCase();
+    if (!kw) return true;
+    return [ag.no, ag.userName, ag.userId, ag.licensedRepName, ag.licensedRepCE, ag.language]
+      .filter(Boolean)
+      .some(v => String(v).toLowerCase().includes(kw));
+  });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pageRows = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
   const closeDrawer = () => setOpenId(null);
   const drawerRef = useDrawerFocus(drawerOpen, closeDrawer);
 
@@ -167,12 +191,44 @@ export default function MandateAgreementLedger({ admin, onChanged }) {
   return (
     <div className="mandate-panel mandate-panel--agreements">
       <div className="mandate-panel-bar">
-        {/* 2026-11-17 二次拍板：台账独立成签（原嵌账户签顶部，两表同屏互相挤压）。
-            panel-bar 只讲定位声明，份数不在此重复——草稿数在签 badge。 */}
-        <span className="admin-header-summary">协议是开户的唯一法律依据：未登记不能开户，未生效不能授权</span>
+        {/* 面板工具栏只留存量统计 + 主按钮（与 AdminUsers/AdminProjects 页头同款）；
+            队列数在页签 badge，规则说明留在抽屉与数据层，不占页头。 */}
+        <span className="admin-header-summary">共 {statusCounts.all} 份 · 生效 {statusCounts.active} · 草稿 {statusCounts.draft}</span>
         <button className="btn btn-md btn-primary" onClick={() => setOpenId('new')}>
           <Plus size={16} /> 登记委托协议
         </button>
+      </div>
+
+      <div className="admin-view-row">
+        <div className="admin-filter-row">
+          {[
+            { key: 'all', label: '全部' },
+            { key: 'active', label: '生效' },
+            { key: 'draft', label: '草稿' },
+            { key: 'terminated', label: '已终止' },
+          ].map(f => (
+            <button
+              key={f.key}
+              className={`admin-filter-btn ${filter === f.key ? 'active' : ''}`}
+              onClick={() => { setFilter(f.key); setPage(1); }}
+            >
+              {f.label} {statusCounts[f.key]}
+            </button>
+          ))}
+        </div>
+        <div className="admin-search-wrap">
+          <Search size={16} className="admin-search-icon" />
+          <input
+            className="admin-search-input"
+            aria-label="搜索协议编号 / 客户 / CE 编号"
+            placeholder="搜索协议编号 / 客户 / CE 编号"
+            value={keyword}
+            onChange={e => { setKeyword(e.target.value); setPage(1); }}
+          />
+          {keyword && (
+            <button className="btn-icon" title="清除" onClick={() => { setKeyword(''); setPage(1); }}><X size={16} /></button>
+          )}
+        </div>
       </div>
 
       <div className="admin-table admin-table--mandate-agreements">
@@ -184,7 +240,7 @@ export default function MandateAgreementLedger({ admin, onChanged }) {
           <span>状态</span>
           <span className="col-actions">操作</span>
         </div>
-        {mandateAgreements.map(ag => {
+        {pageRows.map(ag => {
           const meta = STATUS_META[ag.status] || STATUS_META.draft;
           return (
             <div
@@ -218,10 +274,18 @@ export default function MandateAgreementLedger({ admin, onChanged }) {
             </div>
           );
         })}
-        {mandateAgreements.length === 0 && (
-          <div className="admin-table-row"><span className="admin-table-empty">暂无委托协议，点击右上角登记第一份</span></div>
+        {pageRows.length === 0 && (
+          <div className="admin-table-row"><span className="admin-table-empty">{keyword ? '没有匹配的委托协议' : '暂无委托协议，点击右上角登记第一份'}</span></div>
         )}
       </div>
+
+      {filtered.length > 0 && (
+        <div className="admin-pagination">
+          <button className="admin-page-btn" disabled={safePage === 1} onClick={() => setPage(safePage - 1)}>‹ 上一页</button>
+          <span className="admin-page-info">第 {safePage}/{totalPages} 页 · 共 {filtered.length} 份</span>
+          <button className="admin-page-btn" disabled={safePage === totalPages} onClick={() => setPage(safePage + 1)}>下一页 ›</button>
+        </div>
+      )}
 
       {drawerOpen && <div className="admin-drawer-mask" onClick={closeDrawer} />}
       {drawerOpen && form && (
