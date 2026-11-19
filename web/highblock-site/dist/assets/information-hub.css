@@ -187,7 +187,10 @@ html[lang=en] .information-hub .ih-section > h2 { letter-spacing: -.01em; }
   letter-spacing: .1em;
   color: var(--muted);
 }
-.information-hub .ih-sublabel + .ih-update { margin-top: 16px; border-top: 0; padding-top: 0; }
+.information-hub .ih-sublabel + .ih-update-link .ih-update { margin-top: 16px; border-top: 0; padding-top: 0; }
+.information-hub .ih-update-link { display: block; }
+.information-hub .ih-update--recap .ih-update-header h3 { transition: color .2s; }
+.information-hub .ih-update-link:hover .ih-update-header h3 { color: var(--gold); }
 .information-hub .ih-update--recap { padding-top: 22px; }
 .information-hub .ih-update--recap .ih-update-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 18px; }
 .information-hub .ih-update--recap .ih-update-header h3 { margin-top: 0; font-size: 19px; font-weight: 500; line-height: 1.6; }
