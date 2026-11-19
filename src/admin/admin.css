@@ -4096,9 +4096,8 @@
   gap: 16px;
 }
 .admin-table--mandate-trades .col-amount,
-.admin-table--mandate-prices .col-amount,
-.admin-table--mandate-fees .col-amount,
-.admin-table--daily-statements .col-amount,
+.admin-table--mandate-valuation .col-amount,
+.admin-table--mandate-daily .col-amount,
 .admin-table--mandate-report-positions .col-amount {
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -4107,34 +4106,47 @@
 .mandate-side-sell { color: var(--warning-text); }
 .mandate-reviewer { color: var(--text-secondary); font-size: var(--text-sm); }
 
-.admin-table--mandate-prices .admin-table-header,
-.admin-table--mandate-prices .admin-table-row {
-  /* 抽屉（640px）内展示：六列压到内容宽，避免横向溢出 */
+/* 估值签（2026-11-19 独立成签）：一行一只标的，「覆盖账户」回答改价影响谁。
+   行尾铅笔 → 行内展开表单，连续填十几只不必反复开关抽屉。 */
+.admin-table--mandate-valuation .admin-table-header,
+.admin-table--mandate-valuation .admin-table-row {
   grid-template-columns:
-    minmax(82px, 10fr)
-    minmax(64px, 8fr)
-    minmax(64px, 8fr)
-    minmax(60px, 7fr)
-    minmax(104px, 12fr)
-    minmax(76px, 9fr);
-  gap: 12px;
-  margin-top: var(--space-4);
-}
-
-.admin-table--mandate-fees .admin-table-header,
-.admin-table--mandate-fees .admin-table-row {
-  /* 2026-11-19：费用表进抽屉（640px），列宽压到内容宽 */
-  grid-template-columns:
-    minmax(66px, 7fr)
-    minmax(72px, 8fr)
-    minmax(104px, 12fr)
-    minmax(72px, 8fr)
-    minmax(118px, 13fr)
+    minmax(180px, 20fr)
+    minmax(80px, 9fr)
+    minmax(64px, 7fr)
+    minmax(96px, 10fr)
+    minmax(96px, 10fr)
+    minmax(130px, 14fr)
     48px;
-  gap: 12px;
-  margin-top: var(--space-4);
+  gap: 16px;
 }
-.mandate-fee-item:last-child .admin-table-row { border-bottom: none; } /* wrapper 打断 :last-child，边界线补在这里 */
+.mandate-valuation-edit {
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  margin: 0 0 var(--space-2);
+}
+/* 行被 wrapper 包住后，分隔线由 wrapper 承担（.admin-table-row:last-child 会误去掉内层边框） */
+.mandate-valuation-item { border-bottom: 1px solid var(--border-light); }
+.mandate-valuation-item:last-child { border-bottom: none; }
+.mandate-valuation-item .admin-table-row { border-bottom: none; }
+.mandate-unvalued { color: var(--warning-text); font-weight: 600; }
+.mandate-coverage { display: block; }
+.mandate-valuation-msg { margin: 0 0 var(--space-3); }
+
+/* 费用行（账户抽屉内，2026-11-19 从交易签移入）：账户级合同事实，不是独立台账 */
+.mandate-fee-line {
+  display: grid;
+  grid-template-columns: 76px 90px minmax(110px, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--border-light);
+  font-size: var(--text-md);
+}
+.mandate-fee-amount { font-variant-numeric: tabular-nums; }
+.mandate-fee-item:first-of-type .mandate-fee-line { border-top: none; }
+.mandate-fee-form { margin-top: var(--space-3); }
 .mandate-fee-expand {
   display: flex;
   align-items: center;
@@ -4148,18 +4160,27 @@
 .mandate-fee-expand .form-label { margin: 0; white-space: nowrap; font-weight: 500; }
 .mandate-fee-expand .form-input { width: 180px; }
 
-.admin-table--daily-statements .admin-table-header,
-.admin-table--daily-statements .admin-table-row {
+/* 日结签（2026-11-19）：一行 = 一个客户，回答「今天谁还没出单」 */
+.admin-table--mandate-daily .admin-table-header,
+.admin-table--mandate-daily .admin-table-row {
   grid-template-columns:
-    minmax(96px, 9fr)
-    minmax(130px, 13fr)
-    minmax(130px, 13fr)
-    minmax(170px, 17fr)
-    minmax(130px, 13fr);
+    minmax(160px, 18fr)
+    minmax(110px, 12fr)
+    minmax(140px, 15fr)
+    minmax(180px, 20fr)
+    minmax(100px, 11fr);
   gap: 16px;
 }
-/* 低��录入动作收进抽屉后，面板工具栏 = 统计 + 按钮组（主/次按钮同高并排） */
-.mandate-toolbar-actions { display: flex; align-items: center; gap: var(--space-2); }
+.mandate-daily-msg {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.mandate-daily-msg--warn { color: var(--warning-text); }
+.mandate-subline--warn { color: var(--warning-text); }
 /* 视图控制行右侧：账户筛选 + 搜索并排 */
 .admin-view-row-right { display: flex; align-items: center; gap: var(--space-3); }
 /* 客户/账户筛选（日结按客户、交易按账户）：与搜索框同行，不抢主筛选 */
@@ -4176,7 +4197,6 @@
     minmax(110px, 13fr)
     minmax(120px, 15fr);
   gap: 16px;
-  margin-top: var(--space-4);
 }
 .mandate-report-grid {
   display: grid;

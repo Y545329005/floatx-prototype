@@ -304,7 +304,7 @@ export default function App() {
       'mandate-agreements': { sub: 'mandate', tab: 'agreements' },
       'mandate-accounts': { sub: 'mandate', tab: 'accounts' },
       'mandate-trades': { sub: 'mandate', tab: 'trades' },
-      'mandate-reports': { sub: 'mandate', tab: 'reports' },
+      'mandate-reports': { sub: 'mandate', tab: 'daily' },
       'special-subs': { sub: 'fund-trades', tab: 'special' },
     };
     const legacyRoute = ADMIN_ROUTE_ALIAS[subPath];

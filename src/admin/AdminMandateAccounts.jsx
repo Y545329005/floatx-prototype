@@ -3,18 +3,22 @@ import { X, Save, Plus, ShieldCheck, AlertTriangle, Search } from 'lucide-react'
 import {
   mandateAccounts,
   mandateAgreements,
+  mandateFees,
   cashLedger,
   mandateWithdrawals,
   mandateConfig,
   MANDATE_ACCOUNT_STATUS,
   MANDATE_LEDGER_TYPES,
   MANDATE_LEDGER_LABELS,
+  MANDATE_FEE_TYPES,
   MANDATE_WITHDRAWAL_STATUS,
   MANDATE_WITHDRAWAL_LABELS,
   canOpenMandateAccount,
   createMandateAccount,
   reviewMandateAccountAuth,
   addMandateCashEntry,
+  createMandateFee,
+  reviewMandateFee,
   getMandateCashByCurrency,
   getMandateAvailableCash,
   getMandateHoldings,
@@ -98,6 +102,12 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
   const [authMsg, setAuthMsg] = useState('');
   const [wdReason, setWdReason] = useState('');
   const [wdMsg, setWdMsg] = useState('');
+  // 费用是账户级合同事实（费率/起算日/高水位按账户），跟着账户抽屉走；
+  // 交易签只做交易台账，不再混入费用录入（2026-11-19 拆签）。
+  const [feeForm, setFeeForm] = useState({ period: new Date().toISOString().slice(0, 7), type: 'management', amount: '', currency: 'HKD', note: '' });
+  const [feeMsg, setFeeMsg] = useState('');
+  const [feeReview, setFeeReview] = useState({ id: '', reviewer: '' });
+  const [feeOpen, setFeeOpen] = useState(false);
   const [filter, setFilter] = useState('all');
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(1);
@@ -138,6 +148,25 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
   }, [detailId]);
 
   const refresh = () => setTick(t => t + 1);
+
+  // 费用录入与复核（协议 12）：账户固定为当前抽屉账户，不再选账户——
+  // 费用是账户级事实，跨账户批量属于财务系统，不在这里逐个开户抽屉。
+  const handleFeeCreate = () => {
+    if (!selected) return;
+    const res = createMandateFee({ ...feeForm, accountId: selected.id, amount: Number(feeForm.amount) }, operator);
+    if (!res.ok) { setFeeMsg(res.error); return; }
+    setFeeMsg('费用行已录入，待合规复核后从组合扣减。');
+    setFeeForm(prev => ({ ...prev, amount: '', note: '' }));
+    refresh();
+  };
+
+  const handleFeeReview = (id) => {
+    const res = reviewMandateFee(id, { reviewer: feeReview.reviewer }, operator);
+    if (!res.ok) { setFeeMsg(res.error); return; }
+    setFeeMsg('费用已生效并从组合扣减。');
+    setFeeReview({ id: '', reviewer: '' });
+    refresh();
+  };
 
   // 视图控制行（筛选 + 检索）与分页：账户数量不假设为演示的 2 户
   const PAGE_SIZE = 8;
@@ -230,6 +259,11 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
   };
 
   const entries = selected ? cashLedger.filter(e => e.accountId === selected.id) : [];
+  const feeEntries = selected
+    ? mandateFees.filter(f => f.accountId === selected.id)
+        .slice()
+        .sort((a, b) => String(b.period).localeCompare(String(a.period)))
+    : [];
   // 提取申请（2026-11-16 · 协议 10）：三步审核 = 通过 → （管理人变现）→ 完成登记；拒绝仅 pending
   const wdEntries = selected
     ? mandateWithdrawals.filter(w => w.accountId === selected.id)
@@ -568,6 +602,88 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
                     </div>
                   </div>
                 )}
+
+                <div className="card">
+                  <div className="card-title">费用（协议 12，从组合扣减）</div>
+                  {feeMsg && <p className="admin-form-hint">{feeMsg}</p>}
+                  {feeEntries.length === 0 && <p className="text-muted text-sm">该账户暂无费用行</p>}
+                  {feeEntries.map(f => {
+                    const expanded = feeReview.id === f.id;
+                    return (
+                      <div key={f.id} className="mandate-fee-item">
+                        <div className="mandate-fee-line">
+                          <span>{f.period}</span>
+                          <span>{MANDATE_FEE_TYPES[f.type] || f.type}</span>
+                          <strong className="mandate-fee-amount">{f.currency} {formatExactAmount(f.amount)}</strong>
+                          <span className={`status-badge ${f.status === 'approved' ? 'admin-status-approved' : f.status === 'rejected' ? 'admin-status-rejected' : 'admin-status-pending'}`}>
+                            {f.status === 'approved' ? '已生效' : f.status === 'rejected' ? '已驳回' : '待复核'}
+                          </span>
+                          {f.status === 'pending' ? (
+                            <button
+                              className="btn-icon"
+                              title="复核"
+                              aria-label="复核（行内填写复核人）"
+                              onClick={() => { setFeeMsg(''); setFeeReview({ id: f.id, reviewer: '' }); }}
+                            >
+                              <ShieldCheck size={16} />
+                            </button>
+                          ) : (
+                            <span className="mandate-subline">{f.createdBy} / {f.reviewedBy || '—'}</span>
+                          )}
+                        </div>
+                        {expanded && (
+                          <div className="mandate-fee-expand">
+                            <label className="form-label">复核人（不得与录入人相同）</label>
+                            <input
+                              className="form-input"
+                              placeholder="合规人员姓名"
+                              value={feeReview.reviewer}
+                              onChange={e => setFeeReview({ id: f.id, reviewer: e.target.value })}
+                            />
+                            <button className="btn btn-md btn-primary" onClick={() => handleFeeReview(f.id)}>通过</button>
+                            <button className="btn btn-md btn-outline" onClick={() => setFeeReview({ id: '', reviewer: '' })}>取消</button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {feeOpen ? (
+                    <div className="mandate-fee-form">
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label className="form-label">期间（YYYY-MM）</label>
+                          <input className="form-input" value={feeForm.period} placeholder="2026-11" onChange={e => setFeeForm(p => ({ ...p, period: e.target.value }))} />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">费用类型</label>
+                          <select className="form-input" value={feeForm.type} onChange={e => setFeeForm(p => ({ ...p, type: e.target.value }))}>
+                            {Object.entries(MANDATE_FEE_TYPES).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label className="form-label">金额</label>
+                          <input className="form-input" type="number" step="any" value={feeForm.amount} onChange={e => setFeeForm(p => ({ ...p, amount: e.target.value }))} />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">备注</label>
+                          <input className="form-input" value={feeForm.note} onChange={e => setFeeForm(p => ({ ...p, note: e.target.value }))} />
+                        </div>
+                      </div>
+                      <div className="admin-form-actions">
+                        <button className="btn btn-md btn-primary" onClick={handleFeeCreate}><Plus size={16} /> 录入费用</button>
+                        <button className="btn btn-md btn-outline" onClick={() => { setFeeOpen(false); setFeeMsg(''); }}>取消</button>
+                      </div>
+                      <p className="admin-form-hint">收益一律费前，费用在结单单列——把费用混进收益会让客户把费用当成亏损。</p>
+                    </div>
+                  ) : (
+                    <button className="btn btn-md btn-outline" onClick={() => { setFeeOpen(true); setFeeMsg(''); }}>
+                      <Plus size={16} /> 录入费用
+                    </button>
+                  )}
+                </div>
 
                 <div className="card">
                   <div className="card-title">资金流水（余额由此派生）</div>

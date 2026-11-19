@@ -6383,12 +6383,16 @@ export function getMenuBadges(role, admin) {
     // 2026-11-17 IA 收敛：特殊申购待复核并入（特殊申购降级为本页第 3 个页签）
     'fund-trades': fundOrders.filter(o => o.status === FUND_ORDER_STATUS.PENDING).length
       + specialSubscriptionApprovals.filter(r => r.status === SPECIAL_SUB_STATUS.PENDING).length,
-    // 委托业务待办（2026-11-17 IA 收敛）：账户待授权 + 提取待办 + 交易待复核，
-    // 全在委托业务一页内处理，宿主菜单同计数（原 mandate-accounts/mandate-trades 两 key 合并）
+    // 委托业务待办（2026-11-17 IA 收敛；2026-11-19 估值/费用拆签后补全口径）：
+    // 账户待授权 + 提取待办 + 交易待复核 + 费用待复核 + 未估值标的。
+    // 日结未生成不计入侧边栏——它是每日例行作业，不是「球停在某人手里」的异常，
+    // 每天恒亮一个 N 会让 badge 失去告警含义；进「日结」签即见。
     mandate: mandateAccounts.filter(a => a.status === MANDATE_ACCOUNT_STATUS.PENDING).length
       + mandateWithdrawals.filter(w =>
         w.status === MANDATE_WITHDRAWAL_STATUS.PENDING || w.status === MANDATE_WITHDRAWAL_STATUS.IN_PROGRESS).length
-      + mandateTrades.filter(t => t.status === MANDATE_TRADE_STATUS.PENDING).length,
+      + mandateTrades.filter(t => t.status === MANDATE_TRADE_STATUS.PENDING).length
+      + mandateFees.filter(f => f.status === 'pending').length
+      + getMandateValuationBoard().filter(v => !v.valued).length,
     subscriptions: pendingAlloc + pendingSignSubs,
     dividends: pendingDividends,
     exits: pendingExits,
@@ -13368,14 +13372,29 @@ export const mandateTrades = [
     createdBy: '王运营', reviewedBy: '李合规', reviewedAt: '2026-11-07 15:05:00',
     note: '上市前老股受让（按成本估值）', correctionOf: '',
   },
+  {
+    id: 'mt5', accountId: 'mb1', no: 'B00001', userId: 'u1',
+    tradeDate: '2026-11-05', settleDate: '2026-11-07',
+    side: 'buy', assetClass: 'us-equity', symbol: 'TSLA', name: 'Tesla Inc.',
+    currency: 'USD', quantity: 4, price: 240, fee: 1, fxRate: 7.8,
+    status: MANDATE_TRADE_STATUS.ACTIVE, adviceNo: 'ADV-2026-11-0005',
+    createdBy: '王运营', reviewedBy: '李合规', reviewedAt: '2026-11-14 15:05:00',
+    // 已生效但**没有估值标记**：演示「未估值」分支（估值签的筛选与 badge 需要它）
+    note: '', correctionOf: '',
+  },
 ];
 
 // 估值标记（只追加；最新一条 = 当前价）。不放进 holdings，因为 holdings 是派生视图。
+// 估值标记是**标的级**事实，不是账户级（2026-11-19 修正）：
+// 同一只 AAPL 在某日只有一个收盘价，与它被几个账户持有无关。按账户存价会造成
+// ① 工作量随户数翻倍（100 户持腾讯 = 100 次录入）；② 同一标的在不同账户出现不同价，
+// 月报市值对不上、审计无法解释。因此这里不存 accountId，持仓估值时按 symbol 查最新一条。
+// 旧快照里带 accountId 的历史条目仍兼容：latestMandatePrice 只按 symbol 过滤，多条取最新。
 export const mandatePriceMarks = [
-  { id: 'mp1', accountId: 'mb1', symbol: 'AAPL', currency: 'USD', price: 185.5, fxRate: 7.8, method: 'listed', priceAt: '2026-11-12', updatedBy: '王财务', updatedAt: '2026-11-12 18:00:00' },
-  { id: 'mp2', accountId: 'mb1', symbol: 'NVDA', currency: 'USD', price: 128.2, fxRate: 7.82, method: 'listed', priceAt: '2026-11-12', updatedBy: '王财务', updatedAt: '2026-11-12 18:00:00' },
+  { id: 'mp1', symbol: 'AAPL', currency: 'USD', price: 185.5, fxRate: 7.8, method: 'listed', priceAt: '2026-11-12', updatedBy: '王财务', updatedAt: '2026-11-12 18:00:00' },
+  { id: 'mp2', symbol: 'NVDA', currency: 'USD', price: 128.2, fxRate: 7.82, method: 'listed', priceAt: '2026-11-12', updatedBy: '王财务', updatedAt: '2026-11-12 18:00:00' },
   // 非上市按成本：价格即成本，市值 = 成本；口径与上市证券并列时逐行标注
-  { id: 'mp3', accountId: 'mb1', symbol: 'SPACEX', currency: 'USD', price: 120, fxRate: 7.8, method: 'unlisted-cost', priceAt: '2026-11-12', updatedBy: '王财务', updatedAt: '2026-11-12 18:00:00' },
+  { id: 'mp3', symbol: 'SPACEX', currency: 'USD', price: 120, fxRate: 7.8, method: 'unlisted-cost', priceAt: '2026-11-12', updatedBy: '王财务', updatedAt: '2026-11-12 18:00:00' },
 ];
 
 // 费用行（协议 12：三类费均从组合扣减，金额手录）
@@ -13406,9 +13425,10 @@ let dailyStatementSeeded = false;
 
 // ---- 估值与持仓派生 ----
 
-export function latestMandatePrice(accountId, symbol) {
+// 标的级取价：同 symbol 取最新一条（旧快照里带 accountId 的条目也走这条路，天然兼容）。
+export function latestMandatePrice(symbol) {
   return mandatePriceMarks
-    .filter(m => m.accountId === accountId && m.symbol === symbol)
+    .filter(m => m.symbol === symbol)
     .sort((a, b) => String(b.priceAt || b.updatedAt || '').localeCompare(String(a.priceAt || a.updatedAt || '')))[0] || null;
 }
 
@@ -13450,15 +13470,18 @@ export function getMandateHoldings(accountId) {
   return deriveMandatePositions(accountId)
     .filter(h => h.quantity > 1e-9)
     .map(h => {
-      const mark = latestMandatePrice(accountId, h.symbol);
+      const mark = latestMandatePrice(h.symbol);
       const price = mark ? Number(mark.price) : 0;
       const fxRate = mark ? Number(mark.fxRate) || 1 : 1;
-      const marketValueHKD = h.quantity * price * fxRate;
+      const valued = !!mark && mark.price != null;
+      // 未估值按成本计（与非上市「按成本估值」同款保守口径）：
+      // 价格缺失时用 0 算市值会让持仓凭空显示 -100% 浮亏，那是数据缺口被读成亏损。
+      const marketValueHKD = valued ? h.quantity * price * fxRate : h.costHKD;
       return {
         ...h,
         price,
         fxRate,
-        valued: !!mark && mark.price != null,
+        valued,
         priceAt: mark?.priceAt || '',
         valuationMethod: mark?.method || 'listed',
         marketValueHKD,
@@ -13466,6 +13489,42 @@ export function getMandateHoldings(accountId) {
         pnlPct: h.costHKD > 0 ? ((marketValueHKD - h.costHKD) / h.costHKD) * 100 : 0,
       };
     });
+}
+
+// 估值看板：全账户持仓去重 → 一只标的一行，跨账户共用一条价格。
+// 「未估值」的标的也在表内（price=null）——运营要看到「哪只还没标价」，而不是它消失。
+// 覆盖账户数让改价前就知道影响范围：改一次 AAPL，B00001 与 B00002 同时生效。
+export function getMandateValuationBoard() {
+  const map = new Map();
+  mandateAccounts
+    .filter(a => a.status !== MANDATE_ACCOUNT_STATUS.CLOSED)
+    .forEach(a => {
+      deriveMandatePositions(a.id)
+        .filter(h => h.quantity > 1e-9)
+        .forEach(h => {
+          const row = map.get(h.symbol) || {
+            symbol: h.symbol, name: h.name, currency: h.currency, totalQty: 0, accounts: [],
+          };
+          row.totalQty += h.quantity;
+          if (!row.accounts.includes(a.no)) row.accounts.push(a.no);
+          map.set(h.symbol, row);
+        });
+    });
+  return Array.from(map.values()).map(row => {
+    const mark = latestMandatePrice(row.symbol);
+    const price = mark ? Number(mark.price) : null;
+    const fxRate = mark ? Number(mark.fxRate) || 1 : null;
+    return {
+      ...row,
+      price,
+      fxRate,
+      priceAt: mark?.priceAt || '',
+      method: mark?.method || '',
+      updatedBy: mark?.updatedBy || '',
+      marketValueHKD: mark ? row.totalQty * price * fxRate : 0,
+      valued: !!mark && mark.price != null,
+    };
+  }).sort((a, b) => a.symbol.localeCompare(b.symbol));
 }
 
 export function getMandatePortfolio(accountId) {
@@ -13705,19 +13764,19 @@ export function voidMandateTrade(id, { reason = '', reviewer = '' } = {}, operat
 
 // ---- 估值更新（留痕不阻断） ----
 
-export function updateMandatePrice({ accountId, symbol, price, fxRate, priceAt, method = 'listed' }, operator = '') {
-  const account = mandateAccounts.find(a => a.id === accountId);
-  if (!account) return { ok: false, error: '账户不存在' };
-  const held = getMandateHoldings(accountId).find(h => h.symbol === symbol);
-  if (!held) return { ok: false, error: '该账户没有此持仓' };
+// 标的级更新：不绑定账户。校验「至少一个未关闭账户持有该标的」，避免给不存在的标的白记一条价。
+export function updateMandatePrice({ symbol, price, fxRate, priceAt, method = 'listed' }, operator = '') {
+  const board = getMandateValuationBoard();
+  const held = board.find(h => h.symbol === symbol);
+  if (!held) return { ok: false, error: '没有任何委托账户持有此标的' };
   const p = Number(price);
   const fx = Number(fxRate);
   if (!Number.isFinite(p) || p < 0) return { ok: false, error: '价格需为不小于 0 的数字' };
   if (!Number.isFinite(fx) || fx <= 0) return { ok: false, error: '汇率需大于 0' };
-  const before = latestMandatePrice(accountId, symbol);
+  const before = latestMandatePrice(symbol);
   const mark = {
     id: `mp${Date.now()}`,
-    accountId, symbol: held.symbol, currency: held.currency,
+    symbol: held.symbol, currency: held.currency,
     price: p, fxRate: fx, method, priceAt: priceAt || new Date().toISOString().slice(0, 10),
     updatedBy: operator || '财务后台', updatedAt: formatNow(),
   };
@@ -13726,9 +13785,9 @@ export function updateMandatePrice({ accountId, symbol, price, fxRate, priceAt, 
     operator: operator || '财务后台',
     category: 'mandate',
     action: 'update',
-    target: account.userName,
+    target: held.symbol,
     targetId: mark.id,
-    note: `估值更新 ${held.symbol}：${before ? before.price : '—'} → ${p}（汇率 ${fx}，${mark.priceAt}）`,
+    note: `估值更新 ${held.symbol}：${before ? before.price : '—'} → ${p}（汇率 ${fx}，${mark.priceAt}，覆盖 ${held.accounts.join(' / ')}）`,
   });
   Storage.save();
   return { ok: true, mark };
@@ -14021,7 +14080,16 @@ export function getDailyStatements(userId = currentUser.id) {
 
 export function generateDailyStatement({ userId = currentUser.id, date = todayStr() } = {}, operator = '') {
   seedDailyStatementsOnce();
-  const pendingTrades = mandateTrades.filter(t => t.userId === userId && t.status === MANDATE_TRADE_STATUS.PENDING);
+  // 历史日不可补生成：buildDailyStatement 读的是「此刻」的持仓与标记价，
+  // 补出来的 11-10 单据其实是 11-19 的仓位，属伪造历史（2026-11-19 审查发现）。
+  if (String(date) < todayStr()) {
+    return { ok: false, error: '日结单只能在当日生成；历史日期只可查看已有单据' };
+  }
+  // 只拦「结算日及以前」的待复核交易：未来的待复核单不影响今天出单，
+  // 而当日之前的待复核单会缺成交，第二天无法解释差额（原实现查全部，与「当日」文案不符）。
+  const pendingTrades = mandateTrades.filter(t => t.userId === userId
+    && t.status === MANDATE_TRADE_STATUS.PENDING
+    && String(t.tradeDate || '') <= String(date));
   // E5：待复核交易不进账，带着它们生成日结单会缺当日成交，且第二天无法解释差额
   if (pendingTrades.length > 0) {
     return { ok: false, error: `当日有 ${pendingTrades.length} 笔委托交易待复核，先复核后再生成日结单` };
@@ -14039,6 +14107,30 @@ export function generateDailyStatement({ userId = currentUser.id, date = todaySt
   return { ok: true, statement: stmt };
 }
 
+// 日结作业面：一次处理当日全部客户。逐户返回结果，不整批回滚——
+// 一户因待复核交易失败，不该把其他户的成功结果也丢掉。
+export function getMandateClients() {
+  const map = new Map();
+  mandateAccounts
+    .filter(a => a.status !== MANDATE_ACCOUNT_STATUS.CLOSED)
+    .forEach(a => {
+      if (a.userId && !map.has(a.userId)) map.set(a.userId, { userId: a.userId, name: a.userName || a.userId });
+    });
+  return Array.from(map.values());
+}
+
+export function generateDailyStatementsForDate(date = todayStr(), operator = '') {
+  return getMandateClients().map(c => {
+    const res = generateDailyStatement({ userId: c.userId, date }, operator);
+    return {
+      ...c,
+      ok: res.ok,
+      error: res.error || '',
+      totalHKD: res.ok ? res.statement.totalHKD : null,
+    };
+  });
+}
+
 export function getDailyStatementById(id) {
   seedDailyStatementsOnce();
   return dailyStatements.find(s => s.id === id) || null;
@@ -14050,21 +14142,27 @@ export function buildMandateMonthlyReport(accountId, month) {
   const account = mandateAccounts.find(a => a.id === accountId);
   if (!account) return null;
   const inMonth = dailyStatements
-    .filter(s => s.userId === account.userId && String(s.date).slice(0, 7) === month)
+    // 委托月报只统计「含委托账户快照」的日结单：该客户当月只有基金账户时，
+    // 这张单对委托月报没有内容，计进天数会让「已汇总 N 天」与持仓表互相矛盾。
+    .filter(s => s.userId === account.userId && String(s.date).slice(0, 7) === month && s.mandate)
     .sort((a, b) => String(a.date).localeCompare(String(b.date)));
   const fees = mandateFees.filter(f => f.accountId === accountId && f.period === month && f.status === 'approved');
   const portfolio = getMandatePortfolio(accountId);
   const first = inMonth[0];
   const last = inMonth[inMonth.length - 1];
   const feeHKD = fees.reduce((s, f) => s + convertToHKD(f.amount, f.currency), 0);
+  const firstTotal = first?.mandate?.totalHKD ?? null;
+  const lastTotal = last?.mandate?.totalHKD ?? null;
   return {
     accountId,
     accountNo: account.no,
     month,
     days: inMonth.length,
-    openingHKD: first?.mandate?.totalHKD ?? null,
-    closingHKD: last?.mandate?.totalHKD ?? portfolio.totalHKD,
-    changeHKD: first && last ? last.mandate.totalHKD - first.mandate.totalHKD : null,
+    openingHKD: firstTotal,
+    closingHKD: lastTotal ?? portfolio.totalHKD,
+    // 日结单里 mandate 可能为 null（该客户当月只有基金账户、无委托持仓）：
+    // 直接读 last.mandate.totalHKD 会让整页 ErrorBoundary 崩掉（2026-11-19 实测）。
+    changeHKD: firstTotal != null && lastTotal != null ? lastTotal - firstTotal : null,
     fees,
     feeHKD,
     positions: (last?.mandate?.positions) || portfolio.positions.map(p => ({
