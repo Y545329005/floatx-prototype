@@ -2505,6 +2505,78 @@ export function periodMonths(count = 6) {
   return list;
 }
 
+/* ─────────────────────────────────────────────────────────────
+   钱包逐笔流水（2026-11-20 · 期间结单期初/期末的唯一算法依据）
+
+   为什么要有这个：结单的期初必须能加出来（期初 + 变动 = 期末）。
+   旧实现用「当前余额 − 本期入金 + 本期出金」反推，只要期内有申购/赎回/划转，
+   期初就偏，而且纸面永远对不平。
+
+   口径（用户 2026-11-20 定）：
+   · 只认真实改过余额的动作：入金 / 出金 / 基金申购赎回 / 委托划转 / 分红；
+   · 项目域的认购、退出是已下线业务的历史叙事（只是意愿，没有真实资金变动），
+     不进钱包流水，也不进结单；
+   · 基金申赎以 fundStatements 为准（种子直接写了成交单、没有写 transactions，
+     若两边都取会重复计一次）。transactions 里的 `subscription` 因此整体不计。
+
+   起算日：从此日起逐笔都有记录。更早的月份没有逐笔流水，期初显示「—」，
+   不编数字（宁可没有，不要错）。
+   ───────────────────────────────────────────────────────────── */
+export const WALLET_LEDGER_START = '2026-10-01';
+
+const WALLET_DELTA_SIGN = {
+  deposit: 1,
+  withdraw: -1,
+  dividend: 1,
+  mandate_transfer_in: -1,
+};
+
+function walletLedgerDelta(tx) {
+  if (!tx || tx.status !== 'completed') return null;
+  const sign = WALLET_DELTA_SIGN[tx.type];
+  if (sign == null) return null;
+  return sign * Math.abs(Number(tx.amount) || 0);
+}
+
+const dayStr = v => String(v || '').slice(0, 10);
+
+// asOf：atStart=true 取当日 0 点，false 取当日 24 点。
+export function walletBalanceAsOf(currency, date, atStart = false, userId = currentUser.id) {
+  const acc = walletAccountOf(currency);
+  let bal = acc ? Number(acc.balance) || 0 : 0;
+  const undoIfAfter = (day, delta) => {
+    if (!day) return;
+    const undo = atStart ? day >= date : day > date;
+    if (undo) bal -= delta;
+  };
+  transactions.forEach(tx => {
+    if (tx.currency !== currency) return;
+    const delta = walletLedgerDelta(tx);
+    if (delta == null) return;
+    undoIfAfter(dayStr(tx.createdAt), delta);
+  });
+  myFundStatements(userId).forEach(s => {
+    if (s.currency !== currency) return;
+    const amt = Math.abs(Number(s.amount) || 0);
+    undoIfAfter(dayStr(s.confirmedAt || s.date), s.tradeType === '赎回' ? amt : -amt);
+  });
+  return Math.round(bal * 100) / 100;
+}
+
+// 基金份额的时点回算：当前份额 − 该时点之后的申购 + 之后的赎回
+function fundSharesDeltaAfter(fundId, date, atStart, statements) {
+  let delta = 0;
+  statements.forEach(s => {
+    if (s.fundId !== fundId) return;
+    const day = dayStr(s.confirmedAt || s.date);
+    if (!day) return;
+    const undo = atStart ? day >= date : day > date;
+    if (!undo) return;
+    delta += (s.tradeType === '赎回' ? 1 : -1) * (Number(s.shares) || 0);
+  });
+  return delta;
+}
+
 export function buildPeriodStatement({ from, to, userId = currentUser.id } = {}) {
   const months = periodMonths(1);
   const start = from || months[0].from;
@@ -2514,15 +2586,15 @@ export function buildPeriodStatement({ from, to, userId = currentUser.id } = {})
   const depositTx = fiatTx.filter(tx => tx.type === 'deposit' && withinRange(tx.createdAt, start, end));
   const withdrawTx = fiatTx.filter(tx => tx.type === 'withdraw' && withinRange(tx.createdAt, start, end));
 
+  // 期初/期末都走同一条逐笔流水回算，不再用「本期入金出金」反推——
+  // 那条式子漏申购/赎回/划转，纸面永远加不平（2026-11-20 修正）。
+  const openingAvailable = String(start) >= WALLET_LEDGER_START;
   const balances = FIAT_CURRENCIES.map(([code]) => {
-    const acc = walletAccountOf(code);
-    const closing = acc ? Number(acc.balance) || 0 : 0;
-    const inflow = depositTx.filter(tx => tx.currency === code).reduce((s, tx) => s + Number(tx.amount || 0), 0);
-    const outflow = withdrawTx.filter(tx => tx.currency === code).reduce((s, tx) => s + Number(tx.amount || 0), 0);
+    const closing = walletBalanceAsOf(code, end, false, userId);
     return {
       account: 'fiat',
       currency: code,
-      opening: Math.round((closing - inflow + outflow) * 100) / 100,
+      opening: openingAvailable ? walletBalanceAsOf(code, start, true, userId) : null,
       closing,
       hkdRate: code === 'HKD' ? 1 : convertToHKD(1, code),
     };
@@ -2535,22 +2607,35 @@ export function buildPeriodStatement({ from, to, userId = currentUser.id } = {})
     ...cryptoDep.map(d => d.asset),
     ...cryptoWdr.map(w => w.asset),
   ]));
-  cryptoCodes.forEach(code => {
+  // 数字资产走自己的充提记录回算（cryptoDeposits / cryptoWithdrawals 本身带时间戳）
+  const cryptoAsOf = (code, date, atStart) => {
     const bal = (cryptoBalances[userId] || {})[code] || { total: 0 };
+    let total = Number(bal.total) || 0;
+    const undo = day => !!day && (atStart ? day >= date : day > date);
+    cryptoDepositsOf(userId).forEach(d => {
+      if (d.asset === code && d.status === 'credited' && undo(dayStr(d.creditedAt || d.createdAt))) {
+        total -= Number(d.amount) || 0;
+      }
+    });
+    cryptoWithdrawalsOf(userId).forEach(w => {
+      if (w.asset === code && w.status === 'confirmed' && undo(dayStr(w.confirmedAt || w.createdAt))) {
+        total += Number(w.amount) || 0;
+      }
+    });
+    return Math.round(total * 1000000) / 1000000;
+  };
+  cryptoCodes.forEach(code => {
     const asset = cryptoAssets.find(a => a.code === code);
-    const inflow = cryptoDep.filter(d => d.asset === code).reduce((s, d) => s + Number(d.amount || 0), 0);
-    const outflow = cryptoWdr.filter(w => w.asset === code).reduce((s, w) => s + Number(w.amount || 0), 0);
-    const closing = Number(bal.total) || 0;
     balances.push({
       account: 'crypto',
       currency: code,
-      opening: Math.round((closing - inflow + outflow) * 1000000) / 1000000,
-      closing,
+      opening: cryptoAsOf(code, start, true),
+      closing: cryptoAsOf(code, end, false),
       hkdRate: asset ? asset.hkdRate : 0,
     });
   });
   balances.forEach(b => {
-    b.openingHKD = Math.round(b.opening * b.hkdRate * 100) / 100;
+    b.openingHKD = b.opening == null ? null : Math.round(b.opening * b.hkdRate * 100) / 100;
     b.closingHKD = Math.round(b.closing * b.hkdRate * 100) / 100;
   });
 
@@ -2559,23 +2644,18 @@ export function buildPeriodStatement({ from, to, userId = currentUser.id } = {})
     .slice()
     .sort((a, b) => String(b.confirmedAt || b.date).localeCompare(String(a.confirmedAt || a.date)));
 
-  // 基金持仓（SFC 9.7 月结单要素：期末持有的证券数量）。期末取当前持仓，
-  // 期初按「期末 − 期间认购 + 期间赎回」反推，与法币 opening 同口径
-  // （仓库无日终快照，演示口径；真实系统须日终落持仓快照）。
-  // 市值按最新净值折算，计入总估值：总估值 = 法币 + 数字资产 + 基金市值。
-  const subShares = new Map();
-  const redShares = new Map();
-  trades.forEach(s => {
-    const n = Number(s.shares) || 0;
-    if (!n || !s.fundId) return;
-    const map = s.tradeType === '赎回' ? redShares : subShares;
-    map.set(s.fundId, (map.get(s.fundId) || 0) + n);
-  });
+  // 基金持仓（SFC 9.7 月结单要素：期末持有的证券数量）。
+  // 期初/期末都按成交单回算，不再只算期初：历史月份打开时，期末也必须是那一天的份额，
+  // 不能拿当前持仓冒充（2026-11-20，与委托账户的 as-of 口径对齐）。
+  const allStatements = myFundStatements(userId);
+  const round4 = v => Math.round(v * 10000) / 10000;
   const fundPositions = getHoldings(userId).map(h => {
     const fund = funds.find(f => f.id === h.fundId);
     const nav = fund ? latestNav(fund) : 0;
-    const closing = round4(Number(h.shares) || 0);
-    const opening = round4(closing - (subShares.get(h.fundId) || 0) + (redShares.get(h.fundId) || 0));
+    const current = Number(h.shares) || 0;
+    const closing = round4(current + fundSharesDeltaAfter(h.fundId, end, false, allStatements));
+    const opening = round4(current + fundSharesDeltaAfter(h.fundId, start, true, allStatements));
+    const fx = h.currency === 'HKD' ? 1 : convertToHKD(1, h.currency);
     return {
       fundId: h.fundId,
       fundName: h.fundName,
@@ -2583,9 +2663,10 @@ export function buildPeriodStatement({ from, to, userId = currentUser.id } = {})
       nav,
       opening,
       closing,
-      closingHKD: Math.round(closing * nav * 100) / 100,
+      closingHKD: Math.round(closing * nav * fx * 100) / 100,
+      openingHKD: Math.round(opening * nav * fx * 100) / 100,
     };
-  });
+  }).filter(p => p.opening > 0 || p.closing > 0);
 
   const cash = [
     ...depositTx.map(tx => ({
@@ -2611,6 +2692,18 @@ export function buildPeriodStatement({ from, to, userId = currentUser.id } = {})
       currency: w.asset, amount: Number(w.amount || 0),
       channel: `${cryptoChainOf(w.chain)?.label || w.chain} · ${String(w.toAddress || '').slice(0, 6)}…${String(w.toAddress || '').slice(-4)}`,
       reference: w.businessNo || (String(w.txHash || '').slice(0, 8) + '…'),
+    })),
+    // 基金申赎的现金腿（2026-11-20）：与「基金交易明细」不是同一件事的两遍——
+    // 那张回答「份额怎么变」，这张回答「钱怎么变」。缺它，期初 + 明细 ≠ 期末。
+    ...trades.map(s => ({
+      id: s.id,
+      time: s.confirmedAt || s.date,
+      direction: s.tradeType === '赎回' ? 'in' : 'out',
+      kind: s.tradeType === '赎回' ? 'fund-redeem' : 'fund-subscribe',
+      currency: s.currency,
+      amount: Math.abs(Number(s.amount) || 0),
+      channel: '—',
+      reference: s.statementNo || s.id,
     })),
   ].sort((a, b) => String(b.time).localeCompare(String(a.time)));
 
@@ -2652,9 +2745,26 @@ export function buildPeriodStatement({ from, to, userId = currentUser.id } = {})
   const closingHKD = Math.round((balances.reduce((s, b) => s + b.closingHKD, 0)
     + fundPositions.reduce((s, p) => s + p.closingHKD, 0)
     + mandateClosingHKD) * 100) / 100;
-  const openingHKD = Math.round((balances.reduce((s, b) => s + b.openingHKD, 0)
-    + fundPositions.reduce((s, p) => s + p.opening * p.nav, 0)
-    + mandateOpeningHKD) * 100) / 100;
+  // 期初总额：任一分币种期初不可知（早于流水起算日）就整体不给数，
+  // 不做「跳过 null 求和」——那会把「不知道」算成 0，差额凭空变大。
+  const openingHKD = openingAvailable
+    ? Math.round((balances.reduce((s, b) => s + (b.openingHKD || 0), 0)
+      + fundPositions.reduce((s, p) => s + p.openingHKD, 0)
+      + mandateOpeningHKD) * 100) / 100
+    : null;
+
+  // 折算汇率表：折合数必须能由读者自己乘出来。
+  // 只列这份结单里真正出现的币种（不遍历 exchangeRates，否则像在声称持有五种币）。
+  const fxCurrencies = Array.from(new Set([
+    ...balances.map(b => b.currency),
+    ...fundPositions.map(p => p.currency),
+  ]));
+  const fx = fxCurrencies.map(code => {
+    const asset = cryptoAssets.find(a => a.code === code);
+    const rate = code === 'HKD' ? 1 : (asset ? asset.hkdRate : convertToHKD(1, code));
+    const meta = exchangeRates[`${String(code).toLowerCase()}-hkd`];
+    return { currency: code, rate, updatedAt: meta?.updatedAt || '' };
+  }).filter(r => r.rate > 0);
 
   return {
     from: start,
@@ -2670,6 +2780,10 @@ export function buildPeriodStatement({ from, to, userId = currentUser.id } = {})
       : null,
     openingHKD,
     closingHKD,
+    // 期初是否可知：早于钱包流水起算日的月份为 false，页面对期初列显示「—」
+    openingKnown: openingHKD != null,
+    ledgerStart: WALLET_LEDGER_START,
+    fx,
     trades,
     cash,
   };
@@ -14056,7 +14170,16 @@ const todayStr = () => {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 };
 
-export function buildDailyStatement(userId = currentUser.id, date = todayStr(), prevTotalHKD = null) {
+export function buildDailyStatement(userId = currentUser.id, date = todayStr(), prevTotalHKD = null, prevStatement = null) {
+  // 连续性是期初的前提：上一份结单必须正好是前一天，否则不显示期初列
+  const dayBefore = (d) => {
+    const t = new Date(`${d}T00:00:00`);
+    if (Number.isNaN(t.getTime())) return '';
+    t.setDate(t.getDate() - 1);
+    const p = n => String(n).padStart(2, '0');
+    return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}`;
+  };
+  const prevAdjacent = !!prevStatement && String(prevStatement.date) === dayBefore(date);
   const fund = getFundPortfolio(userId);
   // 委托：一个客户可能有多个委托账户，日结单必须覆盖全部（2026-11-20）。
   // 保留合并字段（cash / positions / totalHKD）供旧页面与月报兜底，另附 accounts 分户明细——
@@ -14221,9 +14344,27 @@ export function buildDailyStatement(userId = currentUser.id, date = todayStr(), 
 
   return {
     id: `ds-${userId}-${date}`,
+    // 对客编号：客服/合规指认单据用。不拿内部 id（含 userId）拼单号。
+    docNo: `HS-DST-${String(date).replace(/-/g, '')}`,
     userId,
     date,
-    cashA: fund.cash.map(c => ({ currency: c.currency, balance: c.balance, frozen: c.frozen, available: c.available })),
+    // 期初只在与上一份结单「连续」时给出（上一份 = 前一自然日）。
+    // 日结单是按需生成的，中间可能缺几天：拿 11-12 的余额当时 11-20 的期初，
+    // 纸面会出现「期初 + 当日变动 ≠ 期末」——一个对不平的加法比不给期初更糟。
+    cashA: fund.cash.map(c => {
+      const prevRow = prevAdjacent
+        ? (prevStatement.cashA || []).find(p => p.currency === c.currency)
+        : null;
+      return {
+        currency: c.currency,
+        opening: prevRow ? prevRow.balance : null,
+        balance: c.balance,
+        balanceHKD: Math.round(convertToHKD(c.balance, c.currency) * 100) / 100,
+        frozen: c.frozen,
+        available: c.available,
+      };
+    }),
+    openingKnown: prevAdjacent,
     cashAHKD: fund.cashHKD,
     fund: {
       positions: fund.rows.map(r => {
@@ -14248,6 +14389,7 @@ export function buildDailyStatement(userId = currentUser.id, date = todayStr(), 
     movements,
     totalHKD: fund.totalHKD + (mandate?.totalHKD || 0),
     prevTotalHKD,
+    prevDate: prevStatement ? prevStatement.date : null,
     generatedAt: formatNow(),
     generatedBy: '',
   };
@@ -14263,7 +14405,7 @@ function seedDailyStatementsOnce() {
   // 在途指令不手工清空：buildDailyStatement 已按结算日过滤，11-11 只会带出当天之前提交的提现。
   const s1 = buildDailyStatement('u1', d1, null);
   s1.generatedBy = '系统（日终）';
-  const s2 = buildDailyStatement('u1', d2, s1.totalHKD);
+  const s2 = buildDailyStatement('u1', d2, s1.totalHKD, s1);
   s2.generatedBy = '系统（日终）';
   dailyStatements.push(s2, s1);
 }
@@ -14295,7 +14437,7 @@ export function generateDailyStatement({ userId = currentUser.id, date = todaySt
   const prev = dailyStatements
     .filter(s => s.userId === userId && String(s.date) < String(date))
     .sort((a, b) => String(b.date).localeCompare(String(a.date)))[0];
-  const stmt = buildDailyStatement(userId, date, prev ? prev.totalHKD : null);
+  const stmt = buildDailyStatement(userId, date, prev ? prev.totalHKD : null, prev || null);
   stmt.generatedBy = operator || '系统（日终）';
   const idx = dailyStatements.findIndex(s => s.userId === userId && s.date === date);
   if (idx >= 0) dailyStatements[idx] = stmt;

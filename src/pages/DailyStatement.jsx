@@ -1,5 +1,6 @@
 import { ArrowLeft, Download } from 'lucide-react';
-import { getDailyStatementById, currentUser, platformBrand, formatExactAmount, formatShares, MANDATE_VALUATION_METHODS, MANDATE_LEDGER_LABELS } from '../mock/data';
+import DocViewport from '../components/DocViewport';
+import { getDailyStatementById, currentUser, platformBrand, formatExactAmount, formatShares, convertToHKD, MANDATE_VALUATION_METHODS, MANDATE_LEDGER_LABELS } from '../mock/data';
 import { useLang } from '../i18n';
 
 // 日结单详情（2026-11-13 批 3）
@@ -70,6 +71,20 @@ export default function DailyStatement({ id, goBack }) {
   }
 
   const diff = stmt.prevTotalHKD == null ? null : stmt.totalHKD - stmt.prevTotalHKD;
+  // 差额行必须说清「跟谁比」：日结单可能隔几天才出一份，
+  // 连续性缺失时不能仍写「较前一交易日」——那是在暗示两个相邻的时点。
+  const diffLabel = diff == null
+    ? t('首份日结单')
+    : (stmt.openingKnown ? t('较前一交易日') : `${t('较上一份结单')} ${stmt.prevDate || ''}`.trim());
+
+  // 差额必须能拆：资金净流入是账上真动过的钱（可列），剩下的是市值与汇率（只能作残差）。
+  // 没有日终估值序列，拆不出「股票涨了多少、基金涨了多少」——硬拆就是编。
+  const netFlowHKD = Math.round((stmt.movements || []).reduce((s, m) => {
+    const v = convertToHKD(Math.abs(Number(m.amount) || 0), m.currency || 'HKD');
+    return s + (Number(m.amount) < 0 ? -v : v);
+  }, 0) * 100) / 100;
+  const marketDeltaHKD = diff == null ? null : Math.round((diff - netFlowHKD) * 100) / 100;
+  const signed = (v) => `${v >= 0 ? '+' : '−'}HKD ${formatExactAmount(Math.abs(v))}`;
 
   return (
     <div className="page doc-page">
@@ -80,6 +95,7 @@ export default function DailyStatement({ id, goBack }) {
         </div>
       </div>
 
+      <DocViewport>
       <article className="doc-sheet">
         <header className="doc-head">
           <div className="doc-head-title">
@@ -87,6 +103,7 @@ export default function DailyStatement({ id, goBack }) {
             <span className="doc-title">{t('日结单')}</span>
           </div>
           <div className="doc-meta">
+            <span>{t('编号')} {stmt.docNo || '—'}</span>
             <span>{t('结算日期')} {stmt.date}</span>
           </div>
         </header>
@@ -105,18 +122,41 @@ export default function DailyStatement({ id, goBack }) {
           <h3>{t('现金账户')}</h3>
           <div className="doc-table-wrap">
             <table className="doc-table">
-              <colgroup><col style={{ width: '22%' }} /><col style={{ width: '28%' }} /><col style={{ width: '22%' }} /><col style={{ width: '28%' }} /></colgroup>
-              <thead><tr><th>{t('币种')}</th><th className="is-num">{t('余额')}</th><th className="is-num">{t('冻结')}</th><th className="is-num">{t('可用')}</th></tr></thead>
+              <colgroup>
+                <col style={{ width: '14%' }} />
+                {stmt.openingKnown && <col style={{ width: '17%' }} />}
+                <col style={{ width: '20%' }} />
+                <col style={{ width: '16%' }} />
+                <col style={{ width: '16%' }} />
+                <col style={{ width: '17%' }} />
+              </colgroup>
+              <thead><tr>
+                <th>{t('币种')}</th>
+                {stmt.openingKnown && <th className="is-num">{t('期初')}</th>}
+                <th className="is-num">{t('余额')}</th>
+                <th className="is-num">{t('冻结')}</th>
+                <th className="is-num">{t('可用')}</th>
+                <th className="is-num">{t('折合 HKD')}</th>
+              </tr></thead>
               <tbody>
                 {stmt.cashA.map(c => (
                   <tr key={c.currency}>
                     <td>{c.currency}</td>
+                    {stmt.openingKnown && <td className="is-num">{formatExactAmount(c.opening)}</td>}
                     <td className="is-num">{formatExactAmount(c.balance)}</td>
                     <td className="is-num">{formatExactAmount(c.frozen)}</td>
                     <td className="is-num">{formatExactAmount(c.available)}</td>
+                    <td className="is-num">{formatExactAmount(c.balanceHKD)}</td>
                   </tr>
                 ))}
               </tbody>
+              {/* 小计让纸面上的总资产可以自己加出来：现金折合 + 委托 + 基金 = 顶部总资产 */}
+              <tfoot>
+                <tr className="doc-total">
+                  <td colSpan={stmt.openingKnown ? 5 : 4}>{t('现金小计（折合 HKD）')}</td>
+                  <td className="is-num">{formatExactAmount(stmt.cashAHKD)}</td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </section>
@@ -229,21 +269,33 @@ export default function DailyStatement({ id, goBack }) {
         </section>
 
         <div className="doc-section-total">
-          {t('较前一交易日')}{lang === 'en' ? ': ' : '：'}
-          {diff == null ? t('首份日结单') : `${diff >= 0 ? '+' : '−'}HKD ${formatExactAmount(Math.abs(diff))}`}
-          {diff != null && <span className="doc-total-note">{t('（含市值变动）')}</span>}
+          {diffLabel}{lang === 'en' ? ': ' : '：'}
+          {diff == null ? '' : signed(diff)}
         </div>
+        {diff != null && (
+          <div className="doc-attrib">
+            <p className="doc-line">
+              <span>{t('资金净流入')}</span>
+              <span className="doc-line-amt">{signed(netFlowHKD)}</span>
+            </p>
+            <p className="doc-line">
+              <span>{t('市值与汇率变动')}<span className="doc-total-note">{t('（残差）')}</span></span>
+              <span className="doc-line-amt">{signed(marketDeltaHKD)}</span>
+            </p>
+          </div>
+        )}
 
         <p className="doc-legal">
           {t('本日结单为当日资产快照，由电脑系统生成，无需签署。基金份额按最新公布净值估值，未公布净值的日期沿用上一净值。如对记录有疑问，请于收到后 7 天内联系客户经理。')}
         </p>
+        <p className="doc-legal">{t('日结单为过程快照；如与账户结单不一致，以账户结单为准。')}</p>
         <footer className="doc-foot">
           <span>
             {platformBrand.nameFullZh} · <span className="doc-nowrap">{t(platformBrand.licenseType)}</span> · {t('中央编号')} {platformBrand.licenseNo}
           </span>
-          <span>1 / 1</span>
         </footer>
       </article>
+      </DocViewport>
 
       <div className="bottom-action-bar doc-actions">
         <button className="btn btn-primary" onClick={() => { if (window.parent === window) window.print(); }}>

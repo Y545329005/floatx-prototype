@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft, Download } from 'lucide-react';
+import DocViewport from '../components/DocViewport';
 import { formatExactAmount, currentUser, platformBrand, receiptOf } from '../mock/data';
 import { useLang } from '../i18n';
 
@@ -79,6 +80,7 @@ export default function Receipt({ type, id, goBack }) {
         </div>
       </div>
 
+      <DocViewport>
       <article className="doc-sheet">
         <header className="doc-head">
           <div>
@@ -125,11 +127,10 @@ export default function Receipt({ type, id, goBack }) {
           <span>
             {platformBrand.nameFullZh} · <span className="doc-nowrap">{t(platformBrand.licenseType)}</span> · {t('中央编号')} {platformBrand.licenseNo}
           </span>
-          <span>1 / 1</span>
         </footer>
       </article>
+      </DocViewport>
 
-      {printNote && <p className="statement-print-note">{printNote}</p>}
       {printNote && <p className="statement-print-note">{printNote}</p>}
 
       <div className="bottom-action-bar doc-actions">

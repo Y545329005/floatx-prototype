@@ -8766,139 +8766,61 @@ input, select, textarea {
 .p-export-fail { color: var(--danger); }
 .p-export-pending { color: var(--text-secondary); }
 
-/* ========== 账户结单屏幕版（2026-11-13 双排版分离） ==========
-   屏幕上是 App 卡片流，纸面凭证在 .doc-print（打印时切换，见 @media print）。
-   数据同源两套排版；此处所有类仅屏幕版使用。
-   hero 语法对齐 .asset-hero-*（2026-11-02 用户定版：primary-light 底 +
-   primary 色大数左对齐）——同为「资产总额」role，两个页面必须同一语言。 */
-.doc-print { display: none; }
+/* ========== A4 文档（日结单 / 期间结单 / 回单 / 成交通知单共用，2026-11-20） ==========
+   单据只有一种排版：A4 纸面。手机不重排，只提供查看态（缩放 / 横向拖动）。
+   背景：2026-11-13 的「屏幕卡片流 + A4 打印版」双排版让屏幕版丢了期初、汇率、
+   净值日——为手机重排恰恰吃掉了对账要用的字段。 */
 
-.doc-screen {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  padding-bottom: var(--space-2);
+/* 查看容器：灰色底 + 横向滚动，纸在中间 */
+.doc-viewport {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--space-3) 0 var(--space-8);
 }
 
-.doc-screen-hero {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-5);
-  background: var(--primary-light);
-  border-radius: var(--radius-lg);
+.doc-canvas {
+  width: 210mm;
+  margin: 0 auto;
 }
 
-.doc-screen-hero-label { font-size: var(--text-base); color: var(--text-secondary); }
-
-.doc-screen-hero-amt {
-  margin: var(--space-1) 0 var(--space-2);
-  font-size: var(--text-display-sm);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
-  color: var(--primary);
-}
-
-.doc-screen-hero-sub { font-size: var(--text-sm); color: var(--text-secondary); }
-
-/* 组头左缘与卡内文字光学对齐（padding 同卡内水平 --space-4）；
-   上方间距由父容器 gap（--space-4）提供、下方 --space-2——heading 上方空间必须大于下方 */
-.doc-screen-group {
-  margin: 0 0 var(--space-2);
-  padding: 0 var(--space-4);
-  font-size: var(--text-sm);
-  font-weight: 700;
-  color: var(--text-secondary);
-}
-
-/* 余额行左列币种撑满：右列（金额+折算）才能贴卡右缘；
-   交易/流水行的 title 在 .doc-screen-row-main（已有 flex:1）内，不受影响 */
-.doc-screen-row > .doc-screen-row-title { flex: 1; }
-
-.doc-screen-empty {
-  margin: 0;
-  padding: var(--space-4);
-  text-align: center;
-  font-size: var(--text-sm);
-  color: var(--text-tertiary);
-}
-
-.doc-screen-card {
-  background: var(--bg-card);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-}
-
-.doc-screen-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-}
-
-.doc-screen-row + .doc-screen-row { border-top: 1px solid var(--border-light); }
-
-.doc-screen-row-title {
-  min-width: 0;
-  font-size: var(--text-base);
-  font-weight: 600;
-  color: var(--text);
-}
-
-.doc-screen-row-main {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-  min-width: 0;
-}
-
-.doc-screen-row-sub {
-  font-size: var(--text-xs);
-  color: var(--text-tertiary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.doc-screen-row-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-  flex: none;
-}
-
-.doc-screen-amt {
-  font-size: var(--text-base);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--text);
-  white-space: nowrap;
-}
-
-.doc-screen-amt.in { color: var(--success); }
-.doc-screen-amt.out { color: var(--danger); }
-
-.doc-screen-amt-sub {
-  font-size: var(--text-xs);
-  color: var(--text-tertiary);
-  white-space: nowrap;
-}
-
-/* ========== A4 文档（期间结单 / 回单共用，2026-11-12） ==========
-   屏幕上是一张纸的预览，不是 App 页面：白底、细边、紧凑字号。
-   打印时去掉卡片外观（见 @media print）。
-   2026-11-13：期间结单的屏幕呈现改走 .doc-screen（上方），
-   .doc-sheet 仅在 .doc-print 容器内用于打印/下载。 */
 .doc-sheet {
-  padding: var(--space-4);
+  width: 210mm;
+  min-height: 297mm;
+  padding: 16mm;
+  background: #fff;
+  border-radius: 0;
+  box-shadow: var(--shadow-md);
+  box-sizing: border-box;
+}
+
+/* 缩放开关：固定在 App 右缘、操作条上方（100% 默认，先看清字） */
+.doc-zoom {
+  position: fixed;
+  right: max(16px, calc((100vw - 430px) / 2 + 16px));
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  z-index: 30;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
   background: var(--bg-card);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
+}
+
+.doc-zoom button {
+  min-height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.doc-zoom button[aria-pressed="true"] {
+  background: var(--primary);
+  color: #fff;
 }
 
 .doc-head {
@@ -9315,7 +9237,7 @@ input, select, textarea {
 /* 打印：屏幕上的壳全部退场，只留这张凭证。
    作用域限定在本页，不影响其它页面打印。 */
 @media print {
-  @page { size: A4; margin: 16mm; }
+  @page { size: A4; margin: 0; }
 
   .subpage-sticky,
   .bottom-nav,
@@ -9330,12 +9252,13 @@ input, select, textarea {
 
   .fund-statement-detail-page { padding: 0; }
 
-  /* 纸面是一份可存档的凭证，不是截屏：A4 版心内不保留卡片投影与圆角 */
+  /* 纸面是一份可存档的凭证，不是截屏：A4 版心内不保留卡片投影与圆角。
+     页边距由元素自己撑（@page margin 0），否则与纸面内边距叠加成 32mm */
   .statement-card {
     box-shadow: none;
     border: 0;
     border-radius: 0;
-    padding: 0;
+    padding: 16mm;
     margin: 0;
   }
 
@@ -9451,12 +9374,19 @@ input, select, textarea {
     color: #888;
   }
 
-  /* A4 文档（期间结单 / 回单）：纸上必须是一张纸。
-     期间结单双排版切换（2026-11-13）：屏幕版隐藏、打印版显示 */
+  /* A4 文档：纸上必须是一张纸。屏上与打印同一份排版，打印只需去掉
+     投影/缩放，并把页边距交给元素自己撑（2026-11-20 单一排版）。 */
   .doc-page { padding: 0; }
-  .doc-screen { display: none !important; }
-  .doc-print { display: block; }
-  .doc-sheet { padding: 0; border-radius: 0; box-shadow: none; }
+  .doc-viewport { overflow: visible; padding: 0; }
+  .doc-canvas { width: auto; margin: 0; zoom: 1 !important; }
+  .doc-zoom { display: none !important; }
+  .doc-sheet {
+    width: auto;
+    min-height: 0;
+    padding: 16mm;
+    border-radius: 0;
+    box-shadow: none;
+  }
   .doc-head { border-bottom: 1.5px solid #111; padding-bottom: 8px; }
   .doc-brand { font-size: 15pt; }
   .doc-title { font-size: 11pt; }
@@ -11747,6 +11677,17 @@ button.kyc-form-input.picker-trigger {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+
+/* 差额归因：净流入（有据）+ 市值/汇率（残差）。缩进 + 细字，读成总额的分解而不是新一节 */
+.doc-attrib {
+  margin: calc(var(--space-1) * -1) 0 var(--space-2);
+  padding-left: var(--space-3);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.doc-attrib .doc-line { padding: 2px 0; }
+.doc-attrib .doc-line-amt { color: var(--text-secondary); }
 .doc-sub { display: block; font-size: 10px; color: var(--text-secondary); font-weight: 400; }
 /* 在途指令：左侧事由、右侧数量/金额——两端口径，金额靠右成列（与表格数字列同一读法） */
 .doc-line {
@@ -11785,6 +11726,7 @@ button.kyc-form-input.picker-trigger {
    结单是要打印的凭证，滚动条外的列打印时会被切掉。
    第一列允许换行（名称/方法/日期），数值列不换行并右对齐。 */
 .doc-table--fit { table-layout: fixed; }
+.doc-table--fx { max-width: 420px; }
 .doc-table--fit th,
 .doc-table--fit td { padding: 6px 4px; }
 .doc-table--fit .doc-cell-wrap { white-space: normal; word-break: break-word; }

@@ -133,7 +133,6 @@ export default function FundStatementDetail({ id, navigate, goBack }) {
             <span>
               {platformBrand.nameFullZh} · {t(platformBrand.licenseType)} · {t('中央编号')} {platformBrand.licenseNo}
             </span>
-            <span>1 / 1</span>
           </div>
         </div>
       </div>
