@@ -151,6 +151,15 @@ export default function DailyStatement({ id, goBack }) {
                       <td className="is-num">{formatExactAmount(c.balance)}</td>
                     </tr>
                   ))}
+                  {/* 多委托账户：合并表之后补分户小计，客户能对到自己每个账户 */}
+                  {stmt.mandate.accounts && stmt.mandate.accounts.length > 1 && stmt.mandate.accounts.map(a => (
+                    <tr key={`acct-${a.id}`}>
+                      <td className="doc-cell-wrap">{t('分户小计')} · {a.no}</td>
+                      <td className="is-num">—</td>
+                      <td className="is-num">—</td>
+                      <td className="is-num">{formatExactAmount(a.totalHKD)}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

@@ -2828,4 +2828,21 @@ export const en = {
   '全权委托协议': 'Discretionary management agreement',
   '提取至现金账户': 'Withdraw to cash account',
   '协议详情、费率与投资限制': 'Agreement details, fees & investment limits',
+
+  // Account statement · mandate section (2026-11-20)
+  '含委托账户': 'Includes mandate account',
+  '其中：委托账户': 'Of which: mandate account',
+  '三、委托账户明细': '3. Mandate account details',
+  '四、资金往来明细': '4. Cash movements',
+  '事项': 'Item',
+  '金额（HKD）': 'Amount (HKD)',
+  '期末合计': 'Closing total',
+  '从现金账户划入': 'Transferred in from cash account',
+  '划出至现金账户': 'Transferred out to cash account',
+  '按成本': 'At cost',
+  '期间变动': 'Period movements',
+  '委托月报载有逐笔成交与费用明细。': 'The mandate monthly report carries the transaction and fee details.',
+  '委托成交': 'Mandate trades',
+  '分户小计': 'Account subtotal',
+  '您 {from} 至 {to} 的账户结单已生成，含余额、基金与委托成交、资金往来明细。': 'Your account statement for {from} to {to} is ready, covering balances, fund and mandate trades, and cash movements.',
 };

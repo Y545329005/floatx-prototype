@@ -62,16 +62,20 @@ export function receiptEmailDoc(rec, t) {
 }
 
 export function periodEmailDoc(stmt, t) {
+  const mandateTrades = stmt.mandate
+    ? stmt.mandate.accounts.reduce((s, a) => s + a.trades.length, 0)
+    : 0;
   return {
     subject: `${t('账户结单')} · ${stmt.from} – ${stmt.to}`,
     title: t('您的账户结单'),
-    intro: t('您 {from} 至 {to} 的账户结单已生成，含余额、基金成交与资金往来明细。')
+    intro: t('您 {from} 至 {to} 的账户结单已生成，含余额、基金与委托成交、资金往来明细。')
       .replace('{from}', stmt.from)
       .replace('{to}', stmt.to),
     rows: [
       { label: t('结单期间'), value: `${stmt.from} – ${stmt.to}` },
       { label: t('期末资产总值'), value: `HKD ${formatExactAmount(stmt.closingHKD)}` },
       { label: t('基金成交'), value: t('{n} 笔').replace('{n}', String(stmt.trades.length)) },
+      ...(stmt.mandate ? [{ label: t('委托成交'), value: t('{n} 笔').replace('{n}', String(mandateTrades)) }] : []),
       { label: t('资金往来'), value: t('{n} 笔').replace('{n}', String(stmt.cash.length)) },
     ],
     ctaLabel: t('查看并下载结单'),

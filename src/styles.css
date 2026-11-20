@@ -8974,6 +8974,14 @@ input, select, textarea {
   color: var(--text);
 }
 
+/* 单据内的二级标题（如「三、委托账户明细」下的账户号）：比章节标题轻一级 */
+.doc-subtitle {
+  margin: var(--space-3) 0 var(--space-1);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--text);
+}
+
 /* 表格在 390px 屏幕上会挤，允许横向滚动；打印时按 A4 宽度完整铺开 */
 .doc-table-wrap { overflow-x: auto; }
 

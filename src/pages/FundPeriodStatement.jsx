@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ArrowLeft, Download } from 'lucide-react';
 import {
-  buildPeriodStatement, formatExactAmount, platformBrand,
+  buildPeriodStatement, formatExactAmount, formatShares, platformBrand,
   requestStatementExport, advanceStatementExport,
 } from '../mock/data';
 import { useLang } from '../i18n';
@@ -25,6 +25,19 @@ export default function FundPeriodStatement({ from, to, goBack }) {
   const [printNote, setPrintNote] = useState('');
 
   const stmt = useMemo(() => buildPeriodStatement({ from, to }), [from, to]);
+
+  // 委托现金变动的文案由页面拼（数据层只给 kind，不拼中文，否则英文界面永远是中文）。
+  const flowLabel = (f) => {
+    if (f.kind === 'trade-buy') return `${t('买入')} ${f.symbol} ${formatShares(f.quantity)} ${t('股')}`;
+    if (f.kind === 'trade-sell') return `${t('卖出')} ${f.symbol} ${formatShares(f.quantity)} ${t('股')}`;
+    if (f.kind === 'fee') return `${t('费用')}${f.feePeriod ? ` · ${f.feePeriod}` : ''}`;
+    if (f.kind === 'transfer-in') return t('从现金账户划入');
+    if (f.kind === 'transfer-out') return t('划出至现金账户');
+    if (f.kind === 'deposit') return t('入金');
+    if (f.kind === 'withdraw') return t('出金');
+    if (f.kind === 'dividend') return t('股息');
+    return t('其他');
+  };
 
   // 下载落一条「申请成功」的导出记录：动作出生即 ready，
   // 不走「processing → 导出记录页 2 秒后推进」——用户刚点完下载却看到「申请中」是假延迟。
@@ -70,7 +83,7 @@ export default function FundPeriodStatement({ from, to, goBack }) {
         <section className="doc-screen-hero">
           <span className="doc-screen-hero-label">{t('期末资产总估值')}</span>
           <b className="doc-screen-hero-amt">HKD {formatExactAmount(stmt.closingHKD)}</b>
-          <span className="doc-screen-hero-sub">{stmt.from} – {stmt.to} · {t(stmt.clientName)}</span>
+          <span className="doc-screen-hero-sub">{stmt.from} – {stmt.to} · {t(stmt.clientName)}{stmt.mandate ? ` · ${t('含委托账户')}` : ''}</span>
         </section>
 
         {[['fiat', '法币账户'], ['crypto', '数字资产']].map(([group, groupLabel]) => {
@@ -103,7 +116,7 @@ export default function FundPeriodStatement({ from, to, goBack }) {
                 <div key={p.fundId} className="doc-screen-row">
                   <span className="doc-screen-row-main">
                     <span className="doc-screen-row-title">{t(p.fundName)}</span>
-                    <span className="doc-screen-row-sub">{fmtQty(p.closing)} {t('份')} · {t('净值')} {p.nav}</span>
+                    <span className="doc-screen-row-sub">{formatShares(p.closing)} {t('份')} · {t('净值')} {p.nav}</span>
                   </span>
                   <b className="doc-screen-amt">{p.currency} {formatExactAmount(p.closingHKD)}</b>
                 </div>
@@ -111,6 +124,63 @@ export default function FundPeriodStatement({ from, to, goBack }) {
             </div>
           )}
         </section>
+
+        {stmt.mandate && (
+          <section>
+            <h2 className="doc-screen-group">{t('委托账户')}</h2>
+            {stmt.mandate.accounts.map(a => (
+              <div className="doc-screen-card" key={a.id}>
+                <div className="doc-screen-row">
+                  <span className="doc-screen-row-main">
+                    <span className="doc-screen-row-title">{a.no}</span>
+                    <span className="doc-screen-row-sub">{a.name}</span>
+                  </span>
+                  <b className="doc-screen-amt">HKD {formatExactAmount(a.closingHKD)}</b>
+                </div>
+                {a.positions.map(p => (
+                  <div key={p.symbol} className="doc-screen-row">
+                    <span className="doc-screen-row-main">
+                      <span className="doc-screen-row-title">{p.symbol} · {p.name}</span>
+                      <span className="doc-screen-row-sub">
+                        {formatShares(p.quantity)} {t('股')} · {p.valued ? `${t('估值价')} ${p.price}` : t('按成本')}
+                        {p.priceAt ? ` · ${p.priceAt}` : ''}
+                      </span>
+                    </span>
+                    <b className="doc-screen-amt">HKD {formatExactAmount(p.marketValueHKD)}</b>
+                  </div>
+                ))}
+                {a.cashClosing.filter(c => Math.abs(c.balance) > 0.005).map(c => (
+                  <div key={c.currency} className="doc-screen-row">
+                    <span className="doc-screen-row-main">
+                      <span className="doc-screen-row-title">{t('现金')} · {c.currency}</span>
+                    </span>
+                    <b className="doc-screen-amt">{formatExactAmount(c.balance)}</b>
+                  </div>
+                ))}
+              </div>
+            ))}
+
+            {stmt.mandate.accounts.some(a => a.flows.length > 0) && (
+              <>
+                <h3 className="doc-screen-group">{t('期间变动')}</h3>
+                <div className="doc-screen-card">
+                  {stmt.mandate.accounts.flatMap(a => a.flows.map(f => (
+                    <div key={`${a.id}-${f.id}`} className="doc-screen-row">
+                      <span className="doc-screen-row-main">
+                        <span className="doc-screen-row-title">{flowLabel(f)}</span>
+                        <span className="doc-screen-row-sub">{String(f.at).slice(0, 10)} · {a.no}</span>
+                      </span>
+                      <b className={`doc-screen-amt ${f.amount >= 0 ? 'in' : 'out'}`}>
+                        {f.amount >= 0 ? '+' : '−'}{formatExactAmount(Math.abs(f.amountHKD))}
+                      </b>
+                    </div>
+                  )))}
+                </div>
+              </>
+            )}
+            <p className="text-muted text-sm">{t('委托月报载有逐笔成交与费用明细。')}</p>
+          </section>
+        )}
 
         <section>
           <h2 className="doc-screen-group">{t('基金交易')}</h2>
@@ -130,7 +200,7 @@ export default function FundPeriodStatement({ from, to, goBack }) {
                   </span>
                   <span className="doc-screen-row-right">
                     <b className="doc-screen-amt">{s.currency} {formatExactAmount(s.amount)}</b>
-                    {s.shares ? <span className="doc-screen-amt-sub">{fmtQty(s.shares)} {t('份')}</span> : null}
+                    {s.shares ? <span className="doc-screen-amt-sub">{formatShares(s.shares)} {t('份')}</span> : null}
                   </span>
                 </div>
               ))}
@@ -226,11 +296,19 @@ export default function FundPeriodStatement({ from, to, goBack }) {
                 {stmt.fundPositions.map(p => (
                   <tr key={p.fundId}>
                     <td className="wrap">{t(p.fundName)}</td>
-                    <td className="num">{fmtQty(p.opening)}</td>
-                    <td className="num">{fmtQty(p.closing)}</td>
+                    <td className="num">{formatShares(p.opening)}</td>
+                    <td className="num">{formatShares(p.closing)}</td>
                     <td className="num">{formatExactAmount(p.closingHKD)}</td>
                   </tr>
                 ))}
+              </tbody>
+            )}
+            {stmt.mandate && (
+              <tbody>
+                <tr>
+                  <td colSpan={3}>{t('其中：委托账户')}</td>
+                  <td className="num">{formatExactAmount(stmt.mandate.closingHKD)}</td>
+                </tr>
               </tbody>
             )}
             <tbody>
@@ -263,7 +341,7 @@ export default function FundPeriodStatement({ from, to, goBack }) {
                     <td>{String(s.date || s.confirmedAt || '').slice(5, 10)}</td>
                     <td className="wrap">{t(s.fundName)}</td>
                     <td>{t(s.tradeType || '认购')}</td>
-                    <td className="num">{s.shares ? fmtQty(s.shares) : '—'}</td>
+                    <td className="num">{s.shares ? formatShares(s.shares) : '—'}</td>
                     <td className="num">{s.currency} {formatExactAmount(s.amount)}</td>
                   </tr>
                 ))}
@@ -272,7 +350,70 @@ export default function FundPeriodStatement({ from, to, goBack }) {
           </div>
         )}
 
-        <h2 className="doc-section-title">{t('三、资金往来明细')}</h2>
+        {stmt.mandate && (
+          <>
+            <h2 className="doc-section-title">{t('三、委托账户明细')}</h2>
+            {stmt.mandate.accounts.map(a => (
+              <div key={a.id}>
+                <h3 className="doc-subtitle">{t('委托账户')} {a.no}</h3>
+                {a.positions.length > 0 && (
+                  <div className="doc-table-wrap">
+                    <table className="doc-table">
+                      <thead>
+                        <tr>
+                          <th>{t('持仓')}</th>
+                          <th className="num">{t('数量')}</th>
+                          <th className="num">{t('估值价')}</th>
+                          <th className="num">{t('市值（HKD）')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {a.positions.map(p => (
+                          <tr key={p.symbol}>
+                            <td className="wrap">{p.symbol} · {p.name}</td>
+                            <td className="num">{formatShares(p.quantity)}</td>
+                            <td className="num">
+                              {p.valued ? p.price : t('按成本')}
+                              {p.priceAt ? <span className="doc-sub">{p.priceAt}</span> : null}
+                            </td>
+                            <td className="num">{formatExactAmount(p.marketValueHKD)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                {a.flows.length > 0 && (
+                  <div className="doc-table-wrap">
+                    <table className="doc-table">
+                      <thead>
+                        <tr>
+                          <th>{t('日期')}</th>
+                          <th>{t('事项')}</th>
+                          <th className="num">{t('金额（HKD）')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {a.flows.map(f => (
+                          <tr key={f.id}>
+                            <td>{String(f.at).slice(0, 10)}</td>
+                            <td className="wrap">{flowLabel(f)}</td>
+                            <td className={`num ${f.amount >= 0 ? 'in' : 'out'}`}>
+                              {f.amount >= 0 ? '+' : '−'}{formatExactAmount(Math.abs(f.amountHKD))}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                <p className="doc-note">{t('期末合计')} HKD {formatExactAmount(a.closingHKD)}</p>
+              </div>
+            ))}
+          </>
+        )}
+
+        <h2 className="doc-section-title">{t('四、资金往来明细')}</h2>
         {stmt.cash.length === 0 ? (
           <p className="doc-empty">{t('本期无资金往来')}</p>
         ) : (

@@ -234,6 +234,9 @@ export default function AdminMandateDaily({ admin, detailId, navigate }) {
                 {selected.mandate.positions.map(p => (
                   <div key={p.symbol} className="kyc-review-row"><span>{p.symbol} × {p.quantity}</span><strong>{formatExactAmount(p.marketValueHKD)} <span className="mandate-subline">{p.method} · {p.priceAt}</span></strong></div>
                 ))}
+                {selected.mandate.accounts && selected.mandate.accounts.length > 1 && selected.mandate.accounts.map(a => (
+                  <div key={`acct-${a.id}`} className="kyc-review-row"><span>分户小计 · {a.no}</span><strong>HK$ {formatExactAmount(a.totalHKD)}</strong></div>
+                ))}
                 <div className="kyc-review-row"><span>小计</span><strong>HK$ {formatExactAmount(selected.mandate.totalHKD)}</strong></div>
               </div>
             )}

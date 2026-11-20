@@ -2614,10 +2614,47 @@ export function buildPeriodStatement({ from, to, userId = currentUser.id } = {})
     })),
   ].sort((a, b) => String(b.time).localeCompare(String(a.time)));
 
+  // 委托账户（2026-11-20）：全账户结单必须包含委托，否则客户在账户结单里看不到 B 号。
+  // 期初/期末按时间戳回算：现金取流水、持仓取成交；不用当前持仓冒充历史。
+  // 这里不按「当前未关闭」过滤——已关闭账户在它存续期间的历史结单里仍应出现；
+  // 空账户由下面的 filter 兜掉（期末无资产、期初无资产、期间无流水与成交）。
+  const mandateStatementAccounts = mandateAccounts
+    .filter(a => a.userId === userId)
+    .filter(a => String(a.openedAt || '').slice(0, 10) <= end)
+    .map(a => {
+      const closingPositions = mandatePositionsAsOf(a.id, end);
+      const openingPositions = mandatePositionsAsOf(a.id, start, true);
+      const cashClosing = mandateCashAsOf(a.id, end);
+      const cashOpening = mandateCashAsOf(a.id, start, true);
+      const flows = mandateFlowsBetween(a.id, start, end);
+      const mandateTradesInRange = mandateTrades
+        .filter(x => x.accountId === a.id && x.status === MANDATE_TRADE_STATUS.ACTIVE)
+        .filter(x => withinRange(x.tradeDate, start, end))
+        .slice()
+        .sort((x, y) => String(x.tradeDate).localeCompare(String(y.tradeDate)));
+      const sumHKD = rows => rows.reduce((s, r) => s + Number(r.balanceHKD ?? r.marketValueHKD ?? 0), 0);
+      const closingHKD = Math.round((sumHKD(cashClosing) + sumHKD(closingPositions)) * 100) / 100;
+      const openingHKD = Math.round((sumHKD(cashOpening) + sumHKD(openingPositions)) * 100) / 100;
+      const feeHKD = Math.round(flows.filter(x => x.kind === 'fee')
+        .reduce((s, x) => s + Math.abs(x.amountHKD), 0) * 100) / 100;
+      return {
+        id: a.id, no: a.no, name: a.userName,
+        cashOpening, cashClosing, positions: closingPositions, openingPositions,
+        flows, trades: mandateTradesInRange, feeHKD,
+        openingHKD, closingHKD,
+      };
+    })
+    .filter(a => a.closingHKD > 0.005 || a.openingHKD > 0.005 || a.flows.length > 0 || a.trades.length > 0);
+
+  const mandateClosingHKD = Math.round(mandateStatementAccounts.reduce((s, a) => s + a.closingHKD, 0) * 100) / 100;
+  const mandateOpeningHKD = Math.round(mandateStatementAccounts.reduce((s, a) => s + a.openingHKD, 0) * 100) / 100;
+
   const closingHKD = Math.round((balances.reduce((s, b) => s + b.closingHKD, 0)
-    + fundPositions.reduce((s, p) => s + p.closingHKD, 0)) * 100) / 100;
+    + fundPositions.reduce((s, p) => s + p.closingHKD, 0)
+    + mandateClosingHKD) * 100) / 100;
   const openingHKD = Math.round((balances.reduce((s, b) => s + b.openingHKD, 0)
-    + fundPositions.reduce((s, p) => s + p.opening * p.nav, 0)) * 100) / 100;
+    + fundPositions.reduce((s, p) => s + p.opening * p.nav, 0)
+    + mandateOpeningHKD) * 100) / 100;
 
   return {
     from: start,
@@ -2627,6 +2664,10 @@ export function buildPeriodStatement({ from, to, userId = currentUser.id } = {})
     printedAt: formatNow(),
     balances,
     fundPositions,
+    // 委托小节：null = 该期间无委托账户，页面不渲染整节（不显示空表）
+    mandate: mandateStatementAccounts.length
+      ? { accounts: mandateStatementAccounts, openingHKD: mandateOpeningHKD, closingHKD: mandateClosingHKD }
+      : null,
     openingHKD,
     closingHKD,
     trades,
@@ -12725,6 +12766,15 @@ export const cashLedger = [
     note: '提取 MW20261112113000 划转至现金账户（已审核通过并完成划转）',
     refType: 'mandate-withdrawal', refId: 'mw1', at: '2026-11-13 10:05:00', createdBy: '王运营',
   },
+  // 买入 TSLA 的资金腿（2026-11-20 补）：mt5 是上一轮为演示「未估值」加的种子，
+  // 当时只加了持仓、漏了扣款——持仓凭空多出 7,495.80，账户总额从 199,534.00 虚增到 207,029.80。
+  // 结单一算「期初 + 流水 = 期末」就会暴露这笔无来源的钱。
+  {
+    id: 'cl7', accountId: 'mb1', no: 'B00001', userId: 'u1',
+    type: MANDATE_LEDGER_TYPES.TRADE, currency: 'HKD', amount: -7495.8,
+    note: '买入 TSLA 4 股 @ USD 240（含费 USD 1，汇率 7.8）',
+    refType: 'trade', refId: 'mt5', at: '2026-11-05 15:05:00', createdBy: '王运营',
+  },
 ];
 
 // 委托提取申请（协议 10 · 2026-11-16）：状态机见 MANDATE_WITHDRAWAL_STATUS。
@@ -13432,6 +13482,117 @@ export function latestMandatePrice(symbol) {
     .sort((a, b) => String(b.priceAt || b.updatedAt || '').localeCompare(String(a.priceAt || a.updatedAt || '')))[0] || null;
 }
 
+// ---- 单据取数（2026-11-20）：按日回算，禁止用当前持仓冒充历史 ----
+// 结单的期初/期末必须是「那一天的事实」：现金按流水时间戳累加，持仓按成交日累加。
+// 估值价只认「该日或之前」的标记价；没有标记时按成本计，绝不借用未来价格。
+
+// 该客户全部未关闭委托账户（单据聚合用；APP 单账户视图仍走 getMandateAccountForUser）
+export function getMandateAccountsForUser(userId) {
+  return mandateAccounts.filter(a => a.userId === userId && a.status !== MANDATE_ACCOUNT_STATUS.CLOSED);
+}
+
+// 截至某日的标记价：只认 priceAt <= date。没有就返回 null（调用方按成本计），
+// 不能回退「最新一条」——那会让 10 月的结单用上 11 月才录的价格。
+export function latestMandatePriceAsOf(symbol, date) {
+  const d = String(date || '').slice(0, 10);
+  return mandatePriceMarks
+    .filter(m => m.symbol === symbol && String(m.priceAt || '').slice(0, 10) <= d)
+    .sort((a, b) => String(b.priceAt || '').localeCompare(String(a.priceAt || '')))[0] || null;
+}
+
+function mandateCashAsOf(accountId, date, exclusive = false) {
+  const d = String(date || '').slice(0, 10);
+  const map = new Map();
+  cashLedger
+    .filter(e => e.accountId === accountId)
+    .filter(e => {
+      const at = String(e.at || '').slice(0, 10);
+      return exclusive ? at < d : at <= d;
+    })
+    .forEach(e => map.set(e.currency, (map.get(e.currency) || 0) + Number(e.amount || 0)));
+  return Array.from(map, ([currency, balance]) => ({
+    currency, balance, balanceHKD: convertToHKD(balance, currency),
+  }));
+}
+
+function mandatePositionsAsOf(accountId, date, exclusive = false) {
+  const d = String(date || '').slice(0, 10);
+  const map = new Map();
+  mandateTrades
+    .filter(t => t.accountId === accountId && t.status === MANDATE_TRADE_STATUS.ACTIVE)
+    .filter(t => {
+      const td = String(t.tradeDate || '').slice(0, 10);
+      return exclusive ? td < d : td <= d;
+    })
+    .slice()
+    .sort((a, b) => String(a.tradeDate).localeCompare(String(b.tradeDate)) || String(a.id).localeCompare(String(b.id)))
+    .forEach(t => {
+      const row = map.get(t.symbol) || {
+        symbol: t.symbol, name: t.name, currency: t.currency, quantity: 0, buyQty: 0, buyCostHKD: 0,
+      };
+      const q = Number(t.quantity) || 0;
+      if (t.side === 'buy') {
+        row.quantity += q;
+        row.buyQty += q;
+        // 成本含买入费用——与 deriveMandatePositions 同口径，否则同一持仓在
+        // 日结单（按成本估）与账户结单里会差一个手续费（2026-11-20 实测差 7.80）
+        row.buyCostHKD += q * (Number(t.price) || 0) * (Number(t.fxRate) || 1)
+          + (Number(t.fee) || 0) * (Number(t.fxRate) || 1);
+      } else {
+        row.quantity -= q;
+      }
+      if (t.name) row.name = t.name;
+      if (t.currency) row.currency = t.currency;
+      map.set(t.symbol, row);
+    });
+  return Array.from(map.values())
+    .filter(r => r.quantity > 1e-9)
+    .map(r => {
+      const mark = latestMandatePriceAsOf(r.symbol, d);
+      const price = mark ? Number(mark.price) : null;
+      const fxRate = mark ? Number(mark.fxRate) || 1 : 1;
+      const avgCostHKD = r.buyQty > 0 ? r.buyCostHKD / r.buyQty : 0;
+      const marketValueHKD = price != null ? r.quantity * price * fxRate : r.quantity * avgCostHKD;
+      return {
+        symbol: r.symbol, name: r.name, currency: r.currency,
+        quantity: r.quantity, price, fxRate, priceAt: mark?.priceAt || '', method: mark?.method || '',
+        valued: price != null, marketValueHKD,
+      };
+    })
+    .sort((a, b) => a.symbol.localeCompare(b.symbol));
+}
+
+// 期间现金变动：只取落账日在区间内的流水。kind 交给页面用 t() 拼文案，
+// 数据层不拼中文（否则英文界面永远是中文）。
+function mandateFlowsBetween(accountId, from, to) {
+  const f = String(from || '').slice(0, 10);
+  const eEnd = String(to || '').slice(0, 10);
+  return cashLedger
+    .filter(e => e.accountId === accountId)
+    .filter(e => {
+      const at = String(e.at || '').slice(0, 10);
+      return at >= f && at <= eEnd;
+    })
+    .map(e => {
+      const trade = e.refType === 'trade' ? mandateTrades.find(x => x.id === e.refId) : null;
+      const fee = e.refType === 'fee' ? mandateFees.find(x => x.id === e.refId) : null;
+      const kind = trade
+        ? (trade.side === 'sell' ? 'trade-sell' : 'trade-buy')
+        : fee ? 'fee'
+          : e.type === MANDATE_LEDGER_TYPES.TRANSFER_IN ? 'transfer-in'
+            : e.type === MANDATE_LEDGER_TYPES.TRANSFER_OUT ? 'transfer-out'
+              : e.type;
+      return {
+        id: e.id, at: e.at, kind,
+        currency: e.currency, amount: Number(e.amount) || 0,
+        amountHKD: convertToHKD(Number(e.amount) || 0, e.currency),
+        symbol: trade?.symbol || '', quantity: trade?.quantity || 0, side: trade?.side || '',
+        feeType: fee?.type || '', feePeriod: fee?.period || '',
+      };
+    })
+    .sort((a, b) => String(a.at).localeCompare(String(b.at)));
+}
+
 // 派生持仓（含已清仓的符号，用于累计已实现收益）。不导出为状态，每次现算。
 export function deriveMandatePositions(accountId) {
   const map = new Map();
@@ -13897,8 +14058,52 @@ const todayStr = () => {
 
 export function buildDailyStatement(userId = currentUser.id, date = todayStr(), prevTotalHKD = null) {
   const fund = getFundPortfolio(userId);
-  const summary = getMandateSummaryForUser(userId);
-  const mandate = summary.portfolio;
+  // 委托：一个客户可能有多个委托账户，日结单必须覆盖全部（2026-11-20）。
+  // 保留合并字段（cash / positions / totalHKD）供旧页面与月报兜底，另附 accounts 分户明细——
+  // 月报是「每账户一份」，必须能取到自己那一户，不能读合并后的总额。
+  const mandateByAccount = getMandateAccountsForUser(userId)
+    .map(a => ({ account: a, portfolio: getMandatePortfolio(a.id) }))
+    .filter(x => x.portfolio.positions.length > 0 || x.portfolio.cash.length > 0);
+  const mandate = (() => {
+    if (!mandateByAccount.length) return null;
+    const cashMap = new Map();
+    const posMap = new Map();
+    mandateByAccount.forEach(({ portfolio }) => {
+      portfolio.cash.forEach(c => {
+        const row = cashMap.get(c.currency) || { currency: c.currency, balance: 0 };
+        row.balance += Number(c.balance) || 0;
+        cashMap.set(c.currency, row);
+      });
+      portfolio.positions.forEach(p => {
+        const row = posMap.get(p.symbol) || {
+          symbol: p.symbol, name: p.name, quantity: 0, price: p.price,
+          priceAt: p.priceAt, method: p.valuationMethod, marketValueHKD: 0,
+        };
+        row.quantity += Number(p.quantity) || 0;
+        row.marketValueHKD += Number(p.marketValueHKD) || 0;
+        posMap.set(p.symbol, row);
+      });
+    });
+    const accounts = mandateByAccount.map(({ account, portfolio }) => ({
+      id: account.id,
+      no: account.no,
+      cash: portfolio.cash.map(c => ({ currency: c.currency, balance: c.balance })),
+      positions: portfolio.positions.map(p => ({
+        symbol: p.symbol, name: p.name, quantity: p.quantity, price: p.price,
+        priceAt: p.priceAt, method: p.valuationMethod, marketValueHKD: p.marketValueHKD,
+      })),
+      totalHKD: portfolio.totalHKD,
+    }));
+    return {
+      accounts,
+      accountNo: accounts.map(a => a.no).join(' / '),
+      cash: Array.from(cashMap.values()),
+      positions: Array.from(posMap.values()),
+      cashHKD: mandateByAccount.reduce((s, x) => s + x.portfolio.cashHKD, 0),
+      marketValueHKD: mandateByAccount.reduce((s, x) => s + x.portfolio.marketValueHKD, 0),
+      totalHKD: mandateByAccount.reduce((s, x) => s + x.portfolio.totalHKD, 0),
+    };
+  })();
   const pending = [];
 
   // 只收「结算日收盘时仍在途」的指令：之后才提交的不属于这张快照（否则历史日会带出今天的指令）。
@@ -14004,18 +14209,11 @@ export function buildDailyStatement(userId = currentUser.id, date = todayStr(), 
 
   movements.sort((a, b) => String(a.at).localeCompare(String(b.at)));
 
-  const mandateSection = mandate && summary.account ? {
-    accountNo: summary.account.no,
-    cash: mandate.cash.map(c => ({ currency: c.currency, balance: c.balance })),
-    positions: mandate.positions.map(p => ({
-      symbol: p.symbol,
-      name: p.name,
-      quantity: p.quantity,
-      price: p.price,
-      priceAt: p.priceAt,
-      method: p.valuationMethod,
-      marketValueHKD: p.marketValueHKD,
-    })),
+  const mandateSection = mandate ? {
+    accountNo: mandate.accountNo,
+    accounts: mandate.accounts,
+    cash: mandate.cash,
+    positions: mandate.positions,
     marketValueHKD: mandate.marketValueHKD,
     cashHKD: mandate.cashHKD,
     totalHKD: mandate.totalHKD,
@@ -14141,18 +14339,30 @@ export function buildMandateMonthlyReport(accountId, month) {
   seedDailyStatementsOnce();
   const account = mandateAccounts.find(a => a.id === accountId);
   if (!account) return null;
+  // 日结单在 2026-11-20 起改为「客户级聚合」，合并字段里含全部委托账户。
+  // 月报是每账户一份，必须取自己那一户的分户明细；旧快照没有 accounts 时才退回合并字段。
+  // 退回有前提：该客户当前只有一个委托账户。多账户时，旧合并总额无法归属到某一户，
+  // 强行套用会造出「B00009 期初 199,534 → 期末 10,000」这种假变动。
+  const sliceOf = s => s?.mandate?.accounts?.find(a => a.id === accountId) || null;
+  const onlyOneAccount = getMandateAccountsForUser(account.userId).length === 1;
+  const legacyOf = (s) => (onlyOneAccount && s?.mandate
+    ? { totalHKD: s.mandate.totalHKD, positions: s.mandate.positions, cash: s.mandate.cash }
+    : null);
+  // 只统计「这张日结单里确实有本账户」的天数：多账户时，B00009 在开户前的单
+  // 不该计进它的月报天数（否则「已汇总 3 天」却只有 1 天有它的持仓）。
+  const hasAccount = s => !!sliceOf(s) || !!legacyOf(s);
   const inMonth = dailyStatements
-    // 委托月报只统计「含委托账户快照」的日结单：该客户当月只有基金账户时，
-    // 这张单对委托月报没有内容，计进天数会让「已汇总 N 天」与持仓表互相矛盾。
-    .filter(s => s.userId === account.userId && String(s.date).slice(0, 7) === month && s.mandate)
+    .filter(s => s.userId === account.userId && String(s.date).slice(0, 7) === month && s.mandate && hasAccount(s))
     .sort((a, b) => String(a.date).localeCompare(String(b.date)));
   const fees = mandateFees.filter(f => f.accountId === accountId && f.period === month && f.status === 'approved');
   const portfolio = getMandatePortfolio(accountId);
   const first = inMonth[0];
   const last = inMonth[inMonth.length - 1];
+  const firstSlice = sliceOf(first) || legacyOf(first);
+  const lastSlice = sliceOf(last) || legacyOf(last);
   const feeHKD = fees.reduce((s, f) => s + convertToHKD(f.amount, f.currency), 0);
-  const firstTotal = first?.mandate?.totalHKD ?? null;
-  const lastTotal = last?.mandate?.totalHKD ?? null;
+  const firstTotal = firstSlice?.totalHKD ?? null;
+  const lastTotal = lastSlice?.totalHKD ?? null;
   return {
     accountId,
     accountNo: account.no,
@@ -14165,12 +14375,15 @@ export function buildMandateMonthlyReport(accountId, month) {
     changeHKD: firstTotal != null && lastTotal != null ? lastTotal - firstTotal : null,
     fees,
     feeHKD,
-    positions: (last?.mandate?.positions) || portfolio.positions.map(p => ({
+    positions: lastSlice?.positions || portfolio.positions.map(p => ({
       symbol: p.symbol, name: p.name, quantity: p.quantity, price: p.price,
       priceAt: p.priceAt, method: p.valuationMethod, marketValueHKD: p.marketValueHKD,
     })),
-    cash: last?.mandate?.cash || portfolio.cash.map(c => ({ currency: c.currency, balance: c.balance })),
-    statements: inMonth.map(s => ({ id: s.id, date: s.date, totalHKD: s.mandate?.totalHKD ?? 0 })),
+    cash: lastSlice?.cash || portfolio.cash.map(c => ({ currency: c.currency, balance: c.balance })),
+    statements: inMonth.map(s => ({
+      id: s.id, date: s.date,
+      totalHKD: sliceOf(s)?.totalHKD ?? s.mandate?.totalHKD ?? 0,
+    })),
     generatedAt: formatNow(),
   };
 }
