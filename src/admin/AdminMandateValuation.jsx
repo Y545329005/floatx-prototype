@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { X, Save, Search, Pencil } from 'lucide-react';
+import { X, Save, Search, Pencil, Plus } from 'lucide-react';
 import {
   MANDATE_VALUATION_METHODS,
   getMandateValuationBoard,
@@ -17,7 +17,7 @@ import {
 // 且表格始终在视线内（费用复核的行内展开同款语言）。
 //
 // 「未估值」的标的必须留在表内：运营要看到「哪只还没标价」，而不是它消失。
-export default function AdminMandateValuation({ admin }) {
+export default function AdminMandateValuation({ admin, navigate }) {
   const [tick, setTick] = useState(0);
   const [filter, setFilter] = useState('all');
   const [keyword, setKeyword] = useState('');
@@ -80,7 +80,14 @@ export default function AdminMandateValuation({ admin }) {
         <span className="admin-header-summary">
           共 {counts.all} 只标的 · 已估值 {counts.valued} · 未估值 {counts.unvalued}
         </span>
+        <button className="btn btn-md btn-outline" onClick={() => navigate && navigate('#admin/mandate/trades/new')}>
+          <Plus size={16} /> 录入交易
+        </button>
       </div>
+
+      <p className="admin-form-hint">
+        标的来自委托持仓：新增标的请先在「交易」录入买入并复核，复核生效后才会出现在这里。
+      </p>
 
       <div className="admin-view-row">
         <div className="admin-filter-row">
@@ -138,14 +145,18 @@ export default function AdminMandateValuation({ admin }) {
               <span>{v.valued ? (MANDATE_VALUATION_METHODS[v.method] || v.method) : '—'}</span>
               <span className="mandate-subline mandate-coverage">{v.accounts.join(' · ')}</span>
               <span className="col-actions">
-                <button
-                  className="btn-icon"
-                  title="标记估值"
-                  aria-label={`标记 ${v.symbol} 估值`}
-                  onClick={() => startEdit(v)}
-                >
-                  <Pencil size={16} />
-                </button>
+                {v.valued ? (
+                  <button
+                    className="btn-icon"
+                    title="标记估值"
+                    aria-label={`标记 ${v.symbol} 估值`}
+                    onClick={() => startEdit(v)}
+                  >
+                    <Pencil size={16} />
+                  </button>
+                ) : (
+                  <button className="btn-link" title="填写估值" onClick={() => startEdit(v)}>填价</button>
+                )}
               </span>
             </div>
 

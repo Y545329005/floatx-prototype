@@ -30,6 +30,9 @@ const AdminFundTrades = lazy(() => import('./admin/AdminFundTrades'));
 // 委托业务合并页（2026-11-17 IA 收敛）：4 个独立后台页收成 AdminMandate 一页三签，
 // 协议台账并入账户签、特殊申购并入基金交易——旧整页组件不再被路由直接引用
 const AdminMandate = lazy(() => import('./admin/AdminMandate'));
+// 2026-11-20：日结/月报拆成独立菜单（周期性文档，不再塞进委托业务的签里）
+const AdminMandateDaily = lazy(() => import('./admin/AdminMandateDaily'));
+const AdminMandateMonthly = lazy(() => import('./admin/AdminMandateMonthly'));
 const AdminFunds = lazy(() => import('./admin/AdminFunds'));
 const AdminKYC = lazy(() => import('./admin/AdminKYC'));
 const AdminPI = lazy(() => import('./admin/AdminPI'));
@@ -300,21 +303,30 @@ export default function App() {
     // 旧深链归一（2026-11-17 IA 收敛，渲染期纯计算、不改 hash、无导航副作用——与守卫「不做副作用重定向」同约束）：
     // #admin/mandate-accounts/{id} → #admin/mandate/accounts/{id}；#admin/special-subs/{id} → #admin/fund-trades/special/{id}。
     // 协议旧深链 #admin/mandate-agreements/{id} 落协议签（协议抽屉已组件 state 化，不再占 URL）。
+    // 2026-11-20：日结/月报已拆成独立菜单，旧 #admin/mandate/daily|monthly 深链在渲染期归一，
+    // 侧边栏高亮跟着落到新菜单（不改 hash，避免守卫副作用）。
+    const mandateSplit = subPath === 'mandate' && ['daily', 'monthly', 'reports'].includes(hash.param2)
+      ? `mandate-${hash.param2 === 'reports' ? 'daily' : hash.param2}`
+      : null;
     const ADMIN_ROUTE_ALIAS = {
       'mandate-agreements': { sub: 'mandate', tab: 'agreements' },
       'mandate-accounts': { sub: 'mandate', tab: 'accounts' },
       'mandate-trades': { sub: 'mandate', tab: 'trades' },
-      'mandate-reports': { sub: 'mandate', tab: 'daily' },
+      'mandate-reports': { sub: 'mandate-daily' },
       'special-subs': { sub: 'fund-trades', tab: 'special' },
     };
     const legacyRoute = ADMIN_ROUTE_ALIAS[subPath];
-    const effSubRaw = legacyRoute ? legacyRoute.sub : subPath;
-    const effTab = legacyRoute
-      ? (subPath === 'special-subs' ? 'special' : legacyRoute.tab)
-      : hash.param2;
-    const effDetail = legacyRoute
-      ? (subPath === 'mandate-agreements' ? null : hash.param2)
-      : hash.param3;
+    const effSubRaw = mandateSplit || (legacyRoute ? legacyRoute.sub : subPath);
+    const effTab = mandateSplit
+      ? null
+      : legacyRoute
+        ? (subPath === 'special-subs' ? 'special' : legacyRoute.tab)
+        : hash.param2;
+    const effDetail = mandateSplit
+      ? hash.param3
+      : legacyRoute
+        ? (subPath === 'mandate-agreements' ? null : hash.param2)
+        : hash.param3;
     const effP4 = legacyRoute ? (subPath === 'mandate-trades' ? hash.param3 : null) : hash.param4;
 
     const allowedMenus = getRoleMenuKeys(adminUser.role);
@@ -351,6 +363,16 @@ export default function App() {
             {effectiveSub === 'mandate' && (
               <AdminMandate admin={adminUser} tab={effTab} detailId={effDetail} correctionOf={effP4} navigate={navigate} />
             )}
+            {/* 2026-11-20：日结/月报独立菜单。旧 #admin/mandate/daily/{id} 的 id 在 param3，
+                新 #admin/mandate-daily/{id} 的 id 在 param2——两处都要传全，少传不报错但抽屉打不开 */}
+            {effectiveSub === 'mandate-daily' && (
+              <AdminMandateDaily
+                admin={adminUser}
+                detailId={mandateSplit ? hash.param3 : hash.param2}
+                navigate={navigate}
+              />
+            )}
+            {effectiveSub === 'mandate-monthly' && <AdminMandateMonthly admin={adminUser} />}
             {/* 资金审核：tab 走 param2、抽屉走 param3（#admin/funds/{tab}/{id}）；
                 2026-10-28 修复：此前只渲染 <AdminFunds /> 未透传 navigate/tab/detailId，
                 导致点行只改 hash、抽屉永远打不开 → 整个核销动作不可达 */}

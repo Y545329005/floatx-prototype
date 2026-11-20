@@ -9,7 +9,7 @@ import {
 } from '../mock/data';
 import { useDrawerFocus } from './useDrawerFocus';
 
-// 日结签（2026-11-19 从「日结与月报」拆出）
+// 委托日结（2026-11-19 从「日结与月报」拆出；2026-11-20 升为独立菜单）
 //
 // 一行 = 一个客户，不是一份历史单据。运营每天收盘后的真实问题是
 // 「今天谁还没出单」，而不是「翻某个客户的单据列表」——后者只能一次看一户。
@@ -84,7 +84,7 @@ export default function AdminMandateDaily({ admin, detailId, navigate }) {
 
   const selected = detailId ? getDailyStatementById(detailId) : null;
   const drawerOpen = !!selected;
-  const closeDrawer = () => navigate && navigate('#admin/mandate/daily');
+  const closeDrawer = () => navigate && navigate('#admin/mandate-daily');
   const drawerRef = useDrawerFocus(drawerOpen, closeDrawer);
 
   useEffect(() => {
@@ -95,8 +95,9 @@ export default function AdminMandateDaily({ admin, detailId, navigate }) {
   }, [drawerOpen]);
 
   return (
-    <div className="mandate-panel mandate-panel--daily">
-      <div className="mandate-panel-bar">
+    <div className="admin-page admin-page--mandate">
+      <div className="admin-page-header">
+        <h1>委托日结</h1>
         <span className="admin-header-summary">
           共 {counts.all} 户 · 已生成 {counts.done} · 未生成 {counts.pending}
         </span>
@@ -176,8 +177,8 @@ export default function AdminMandateDaily({ admin, detailId, navigate }) {
               className="admin-table-row"
               role={r.todayStmt ? 'button' : undefined}
               tabIndex={r.todayStmt ? 0 : undefined}
-              onClick={r.todayStmt ? () => navigate(`#admin/mandate/daily/${r.todayStmt.id}`) : undefined}
-              onKeyDown={r.todayStmt ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`#admin/mandate/daily/${r.todayStmt.id}`); } }) : undefined}
+              onClick={r.todayStmt ? () => navigate(`#admin/mandate-daily/${r.todayStmt.id}`) : undefined}
+              onKeyDown={r.todayStmt ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`#admin/mandate-daily/${r.todayStmt.id}`); } }) : undefined}
             >
               <span className="col-name">
                 <strong>{r.name}</strong>

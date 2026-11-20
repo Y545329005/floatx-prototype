@@ -51,6 +51,8 @@ const MandateTrades = lazy(() => import('../pages/MandateTrades'));
 const MandateAdvice = lazy(() => import('../pages/MandateAdvice'));
 // 委托域凭证（2026-11-16）：单据页只放委托自己的月报 + 成交通知单；合约事实进独立页
 const MandateStatements = lazy(() => import('../pages/MandateStatements'));
+// 委托月报详情（2026-11-20）：只读已出具快照，版式与账户结单同（单纸 + DocViewport）
+const MandateReport = lazy(() => import('../pages/MandateReport'));
 const MandateAgreement = lazy(() => import('../pages/MandateAgreement'));
 // 全部持仓（2026-11-16）：详情页卡内只放前 5 只，全量走这一页
 const MandateHoldings = lazy(() => import('../pages/MandateHoldings'));
@@ -89,6 +91,8 @@ const SCREEN_GUARD_PATHS = new Set([
   // 委托账户与日结单同属「持仓/资产类敏感页」，一并纳入防切离展示；
   // 提取申请页（2026-11-16）是委托域资金动作页，同口径纳入
   'mandate-detail', 'mandate-withdraw', 'mandate-trades', 'mandate-advice', 'daily-statement',
+  // 委托月报（2026-11-20）与日结单同属敏感单据页
+  'mandate-report',
   // 委托域新增两页（2026-11-16）：委托单据 / 委托协议同属持仓与条款类敏感页
   'mandate-statements', 'mandate-agreement', 'mandate-holdings', 'mandate-cash',
 ]);
@@ -165,6 +169,8 @@ function renderAppPageInner(path, param, ctx) {
     // 委托单据（2026-11-16）：月报 + 成交通知单；不接基金账户结单/交易确认单
     case 'mandate-statements':
       return <MandateStatements navigate={navigate} goBack={goBack} />;
+    case 'mandate-report':
+      return <MandateReport id={param} goBack={goBack} />;
     case 'mandate-agreement':
       return <MandateAgreement goBack={goBack} />;
     // 全部委托持仓（2026-11-16）：详情页卡内预览 5 条，全量在此

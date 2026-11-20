@@ -36,6 +36,7 @@ export default function FundPeriodStatement({ from, to, goBack }) {
     if (f.kind === 'dividend') return t('股息');
     return t('其他');
   };
+  const signed = v => `${v >= 0 ? '+' : '−'}${formatExactAmount(Math.abs(v))}`;
 
   // 下载落一条「申请成功」的导出记录：动作出生即 ready，
   // 不走「processing → 导出记录页 2 秒后推进」——用户刚点完下载却看到「申请中」是假延迟。
@@ -283,9 +284,35 @@ export default function FundPeriodStatement({ from, to, goBack }) {
                     </table>
                   </div>
                 )}
-                <p className="doc-note">{t('期末合计')} HKD {formatExactAmount(a.closingHKD)}</p>
+                <div className="doc-table-wrap">
+                  <table className="doc-table doc-table--fit">
+                    <tbody>
+                      <tr>
+                        <td>{t('期初市值')}</td>
+                        <td className="num">{formatExactAmount(a.openingHKD)}</td>
+                      </tr>
+                      <tr>
+                        <td>{t('期间资金变动')}</td>
+                        <td className={`num ${a.netFlowHKD >= 0 ? 'in' : 'out'}`}>{signed(a.netFlowHKD)}</td>
+                      </tr>
+                      <tr>
+                        <td>{t('市值变动')}</td>
+                        <td className={`num ${a.marketDeltaHKD >= 0 ? 'in' : 'out'}`}>{signed(a.marketDeltaHKD)}</td>
+                      </tr>
+                      <tr className="doc-total">
+                        <td>{t('期末合计')}</td>
+                        <td className="num">{formatExactAmount(a.closingHKD)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             ))}
+            {stmt.mandate.accounts.length > 1 && (
+              <p className="doc-note">
+                {t('委托合计')}：{t('期初市值')} {formatExactAmount(stmt.mandate.openingHKD)} · {t('期间资金变动')} {signed(stmt.mandate.netFlowHKD)} · {t('市值变动')} {signed(stmt.mandate.marketDeltaHKD)} · {t('期末合计')} {formatExactAmount(stmt.mandate.closingHKD)}
+              </p>
+            )}
           </>
         )}
 

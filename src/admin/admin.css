@@ -4000,9 +4000,16 @@
     minmax(96px, 10fr)
     minmax(140px, 14fr)
     minmax(110px, 11fr)
-    minmax(88px, 9fr)
-    minmax(48px, 5fr);
+    minmax(88px, 9fr);
   gap: 16px;
+}
+/* 已终止协议只读：输入不可交互、降透明度，避免「改了但保存不了」的假动作 */
+.mandate-readonly input,
+.mandate-readonly select,
+.mandate-readonly textarea {
+  pointer-events: none;
+  opacity: 0.7;
+  background: var(--bg);
 }
 
 .admin-table--mandate-accounts .admin-table-header,
@@ -4195,9 +4202,22 @@
     minmax(120px, 14fr)
     minmax(110px, 13fr)
     minmax(110px, 13fr)
-    minmax(120px, 15fr);
+    minmax(120px, 15fr)
+    48px;
   gap: 16px;
 }
+/* 出具确认条：动作在抽屉顶部，先说明「出具即冻结」，再给按钮 */
+.mandate-drawer-issue {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+}
+.mandate-drawer-issue .admin-form-hint { margin: 0; }
 .mandate-report-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));

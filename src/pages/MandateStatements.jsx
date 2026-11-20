@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { ArrowLeft, ChevronRight, FileText } from 'lucide-react';
 import {
   getMandateSummaryForUser,
+  getMandateReports,
   mandateTrades,
   MANDATE_TRADE_STATUS,
   formatExactAmount,
@@ -17,9 +18,8 @@ import { useLang } from '../i18n';
    基金账户结单 / 交易确认单属全账户凭证，留在资产页「结单」，两边不交叉
    （2026-11-16 标注：委托账户的单据不得融合非委托数据）。
 
-   月报当前恒为空态：演示账户 2026-11-05 开户，正式月报要期末后 15 个营业日才出。
-   接后端后此处改为渲染月报列表（数据源 = buildMandateMonthlyReport 的出具记录），
-   不按日期在客户端推算「应已出具」，免得月初把上一月误判成已出具。
+   月报只列后台「已出具」的记录（mandateReports 快照）；不按日期在客户端推算
+   「应已出具」——月初把上一月误判成已出具，客户会拿着一张不存在的单据来问。
    ───────────────────────────────────────────────────────────── */
 
 const TABS = [
@@ -43,6 +43,9 @@ export default function MandateStatements({ navigate, goBack }) {
     .filter(x => x.accountId === accountId && x.status === MANDATE_TRADE_STATUS.ACTIVE)
     .slice()
     .sort((a, b) => String(b.tradeDate).localeCompare(String(a.tradeDate))), [accountId]);
+
+  // 月报只列「已出具」：出具时冻结快照，客户端读的是客户当时收到的那一版。
+  const reports = useMemo(() => getMandateReports(accountId), [accountId]);
 
   if (summary.state !== 'active') {
     return (
@@ -81,13 +84,42 @@ export default function MandateStatements({ navigate, goBack }) {
         </div>
       </div>
 
-      {tab === 'report' && (
+      {tab === 'report' && (reports.length === 0 ? (
         <div className="p-statements-empty">
           <FileText size={22} />
           <p className="p-statements-empty-title">{t('暂无已出具月报')}</p>
           <p className="p-statements-empty-hint">{t('月报于每个结算期末后 15 个营业日内提供。')}</p>
         </div>
-      )}
+      ) : (
+        <section className="p-statements-group">
+          <div className="p-statements-card">
+            {reports.map(r => (
+              <button
+                key={r.id}
+                type="button"
+                className="p-statements-row"
+                onClick={() => navigate(`#mandate-report/${r.id}`)}
+              >
+                <span className="p-statements-main">
+                  <span className="p-statements-fund">{r.period} {t('月报')}</span>
+                  <span className="p-statements-line2">
+                    <span className="p-statements-when">
+                      <span className="p-statements-date">{String(r.issuedAt).slice(0, 10)}</span>
+                      <span className="p-statements-dot">·</span>
+                      <span className="p-statements-kind">{t('已出具')}</span>
+                    </span>
+                    <span className="p-statements-amount">
+                      <em>HKD</em>
+                      <b>{formatExactAmount(r.snapshot.closingHKD)}</b>
+                    </span>
+                  </span>
+                </span>
+                <ChevronRight size={18} className="p-statements-go" />
+              </button>
+            ))}
+          </div>
+        </section>
+      ))}
 
       {tab === 'advice' && (advices.length === 0 ? (
         <div className="p-statements-empty">

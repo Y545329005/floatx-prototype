@@ -428,13 +428,13 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
                     <option value="">{accountForm.userId ? '请选择已生效协议' : '请先选择客户'}</option>
                     {agreementsOfUser.map(ag => (
                       <option key={ag.id} value={ag.id}>
-                        {ag.no}（{ag.status === 'active' ? '生效' : ag.status === 'draft' ? '草稿' : '已终止'} · CE {ag.licensedRepCE || '缺'}）
+                        {ag.no}（{ag.status === 'active' ? '生效' : '已终止'} · CE {ag.licensedRepCE || '缺'}）
                       </option>
                     ))}
                   </select>
                 </div>
                 {accountForm.userId && agreementsOfUser.length === 0 && (
-                  <div className="mandate-gate-warn"><AlertTriangle size={15} /> 该客户没有登记委托协议，不能开户。请先在上方「委托协议台账」登记并生效。</div>
+                  <div className="mandate-gate-warn"><AlertTriangle size={15} /> 该客户没有生效的委托协议，不能开户。请先在「委托业务 → 协议」登记（保存即生效）。</div>
                 )}
                 {gate && !gate.ok && <div className="mandate-gate-warn"><AlertTriangle size={15} /> {gate.error}</div>}
                 {gate && gate.ok && <div className="admin-form-hint">协议校验通过，可以开户。开户后为「待授权」，需合规复核后才在 APP 显示。</div>}

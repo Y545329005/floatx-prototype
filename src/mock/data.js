@@ -2730,17 +2730,22 @@ export function buildPeriodStatement({ from, to, userId = currentUser.id } = {})
       const openingHKD = Math.round((sumHKD(cashOpening) + sumHKD(openingPositions)) * 100) / 100;
       const feeHKD = Math.round(flows.filter(x => x.kind === 'fee')
         .reduce((s, x) => s + Math.abs(x.amountHKD), 0) * 100) / 100;
+      // 差额必须能拆：期初 + 期间资金变动 + 市值变动 = 期末。
+      // 市值变动是残差（没有逐日估值序列，硬拆成个股涨跌就是编）。
+      const netFlowHKD = Math.round(flows.reduce((s, x) => s + Number(x.amountHKD || 0), 0) * 100) / 100;
       return {
         id: a.id, no: a.no, name: a.userName,
         cashOpening, cashClosing, positions: closingPositions, openingPositions,
         flows, trades: mandateTradesInRange, feeHKD,
-        openingHKD, closingHKD,
+        openingHKD, closingHKD, netFlowHKD,
+        marketDeltaHKD: Math.round((closingHKD - openingHKD - netFlowHKD) * 100) / 100,
       };
     })
     .filter(a => a.closingHKD > 0.005 || a.openingHKD > 0.005 || a.flows.length > 0 || a.trades.length > 0);
 
   const mandateClosingHKD = Math.round(mandateStatementAccounts.reduce((s, a) => s + a.closingHKD, 0) * 100) / 100;
   const mandateOpeningHKD = Math.round(mandateStatementAccounts.reduce((s, a) => s + a.openingHKD, 0) * 100) / 100;
+  const mandateNetFlowHKD = Math.round(mandateStatementAccounts.reduce((s, a) => s + a.netFlowHKD, 0) * 100) / 100;
 
   const closingHKD = Math.round((balances.reduce((s, b) => s + b.closingHKD, 0)
     + fundPositions.reduce((s, p) => s + p.closingHKD, 0)
@@ -2776,7 +2781,13 @@ export function buildPeriodStatement({ from, to, userId = currentUser.id } = {})
     fundPositions,
     // 委托小节：null = 该期间无委托账户，页面不渲染整节（不显示空表）
     mandate: mandateStatementAccounts.length
-      ? { accounts: mandateStatementAccounts, openingHKD: mandateOpeningHKD, closingHKD: mandateClosingHKD }
+      ? {
+        accounts: mandateStatementAccounts,
+        openingHKD: mandateOpeningHKD,
+        closingHKD: mandateClosingHKD,
+        netFlowHKD: mandateNetFlowHKD,
+        marketDeltaHKD: Math.round((mandateClosingHKD - mandateOpeningHKD - mandateNetFlowHKD) * 100) / 100,
+      }
       : null,
     openingHKD,
     closingHKD,
@@ -6251,6 +6262,10 @@ export const ADMIN_MENUS = [
   // 2026-11-17 IA 收敛（方案 A）：组内 4 菜单收成一页多签（#admin/mandate/{accounts|trades|reports}），
   // 协议台账并入账户签（协议是开户流程第一步，不是独立管理域）——按运营任务切，不按数据表切。
   { key: 'mandate', label: '委托业务', hash: '#admin/mandate', group: '委托' },
+  // 2026-11-20 IA 二次拆分：日结/月报是周期性文档（一个按天批量作业、一个按月末出具），
+  // 与协议/账户/交易/估值的日常台账不是同一类工作面，拆成独立菜单；委托业务只留四签。
+  { key: 'mandate-daily', label: '委托日结', hash: '#admin/mandate-daily', group: '委托' },
+  { key: 'mandate-monthly', label: '委托月报', hash: '#admin/mandate-monthly', group: '委托' },
   { key: 'funds', label: '资金审核', hash: '#admin/funds', group: '资金' },
   { key: 'broadcast', label: '通知触达', hash: '#admin/broadcast', group: '运营' },
   { key: 'messages', label: '客户消息', hash: '#admin/messages', group: '运营' }, // 客服工作台（2026-08-24）：响应式 1v1 咨询，与广播（主动触达）相邻成对；service+super
@@ -6267,8 +6282,8 @@ export const roleMenuKeys = {
   // 超级管理员 = 最高权限：全部菜单（2026-08-15 用户确认"所有页面所有功能都有"——my-clients 原 advisor 专属，补上）；锁定不可编辑
   // 2026-10-16 口径修订：问卷记录恢复（意向收集链），其余资金/交易/投后 10 key 保持摘除
   // 2026-11-17 IA 收敛：mandate-* 四 key + special-subs → mandate / fund-trades
-  super: ['kyc', 'pi', 'users', 'my-clients', 'projects', 'events', 'registrations', 'subscriptions', 'fund-products', 'fund-trades', 'mandate', 'funds', 'broadcast', 'messages', 'audit', 'roles', 'admins', 'config'],
-  ops: ['projects', 'events', 'registrations', 'subscriptions', 'fund-products', 'fund-trades', 'mandate', 'funds', 'broadcast', 'users', 'config'],
+  super: ['kyc', 'pi', 'users', 'my-clients', 'projects', 'events', 'registrations', 'subscriptions', 'fund-products', 'fund-trades', 'mandate', 'mandate-daily', 'mandate-monthly', 'funds', 'broadcast', 'messages', 'audit', 'roles', 'admins', 'config'],
+  ops: ['projects', 'events', 'registrations', 'subscriptions', 'fund-products', 'fund-trades', 'mandate', 'mandate-daily', 'mandate-monthly', 'funds', 'broadcast', 'users', 'config'],
   // 合规角色：KYC审核 + PI认证 + 用户管理 + 问卷记录 + 审计日志（交易监控类 7 key 随资金流下线摘除）
   // 2026-11-13：委托协议归合规（协议档案由合规登记、super 复核）+ 委托账户授权复核（Maker-Checker 的 Checker）
   // 2026-11-17：委托域收成一页（mandate），协议台账在账户签内，合规仍管登记与授权复核
@@ -6277,7 +6292,7 @@ export const roleMenuKeys = {
   service: ['subscriptions', 'users', 'broadcast', 'messages'],
   // 财务专员：资金核销（充值到账/提现打款/换汇确认）+ 基金交易确认（2026-10-28 一期闭环恢复）
   // 2026-11-13：委托交易与估值、日结单与月报归财务（估值留痕 + 费用扣减 + 每日快照）→ 2026-11-17 收进 mandate 一页
-  finance: ['funds', 'fund-trades', 'mandate'],
+  finance: ['funds', 'fund-trades', 'mandate', 'mandate-daily', 'mandate-monthly'],
   // 专属顾问：「我的客户」单一工作视图（2026-08-15 方案 A——顾问工作单元 = 客户而非模块，
   // 名下客户列表 + 跨模块任务聚合 + 客户详情；替代报名管理，线索跟进并入我的客户「跟进」）
   advisor: ['my-clients'],
@@ -6289,9 +6304,10 @@ export const roleMenuKeys = {
 // 2026-11-13：key 升 v6（新增 mandate-* 四菜单 + special-subs）。
 // 2026-11-17：key 升 v7（IA 收敛：mandate-* 四 key + special-subs 合并为 mandate/fund-trades——
 // 旧覆盖表只含旧 key，VALID 过滤后 mandate 消失，与 v3/v6 同源，升 key 让覆盖失效回默认值）。
+// 2026-11-20：key 升 v8（日结/月报拆独立菜单 mandate-daily / mandate-monthly，同源原因）。
 // 与 v1→v2、v2→v3、v3→v4 同源：getRoleMenuKeys 只做 VALID 过滤、不补默认值，
 // 老浏览器里存过的覆盖表不含新 key，不升版新菜单会整片消失。
-const ROLE_MENUS_KEY = 'zhifu-admin-role-menus-v7';
+const ROLE_MENUS_KEY = 'zhifu-admin-role-menus-v8';
 function getRoleMenuOverrides() {
   try {
     const raw = localStorage.getItem(ROLE_MENUS_KEY);
@@ -10375,7 +10391,7 @@ export function submitSubscription({ project, amount, currency = 'HKD' }) {
 //     一并核对（参考代码 + 到账付款人姓名与客户实名一致 + 卡资料），后台改事后复核（仅拒绝）。
 //     bankCards 属快照恢复范围，旧快照里 reviewStatus='pending' 的卡在新链路下没有审核队列可进，
 //     会永远卡在「审核中」且不可用于充值——迁移统一转 approved（待首充）。
-const STATE_VERSION = 63;
+const STATE_VERSION = 64;
 
 // ========== 快照迁移（2026-11-05） ==========
 // 机制：load 时按版本逐级跑迁移函数，跑不到 STATE_VERSION 才整体丢弃。
@@ -10429,6 +10445,20 @@ const SNAPSHOT_MIGRATIONS = {
           if (!next.suspendedBy) next.suspendedBy = c.reviewedBy || null;
         }
         return next;
+      });
+    }
+    return data;
+  },
+  // 63 → 64：委托协议取消「草稿」（2026-11-20）。协议是线下签署后录入，系统里不存在未签草稿；
+  // 旧 draft 统一转 active，缺签署日用 createdAt 的日期补、生效日取签署日。
+  // 缺 CE 的记录保留（列表已标「未填，不能开户」），不编造 CE。
+  63: (data) => {
+    if (Array.isArray(data.mandateAgreements)) {
+      data.mandateAgreements = data.mandateAgreements.map(ag => {
+        if (!ag || ag.status !== 'draft') return ag;
+        const signedAt = ag.signedAt
+          || (ag.createdAt ? `${String(ag.createdAt).slice(0, 10)} 00:00:00` : '');
+        return { ...ag, status: 'active', signedAt, effectiveAt: ag.effectiveAt || signedAt };
       });
     }
     return data;
@@ -11128,6 +11158,8 @@ export const Storage = {
         // 委托提取（2026-11-16）：追加型，旧快照缺 key 时保留代码种子，不升 STATE_VERSION
         mandateWithdrawals: mandateWithdrawals,
         dailyStatements: dailyStatements,
+        // 委托月报出具记录（2026-11-20）：追加型，旧快照缺 key 时保留默认空表
+        mandateReports: mandateReports,
         specialSubscriptionApprovals: specialSubscriptionApprovals,
         // 基金产品（2026-10-28）：后台「基金产品管理」改了条款/文件/净值必须刷新保留。
         // 只存产品本体，不存由它派生的展示文案（那边已经改成按数字生成）。
@@ -11311,6 +11343,7 @@ export const Storage = {
       restoreMandateArray(mandateStandingAuth, data.mandateStandingAuth);
       restoreMandateArray(mandateWithdrawals, data.mandateWithdrawals);
       restoreMandateArray(dailyStatements, data.dailyStatements);
+      restoreMandateArray(mandateReports, data.mandateReports);
       restoreMandateArray(specialSubscriptionApprovals, data.specialSubscriptionApprovals);
       // 日结单快照存在即视为已播种（否则 getDailyStatements 会再补一份历史，和快照叠加）
       if (Array.isArray(data.dailyStatements)) dailyStatementSeeded = true;
@@ -12780,6 +12813,36 @@ export const mandateAgreements = [
     createdAt: '2026-11-16 14:30:00',
     createdBy: '李合规',
   },
+  // 第三份协议（2026-11-20）：李四，已终止。覆盖「已终止」筛选分支；
+  // 终止后不建户，因此不影响任何资金/持仓/月报数字。
+  {
+    id: 'mag3',
+    no: 'HB-DA-2026-003',
+    userId: 'u2',
+    userName: '李四',
+    status: 'terminated',
+    signedAt: '2026-10-20 15:00:00',
+    effectiveAt: '2026-10-21 00:00:00',
+    terminatedAt: '2026-11-02 10:00:00',
+    clientWitness: '陈大文',
+    managerDirector: '黎国基',
+    licensedRepName: '林景湖',
+    licensedRepCE: 'BJW456',
+    language: 'zh-HK',
+    scanUrl: null,
+    version: 'v1.0',
+    fees: { managementPct: 1.5, inceptionPct: 0, performancePct: 20, hurdlePct: 8, minimumValue: 1000000 },
+    strategy: {
+      objectives: '以港股上市证券为主，追求中长期资本增值。',
+      policy: '由持牌基金经理全权决定买入、持有与卖出。',
+      limits: { singleCompanyPct: 20, singleIssuerPct: 30, borrowingPct: 0 },
+    },
+    valuationCurrency: 'HKD',
+    valuationCycle: 'monthly',
+    reportingPeriod: 'monthly',
+    createdAt: '2026-10-20 15:00:00',
+    createdBy: '李合规',
+  },
 ];
 
 // 委托账户 B 号。auth 双人：ops 发起授权、compliance 复核，两人不得同一人（Maker-Checker）。
@@ -13404,11 +13467,29 @@ export function updateMandateConfig(patch = {}, operator = '') {
 
 // ---- 协议档案 CRUD（后台） ----
 
+// 协议条款的字段级变更摘要：生效后仍可更正录入错误，但每次保存必须留「改了什么」。
+// 只记关键合同字段；备注/见证人等文字字段不逐字比对，避免审计被噪声淹没。
+function agreementChanges(before, after) {
+  const out = [];
+  const feeLabels = { managementPct: '管理费', inceptionPct: '设立费', performancePct: '表现费', hurdlePct: '门槛', minimumValue: '最低投资额' };
+  Object.entries(feeLabels).forEach(([k, label]) => {
+    const a = Number(before?.fees?.[k] || 0);
+    const b = Number(after?.fees?.[k] || 0);
+    if (a !== b) out.push(`${label} ${a}→${b}`);
+  });
+  if (String(before?.signedAt || '') !== String(after?.signedAt || '')) out.push(`签署日 ${before?.signedAt || '—'}→${after?.signedAt || '—'}`);
+  if (String(before?.effectiveAt || '') !== String(after?.effectiveAt || '')) out.push(`生效日 ${before?.effectiveAt || '—'}→${after?.effectiveAt || '—'}`);
+  if (String(before?.licensedRepCE || '') !== String(after?.licensedRepCE || '')) out.push(`CE ${before?.licensedRepCE || '—'}→${after?.licensedRepCE || '—'}`);
+  return out;
+}
+
 export function saveMandateAgreement(payload = {}, operator = '') {
   const editing = payload.id ? mandateAgreements.find(a => a.id === payload.id) : null;
   const base = editing ? { ...editing } : {
     id: `mag${Date.now()}`,
-    status: 'draft',
+    // 2026-11-20：协议是线下签署后录入，系统里不存在「未签的草稿」。
+    // 保存即生效；录入不完整由表单必填与 CE 闸门拦，不再用草稿态兜。
+    status: 'active',
     terminatedAt: null,
     scanUrl: null,
     version: 'v1.0',
@@ -13428,10 +13509,34 @@ export function saveMandateAgreement(payload = {}, operator = '') {
   if (!next.no) return { ok: false, error: '请填写协议编号' };
   if (!next.userId) return { ok: false, error: '请选择客户' };
   if (!next.licensedRepCE) return { ok: false, error: '请填写持牌代表 CE 编号' };
+  if (editing && editing.status === 'terminated') {
+    return { ok: false, error: '已终止协议只读；如需变更请重新登记一份' };
+  }
+  if (!editing && !String(next.signedAt || '').trim()) {
+    return { ok: false, error: '请填写客户签署日期（协议为线下签署后录入）' };
+  }
+  if (!String(next.effectiveAt || '').trim()) next.effectiveAt = next.signedAt;
+  if (String(next.effectiveAt).slice(0, 10) > todayStr()) {
+    return { ok: false, error: '生效日不能晚于今天（协议为线下签署后录入，保存即生效）' };
+  }
+  const otherActive = mandateAgreements.find(a => a.id !== next.id && a.userId === next.userId && a.status === 'active');
+  if (otherActive) {
+    return { ok: false, error: `该客户已有生效协议 ${otherActive.no}，请先终止后再登记` };
+  }
   if (mandateAgreements.some(a => a.id !== next.id && a.no === next.no)) return { ok: false, error: '协议编号重复' };
+  const changes = editing ? agreementChanges(editing, next) : [];
   if (editing) Object.assign(editing, next);
   else mandateAgreements.unshift(next);
-  logAudit({ operator: operator || '合规后台', category: 'mandate', action: editing ? 'update' : 'create', target: next.userName, targetId: next.id, note: `委托协议 ${next.no} ${editing ? '更新' : '登记'}（CE ${next.licensedRepCE}）` });
+  logAudit({
+    operator: operator || '合规后台',
+    category: 'mandate',
+    action: editing ? 'update' : 'create',
+    target: next.userName,
+    targetId: next.id,
+    note: editing
+      ? `委托协议 ${next.no} 更新${changes.length ? `：${changes.join('；')}` : '（无合同字段变化）'}`
+      : `委托协议 ${next.no} 登记并生效（CE ${next.licensedRepCE}）`,
+  });
   Storage.save();
   return { ok: true, agreement: next };
 }
@@ -13439,22 +13544,17 @@ export function saveMandateAgreement(payload = {}, operator = '') {
 export function setMandateAgreementStatus(id, status, terminatedAt = null, operator = '') {
   const ag = mandateAgreements.find(a => a.id === id);
   if (!ag) return { ok: false, error: '协议不存在' };
-  if (!['draft', 'active', 'terminated'].includes(status)) return { ok: false, error: '未知状态' };
-  if (status === 'active') {
-    if (!ag.licensedRepCE) return { ok: false, error: '缺少持牌代表 CE 编号，不能生效' };
-    if (!ag.signedAt) return { ok: false, error: '缺少签署日期，不能生效' };
-    ag.effectiveAt = ag.effectiveAt || formatNow();
-  }
-  if (status === 'terminated') {
-    ag.terminatedAt = terminatedAt || formatNow();
-    // 协议终止 → 账户同步终止（协议是账户存在的法律依据）
-    mandateAccounts.forEach(a => {
-      if (a.agreementId === id && a.status !== MANDATE_ACCOUNT_STATUS.CLOSED) {
-        a.status = MANDATE_ACCOUNT_STATUS.CLOSED;
-        a.visibleInApp = false;
-      }
-    });
-  }
+  // 2026-11-20：保存即生效，状态机只剩「生效 → 已终止」。
+  // 保留 active 分支会让已终止协议被改回生效，而关联账户不会自动重开，两处状态打架。
+  if (status !== 'terminated') return { ok: false, error: '协议保存即生效，只能终止' };
+  ag.terminatedAt = terminatedAt || formatNow();
+  // 协议终止 → 账户同步终止（协议是账户存在的法律依据）
+  mandateAccounts.forEach(a => {
+    if (a.agreementId === id && a.status !== MANDATE_ACCOUNT_STATUS.CLOSED) {
+      a.status = MANDATE_ACCOUNT_STATUS.CLOSED;
+      a.visibleInApp = false;
+    }
+  });
   ag.status = status;
   logAudit({ operator: operator || '合规后台', category: 'mandate', action: 'update', target: ag.userName, targetId: ag.id, note: `委托协议 ${ag.no} → ${status}` });
   Storage.save();
@@ -13585,6 +13685,11 @@ export const mandateStandingAuth = [
 // 日结单（覆盖三类账户；唯一允许持久化的派生快照——历史不能拿今天的净值重构）
 export const dailyStatements = [];
 
+// 委托月报出具记录（2026-11-20）：协议 11.3 的「出具」是独立实体。
+// 月报数据由日结单派生，但「谁在何时把哪一版出具给客户」必须冻结——
+// 之后日结单重生成或补录，不得改写已出具的月报。
+export const mandateReports = [];
+
 let dailyStatementSeeded = false;
 
 // ---- 估值与持仓派生 ----
@@ -13705,6 +13810,20 @@ function mandateFlowsBetween(accountId, from, to) {
       };
     })
     .sort((a, b) => String(a.at).localeCompare(String(b.at)));
+}
+
+// 截至某日的委托组合（日结单历史种子用）：现金与持仓都按时间戳回算，
+// 估值只认该日或之前的标记价。与「今天的组合」同形，方便日结单复用同一套渲染。
+function mandatePortfolioAsOf(accountId, date) {
+  const positions = mandatePositionsAsOf(accountId, date).map(p => ({
+    ...p,
+    price: p.price == null ? 0 : p.price,
+    valuationMethod: p.method || 'listed',
+  }));
+  const cash = mandateCashAsOf(accountId, date);
+  const cashHKD = cash.reduce((s, c) => s + Number(c.balanceHKD || 0), 0);
+  const marketValueHKD = positions.reduce((s, p) => s + Number(p.marketValueHKD || 0), 0);
+  return { positions, cash, cashHKD, marketValueHKD, totalHKD: cashHKD + marketValueHKD };
 }
 
 // 派生持仓（含已清仓的符号，用于累计已实现收益）。不导出为状态，每次现算。
@@ -14182,10 +14301,14 @@ export function buildDailyStatement(userId = currentUser.id, date = todayStr(), 
   const prevAdjacent = !!prevStatement && String(prevStatement.date) === dayBefore(date);
   const fund = getFundPortfolio(userId);
   // 委托：一个客户可能有多个委托账户，日结单必须覆盖全部（2026-11-20）。
-  // 保留合并字段（cash / positions / totalHKD）供旧页面与月报兜底，另附 accounts 分户明细——
-  // 月报是「每账户一份」，必须能取到自己那一户，不能读合并后的总额。
-  const mandateByAccount = getMandateAccountsForUser(userId)
-    .map(a => ({ account: a, portfolio: getMandatePortfolio(a.id) }))
+  // 历史日（种子 11-11 / 11-12）必须按结算日回算：现金取流水、持仓取成交、估值取当日或之前标记价。
+  // 用今天的组合生成历史单，会让「11-11」带上 11-13 才划出的钱，月报期间变动也恒为 0。
+  const isToday = String(date) === todayStr();
+  const accountsForDate = isToday
+    ? getMandateAccountsForUser(userId)
+    : mandateAccounts.filter(a => a.userId === userId && String(a.openedAt || '').slice(0, 10) <= date);
+  const mandateByAccount = accountsForDate
+    .map(a => ({ account: a, portfolio: isToday ? getMandatePortfolio(a.id) : mandatePortfolioAsOf(a.id, date) }))
     .filter(x => x.portfolio.positions.length > 0 || x.portfolio.cash.length > 0);
   const mandate = (() => {
     if (!mandateByAccount.length) return null;
@@ -14505,29 +14628,127 @@ export function buildMandateMonthlyReport(accountId, month) {
   const feeHKD = fees.reduce((s, f) => s + convertToHKD(f.amount, f.currency), 0);
   const firstTotal = firstSlice?.totalHKD ?? null;
   const lastTotal = lastSlice?.totalHKD ?? null;
+  const changeHKD = firstTotal != null && lastTotal != null ? lastTotal - firstTotal : null;
+  // 差额窗口 =（首份日结日, 末份日结日]：期初已经含首份之前的流水，不能重复计。
+  const dayAfter = (d) => {
+    const t = new Date(`${d}T00:00:00`);
+    if (Number.isNaN(t.getTime())) return d;
+    t.setDate(t.getDate() + 1);
+    const p = n => String(n).padStart(2, '0');
+    return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}`;
+  };
+  const flows = first && last ? mandateFlowsBetween(accountId, dayAfter(first.date), last.date) : [];
+  const netFlowHKD = Math.round(flows.reduce((s, f) => s + Number(f.amountHKD || 0), 0) * 100) / 100;
+  const marketDeltaHKD = changeHKD == null ? null : Math.round((changeHKD - netFlowHKD) * 100) / 100;
+  const positions = lastSlice?.positions || portfolio.positions.map(p => ({
+    symbol: p.symbol, name: p.name, quantity: p.quantity, price: p.price,
+    priceAt: p.priceAt, method: p.valuationMethod, marketValueHKD: p.marketValueHKD,
+  }));
+  const cash = lastSlice?.cash || portfolio.cash.map(c => ({ currency: c.currency, balance: c.balance }));
+  // 汇率表：折合数必须能由读者自己乘出来；只列本报告真正出现的币种。
+  const fxCurrencies = Array.from(new Set([
+    ...positions.map(p => p.currency),
+    ...cash.map(c => c.currency),
+    ...fees.map(f => f.currency),
+  ])).filter(Boolean);
+  const fx = fxCurrencies.map(code => {
+    const asset = cryptoAssets.find(a => a.code === code);
+    const rate = code === 'HKD' ? 1 : (asset ? asset.hkdRate : convertToHKD(1, code));
+    const meta = exchangeRates[`${String(code).toLowerCase()}-hkd`];
+    return { currency: code, rate, updatedAt: meta?.updatedAt || '' };
+  }).filter(r => r.rate > 0);
   return {
     accountId,
     accountNo: account.no,
+    userName: account.userName,
     month,
     days: inMonth.length,
     openingHKD: firstTotal,
     closingHKD: lastTotal ?? portfolio.totalHKD,
     // 日结单里 mandate 可能为 null（该客户当月只有基金账户、无委托持仓）：
     // 直接读 last.mandate.totalHKD 会让整页 ErrorBoundary 崩掉（2026-11-19 实测）。
-    changeHKD: firstTotal != null && lastTotal != null ? lastTotal - firstTotal : null,
+    changeHKD,
+    netFlowHKD,
+    marketDeltaHKD,
+    flows,
     fees,
     feeHKD,
-    positions: lastSlice?.positions || portfolio.positions.map(p => ({
-      symbol: p.symbol, name: p.name, quantity: p.quantity, price: p.price,
-      priceAt: p.priceAt, method: p.valuationMethod, marketValueHKD: p.marketValueHKD,
-    })),
-    cash: lastSlice?.cash || portfolio.cash.map(c => ({ currency: c.currency, balance: c.balance })),
+    positions,
+    cash,
+    fx,
     statements: inMonth.map(s => ({
       id: s.id, date: s.date,
       totalHKD: sliceOf(s)?.totalHKD ?? s.mandate?.totalHKD ?? 0,
     })),
     generatedAt: formatNow(),
   };
+}
+
+// ---- 月报出具（协议 11.3，2026-11-20） ----
+// 数据由日结单派生，但「出具」是独立动作：出具时把当期结果冻结成快照，
+// 之后日结单重生成、费用补录都不得改写已出具的月报（审计要能拿到客户当时收到的那一版）。
+
+export function getMandateReports(accountId = null) {
+  return mandateReports
+    .filter(r => !accountId || r.accountId === accountId)
+    .slice()
+    .sort((a, b) => String(b.period).localeCompare(String(a.period))
+      || String(b.issuedAt).localeCompare(String(a.issuedAt)));
+}
+
+export function getMandateReportById(id) {
+  return mandateReports.find(r => r.id === id) || null;
+}
+
+export function getMandateReportOf(accountId, period) {
+  return mandateReports.find(r => r.accountId === accountId && r.period === period) || null;
+}
+
+export function issueMandateMonthlyReport(accountId, period, operator = '') {
+  const account = mandateAccounts.find(a => a.id === accountId);
+  if (!account) return { ok: false, error: '账户不存在' };
+  if (!/^\d{4}-\d{2}$/.test(String(period || ''))) return { ok: false, error: '期间格式为 YYYY-MM' };
+  if (getMandateReportOf(accountId, period)) return { ok: false, error: '该期间月报已出具，不能重复出具' };
+  const report = buildMandateMonthlyReport(accountId, period);
+  if (!report || report.days === 0) return { ok: false, error: '该期间没有日结单，不能出具月报' };
+  const issuedAt = formatNow();
+  const record = {
+    id: `mrp${Date.now()}`,
+    docNo: `MR-${String(period).replace('-', '')}-${account.no}`,
+    accountId,
+    accountNo: account.no,
+    userId: account.userId,
+    userName: account.userName,
+    period,
+    issuedAt,
+    issuedBy: operator || '运营后台',
+    // 快照冻结：字段与页面一一对应，渲染端不再回算任何数字
+    snapshot: {
+      days: report.days,
+      openingHKD: report.openingHKD,
+      closingHKD: report.closingHKD,
+      changeHKD: report.changeHKD,
+      netFlowHKD: report.netFlowHKD,
+      marketDeltaHKD: report.marketDeltaHKD,
+      feeHKD: report.feeHKD,
+      fees: report.fees.map(f => ({ id: f.id, period: f.period, type: f.type, amount: f.amount, currency: f.currency })),
+      positions: report.positions.map(p => ({ ...p })),
+      cash: report.cash.map(c => ({ ...c })),
+      fx: report.fx.map(f => ({ ...f })),
+      statements: report.statements.map(s => ({ ...s })),
+    },
+  };
+  mandateReports.unshift(record);
+  logAudit({
+    operator: record.issuedBy,
+    category: 'mandate',
+    action: 'create',
+    target: account.userName,
+    targetId: record.id,
+    note: `出具委托月报 ${period}（${account.no}），期末 HK$${formatExactAmount(report.closingHKD)}`,
+  });
+  Storage.save();
+  return { ok: true, report: record };
 }
 
 // 日结单种子在模块加载时生成一次（2026-11-13）：

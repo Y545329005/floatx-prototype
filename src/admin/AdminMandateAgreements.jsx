@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { X, Save, Plus, Power, Ban, Search } from 'lucide-react';
+import { X, Save, Plus, Ban, Search } from 'lucide-react';
 import {
   mandateAgreements,
   mandateConfig,
@@ -22,7 +22,6 @@ import { useDrawerFocus } from './useDrawerFocus';
 // 抽屉走组件内 state（低频台账，不占 URL 深链；旧深链由 ADMIN_ROUTE_ALIAS 落本签）。
 
 const STATUS_META = {
-  draft: { label: '草稿', cls: 'admin-status-pending' },
   active: { label: '生效', cls: 'admin-status-approved' },
   terminated: { label: '已终止', cls: 'admin-status-closed' },
 };
@@ -95,6 +94,8 @@ export default function MandateAgreementLedger({ admin, onChanged }) {
   const operator = admin?.name || '合规后台';
   const isNew = openId === 'new';
   const selected = openId && !isNew ? mandateAgreements.find(a => a.id === openId) : null;
+  // 2026-11-20：协议保存即生效，状态机只剩 生效 / 已终止；已终止只读（改动请重新登记）。
+  const readOnly = !isNew && selected?.status === 'terminated';
   const drawerOpen = openId != null && (isNew || !!selected);
 
   const investors = useMemo(() => getInvestorUsers(), [tick]);
@@ -104,7 +105,6 @@ export default function MandateAgreementLedger({ admin, onChanged }) {
   const statusCounts = {
     all: mandateAgreements.length,
     active: mandateAgreements.filter(a => a.status === 'active').length,
-    draft: mandateAgreements.filter(a => a.status === 'draft').length,
     terminated: mandateAgreements.filter(a => a.status === 'terminated').length,
   };
   const filtered = mandateAgreements.filter(ag => {
@@ -193,7 +193,7 @@ export default function MandateAgreementLedger({ admin, onChanged }) {
       <div className="mandate-panel-bar">
         {/* 面板工具栏只留存量统计 + 主按钮（与 AdminUsers/AdminProjects 页头同款）；
             队列数在页签 badge，规则说明留在抽屉与数据层，不占页头。 */}
-        <span className="admin-header-summary">共 {statusCounts.all} 份 · 生效 {statusCounts.active} · 草稿 {statusCounts.draft}</span>
+        <span className="admin-header-summary">共 {statusCounts.all} 份 · 生效 {statusCounts.active} · 已终止 {statusCounts.terminated}</span>
         <button className="btn btn-md btn-primary" onClick={() => setOpenId('new')}>
           <Plus size={16} /> 登记委托协议
         </button>
@@ -204,7 +204,6 @@ export default function MandateAgreementLedger({ admin, onChanged }) {
           {[
             { key: 'all', label: '全部' },
             { key: 'active', label: '生效' },
-            { key: 'draft', label: '草稿' },
             { key: 'terminated', label: '已终止' },
           ].map(f => (
             <button
@@ -238,10 +237,9 @@ export default function MandateAgreementLedger({ admin, onChanged }) {
           <span>持牌代表</span>
           <span className="col-amount">最低投资额</span>
           <span>状态</span>
-          <span className="col-actions">操作</span>
         </div>
         {pageRows.map(ag => {
-          const meta = STATUS_META[ag.status] || STATUS_META.draft;
+          const meta = STATUS_META[ag.status] || { label: ag.status || '—', cls: '' };
           return (
             <div
               key={ag.id}
@@ -262,15 +260,6 @@ export default function MandateAgreementLedger({ admin, onChanged }) {
               </span>
               <span className="col-amount">{Number(ag.fees?.minimumValue || 0).toLocaleString()}</span>
               <span><span className={`status-badge ${meta.cls}`}>{meta.label}</span></span>
-              <span className="col-actions">
-                {/* 操作列 = 下一步动作（btn-icon + 动词 tooltip）：草稿的唯一下一步是生效，点击落抽屉完成；
-                    生效/已终止无下一步动作，列留空。原「编辑」btn-icon 删除——行本身可点即详情入口，双入口冗余。 */}
-                {ag.status === 'draft' && (
-                  <button className="btn-icon" title="生效" aria-label="生效（打开协议完成生效）" onClick={e => { e.stopPropagation(); setOpenId(ag.id); }}>
-                    <Power size={16} />
-                  </button>
-                )}
-              </span>
             </div>
           );
         })}
@@ -302,8 +291,14 @@ export default function MandateAgreementLedger({ admin, onChanged }) {
             <button className="btn-icon" title="关闭" onClick={closeDrawer}><X size={18} /></button>
           </div>
 
-          <div className="admin-drawer-body">
+          <div className={`admin-drawer-body ${readOnly ? 'mandate-readonly' : ''}`}>
             {doneMsg && <div className="fund-trade-done">{doneMsg}</div>}
+            {isNew && (
+              <p className="admin-form-hint">协议为线下签署后录入，保存即生效；缺签署日或持牌代表 CE 编号不能保存。</p>
+            )}
+            {!isNew && selected?.status === 'active' && (
+              <p className="admin-form-hint">修改费率、生效日或 CE 编号会写入审计（字段级变更），旧值一并留痕。</p>
+            )}
 
             <div className="card">
               <div className="card-title">协议主体</div>
@@ -456,14 +451,16 @@ export default function MandateAgreementLedger({ admin, onChanged }) {
             {error && <p className="form-error">{error}</p>}
 
             <div className="admin-form-actions">
-              {!isNew && selected?.status === 'draft' && (
-                <button className="btn btn-md btn-primary" onClick={() => handleStatus('active')}><Power size={16} /> 生效</button>
-              )}
               {!isNew && selected?.status === 'active' && (
                 <button className="btn btn-md btn-secondary" onClick={() => handleStatus('terminated')}><Ban size={16} /> 终止协议</button>
               )}
-              <button className="btn btn-md btn-primary" onClick={handleSave}><Save size={16} /> 保存协议</button>
+              {!readOnly && (
+                <button className="btn btn-md btn-primary" onClick={handleSave}><Save size={16} /> {isNew ? '登记并生效' : '保存修改'}</button>
+              )}
             </div>
+            {readOnly && (
+              <p className="admin-form-hint">已终止协议只读；如需变更请重新登记一份。</p>
+            )}
           </div>
         </div>
       )}
