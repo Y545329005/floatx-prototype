@@ -1,7 +1,7 @@
 // 正式法务文本（2026-10-22 · 公司提供 docx 原文录入，替换原型占位稿）
 // 三语结构：{ 'zh-CN': ..., 'zh-HK': ..., en: ... }；p 为段落数组（一段一 <p>，空数组表示仅小节标题）
 // 使用条款 / 隐私政策原文为简体，繁中由 ICU Hans-Hant 转写；风险披露原文为繁中，简中由 Hant-Hans 转写
-const T = (zhCN, zhHK, en) => ({ 'zh-CN': zhCN, 'zh-HK': zhHK, en });
+export const T = (zhCN, zhHK, en) => ({ 'zh-CN': zhCN, 'zh-HK': zhHK, en });
 
 /* ===== 使用条款 Terms and Conditions ===== */
 export const termsOfUseSections = [
