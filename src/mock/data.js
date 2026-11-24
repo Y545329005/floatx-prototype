@@ -225,14 +225,15 @@ export const testAccounts = {
       rejectReason: null,
     },
   },
-  // 账号C：PEP用户（用于演示PEP审查流程）
+  // 账号C：PI 认证体验账号（KYC 已通过、PI 未认证——登录落 #kyc-pi 走完整认证流；
+  // 保留外国 PEP 身份供后台合规工作台演示，APP 侧不消费 pepStatus）
   pep: {
     id: 'u3',
     name: '王五',
     email: 'wang.wu@example.com',
     avatar: null,
-    isPI: true,
-    piVerified: true,
+    isPI: false,
+    piVerified: false,
     accountManager: {
       id: 'am1',
       name: '王慧敏',
@@ -247,13 +248,15 @@ export const testAccounts = {
       usd: 2000000,
       frozen: 5000000,
     },
+    // 2026-11-24：改为 PI 认证体验账号——字段置 null 保留对象形状（submitPiCertification /
+    // approvePiSubmission 会写回 currentUser.pi，删对象会断提交/批准链路）
     pi: {
-      investorNo: 'INV-0003',
-      verifiedAt: '2026-06-01',
-      expiresAt: '2027-06-01',
-      category: '专业投资者',
-      basis: '持有至少 HK$8,000,000 的投资组合',
-      status: 'verified',
+      investorNo: null,
+      verifiedAt: null,
+      expiresAt: null,
+      category: null,
+      basis: null,
+      status: null,
     },
     security: {
       twoFactorEnabled: true,
@@ -2263,7 +2266,7 @@ export const FUND_SEED_RESULT = { redeemNet: 0, redeemAt: '' };
   const fund3 = funds.find(f => f.id === 'f3');
 
   if (fund3) {
-    // 待确认申购：u3 王五（PI 已认证）买固收类基金
+    // 待确认申购：u3 王五（2026-11-24 起 u3 为 PI 未认证体验账号，此单为后台队列演示数据，不校验 PI）
     const subAt = hoursAgoStamp(5);
     fundOrders.push({
       id: 'fo-seed-3',
@@ -7160,7 +7163,7 @@ export const piSubmissions = [
 
 // PI 认证到期派生：APPROVED 且 expiresAt 已过 → EXPIRED（激活死状态，重认证走重新提交）
 export function getPiStatusForUser(userId) {
-  // 预置 approved 账号（张三/王五）直接读 testAccounts.pi（已认证，含到期派生）
+  // 预置 approved 账号（张三 u1；u3 已改为 PI 未认证体验账号走 piSubmissions 派生）直接读 testAccounts.pi（已认证，含到期派生）
   // 不再依赖 currentUser 单例——后台/跨账号查询时也能得到正确状态
   const seed = Object.values(testAccounts).find(u => u.id === userId);
   if (seed?.isPI && seed.pi?.status === 'verified') {

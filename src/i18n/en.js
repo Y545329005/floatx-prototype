@@ -1335,7 +1335,7 @@ export const en = {
   '请输入邮箱': 'Enter your email',
   '该邮箱已注册': 'This email is already registered',
   '输入您的注册邮箱，我们将发送验证码': 'Enter your registered email and we will send a code',
-  '账号 C：PEP（邮箱+人脸）': 'Account C: PEP (email + face)',
+  '账号 C：待 PI 认证（邮箱+人脸）': 'Account C: PI pending (email + face)',
   '管理 GA / 通行密钥 / 邮箱验证': 'Manage GA / passkeys / email verification',
   '审核结果将通过站内通知及邮件发送，请注意查收。': 'The result will be sent via in-app notification and email. Please check your inbox.',
   '会议链接已复制，活动前 24 小时将通过站内通知及邮件提醒': 'Meeting link copied. We will remind you via in-app notification and email 24 hours before the event.',

@@ -367,10 +367,10 @@ export function LoginPage({ navigate, setIsLoggedIn, setUser, setToast }) {
               </button>
               <button
                 type="button"
-                className="btn-demo btn-demo-approved"
+                className="btn-demo btn-demo-pending"
                 onClick={() => window.__loginWithTestAccount && window.__loginWithTestAccount('pep')}
               >
-                {t('账号 C：PEP（邮箱+人脸）')}
+                {t('账号 C：待 PI 认证（邮箱+人脸）')}
               </button>
             </div>
           </div>
