@@ -187,6 +187,13 @@ export const en = {
   '个人信息 · 认证 · 安全': 'Personal · Certification · Security',
   '常见问题 · 客服支持': 'FAQ · Support',
   '公司信息 · 政策文件': 'Company · Policies',
+  // 个人信息收集清单（2026-11-24 · 我的页 → 关于下一栏；栏名/列名照法务 docx 原文）
+  '个人信息收集清单': 'List of Personal Information Collected',
+  '收集范围 · 保存期限': 'Scope of Collection · Retention',
+  '收集/使用目的': 'Purposes of Collection / Use',
+  '保存期限': 'Retention Period',
+  '核心场景/业务功能': 'Core Scenario / Business Function',
+  '信息种类': 'Types of Information',
   'PI 认证投资者': 'PI Certified Investor',
 
   // Help Centre

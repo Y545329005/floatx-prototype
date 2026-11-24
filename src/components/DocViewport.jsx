@@ -15,7 +15,10 @@ import { useLang } from '../i18n';
 
 const A4_WIDTH_PX = 794; // 210mm @96dpi
 
-export default function DocViewport({ children }) {
+// contentWidth：内容的规格宽度（px），默认 A4。规格由调用方声明——A4 单据不传（794），
+// 流式表格类内容传其 CSS min-width 规格值（如个人信息收集清单表 640），canvas 内联宽度随之，
+// 适应宽度的缩放比也按它计算。打印不受影响：print 段 .doc-canvas width:auto !important 收口。
+export default function DocViewport({ children, contentWidth = A4_WIDTH_PX }) {
   const { t } = useLang();
   const ref = useRef(null);
   const [fit, setFit] = useState(false);
@@ -28,16 +31,16 @@ export default function DocViewport({ children }) {
     const measure = () => {
       const width = el.clientWidth;
       // 向下取两位：四舍五入会留下 1-3px 的横向滚动（357 > 354），看着像没对齐
-      if (width > 0) setScale(Math.min(1, Math.max(0.3, Math.floor((width / A4_WIDTH_PX) * 100) / 100)));
+      if (width > 0) setScale(Math.min(1, Math.max(0.3, Math.floor((width / contentWidth) * 100) / 100)));
     };
     measure();
     window.addEventListener('resize', measure);
     return () => window.removeEventListener('resize', measure);
-  }, [fit]);
+  }, [fit, contentWidth]);
 
   return (
     <div className="doc-viewport" ref={ref}>
-      <div className="doc-canvas" style={{ zoom: scale }}>{children}</div>
+      <div className="doc-canvas" style={{ width: contentWidth, zoom: scale }}>{children}</div>
       <div className="doc-zoom" role="group" aria-label={t('缩放')}>
         <button type="button" aria-pressed={!fit} onClick={() => setFit(false)}>{t('100%')}</button>
         <button type="button" aria-pressed={fit} onClick={() => setFit(true)}>{t('适应宽度')}</button>

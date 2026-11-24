@@ -24,6 +24,8 @@ const Settings = lazy(() => import('../pages/Settings'));
 const SecurityCenter = lazy(() => import('../pages/SecurityCenter'));
 const Help = lazy(() => import('../pages/Help'));
 const About = lazy(() => import('../pages/About'));
+// 个人信息收集清单（2026-11-24）：法务 Final 定稿对客展示，我的页关于下一栏进入
+const PrivacyList = lazy(() => import('../pages/PrivacyList'));
 const ChangeEmail = lazy(() => import('../pages/ChangeEmail'));
 const KYCStart = lazy(() => import('../pages/KYCStart'));
 const KYCIdUpload = lazy(() => import('../pages/KYCIdUpload'));
@@ -237,6 +239,9 @@ function renderAppPageInner(path, param, ctx) {
     // SPV 签署与资金全部线下，APP 只做问卷收集与进度查看
     case 'about':
       return <About navigate={navigate} goBack={goBack} setToast={setToast} />;
+    // 2026-11-24：个人信息收集清单（法务定稿披露页；COMPLIANCE_PATHS 白名单放行，见 guard.js）
+    case 'privacy-list':
+      return <PrivacyList goBack={goBack} />;
     case 'notifications':
       return <Notifications navigate={navigate} goBack={goBack} />;
     case 'support':

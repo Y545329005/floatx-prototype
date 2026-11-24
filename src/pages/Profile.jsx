@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Shield, ChevronRight, LogOut, Bell, Settings, HelpCircle, BadgeCheck, Info, Award } from 'lucide-react';
+import { Shield, ChevronRight, LogOut, Bell, Settings, HelpCircle, BadgeCheck, Info, Award, ClipboardList } from 'lucide-react';
 import { currentUser, notifications, KYC_STATUS, PI_STATUS, getPiStatusForUser } from '../mock/data';
 import AccountManager from '../components/AccountManager';
 import { useLang } from '../i18n';
@@ -15,6 +15,8 @@ export default function Profile({ navigate, setIsLoggedIn }) {
     { icon: Settings, label: t('账户设置'), sub: t('个人信息 · 认证 · 安全'), hash: '#settings' },
     { icon: HelpCircle, label: t('帮助中心'), sub: t('常见问题 · 客服支持'), hash: '#help' },
     { icon: Info, label: t('关于'), sub: t('公司信息 · 政策文件'), hash: '#about' },
+    // 2026-11-24：个人信息收集清单（法务 Final 定稿对客展示；披露页白名单放行，见 guard.js）
+    { icon: ClipboardList, label: t('个人信息收集清单'), sub: t('收集范围 · 保存期限'), hash: '#privacy-list' },
   ];
 
   // 2026-08-14：PI 独立审核流——PI 状态由 currentUser.pi.status 驱动（不再与 piCertified 捆绑）

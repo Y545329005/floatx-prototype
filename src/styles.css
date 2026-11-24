@@ -347,7 +347,8 @@ input, select, textarea {
 .mandate-page,
 .mail-preview-page,
 .fund-request-detail-page,
-.security-center {
+.security-center,
+.privacy-list-page {
   padding-top: 0;
 }
 
@@ -9378,7 +9379,8 @@ input, select, textarea {
      投影/缩放，并把页边距交给元素自己撑（2026-11-20 单一排版）。 */
   .doc-page { padding: 0; }
   .doc-viewport { overflow: visible; padding: 0; }
-  .doc-canvas { width: auto; margin: 0; zoom: 1 !important; }
+  /* !important：contentWidth 调用方（如清单表 640）的内联宽度在打印时一律放开给 A4 纸面 */
+  .doc-canvas { width: auto !important; margin: 0; zoom: 1 !important; }
   .doc-zoom { display: none !important; }
   .doc-sheet {
     width: auto;
@@ -11744,4 +11746,53 @@ button.kyc-form-input.picker-trigger {
   font-size: var(--text-xs);
   line-height: 1.5;
   color: var(--text-secondary);
+}
+
+/* ===== 个人信息收集清单（2026-11-24 · 我的页 → 关于下一栏）===== */
+/* 法务原表照排（2026-11-24 用户拍板：合规内容直接展示原文，与其余法律文档查看态规范一致）：
+   列头/合并单元格/表头底纹均按 docx 原表（表头灰底加粗居中；场景列与期限列居中、内容列左对齐、
+   全行垂直居中）；430px 下表格容器横向滚动保版式，页面本体不溢出 */
+.privacy-list-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 0.5px solid var(--border-light);
+  border-radius: var(--radius-md);
+}
+
+.privacy-list-table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  line-height: 1.7;
+}
+
+.privacy-list-table th,
+.privacy-list-table td {
+  border: 0.5px solid var(--border-light);
+  padding: var(--space-2);
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+
+.privacy-list-table th {
+  background: var(--bg);
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.privacy-list-table td.privacy-list-scene-cell,
+.privacy-list-table td.privacy-list-retention-cell {
+  text-align: center;
+}
+
+/* 场景/期限列内容短，防被内容长列挤压成一字一行 */
+.privacy-list-table th:first-child,
+.privacy-list-table td.privacy-list-scene-cell {
+  min-width: 5.5em;
+}
+
+.privacy-list-table td.privacy-list-retention-cell {
+  min-width: 6.5em;
 }
