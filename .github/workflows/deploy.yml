@@ -64,5 +64,11 @@ jobs:
         with:
           path: dist
 
+      # GitHub 侧 artifact 元数据有传播延迟（2026-11-25 实测：run 内 artifact 存在，
+      # deploy-pages 却报 Found 0 artifact(s)，rerun 与 workflow_dispatch 均不复现成功）。
+      # 上传后等一会儿再取，比反复 rerun 划算。
+      - name: Wait for artifact propagation
+        run: sleep 20
+
       - name: Deploy
         uses: actions/deploy-pages@v4
