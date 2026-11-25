@@ -1,5 +1,5 @@
 import { Fragment, useState } from 'react';
-import { FolderKanban, CalendarCheck, CalendarClock, FileText, ClipboardList, ClipboardCheck, UserCheck, PackageOpen, Users, Landmark, Wallet, Coins, TrendingDown, Bell, ScrollText, Shield, Settings, LogOut, ChevronDown, KeyRound, X, BadgeCheck, HeartHandshake, LockKeyhole, Headphones, ShieldCheck, AlertTriangle, FileWarning, ZoomIn, FileSearch, CircleDollarSign } from 'lucide-react';
+import { FileCheck, FolderKanban, CalendarCheck, CalendarClock, FileText, ClipboardList, ClipboardCheck, UserCheck, PackageOpen, Users, Landmark, Wallet, Coins, TrendingDown, Bell, ScrollText, Shield, Settings, LogOut, ChevronDown, KeyRound, X, BadgeCheck, HeartHandshake, LockKeyhole, Headphones, ShieldCheck, AlertTriangle, FileWarning, ZoomIn, FileSearch, CircleDollarSign } from 'lucide-react';
 import { ADMIN_MENUS, getRoleMenuKeys, changeAdminPassword, getMenuBadges } from '../mock/data';
 
 // 菜单排序 = 业务联动性配对 + 生命周期（2026-08-12 定稿）：
@@ -40,6 +40,7 @@ const MENU_ICONS = {
   'mandate': CircleDollarSign, // 委托业务：协议/账户/交易/估值四签（2026-11-20 日结与月报拆出）
   'mandate-daily': CalendarClock, // 委托日结：当日批量出单
   'mandate-monthly': FileText,    // 委托月报：按账户×期间出具
+  'statement-issue': FileCheck,   // 结单出具：全用户月结（2026-11-25）
   funds: Landmark,
   transactions: Wallet,
   'transaction-monitor': ShieldCheck,

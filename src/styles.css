@@ -9263,12 +9263,22 @@ input, select, textarea {
 /* 打印：屏幕上的壳全部退场，只留这张凭证。
    作用域限定在本页，不影响其它页面打印。 */
 @media print {
-  @page { size: A4; margin: 0; }
+  /* 边距交给 @page，元素 padding 归零（2026-11-25 实测）：
+     元素 padding 只作用于盒子起点，内容跨页后第 2 页顶到纸边（实测账户结单 1.84 页，
+     第 2 页第一行距页顶 0）；两处都设才会叠成 32mm，所以这里必须二选一，不能各设一半。 */
+  @page { size: A4; margin: 16mm; }
 
   .subpage-sticky,
   .bottom-nav,
   .bottom-action-bar,
   .crypto-dev-fab { display: none !important; }
+
+  /* 门控遮罩不是单据内容：未勾选协议的用户打印时，遮罩会被印进纸面
+     （2026-11-25 实测：两页都夹着「我已阅读并同意上述协议 / 确认并继续」） */
+  .terms-gate-mask,
+  .screen-guard-mask,
+  .lightbox-mask,
+  .sheet-mask { display: none !important; }
 
   html, body { background: #fff !important; }
 
@@ -9279,12 +9289,13 @@ input, select, textarea {
   .fund-statement-detail-page { padding: 0; }
 
   /* 纸面是一份可存档的凭证，不是截屏：A4 版心内不保留卡片投影与圆角。
-     页边距由元素自己撑（@page margin 0），否则与纸面内边距叠加成 32mm */
+     页边距已由 @page 的 16mm 撑起，元素内边距必须归零——
+     两边都留会叠成 32mm，而只留元素 padding 则第 2 页起没有上边距。 */
   .statement-card {
     box-shadow: none;
     border: 0;
     border-radius: 0;
-    padding: 16mm;
+    padding: 0;
     margin: 0;
   }
 
@@ -9410,7 +9421,8 @@ input, select, textarea {
   .doc-sheet {
     width: auto;
     min-height: 0;
-    padding: 16mm;
+    /* 与 .statement-card 同理：页边距由 @page 统一给，跨页时每一页才会有上边距 */
+    padding: 0;
     border-radius: 0;
     box-shadow: none;
   }
@@ -9424,6 +9436,10 @@ input, select, textarea {
   .doc-client span { font-size: 7.5pt; color: #888; }
   .doc-client b { font-size: 8.5pt; color: #111; }
   .doc-section-title { font-size: 10pt; margin: 12px 0 5px; }
+  /* 单据跨页时：标题不落在页底变孤儿，表格行不被腰斩 */
+  .doc-section-title,
+  .doc-head { break-after: avoid; }
+  .doc-table tr { break-inside: avoid; }
   .doc-table { font-size: 8pt; }
   .doc-table th { background: #F2F4F7; color: #444; }
   .doc-table td { padding: 4px 5px; }

@@ -4,6 +4,7 @@ import DocViewport from '../components/DocViewport';
 import {
   buildPeriodStatement, formatExactAmount, formatShares, platformBrand,
   requestStatementExport, advanceStatementExport,
+  currentUser, getMonthlyStatementOf, monthRangeOf,
 } from '../mock/data';
 import { useLang } from '../i18n';
 
@@ -22,7 +23,20 @@ export default function FundPeriodStatement({ from, to, goBack }) {
   const { t, lang } = useLang();
   const [printNote, setPrintNote] = useState('');
 
-  const stmt = useMemo(() => buildPeriodStatement({ from, to }), [from, to]);
+  // 该月已出具 → 显示冻结版；未出具 → 按需计算（并提示会随后续补录变化）。
+  // 月结单是唯一可归档的全账户凭证，日结单不冻结，两者不一致时以这里为准。
+  const issuedRec = useMemo(() => {
+    const period = String(from || '').slice(0, 7);
+    const range = monthRangeOf(period);
+    if (!range || range.from !== from) return null;
+    const rec = getMonthlyStatementOf(currentUser.id, period);
+    if (!rec) return null;
+    return (to === range.to || to === rec.to) ? rec : null;
+  }, [from, to]);
+  const stmt = useMemo(
+    () => (issuedRec ? issuedRec.snapshot : buildPeriodStatement({ from, to })),
+    [from, to, issuedRec],
+  );
 
   // 委托现金变动的文案由页面拼（数据层只给 kind，不拼中文，否则英文界面永远是中文）。
   const flowLabel = (f) => {
@@ -37,6 +51,28 @@ export default function FundPeriodStatement({ from, to, goBack }) {
     return t('其他');
   };
   const signed = v => `${v >= 0 ? '+' : '−'}${formatExactAmount(Math.abs(v))}`;
+
+  // 期间资金往来汇总（2026-11-25）：明细之上先给「按币种 × 方向的进出总量」。
+  // 结单只有期末余额时，「这个月进出多少」得让客户自己翻三页明细加。
+  const cashSummary = useMemo(() => {
+    const rows = new Map();
+    (stmt.cash || []).forEach(c => {
+      const key = `${c.currency}|${c.direction}`;
+      const row = rows.get(key) || { currency: c.currency, direction: c.direction, count: 0, amount: 0 };
+      row.count += 1;
+      row.amount += Number(c.amount) || 0;
+      rows.set(key, row);
+    });
+    const rateOf = (code) => {
+      const hit = (stmt.fx || []).find(f => f.currency === code);
+      return hit ? Number(hit.rate) || 1 : 1;
+    };
+    return Array.from(rows.values())
+      .map(r => ({ ...r, amountHKD: Math.round(r.amount * rateOf(r.currency) * 100) / 100 }))
+      .sort((a, b) => String(a.currency).localeCompare(String(b.currency)) || String(a.direction).localeCompare(String(b.direction)));
+  }, [stmt]);
+  const cashNetHKD = useMemo(() => Math.round(cashSummary
+    .reduce((sum, r) => sum + (r.direction === 'in' ? r.amountHKD : -r.amountHKD), 0) * 100) / 100, [cashSummary]);
 
   // 下载落一条「申请成功」的导出记录：动作出生即 ready，
   // 不走「processing → 导出记录页 2 秒后推进」——用户刚点完下载却看到「申请中」是假延迟。
@@ -87,12 +123,16 @@ export default function FundPeriodStatement({ from, to, goBack }) {
             <div className="doc-title">{t('账户结单')}</div>
           </div>
           <div className="doc-meta">
-            <span>{t('编号')} HS-STM-{stmt.from.slice(0, 7).replace('-', '')}</span>
+            <span>{t('编号')} {issuedRec ? issuedRec.docNo : `HS-STM-${stmt.from.slice(0, 7).replace('-', '')}`}</span>
             <span>{t('结单期间')} {stmt.from} – {stmt.to}</span>
             <span>{t('列印日期')} {stmt.printedAt.slice(0, 10)}</span>
+            {issuedRec && <span>{t('出具日')} {String(issuedRec.issuedAt).slice(0, 10)}{issuedRec.provisional ? ` · ${t('暂定')}` : ''}</span>}
           </div>
         </header>
 
+        {!issuedRec && (
+          <p className="doc-note">{t('本期间尚未出具月结单；当前内容按需计算，后续补录会改变数字。')}</p>
+        )}
         <div className="doc-client">
           <div><span>{t('客户名称')}</span><b>{t(stmt.clientName)}</b></div>
           <div><span>{t('客户 UID')}</span><b>{stmt.clientUid}</b></div>
@@ -316,7 +356,44 @@ export default function FundPeriodStatement({ from, to, goBack }) {
           </>
         )}
 
-        <h2 className="doc-section-title">{t('四、资金往来明细')}</h2>
+        <h2 className="doc-section-title">{t('四、资金往来汇总')}</h2>
+        {cashSummary.length === 0 ? (
+          <p className="doc-empty">{t('本期无资金往来')}</p>
+        ) : (
+          <div className="doc-table-wrap">
+            <table className="doc-table doc-table--fit">
+              <thead>
+                <tr>
+                  <th>{t('币种')}</th>
+                  <th>{t('方向')}</th>
+                  <th className="num">{t('笔数')}</th>
+                  <th className="num">{t('金额')}</th>
+                  <th className="num">{t('折合 HKD')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cashSummary.map(r => (
+                  <tr key={`${r.currency}-${r.direction}`}>
+                    <td>{r.currency}</td>
+                    <td>{t(r.direction === 'in' ? '入' : '出')}</td>
+                    <td className="num">{r.count}</td>
+                    <td className="num">
+                      {/* 数字资产按数量、法币按金额：同一列两种量纲会把 0.15 印成 0.15 元 */}
+                      {['HKD', 'USD', 'CNH'].includes(r.currency) ? formatExactAmount(r.amount) : fmtQty(r.amount)}
+                    </td>
+                    <td className="num">{formatExactAmount(r.amountHKD)}</td>
+                  </tr>
+                ))}
+                <tr className="doc-total">
+                  <td colSpan={4}>{t('资金往来净额（折合 HKD）')}</td>
+                  <td className="num">{signed(cashNetHKD)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <h2 className="doc-section-title">{t('五、资金往来明细')}</h2>
         {stmt.cash.length === 0 ? (
           <p className="doc-empty">{t('本期无资金往来')}</p>
         ) : (

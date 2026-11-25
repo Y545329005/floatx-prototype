@@ -7,6 +7,8 @@ import {
   buildMandateMonthlyReport,
   getMandateReportOf,
   issueMandateMonthlyReport,
+  deliverStatement,
+  voidStatement,
   formatExactAmount,
 } from '../mock/data';
 import { useDrawerFocus } from './useDrawerFocus';
@@ -29,18 +31,23 @@ export default function AdminMandateMonthly({ admin }) {
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(1);
   const [drawerAccountId, setDrawerAccountId] = useState(null);
+  const [voidReason, setVoidReason] = useState('');
   const [msg, setMsg] = useState('');
   const operator = admin?.name || '运营后台';
 
   const accounts = useMemo(
-    () => mandateAccounts.filter(a => a.status !== MANDATE_ACCOUNT_STATUS.CLOSED),
+    () => mandateAccounts.filter(a => a.status !== MANDATE_ACCOUNT_STATUS.CLOSED
+      && a.status !== MANDATE_ACCOUNT_STATUS.PENDING),
     []
   );
 
   const rows = useMemo(() => accounts.map(a => {
     const report = buildMandateMonthlyReport(a.id, month);
     const issued = getMandateReportOf(a.id, month);
-    const has = !!report && report.days > 0;
+    // 「有数据」= 期初/期末有资产，或有流水/费用。日结单改为回算视图后 days 恒为当月天数，
+    // 拿它判断会让零资产账户也显示「待出具」——出具一份全 0 的月报没有意义。
+    const has = !!report && (Math.abs(report.closingHKD) > 0.005 || Math.abs(report.openingHKD) > 0.005
+      || report.flows.length > 0 || report.fees.length > 0);
     return { account: a, report, issued, has, view: issued ? issued.snapshot : report };
   }), [tick, month, accounts]);
 
@@ -68,7 +75,7 @@ export default function AdminMandateMonthly({ admin }) {
   const issuedRecord = drawerAccountId ? getMandateReportOf(drawerAccountId, month) : null;
   const view = issuedRecord ? issuedRecord.snapshot : live;
   const drawerOpen = !!drawerAccountId;
-  const closeDrawer = () => { setDrawerAccountId(null); setMsg(''); };
+  const closeDrawer = () => { setDrawerAccountId(null); setMsg(''); setVoidReason(''); };
   const drawerRef = useDrawerFocus(drawerOpen, closeDrawer);
 
   useEffect(() => {
@@ -94,6 +101,29 @@ export default function AdminMandateMonthly({ admin }) {
     setTick(t => t + 1);
   };
 
+  const handleDeliver = (channel) => {
+    if (!issuedRecord) return;
+    const res = deliverStatement('mandate', issuedRecord.id, channel, operator);
+    if (!res.ok) { setMsg(res.error); return; }
+    setMsg(`已登记送达：${channel}`);
+    setTick(t => t + 1);
+  };
+
+  // 作废并重出一步完成（同上：原型里补内容的正解是重出一版，不是改旧版）
+  const handleVoid = () => {
+    if (!issuedRecord) return;
+    const docNo = issuedRecord.docNo;
+    const accountId = issuedRecord.accountId;
+    const res = voidStatement('mandate', issuedRecord.id, voidReason, operator);
+    if (!res.ok) { setMsg(res.error); return; }
+    const again = issueMandateMonthlyReport(accountId, month, operator);
+    setVoidReason('');
+    setTick(t => t + 1);
+    setMsg(again.ok
+      ? `已作废 ${docNo} 并重出 ${again.report.docNo}；旧版保留在审计里。`
+      : `已作废 ${docNo}；重出失败：${again.error}`);
+  };
+
   const signed = (v) => `${v >= 0 ? '+' : '−'}${formatExactAmount(Math.abs(v))}`;
 
   return (
@@ -101,7 +131,7 @@ export default function AdminMandateMonthly({ admin }) {
       <div className="admin-page-header">
         <h1>委托月报</h1>
         <span className="admin-header-summary">
-          共 {counts.all} 户 · 已出具 {counts.issued} · 待出具 {counts.ready} · 无日结 {counts.all - counts.issued - counts.ready}
+          共 {counts.all} 户 · 已出具 {counts.issued} · 待出具 {counts.ready} · 无数据 {counts.all - counts.issued - counts.ready}
         </span>
       </div>
 
@@ -181,12 +211,12 @@ export default function AdminMandateMonthly({ admin }) {
               ) : has ? (
                 <>
                   <span className="status-badge admin-status-pending">待出具</span>
-                  <span className="mandate-subline">{r.days} 天日结单</span>
+                  <span className="mandate-subline">覆盖 {r.days} 天</span>
                 </>
               ) : (
                 <>
-                  <span className="status-badge admin-status-pending">无日结</span>
-                  <span className="mandate-subline">该月无日结单</span>
+                  <span className="status-badge admin-status-pending">无数据</span>
+                  <span className="mandate-subline">该月无资产与流水</span>
                 </>
               )}
             </span>
@@ -244,14 +274,37 @@ export default function AdminMandateMonthly({ admin }) {
             )}
 
             {issuedRecord && (
-              <div className="mandate-report-grid">
-                <div><span>编号</span><strong>{issuedRecord.docNo}</strong></div>
-                <div><span>出具</span><strong>{issuedRecord.issuedBy} · {String(issuedRecord.issuedAt).slice(0, 16)}</strong></div>
-              </div>
+              <>
+                <div className="mandate-report-grid">
+                  <div><span>编号</span><strong>{issuedRecord.docNo}</strong></div>
+                  <div><span>出具</span><strong>{issuedRecord.issuedBy} · {String(issuedRecord.issuedAt).slice(0, 16)}</strong></div>
+                  <div><span>送达</span><strong>
+                    {(issuedRecord.deliveries || []).length
+                      ? issuedRecord.deliveries.map(d => `${d.channel} · ${String(d.at).slice(0, 16)}`).join('；')
+                      : '未登记'}
+                  </strong></div>
+                </div>
+
+                <div className="mandate-drawer-issue">
+                  <p className="admin-form-hint">出具 ≠ 送达：APP 可查只证明「放在那里」，邮件/纸质要单独登记。</p>
+                  <button className="btn btn-md btn-secondary" onClick={() => handleDeliver('邮件')}>登记邮件送达</button>
+                </div>
+
+                <div className="mandate-drawer-issue">
+                  <input
+                    className="form-input"
+                    placeholder="作废原因（必填，旧版保留在审计里）"
+                    value={voidReason}
+                    onChange={e => setVoidReason(e.target.value)}
+                    aria-label="作废原因"
+                  />
+                  <button className="btn btn-md btn-secondary" onClick={handleVoid} disabled={!voidReason.trim()}>作废并重出</button>
+                </div>
+              </>
             )}
 
             <div className="mandate-report-grid">
-              <div><span>汇总天数</span><strong>{view.days} 天</strong></div>
+              <div><span>覆盖天数</span><strong>{view.days} 天</strong></div>
               <div><span>期初</span><strong>{view.openingHKD == null ? '—' : `HK$ ${formatExactAmount(view.openingHKD)}`}</strong></div>
               <div><span>期末</span><strong>HK$ {formatExactAmount(view.closingHKD)}</strong></div>
               <div><span>期间资金变动</span><strong>{view.netFlowHKD == null ? '—' : signed(view.netFlowHKD)}</strong></div>
@@ -288,10 +341,10 @@ export default function AdminMandateMonthly({ admin }) {
             </div>
 
             {view.days === 0 && (
-              <p className="mandate-gate-warn">当月尚无日结单。协议 11.3 要求按月出具，请先在「日结」签生成日结单——月报不编造缺失日的数据。</p>
+              <p className="mandate-gate-warn">该期间没有可出具的资产与流水。协议 11.3 要求按月出具，零资产账户不出具空报告。</p>
             )}
             {view.days > 0 && expectedDays > 0 && view.days < expectedDays && (
-              <p className="admin-form-hint">本月只汇总了 {view.days} 天日结单；缺失日不计入，期末取最后一份日结单。</p>
+              <p className="admin-form-hint">期末取期间末（月中出具则截至今日）；已出具的版本冻结，之后补录不改写它。</p>
             )}
             <p className="admin-form-hint">收益一律费前，费用在结单单列——否则客户会把费用当成亏损。月报的 15 个营业日送达义务由单据中心提醒。</p>
           </div>

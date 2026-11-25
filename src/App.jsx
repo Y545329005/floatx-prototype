@@ -33,6 +33,8 @@ const AdminMandate = lazy(() => import('./admin/AdminMandate'));
 // 2026-11-20：日结/月报拆成独立菜单（周期性文档，不再塞进委托业务的签里）
 const AdminMandateDaily = lazy(() => import('./admin/AdminMandateDaily'));
 const AdminMandateMonthly = lazy(() => import('./admin/AdminMandateMonthly'));
+// 2026-11-25：日结改为回算视图后，月结是唯一冻结的全账户凭证，出具独立成菜单
+const AdminStatementIssue = lazy(() => import('./admin/AdminStatementIssue'));
 const AdminFunds = lazy(() => import('./admin/AdminFunds'));
 const AdminKYC = lazy(() => import('./admin/AdminKYC'));
 const AdminPI = lazy(() => import('./admin/AdminPI'));
@@ -373,6 +375,7 @@ export default function App() {
               />
             )}
             {effectiveSub === 'mandate-monthly' && <AdminMandateMonthly admin={adminUser} />}
+            {effectiveSub === 'statement-issue' && <AdminStatementIssue admin={adminUser} />}
             {/* 资金审核：tab 走 param2、抽屉走 param3（#admin/funds/{tab}/{id}）；
                 2026-10-28 修复：此前只渲染 <AdminFunds /> 未透传 navigate/tab/detailId，
                 导致点行只改 hash、抽屉永远打不开 → 整个核销动作不可达 */}

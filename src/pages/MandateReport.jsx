@@ -44,6 +44,18 @@ export default function MandateReport({ id, goBack }) {
   const signed = (v) => `${v >= 0 ? '+' : '−'}${formatExactAmount(Math.abs(v))}`;
   const feeHKDOf = (f) => toHKD(f.amount, f.currency);
   const cashHKDOf = (c) => toHKD(c.balance, c.currency);
+  // 事项文案由页面拼：数据层只给 kind 与标的/数量，拼好的中文进数据层会让英文界面永远是中文。
+  const flowLabel = (f, tf) => {
+    if (f.kind === 'trade-buy') return `${tf('买入')} ${f.symbol} ${formatShares(f.quantity)} ${tf('股')}`;
+    if (f.kind === 'trade-sell') return `${tf('卖出')} ${f.symbol} ${formatShares(f.quantity)} ${tf('股')}`;
+    if (f.kind === 'fee') return `${tf('费用')}${f.feePeriod ? ` · ${f.feePeriod}` : ''}`;
+    if (f.kind === 'transfer-in') return tf('从现金账户划入');
+    if (f.kind === 'transfer-out') return tf('划出至现金账户');
+    if (f.kind === 'deposit') return tf('入金');
+    if (f.kind === 'withdraw') return tf('出金');
+    if (f.kind === 'dividend') return tf('股息');
+    return tf('其他');
+  };
   const nonHKD = (s.fx || []).filter(f => f.currency !== 'HKD');
   // 同一事实不两处：只有出现非 HKD 时才需要「原币 + 折合」两列；
   // 全是 HKD 时再加一列折合，等于把同一个数写两遍。
@@ -119,8 +131,49 @@ export default function MandateReport({ id, goBack }) {
             </table>
           </div>
           <p className="doc-note">
-            {t('按当月 {n} 天日结单汇总；市值变动为差额扣除资金变动后的残差。').replace('{n}', String(s.days))}
+            {t('期间 {from} 至 {to}；市值变动为差额扣除资金变动后的残差。')
+              .replace('{from}', s.periodStart || `${record.period}-01`)
+              .replace('{to}', s.periodEnd || record.period)}
           </p>
+          {/* 旧版快照（资金明细上线前出具）没有 flows：不补算、不伪造，只在纸面上说明缺什么。
+              要完整版只能后台作废后重出——那是新的一版，不是给旧版补内容。 */}
+          {!Array.isArray(s.flows) && (
+            <p className="doc-note">{t('本版出具于资金明细上线之前，未附期间明细；如需完整版本，请联系客户经理作废后重出。')}</p>
+          )}
+
+          {/* 净额必须能下钻：客户问「+144,476.58 是哪几笔」，这张表就是答案。
+              旧快照（2026-11-25 之前出具）没有 flows，不渲染——不补算，补出来的不是当时那份。 */}
+          {(s.flows || []).length > 0 && (
+            <>
+              <p className="doc-note">{t('期间资金变动明细')}</p>
+              <div className="doc-table-wrap">
+                <table className="doc-table doc-table--fit">
+                  <thead>
+                    <tr>
+                      <th>{t('日期')}</th>
+                      <th>{t('事项')}</th>
+                      <th className="num">{t('金额（HKD）')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(s.flows || []).map(f => (
+                      <tr key={f.id}>
+                        <td>{String(f.at || '').slice(0, 10)}</td>
+                        <td className="wrap">{flowLabel(f, t)}</td>
+                        <td className={`num ${Number(f.amountHKD) >= 0 ? 'in' : 'out'}`}>
+                          {signed(Number(f.amountHKD) || 0)}
+                        </td>
+                      </tr>
+                    ))}
+                    <tr className="doc-total">
+                      <td colSpan={2}>{t('期间资金变动')}</td>
+                      <td className="num">{signed(s.netFlowHKD || 0)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
 
           <h2 className="doc-section-title">{t('二、期末持仓')}</h2>
           {s.positions.length === 0 ? (
@@ -237,7 +290,7 @@ export default function MandateReport({ id, goBack }) {
           )}
 
           <p className="doc-legal">
-            {t('收益一律费前，费用在结单中单列。本报告依据当月已生成的日结单汇总，未生成日不计入；期末取当月最后一份日结单。')}
+            {t('收益一律费前，费用在结单中单列。本报告按期末回算并出具，出具后不再随之后的补录变化。')}
           </p>
           <p className="doc-legal">{t('本报告为委托账户月度报告，与账户结单不一致时，委托部分以本报告为准。')}</p>
           <footer className="doc-foot">

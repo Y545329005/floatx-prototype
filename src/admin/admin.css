@@ -4171,11 +4171,24 @@
 .admin-table--mandate-daily .admin-table-header,
 .admin-table--mandate-daily .admin-table-row {
   grid-template-columns:
-    minmax(160px, 18fr)
+    minmax(150px, 16fr)
     minmax(110px, 12fr)
-    minmax(140px, 15fr)
-    minmax(180px, 20fr)
-    minmax(100px, 11fr);
+    minmax(100px, 11fr)
+    minmax(100px, 11fr)
+    minmax(100px, 11fr)
+    minmax(180px, 20fr);
+  gap: 16px;
+}
+/* 结单出具（2026-11-25）：一行 = 一个客户 × 一个期间，与委托月报同一索引表语言 */
+.admin-table--statement-issue .admin-table-header,
+.admin-table--statement-issue .admin-table-row {
+  grid-template-columns:
+    minmax(170px, 18fr)
+    minmax(120px, 13fr)
+    minmax(120px, 13fr)
+    minmax(110px, 12fr)
+    minmax(170px, 17fr)
+    48px;
   gap: 16px;
 }
 .mandate-daily-msg {

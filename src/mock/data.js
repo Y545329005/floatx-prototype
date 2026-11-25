@@ -1404,6 +1404,91 @@ export function latestNav(fund) {
   return navWeeksAgo(fund, 0);
 }
 
+/* ---- 按结算日回算（2026-11-25） ----
+   日结单是对某一自然日的快照，历史日必须用「那天已知」的数据。
+   此前只有委托部分做了回算，基金部分仍读 getFundPortfolio（今天的份额与净值），
+   于是 11-11 的单上印着 11-18 的净值——同一份 bug 只修了一半。 */
+function shiftDayStr(date, delta) {
+  const t = new Date(`${String(date).slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(t.getTime())) return String(date).slice(0, 10);
+  t.setDate(t.getDate() + delta);
+  const p = n => String(n).padStart(2, '0');
+  return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}`;
+}
+
+// 净值档位 + 该档对应的公布日。navSeries 是周期序列（周频/月频），末点锚在 lastNavDate。
+export function navPointAsOf(fund, date) {
+  const last = String(fund?.navMeta?.lastNavDate || '').slice(0, 10);
+  const d = String(date || '').slice(0, 10);
+  if (!last || !d) return { nav: latestNav(fund), navDate: last };
+  const days = Math.floor((new Date(`${last}T00:00:00`) - new Date(`${d}T00:00:00`)) / 86400000);
+  if (!Number.isFinite(days) || days <= 0) return { nav: latestNav(fund), navDate: last };
+  const step = fund?.navMeta?.cadence === 'monthly' ? 30 : 7;
+  const k = Math.ceil(days / step);
+  return { nav: navWeeksAgo(fund, k), navDate: shiftDayStr(last, -k * step) };
+}
+
+export function navAsOf(fund, date) {
+  return navPointAsOf(fund, date).nav;
+}
+
+// 某只基金在结算日收盘时的份额：以已确认的申购/赎回单为准（份额是计数，按笔累加）。
+export function fundSharesAsOf(userId, fundId, date) {
+  const d = String(date).slice(0, 10);
+  return fundStatements
+    .filter(s => s.userId === userId && s.fundId === fundId && dayOf(s.confirmedAt || s.date) <= d)
+    .reduce((n, s) => n + (s.tradeType === '赎回' ? -1 : 1) * (Number(s.shares) || 0), 0);
+}
+
+/* 与 getFundPortfolio 同形的「结算日组合」。
+   在途/冻结只在结算日 = 今天时给出：历史日的在途状态无法还原，编一个出来就是假数据。 */
+export function fundPortfolioAsOf(userId = currentUser.id, date = todayStr()) {
+  const d = String(date).slice(0, 10);
+  const isToday = d === todayStr();
+  const ids = Array.from(new Set([
+    ...fundHoldings.filter(h => h.userId === userId).map(h => h.fundId),
+    ...fundStatements.filter(s => s.userId === userId).map(s => s.fundId),
+  ]));
+  const rows = ids.map(id => {
+    const fund = funds.find(f => f.id === id);
+    const holding = fundHoldings.find(h => h.userId === userId && h.fundId === id);
+    const shares = Math.round(Math.max(0, fundSharesAsOf(userId, id, d)) * 10000) / 10000;
+    if (!fund || shares <= 0) return null;
+    const { nav } = navPointAsOf(fund, d);
+    return {
+      fundId: id,
+      fundName: holding?.fundName || fund.name,
+      currency: holding?.currency || (Array.isArray(fund.currency) ? fund.currency[0] : fund.currency) || 'HKD',
+      shares,
+      frozenShares: isToday ? (holding?.frozenShares || 0) : 0,
+      costAmount: 0,
+      realizedPnl: 0,
+      nav,
+      marketValue: shares * nav,
+    };
+  }).filter(Boolean);
+  // 钱包是单实例演示账户（wallet 本身没有 userId 维度，见 walletAccountOf 上方护栏说明）。
+  // 没有钱包归属的用户不印现金行——否则 u20 的日结单会印出 u1 的 1,017 万。
+  const ownsWallet = userId === 'u1';
+  const cash = (ownsWallet ? ['HKD', 'USD', 'CNH'] : []).map(cur => {
+    const balance = walletBalanceAsOf(cur, d);
+    const frozen = isToday ? (getFundFrozen(userId, cur) + getWithdrawFrozen(userId, cur)) : 0;
+    return { currency: cur, balance, frozen, available: Math.max(0, balance - frozen) };
+  });
+  const availableHKD = cash.reduce((s, c) => s + convertToHKD(c.available, c.currency), 0);
+  const frozenHKD = cash.reduce((s, c) => s + convertToHKD(c.frozen, c.currency), 0);
+  const marketValueHKD = rows.reduce((s, r) => s + convertToHKD(r.marketValue, r.currency), 0);
+  return {
+    rows,
+    cash,
+    availableHKD,
+    frozenHKD,
+    cashHKD: availableHKD + frozenHKD,
+    marketValueHKD,
+    totalHKD: availableHKD + frozenHKD + marketValueHKD,
+  };
+}
+
 /* 月份文案（2026-10-28）：锁定期 / 最低持有期 / 存续期在数据里只有数字，
    「24个月」由这里按语言生成。此前是 data.js 里手填的字符串，中英文各存一份、
    且与数字并存两套事实——后台只要改数字不改文案，页面就会显示改之前的期限。 */
@@ -2584,15 +2669,24 @@ export function buildPeriodStatement({ from, to, userId = currentUser.id } = {})
   const months = periodMonths(1);
   const start = from || months[0].from;
   const end = to || months[0].to;
+  // 抬头按被出具人取，不读「当前登录用户」——后台替其他客户出单时，
+  // 用 currentUser 会把张三的结单抬头印成运营自己。
+  const investor = getInvestorUsers().find(u => u.userId === userId);
+  const clientName = investor?.name || currentUser.name;
 
-  const fiatTx = transactions.filter(tx => tx.status === 'completed');
+  // 钱包与法币流水都是单实例演示账户（没有 userId 维度）：非钱包归属用户既没有余额也没有流水，
+  // 只给余额不给流水（或反过来）会让「期初 + 明细 ≠ 期末」，两种半截都是错的（2026-11-25）。
+  const ownsWalletEarly = userId === 'u1';
+  const fiatTx = ownsWalletEarly ? transactions.filter(tx => tx.status === 'completed') : [];
   const depositTx = fiatTx.filter(tx => tx.type === 'deposit' && withinRange(tx.createdAt, start, end));
   const withdrawTx = fiatTx.filter(tx => tx.type === 'withdraw' && withinRange(tx.createdAt, start, end));
 
   // 期初/期末都走同一条逐笔流水回算，不再用「本期入金出金」反推——
   // 那条式子漏申购/赎回/划转，纸面永远加不平（2026-11-20 修正）。
   const openingAvailable = String(start) >= WALLET_LEDGER_START;
-  const balances = FIAT_CURRENCIES.map(([code]) => {
+  // 钱包是单实例演示账户（wallet 没有 userId 维度）：非钱包归属用户不算法币余额，
+  // 否则后台替其他客户出单时，会把演示账户的一千万印到别人的结单上（2026-11-25 实测 u20）。
+  const balances = ownsWalletEarly ? FIAT_CURRENCIES.map(([code]) => {
     const closing = walletBalanceAsOf(code, end, false, userId);
     return {
       account: 'fiat',
@@ -2601,7 +2695,7 @@ export function buildPeriodStatement({ from, to, userId = currentUser.id } = {})
       closing,
       hkdRate: code === 'HKD' ? 1 : convertToHKD(1, code),
     };
-  });
+  }) : [];
 
   const cryptoDep = cryptoDepositsOf(userId).filter(d => d.status === 'credited' && withinRange(d.creditedAt || d.createdAt, start, end));
   const cryptoWdr = cryptoWithdrawalsOf(userId).filter(w => w.status === 'confirmed' && withinRange(w.createdAt, start, end));
@@ -2716,6 +2810,8 @@ export function buildPeriodStatement({ from, to, userId = currentUser.id } = {})
   // 空账户由下面的 filter 兜掉（期末无资产、期初无资产、期间无流水与成交）。
   const mandateStatementAccounts = mandateAccounts
     .filter(a => a.userId === userId)
+    // 待授权账户不进单据（2026-11-25）：未授权即 APP 不可见，客户单据里不该有它
+    .filter(a => a.status !== MANDATE_ACCOUNT_STATUS.PENDING)
     .filter(a => String(a.openedAt || '').slice(0, 10) <= end)
     .map(a => {
       const closingPositions = mandatePositionsAsOf(a.id, end);
@@ -2777,8 +2873,8 @@ export function buildPeriodStatement({ from, to, userId = currentUser.id } = {})
   return {
     from: start,
     to: end,
-    clientName: currentUser.name,
-    clientUid: String(currentUser.id).toUpperCase(),
+    clientName,
+    clientUid: String(userId).toUpperCase(),
     printedAt: formatNow(),
     balances,
     fundPositions,
@@ -2801,6 +2897,88 @@ export function buildPeriodStatement({ from, to, userId = currentUser.id } = {})
     trades,
     cash,
   };
+}
+
+// ---------- 月结出具（2026-11-25） ----------
+// 日结改为回算视图之后，全用户唯一可归档的凭证就是月结单：出具时把当期结单冻结成快照，
+// 之后补录、改价都不再改写它。单号全平台流水，不带客户号（客户号在抬头）。
+
+export function monthRangeOf(period) {
+  const [y, m] = String(period || '').split('-').map(Number);
+  if (!y || !m) return null;
+  const last = new Date(y, m, 0).getDate();
+  const monthEnd = `${period}-${String(last).padStart(2, '0')}`;
+  return { from: `${period}-01`, to: monthEnd, monthEnd };
+}
+
+export function getMonthlyStatements(userId = null) {
+  return monthlyStatements
+    .filter(r => !userId || r.userId === userId)
+    .slice()
+    .sort((a, b) => String(b.period).localeCompare(String(a.period))
+      || String(b.issuedAt).localeCompare(String(a.issuedAt)));
+}
+
+// 同一期间可能先出暂定版、月末再出正式版：优先给正式版。
+export function getMonthlyStatementOf(userId, period) {
+  // 作废的不算「已出具」：客户端看不到，后台回到「待出具」，可以直接重出
+  const rows = monthlyStatements.filter(r => r.userId === userId && r.period === period && !r.voidedAt);
+  if (!rows.length) return null;
+  return rows.find(r => !r.provisional)
+    || rows.slice().sort((a, b) => String(b.issuedAt).localeCompare(String(a.issuedAt)))[0];
+}
+
+export function getMonthlyStatementById(id) {
+  return monthlyStatements.find(r => r.id === id) || null;
+}
+
+export function issueMonthlyStatement(userId, period, operator = '') {
+  const range = monthRangeOf(period);
+  if (!range) return { ok: false, error: '期间格式为 YYYY-MM' };
+  // 月末之前出具的是「暂定版」：期间未结束，不能假装这是期末凭证。
+  const provisional = range.monthEnd > todayStr();
+  const end = provisional ? todayStr() : range.monthEnd;
+  if (end < range.from) return { ok: false, error: '该期间尚未开始' };
+  // 作废的记录不算「已有」——否则作废后永远重出不了（2026-11-25 实测）
+  const existing = monthlyStatements.filter(r => r.userId === userId && r.period === period && !r.voidedAt);
+  if (existing.some(r => !r.provisional)) return { ok: false, error: '该期间已出具正式版，不能重复出具' };
+  if (provisional && existing.length) return { ok: false, error: '该期间已有暂定版；月末后再出正式版' };
+  const stmt = buildPeriodStatement({ from: range.from, to: end, userId });
+  const hasData = Math.abs(stmt.closingHKD) > 0.005
+    || Math.abs(stmt.openingHKD || 0) > 0.005
+    || stmt.trades.length > 0
+    || stmt.cash.length > 0
+    || stmt.fundPositions.length > 0;
+  if (!hasData) return { ok: false, error: '该期间无资产与流水，不出具空结单' };
+  const seq = monthlyStatements.filter(r => r.period === period).length + 1;
+  const record = {
+    id: `ms${Date.now()}`,
+    docNo: `MS-${String(period).replace('-', '')}-${String(seq).padStart(4, '0')}`,
+    userId,
+    userName: stmt.clientName,
+    period,
+    from: range.from,
+    to: end,
+    provisional,
+    issuedAt: formatNow(),
+    issuedBy: operator || '运营后台',
+    // 送达记录（2026-11-25）：出具 ≠ 送达。先记一条「APP 可查」，邮件/纸质由运营补登。
+    deliveries: [],
+    // 快照冻结：页面只读它，不再回算任何数字
+    snapshot: stmt,
+  };
+  record.deliveries.push({ at: record.issuedAt, channel: 'APP', by: record.issuedBy });
+  monthlyStatements.unshift(record);
+  logAudit({
+    operator: record.issuedBy,
+    category: 'fund',
+    action: 'create',
+    target: record.userName,
+    targetId: record.id,
+    note: `出具月结单 ${period}${provisional ? `（暂定，截至 ${end}）` : ''}，期末 HK$${formatExactAmount(stmt.closingHKD)}`,
+  });
+  Storage.save();
+  return { ok: true, record };
 }
 
 // ---------- 单次资金变动回单（2026-11-12 批次 B） ----------
@@ -6269,6 +6447,8 @@ export const ADMIN_MENUS = [
   // 与协议/账户/交易/估值的日常台账不是同一类工作面，拆成独立菜单；委托业务只留四签。
   { key: 'mandate-daily', label: '委托日结', hash: '#admin/mandate-daily', group: '委托' },
   { key: 'mandate-monthly', label: '委托月报', hash: '#admin/mandate-monthly', group: '委托' },
+  // 2026-11-25：日结改为回算视图后，月结成为全用户唯一的冻结凭证；出具是财务作业，不放委托组
+  { key: 'statement-issue', label: '结单出具', hash: '#admin/statement-issue', group: '资金' },
   { key: 'funds', label: '资金审核', hash: '#admin/funds', group: '资金' },
   { key: 'broadcast', label: '通知触达', hash: '#admin/broadcast', group: '运营' },
   { key: 'messages', label: '客户消息', hash: '#admin/messages', group: '运营' }, // 客服工作台（2026-08-24）：响应式 1v1 咨询，与广播（主动触达）相邻成对；service+super
@@ -6285,8 +6465,8 @@ export const roleMenuKeys = {
   // 超级管理员 = 最高权限：全部菜单（2026-08-15 用户确认"所有页面所有功能都有"——my-clients 原 advisor 专属，补上）；锁定不可编辑
   // 2026-10-16 口径修订：问卷记录恢复（意向收集链），其余资金/交易/投后 10 key 保持摘除
   // 2026-11-17 IA 收敛：mandate-* 四 key + special-subs → mandate / fund-trades
-  super: ['kyc', 'pi', 'users', 'my-clients', 'projects', 'events', 'registrations', 'subscriptions', 'fund-products', 'fund-trades', 'mandate', 'mandate-daily', 'mandate-monthly', 'funds', 'broadcast', 'messages', 'audit', 'roles', 'admins', 'config'],
-  ops: ['projects', 'events', 'registrations', 'subscriptions', 'fund-products', 'fund-trades', 'mandate', 'mandate-daily', 'mandate-monthly', 'funds', 'broadcast', 'users', 'config'],
+  super: ['kyc', 'pi', 'users', 'my-clients', 'projects', 'events', 'registrations', 'subscriptions', 'fund-products', 'fund-trades', 'mandate', 'mandate-daily', 'mandate-monthly', 'statement-issue', 'funds', 'broadcast', 'messages', 'audit', 'roles', 'admins', 'config'],
+  ops: ['projects', 'events', 'registrations', 'subscriptions', 'fund-products', 'fund-trades', 'mandate', 'mandate-daily', 'mandate-monthly', 'statement-issue', 'funds', 'broadcast', 'users', 'config'],
   // 合规角色：KYC审核 + PI认证 + 用户管理 + 问卷记录 + 审计日志（交易监控类 7 key 随资金流下线摘除）
   // 2026-11-13：委托协议归合规（协议档案由合规登记、super 复核）+ 委托账户授权复核（Maker-Checker 的 Checker）
   // 2026-11-17：委托域收成一页（mandate），协议台账在账户签内，合规仍管登记与授权复核
@@ -6295,7 +6475,7 @@ export const roleMenuKeys = {
   service: ['subscriptions', 'users', 'broadcast', 'messages'],
   // 财务专员：资金核销（充值到账/提现打款/换汇确认）+ 基金交易确认（2026-10-28 一期闭环恢复）
   // 2026-11-13：委托交易与估值、日结单与月报归财务（估值留痕 + 费用扣减 + 每日快照）→ 2026-11-17 收进 mandate 一页
-  finance: ['funds', 'fund-trades', 'mandate', 'mandate-daily', 'mandate-monthly'],
+  finance: ['funds', 'fund-trades', 'mandate', 'mandate-daily', 'mandate-monthly', 'statement-issue'],
   // 专属顾问：「我的客户」单一工作视图（2026-08-15 方案 A——顾问工作单元 = 客户而非模块，
   // 名下客户列表 + 跨模块任务聚合 + 客户详情；替代报名管理，线索跟进并入我的客户「跟进」）
   advisor: ['my-clients'],
@@ -6308,9 +6488,10 @@ export const roleMenuKeys = {
 // 2026-11-17：key 升 v7（IA 收敛：mandate-* 四 key + special-subs 合并为 mandate/fund-trades——
 // 旧覆盖表只含旧 key，VALID 过滤后 mandate 消失，与 v3/v6 同源，升 key 让覆盖失效回默认值）。
 // 2026-11-20：key 升 v8（日结/月报拆独立菜单 mandate-daily / mandate-monthly，同源原因）。
+// 2026-11-25：key 升 v9（新增 statement-issue，同源原因）。
 // 与 v1→v2、v2→v3、v3→v4 同源：getRoleMenuKeys 只做 VALID 过滤、不补默认值，
 // 老浏览器里存过的覆盖表不含新 key，不升版新菜单会整片消失。
-const ROLE_MENUS_KEY = 'zhifu-admin-role-menus-v8';
+const ROLE_MENUS_KEY = 'zhifu-admin-role-menus-v9';
 function getRoleMenuOverrides() {
   try {
     const raw = localStorage.getItem(ROLE_MENUS_KEY);
@@ -10394,7 +10575,7 @@ export function submitSubscription({ project, amount, currency = 'HKD' }) {
 //     一并核对（参考代码 + 到账付款人姓名与客户实名一致 + 卡资料），后台改事后复核（仅拒绝）。
 //     bankCards 属快照恢复范围，旧快照里 reviewStatus='pending' 的卡在新链路下没有审核队列可进，
 //     会永远卡在「审核中」且不可用于充值——迁移统一转 approved（待首充）。
-const STATE_VERSION = 64;
+const STATE_VERSION = 65;
 
 // ========== 快照迁移（2026-11-05） ==========
 // 机制：load 时按版本逐级跑迁移函数，跑不到 STATE_VERSION 才整体丢弃。
@@ -10463,6 +10644,14 @@ const SNAPSHOT_MIGRATIONS = {
           || (ag.createdAt ? `${String(ag.createdAt).slice(0, 10)} 00:00:00` : '');
         return { ...ag, status: 'active', signedAt, effectiveAt: ag.effectiveAt || signedAt };
       });
+    }
+    return data;
+  },
+  // 64 → 65：日结单不再持久化（2026-11-25）。旧快照里的 dailyStatements 是「用当天持仓
+  // 生成的历史快照」——留着只会继续印错数，直接丢弃；之后任一天都按结算日回算。
+  64: (data) => {
+    if (data && Object.prototype.hasOwnProperty.call(data, 'dailyStatements')) {
+      delete data.dailyStatements;
     }
     return data;
   },
@@ -11160,9 +11349,11 @@ export const Storage = {
         mandateStandingAuth: mandateStandingAuth,
         // 委托提取（2026-11-16）：追加型，旧快照缺 key 时保留代码种子，不升 STATE_VERSION
         mandateWithdrawals: mandateWithdrawals,
-        dailyStatements: dailyStatements,
+        // 日结单不再入快照（2026-11-25）：它是回算视图，存下来只会与流水脱节
         // 委托月报出具记录（2026-11-20）：追加型，旧快照缺 key 时保留默认空表
         mandateReports: mandateReports,
+        // 月结单出具记录（2026-11-25）：追加型
+        monthlyStatements: monthlyStatements,
         specialSubscriptionApprovals: specialSubscriptionApprovals,
         // 基金产品（2026-10-28）：后台「基金产品管理」改了条款/文件/净值必须刷新保留。
         // 只存产品本体，不存由它派生的展示文案（那边已经改成按数字生成）。
@@ -11345,11 +11536,9 @@ export const Storage = {
       restoreMandateArray(mandateFees, data.mandateFees);
       restoreMandateArray(mandateStandingAuth, data.mandateStandingAuth);
       restoreMandateArray(mandateWithdrawals, data.mandateWithdrawals);
-      restoreMandateArray(dailyStatements, data.dailyStatements);
       restoreMandateArray(mandateReports, data.mandateReports);
+      restoreMandateArray(monthlyStatements, data.monthlyStatements);
       restoreMandateArray(specialSubscriptionApprovals, data.specialSubscriptionApprovals);
-      // 日结单快照存在即视为已播种（否则 getDailyStatements 会再补一份历史，和快照叠加）
-      if (Array.isArray(data.dailyStatements)) dailyStatementSeeded = true;
       if (Array.isArray(data.statementExports)) {
         statementExports.length = 0;
         data.statementExports.forEach(r => {
@@ -12704,6 +12893,21 @@ export const MANDATE_ACCOUNT_STATUS = {
   CLOSED: 'closed',
 };
 
+// 单据链的账户边界（2026-11-25）：待授权账户不进任何单据。
+// 未授权 = APP 不可见 = 客户手里不该出现这个账户；而已暂停/已关闭要留在历史单据里
+// （资产还在，或关闭期间的流水必须能追），空账户由调用方的「无资产无流水」过滤兜掉。
+const BILLABLE_ACCOUNT_STATUSES = [
+  MANDATE_ACCOUNT_STATUS.ACTIVE,
+  MANDATE_ACCOUNT_STATUS.SUSPENDED,
+  MANDATE_ACCOUNT_STATUS.CLOSED,
+];
+function billableAccountsOf(userId, date) {
+  const d = String(date || '').slice(0, 10);
+  return mandateAccounts.filter(a => a.userId === userId
+    && BILLABLE_ACCOUNT_STATUSES.includes(a.status)
+    && String(a.openedAt || '').slice(0, 10) <= d);
+}
+
 // 资金流水类型。正负号由金额本身承载（deposit +、withdraw −），不靠类型推断符号——
 // 费用与分红都可能是正负（费用冲正/分红代扣税），让类型只管语义。
 export const MANDATE_LEDGER_TYPES = {
@@ -12863,6 +13067,36 @@ export const mandateAgreements = [
     createdAt: '2026-10-20 15:00:00',
     createdBy: '李合规',
   },
+  // 第四份协议（2026-11-25）：李四终止旧协议后重新登记，配套三个状态分支账户。
+  // 同一客户只允许一份生效协议——mag3 已终止，所以这里可以再生效。
+  {
+    id: 'mag4',
+    no: 'HB-DA-2026-004',
+    userId: 'u2',
+    userName: '李四',
+    status: 'active',
+    signedAt: '2026-11-05 15:00:00',
+    effectiveAt: '2026-11-06 00:00:00',
+    terminatedAt: null,
+    clientWitness: '陈大文',
+    managerDirector: '黎国基',
+    licensedRepName: '林景湖',
+    licensedRepCE: 'BJW456',
+    language: 'zh-HK',
+    scanUrl: null,
+    version: 'v1.0',
+    fees: { managementPct: 1.5, inceptionPct: 0, performancePct: 20, hurdlePct: 8, minimumValue: 1000000 },
+    strategy: {
+      objectives: '以港股上市证券为主，追求中长期资本增值。',
+      policy: '由持牌基金经理全权决定买入、持有与卖出。',
+      limits: { singleCompanyPct: 20, singleIssuerPct: 30, borrowingPct: 0 },
+    },
+    valuationCurrency: 'HKD',
+    valuationCycle: 'monthly',
+    reportingPeriod: 'monthly',
+    createdAt: '2026-11-05 15:00:00',
+    createdBy: '李合规',
+  },
 ];
 
 // 委托账户 B 号。auth 双人：ops 发起授权、compliance 复核，两人不得同一人（Maker-Checker）。
@@ -12900,6 +13134,57 @@ export const mandateAccounts = [
     authReviewedBy: '李合规',
     authReviewedAt: '2026-11-17 09:30:00',
     openedAt: '2026-11-17 09:00:00',
+    createdBy: '王运营',
+  },
+  // 状态分支种子（2026-11-25）：单据链只认「已授权 / 已暂停 / 已关闭」，待授权不进单据。
+  // 三户均无资产与流水，只用于点亮筛选分支；动它们之前先确认不改变任何结单数字。
+  {
+    id: 'mb3',
+    no: 'B00003',
+    userId: 'u2',
+    userName: '李四',
+    agreementId: 'mag4',
+    managerName: '林景湖',
+    custodian: 'HighBlock Securities Limited',
+    status: MANDATE_ACCOUNT_STATUS.PENDING,
+    visibleInApp: false,
+    authRequestedBy: '王运营',
+    openedAt: '2026-11-22 10:00:00',
+    createdBy: '王运营',
+  },
+  {
+    id: 'mb4',
+    no: 'B00004',
+    userId: 'u2',
+    userName: '李四',
+    agreementId: 'mag4',
+    managerName: '林景湖',
+    custodian: 'HighBlock Securities Limited',
+    status: MANDATE_ACCOUNT_STATUS.SUSPENDED,
+    visibleInApp: false,
+    suspendedAt: '2026-11-10 09:00:00',
+    suspendedReason: '客户资料更新中，暂停新增交易',
+    authRequestedBy: '王运营',
+    authReviewedBy: '李合规',
+    authReviewedAt: '2026-11-06 10:00:00',
+    openedAt: '2026-11-06 09:30:00',
+    createdBy: '王运营',
+  },
+  {
+    id: 'mb5',
+    no: 'B00005',
+    userId: 'u2',
+    userName: '李四',
+    agreementId: 'mag4',
+    managerName: '林景湖',
+    custodian: 'HighBlock Securities Limited',
+    status: MANDATE_ACCOUNT_STATUS.CLOSED,
+    visibleInApp: false,
+    closedAt: '2026-11-15 16:00:00',
+    authRequestedBy: '王运营',
+    authReviewedBy: '李合规',
+    authReviewedAt: '2026-09-02 10:00:00',
+    openedAt: '2026-09-02 09:30:00',
     createdBy: '王运营',
   },
 ];
@@ -13702,15 +13987,18 @@ export const mandateStandingAuth = [
   },
 ];
 
-// 日结单（覆盖三类账户；唯一允许持久化的派生快照——历史不能拿今天的净值重构）
-export const dailyStatements = [];
+// 日结单不再落库（2026-11-25）：它是「按结算日回算」的视图，存快照反而会与流水脱节——
+// 补录一笔成交后，快照仍停在旧数，客户手里的单和系统里的账对不上，且无从判断谁对。
+// 权威凭证由月结单 / 委托月报承担（出具即冻结），日结单只做当日查看。
 
 // 委托月报出具记录（2026-11-20）：协议 11.3 的「出具」是独立实体。
 // 月报数据由日结单派生，但「谁在何时把哪一版出具给客户」必须冻结——
-// 之后日结单重生成或补录，不得改写已出具的月报。
+// 之后日结重生成或补录，不得改写已出具的月报。
 export const mandateReports = [];
 
-let dailyStatementSeeded = false;
+// 月结单出具记录（2026-11-25）：日结改为回算视图之后，月结是唯一冻结的全账户凭证。
+// 追加型状态：旧快照缺这个键时保留默认空表，不升 STATE_VERSION。
+export const monthlyStatements = [];
 
 // ---- 估值与持仓派生 ----
 
@@ -14309,26 +14597,21 @@ const todayStr = () => {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 };
 
-export function buildDailyStatement(userId = currentUser.id, date = todayStr(), prevTotalHKD = null, prevStatement = null) {
-  // 连续性是期初的前提：上一份结单必须正好是前一天，否则不显示期初列
-  const dayBefore = (d) => {
-    const t = new Date(`${d}T00:00:00`);
-    if (Number.isNaN(t.getTime())) return '';
-    t.setDate(t.getDate() - 1);
-    const p = n => String(n).padStart(2, '0');
-    return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}`;
-  };
-  const prevAdjacent = !!prevStatement && String(prevStatement.date) === dayBefore(date);
-  const fund = getFundPortfolio(userId);
+export function buildDailyStatement(userId = currentUser.id, date = todayStr()) {
+  // 每一天都算得出来（2026-11-25）：期初恒为前一自然日的收盘余额，差额行恒为「较前一交易日」。
+  // 旧的「上一份结单必须正好是前一天，否则不给期初」是快照模型留下的退化分支，
+  // 按需计算之后不存在「缺日」，这条分支与它的参数一起删除。
+  const d = String(date).slice(0, 10);
+  const prevDay = shiftDayStr(d, -1);
+  const isToday = d === todayStr();
+  const fund = fundPortfolioAsOf(userId, d);
   // 委托：一个客户可能有多个委托账户，日结单必须覆盖全部（2026-11-20）。
-  // 历史日（种子 11-11 / 11-12）必须按结算日回算：现金取流水、持仓取成交、估值取当日或之前标记价。
-  // 用今天的组合生成历史单，会让「11-11」带上 11-13 才划出的钱，月报期间变动也恒为 0。
-  const isToday = String(date) === todayStr();
-  const accountsForDate = isToday
-    ? getMandateAccountsForUser(userId)
-    : mandateAccounts.filter(a => a.userId === userId && String(a.openedAt || '').slice(0, 10) <= date);
+  // 一律按结算日回算：现金取流水、持仓取成交、估值取当日或之前标记价。
+  // 委托的 as-of 与「当前组合」在结算日 = 今天时数值相同（2026-11-25 实测 199,534 一致），
+  // 所以不需要再为今天单开一条分支。
+  const accountsForDate = billableAccountsOf(userId, d);
   const mandateByAccount = accountsForDate
-    .map(a => ({ account: a, portfolio: isToday ? getMandatePortfolio(a.id) : mandatePortfolioAsOf(a.id, date) }))
+    .map(a => ({ account: a, portfolio: mandatePortfolioAsOf(a.id, d) }))
     .filter(x => x.portfolio.positions.length > 0 || x.portfolio.cash.length > 0);
   const mandate = (() => {
     if (!mandateByAccount.length) return null;
@@ -14373,8 +14656,9 @@ export function buildDailyStatement(userId = currentUser.id, date = todayStr(), 
   const pending = [];
 
   // 只收「结算日收盘时仍在途」的指令：之后才提交的不属于这张快照（否则历史日会带出今天的指令）。
+  // 历史日一律不给在途：当时挂着的单后来如何没有留痕，编一条「当日待复核」就是把今天的现场贴到昨天。
   // 字段留给页面用 t() 拼文案——拼好的中文串进数据层，英文界面就永远是中文。
-  const inFlight = stamp => !stamp || dayOf(stamp) <= date;
+  const inFlight = stamp => isToday && (!stamp || dayOf(stamp) <= d);
 
   fundOrders
     .filter(o => o.userId === userId && o.status === FUND_ORDER_STATUS.PENDING && inFlight(o.createdAt))
@@ -14411,12 +14695,12 @@ export function buildDailyStatement(userId = currentUser.id, date = todayStr(), 
     }));
 
   // 冻结按来源拆开写（后台对账要看来源；客户端只呈现「冻结」列 + 在途指令，不重复列金额）
-  const locked = fund.cash.filter(c => c.frozen > 0).map(c => {
+  const locked = isToday ? fund.cash.filter(c => c.frozen > 0).map(c => {
     const sources = [];
     if (getFundFrozen(userId, c.currency) > 0) sources.push('基金申购待确认');
     if (getWithdrawFrozen(userId, c.currency) > 0) sources.push('提现处理中');
     return { currency: c.currency, amount: c.frozen, note: sources.join(' / ') || '—' };
-  });
+  }) : [];
 
   // 与现金表同序（HKD → USD → CNH），无币种的委托指令排最后
   const CURRENCY_RANK = { HKD: 0, USD: 1, CNH: 2 };
@@ -14475,6 +14759,15 @@ export function buildDailyStatement(userId = currentUser.id, date = todayStr(), 
 
   movements.sort((a, b) => String(a.at).localeCompare(String(b.at)));
 
+  // 差额行的对照基准：前一自然日的收盘总额（三类资产一起算）
+  const totalAsOf = (day) => {
+    const f = fundPortfolioAsOf(userId, day);
+    const m = mandateAccounts
+      .filter(a => a.userId === userId && String(a.openedAt || '').slice(0, 10) <= day)
+      .reduce((s, a) => s + mandatePortfolioAsOf(a.id, day).totalHKD, 0);
+    return f.totalHKD + m;
+  };
+
   const mandateSection = mandate ? {
     accountNo: mandate.accountNo,
     accounts: mandate.accounts,
@@ -14494,25 +14787,21 @@ export function buildDailyStatement(userId = currentUser.id, date = todayStr(), 
     // 期初只在与上一份结单「连续」时给出（上一份 = 前一自然日）。
     // 日结单是按需生成的，中间可能缺几天：拿 11-12 的余额当时 11-20 的期初，
     // 纸面会出现「期初 + 当日变动 ≠ 期末」——一个对不平的加法比不给期初更糟。
-    cashA: fund.cash.map(c => {
-      const prevRow = prevAdjacent
-        ? (prevStatement.cashA || []).find(p => p.currency === c.currency)
-        : null;
-      return {
-        currency: c.currency,
-        opening: prevRow ? prevRow.balance : null,
-        balance: c.balance,
-        balanceHKD: Math.round(convertToHKD(c.balance, c.currency) * 100) / 100,
-        frozen: c.frozen,
-        available: c.available,
-      };
-    }),
-    openingKnown: prevAdjacent,
+    // 期初 = 前一自然日收盘。按需计算之后每一天都成立，不再有「缺日就不给期初」的分支。
+    cashA: fund.cash.map(c => ({
+      currency: c.currency,
+      opening: walletBalanceAsOf(c.currency, prevDay, false, userId),
+      balance: c.balance,
+      balanceHKD: Math.round(convertToHKD(c.balance, c.currency) * 100) / 100,
+      frozen: c.frozen,
+      available: c.available,
+    })),
+    openingKnown: true,
     cashAHKD: fund.cashHKD,
     fund: {
       positions: fund.rows.map(r => {
-        // 净值日与结算日不同 = 当日未估值、沿用上一公布净值。只记日期，解释归脚注
-        const navDate = String(funds.find(f => f.id === r.fundId)?.navMeta?.lastNavDate || '').slice(0, 10);
+        // 净值日 = 该结算日实际采用的那一档净值日期；与结算日不同即「当日未估值、沿用上一公布净值」
+        const navDate = navPointAsOf(funds.find(f => f.id === r.fundId), date).navDate;
         return {
           fundId: r.fundId,
           fundName: r.fundName,
@@ -14531,140 +14820,95 @@ export function buildDailyStatement(userId = currentUser.id, date = todayStr(), 
     locked,
     movements,
     totalHKD: fund.totalHKD + (mandate?.totalHKD || 0),
-    prevTotalHKD,
-    prevDate: prevStatement ? prevStatement.date : null,
+    prevTotalHKD: totalAsOf(prevDay),
+    prevDate: prevDay,
     generatedAt: formatNow(),
     generatedBy: '',
   };
 }
 
-function seedDailyStatementsOnce() {
-  if (dailyStatementSeeded || dailyStatements.length) { dailyStatementSeeded = true; return; }
-  dailyStatementSeeded = true;
-  if (currentUser.id !== 'u1') return;
-  const d1 = '2026-11-11';
-  const d2 = '2026-11-12';
-  // 两天的估值没有变化（净值/标记价只在 11-12 更新），所以两天总额相同是事实，不伪造差额。
-  // 在途指令不手工清空：buildDailyStatement 已按结算日过滤，11-11 只会带出当天之前提交的提现。
-  const s1 = buildDailyStatement('u1', d1, null);
-  s1.generatedBy = '系统（日终）';
-  const s2 = buildDailyStatement('u1', d2, s1.totalHKD, s1);
-  s2.generatedBy = '系统（日终）';
-  dailyStatements.push(s2, s1);
+// 日结单是视图，不是记录（2026-11-25）：任一天都按结算日回算，不预生成快照。
+// 列表默认给最近 30 天里有账的天，够客户回看，也不必为演示造种子。
+const DAILY_LIST_DAYS = 30;
+
+export function getDailyStatements(userId = currentUser.id, days = DAILY_LIST_DAYS) {
+  const today = todayStr();
+  return Array.from({ length: days }, (_, i) => shiftDayStr(today, -i))
+    .map(day => buildDailyStatement(userId, day))
+    .filter(s => s.totalHKD > 0.005 || s.movements.length > 0);
 }
 
-export function getDailyStatements(userId = currentUser.id) {
-  seedDailyStatementsOnce();
-  return dailyStatements
-    .filter(s => s.userId === userId)
-    .slice()
-    .sort((a, b) => String(b.date).localeCompare(String(a.date)));
-}
-
-export function generateDailyStatement({ userId = currentUser.id, date = todayStr() } = {}, operator = '') {
-  seedDailyStatementsOnce();
-  // 历史日不可补生成：buildDailyStatement 读的是「此刻」的持仓与标记价，
-  // 补出来的 11-10 单据其实是 11-19 的仓位，属伪造历史（2026-11-19 审查发现）。
-  if (String(date) < todayStr()) {
-    return { ok: false, error: '日结单只能在当日生成；历史日期只可查看已有单据' };
-  }
-  // 只拦「结算日及以前」的待复核交易：未来的待复核单不影响今天出单，
-  // 而当日之前的待复核单会缺成交，第二天无法解释差额（原实现查全部，与「当日」文案不符）。
-  const pendingTrades = mandateTrades.filter(t => t.userId === userId
-    && t.status === MANDATE_TRADE_STATUS.PENDING
-    && String(t.tradeDate || '') <= String(date));
-  // E5：待复核交易不进账，带着它们生成日结单会缺当日成交，且第二天无法解释差额
-  if (pendingTrades.length > 0) {
-    return { ok: false, error: `当日有 ${pendingTrades.length} 笔委托交易待复核，先复核后再生成日结单` };
-  }
-  const prev = dailyStatements
-    .filter(s => s.userId === userId && String(s.date) < String(date))
-    .sort((a, b) => String(b.date).localeCompare(String(a.date)))[0];
-  const stmt = buildDailyStatement(userId, date, prev ? prev.totalHKD : null, prev || null);
-  stmt.generatedBy = operator || '系统（日终）';
-  const idx = dailyStatements.findIndex(s => s.userId === userId && s.date === date);
-  if (idx >= 0) dailyStatements[idx] = stmt;
-  else dailyStatements.unshift(stmt);
-  logAudit({ operator: operator || '系统（日终）', category: 'mandate', action: 'create', target: userId, targetId: stmt.id, note: `生成日结单 ${date}：总资产 HK$${formatExactAmount(stmt.totalHKD)}` });
-  Storage.save();
-  return { ok: true, statement: stmt };
-}
-
-// 日结作业面：一次处理当日全部客户。逐户返回结果，不整批回滚——
-// 一户因待复核交易失败，不该把其他户的成功结果也丢掉。
+// 日结作业面：列出有委托账户的客户（委托月报的索引口径）。
 export function getMandateClients() {
   const map = new Map();
   mandateAccounts
-    .filter(a => a.status !== MANDATE_ACCOUNT_STATUS.CLOSED)
+    // 待授权的账户还没有客户可见的身份，不进委托月报索引（2026-11-25）
+    .filter(a => a.status !== MANDATE_ACCOUNT_STATUS.CLOSED && a.status !== MANDATE_ACCOUNT_STATUS.PENDING)
     .forEach(a => {
       if (a.userId && !map.has(a.userId)) map.set(a.userId, { userId: a.userId, name: a.userName || a.userId });
     });
   return Array.from(map.values());
 }
 
-export function generateDailyStatementsForDate(date = todayStr(), operator = '') {
-  return getMandateClients().map(c => {
-    const res = generateDailyStatement({ userId: c.userId, date }, operator);
-    return {
-      ...c,
-      ok: res.ok,
-      error: res.error || '',
-      totalHKD: res.ok ? res.statement.totalHKD : null,
-    };
-  });
+export function getDailyStatementById(id) {
+  // 单号形如 ds-u1-2026-11-12：从单号还原「谁的哪一天」，页面路由与深链都不用改。
+  const m = /^ds-(.+)-(\d{4}-\d{2}-\d{2})$/.exec(String(id || ''));
+  if (!m) return null;
+  return buildDailyStatement(m[1], m[2]);
 }
 
-export function getDailyStatementById(id) {
-  seedDailyStatementsOnce();
-  return dailyStatements.find(s => s.id === id) || null;
+// 日终核对作业面（只读，2026-11-25）：日结单随查随算之后，运营要做的不是「点生成」，
+// 而是核对「今天的单会不会印出没复核的成交、没填价的标的」。列出所有有账户的客户。
+export function getStatementClients() {
+  const map = new Map();
+  const put = (userId, name) => {
+    if (!userId || map.has(userId)) return;
+    map.set(userId, { userId, name: name || '' });
+  };
+  mandateAccounts
+    .filter(a => a.status !== MANDATE_ACCOUNT_STATUS.PENDING)
+    .forEach(a => put(a.userId, a.userName));
+  fundHoldings.filter(h => h.shares > 0).forEach(h => put(h.userId, ''));
+  const investors = getInvestorUsers();
+  return Array.from(map.values()).map(c => ({
+    ...c,
+    name: c.name || investors.find(u => u.userId === c.userId)?.name || c.userId,
+  }));
 }
 
 // 月报：协议 11.3 合同义务。由当月日结单汇总，不另存第二份真相。
 export function buildMandateMonthlyReport(accountId, month) {
-  seedDailyStatementsOnce();
   const account = mandateAccounts.find(a => a.id === accountId);
-  if (!account) return null;
-  // 日结单在 2026-11-20 起改为「客户级聚合」，合并字段里含全部委托账户。
-  // 月报是每账户一份，必须取自己那一户的分户明细；旧快照没有 accounts 时才退回合并字段。
-  // 退回有前提：该客户当前只有一个委托账户。多账户时，旧合并总额无法归属到某一户，
-  // 强行套用会造出「B00009 期初 199,534 → 期末 10,000」这种假变动。
-  const sliceOf = s => s?.mandate?.accounts?.find(a => a.id === accountId) || null;
-  const onlyOneAccount = getMandateAccountsForUser(account.userId).length === 1;
-  const legacyOf = (s) => (onlyOneAccount && s?.mandate
-    ? { totalHKD: s.mandate.totalHKD, positions: s.mandate.positions, cash: s.mandate.cash }
-    : null);
-  // 只统计「这张日结单里确实有本账户」的天数：多账户时，B00009 在开户前的单
-  // 不该计进它的月报天数（否则「已汇总 3 天」却只有 1 天有它的持仓）。
-  const hasAccount = s => !!sliceOf(s) || !!legacyOf(s);
-  const inMonth = dailyStatements
-    .filter(s => s.userId === account.userId && String(s.date).slice(0, 7) === month && s.mandate && hasAccount(s))
-    .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  // 待授权账户不出月报：协议 11.3 的月报义务只对已授权账户成立（2026-11-25）
+  if (!account || account.status === MANDATE_ACCOUNT_STATUS.PENDING) return null;
+  const [y, m] = String(month).split('-').map(Number);
+  if (!y || !m) return null;
+  const monthStart = `${month}-01`;
+  const monthEnd = `${month}-${String(new Date(y, m, 0).getDate()).padStart(2, '0')}`;
+  const today = todayStr();
+  // 期末取「月末」与「今天」的较早者：月中出具时不能把未来几天的仓位算进来。
+  const periodEnd = monthEnd < today ? monthEnd : today;
+  if (periodEnd < monthStart) return null;
+  const openingDay = shiftDayStr(monthStart, -1);
+
   const fees = mandateFees.filter(f => f.accountId === accountId && f.period === month && f.status === 'approved');
-  const portfolio = getMandatePortfolio(accountId);
-  const first = inMonth[0];
-  const last = inMonth[inMonth.length - 1];
-  const firstSlice = sliceOf(first) || legacyOf(first);
-  const lastSlice = sliceOf(last) || legacyOf(last);
-  const feeHKD = fees.reduce((s, f) => s + convertToHKD(f.amount, f.currency), 0);
-  const firstTotal = firstSlice?.totalHKD ?? null;
-  const lastTotal = lastSlice?.totalHKD ?? null;
-  const changeHKD = firstTotal != null && lastTotal != null ? lastTotal - firstTotal : null;
-  // 差额窗口 =（首份日结日, 末份日结日]：期初已经含首份之前的流水，不能重复计。
-  const dayAfter = (d) => {
-    const t = new Date(`${d}T00:00:00`);
-    if (Number.isNaN(t.getTime())) return d;
-    t.setDate(t.getDate() + 1);
-    const p = n => String(n).padStart(2, '0');
-    return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}`;
-  };
-  const flows = first && last ? mandateFlowsBetween(accountId, dayAfter(first.date), last.date) : [];
+  const feeHKD = Math.round(fees.reduce((s, f) => s + convertToHKD(f.amount, f.currency), 0) * 100) / 100;
+
+  // 2026-11-25：不再由「当月日结单」汇总——日结单本身是回算视图，用它当中介只会多一层失真。
+  // 期初取期初日前一刻、期末取期末日，全部走 as-of。
+  const opening = mandatePortfolioAsOf(accountId, openingDay);
+  const closing = mandatePortfolioAsOf(accountId, periodEnd);
+  const flows = mandateFlowsBetween(accountId, monthStart, periodEnd);
   const netFlowHKD = Math.round(flows.reduce((s, f) => s + Number(f.amountHKD || 0), 0) * 100) / 100;
-  const marketDeltaHKD = changeHKD == null ? null : Math.round((changeHKD - netFlowHKD) * 100) / 100;
-  const positions = lastSlice?.positions || portfolio.positions.map(p => ({
+  const changeHKD = Math.round((closing.totalHKD - opening.totalHKD) * 100) / 100;
+  const marketDeltaHKD = Math.round((changeHKD - netFlowHKD) * 100) / 100;
+
+  const positions = closing.positions.map(p => ({
     symbol: p.symbol, name: p.name, quantity: p.quantity, price: p.price,
     priceAt: p.priceAt, method: p.valuationMethod, marketValueHKD: p.marketValueHKD,
   }));
-  const cash = lastSlice?.cash || portfolio.cash.map(c => ({ currency: c.currency, balance: c.balance }));
+  const cash = closing.cash.map(c => ({ currency: c.currency, balance: c.balance, balanceHKD: c.balanceHKD }));
+
   // 汇率表：折合数必须能由读者自己乘出来；只列本报告真正出现的币种。
   const fxCurrencies = Array.from(new Set([
     ...positions.map(p => p.currency),
@@ -14677,16 +14921,17 @@ export function buildMandateMonthlyReport(accountId, month) {
     const meta = exchangeRates[`${String(code).toLowerCase()}-hkd`];
     return { currency: code, rate, updatedAt: meta?.updatedAt || '' };
   }).filter(r => r.rate > 0);
+
   return {
     accountId,
     accountNo: account.no,
     userName: account.userName,
     month,
-    days: inMonth.length,
-    openingHKD: firstTotal,
-    closingHKD: lastTotal ?? portfolio.totalHKD,
-    // 日结单里 mandate 可能为 null（该客户当月只有基金账户、无委托持仓）：
-    // 直接读 last.mandate.totalHKD 会让整页 ErrorBoundary 崩掉（2026-11-19 实测）。
+    periodStart: monthStart,
+    periodEnd,
+    days: Math.round((new Date(`${periodEnd}T00:00:00`) - new Date(`${monthStart}T00:00:00`)) / 86400000) + 1,
+    openingHKD: Math.round(opening.totalHKD * 100) / 100,
+    closingHKD: Math.round(closing.totalHKD * 100) / 100,
     changeHKD,
     netFlowHKD,
     marketDeltaHKD,
@@ -14696,12 +14941,56 @@ export function buildMandateMonthlyReport(accountId, month) {
     positions,
     cash,
     fx,
-    statements: inMonth.map(s => ({
-      id: s.id, date: s.date,
-      totalHKD: sliceOf(s)?.totalHKD ?? s.mandate?.totalHKD ?? 0,
-    })),
     generatedAt: formatNow(),
   };
+}
+
+// ---- 出具之后的两个动作（2026-11-25）：送达登记、作废 ----
+// 出具 ≠ 送达。协议 11.3 的 15 个营业日说的是送到客户手里，不是系统里生成一份。
+// 作废不是删除：旧版留着、标明原因，重出会生成新单号——审计要能看到「哪一版被哪一版取代」。
+
+const statementRecordOf = (kind, id) => (kind === 'monthly' ? monthlyStatements : mandateReports)
+  .find(r => r.id === id) || null;
+
+export function deliverStatement(kind, id, channel, operator = '') {
+  const rec = statementRecordOf(kind, id);
+  if (!rec) return { ok: false, error: '单据记录不存在' };
+  if (rec.voidedAt) return { ok: false, error: '已作废的单据不再登记送达' };
+  const ch = String(channel || '').trim();
+  if (!ch) return { ok: false, error: '请选择送达方式' };
+  rec.deliveries = rec.deliveries || [];
+  rec.deliveries.push({ at: formatNow(), channel: ch, by: operator || '运营后台' });
+  logAudit({
+    operator: operator || '运营后台',
+    category: 'fund',
+    action: 'update',
+    target: rec.userName,
+    targetId: rec.id,
+    note: `登记送达 ${rec.docNo || rec.id}：${ch}`,
+  });
+  Storage.save();
+  return { ok: true, record: rec };
+}
+
+export function voidStatement(kind, id, reason, operator = '') {
+  const rec = statementRecordOf(kind, id);
+  if (!rec) return { ok: false, error: '单据记录不存在' };
+  if (rec.voidedAt) return { ok: false, error: '该单据已作废' };
+  const why = String(reason || '').trim();
+  if (!why) return { ok: false, error: '请填写作废原因' };
+  rec.voidedAt = formatNow();
+  rec.voidedBy = operator || '运营后台';
+  rec.voidReason = why;
+  logAudit({
+    operator: rec.voidedBy,
+    category: 'fund',
+    action: 'update',
+    target: rec.userName,
+    targetId: rec.id,
+    note: `作废 ${rec.docNo || rec.id}：${why}`,
+  });
+  Storage.save();
+  return { ok: true, record: rec };
 }
 
 // ---- 月报出具（协议 11.3，2026-11-20） ----
@@ -14710,6 +14999,7 @@ export function buildMandateMonthlyReport(accountId, month) {
 
 export function getMandateReports(accountId = null) {
   return mandateReports
+    .filter(r => !r.voidedAt)
     .filter(r => !accountId || r.accountId === accountId)
     .slice()
     .sort((a, b) => String(b.period).localeCompare(String(a.period))
@@ -14721,7 +15011,7 @@ export function getMandateReportById(id) {
 }
 
 export function getMandateReportOf(accountId, period) {
-  return mandateReports.find(r => r.accountId === accountId && r.period === period) || null;
+  return mandateReports.find(r => r.accountId === accountId && r.period === period && !r.voidedAt) || null;
 }
 
 export function issueMandateMonthlyReport(accountId, period, operator = '') {
@@ -14730,7 +15020,23 @@ export function issueMandateMonthlyReport(accountId, period, operator = '') {
   if (!/^\d{4}-\d{2}$/.test(String(period || ''))) return { ok: false, error: '期间格式为 YYYY-MM' };
   if (getMandateReportOf(accountId, period)) return { ok: false, error: '该期间月报已出具，不能重复出具' };
   const report = buildMandateMonthlyReport(accountId, period);
-  if (!report || report.days === 0) return { ok: false, error: '该期间没有日结单，不能出具月报' };
+  // 闸门换成「数据定稿」而不是「有没有日结单」（2026-11-25）：日结单已改为回算视图，
+  // 恒不为空；真正该拦的是当天还没复核的成交与还没审批的费用——带着它们出具，
+  // 客户拿到的月报会在复核完成后对不上。
+  if (!report) return { ok: false, error: '该期间无可出具的账户数据' };
+  const noAssets = Math.abs(report.closingHKD) <= 0.005 && Math.abs(report.openingHKD) <= 0.005
+    && report.flows.length === 0 && report.fees.length === 0;
+  if (noAssets) return { ok: false, error: '该期间该账户无资产与流水，不出具空报告' };
+  const pendingTrades = mandateTrades.filter(t => t.accountId === accountId
+    && t.status === MANDATE_TRADE_STATUS.PENDING
+    && String(t.tradeDate || '').slice(0, 7) <= period);
+  if (pendingTrades.length > 0) {
+    return { ok: false, error: `该账户有 ${pendingTrades.length} 笔委托交易待复核，复核后再出具月报` };
+  }
+  const pendingFees = mandateFees.filter(f => f.accountId === accountId && f.period === period && f.status === 'pending');
+  if (pendingFees.length > 0) {
+    return { ok: false, error: `该期间有 ${pendingFees.length} 笔费用待审批，审批后再出具月报` };
+  }
   const issuedAt = formatNow();
   const record = {
     id: `mrp${Date.now()}`,
@@ -14742,9 +15048,12 @@ export function issueMandateMonthlyReport(accountId, period, operator = '') {
     period,
     issuedAt,
     issuedBy: operator || '运营后台',
+    deliveries: [],
     // 快照冻结：字段与页面一一对应，渲染端不再回算任何数字
     snapshot: {
       days: report.days,
+      periodStart: report.periodStart,
+      periodEnd: report.periodEnd,
       openingHKD: report.openingHKD,
       closingHKD: report.closingHKD,
       changeHKD: report.changeHKD,
@@ -14752,12 +15061,15 @@ export function issueMandateMonthlyReport(accountId, period, operator = '') {
       marketDeltaHKD: report.marketDeltaHKD,
       feeHKD: report.feeHKD,
       fees: report.fees.map(f => ({ id: f.id, period: f.period, type: f.type, amount: f.amount, currency: f.currency })),
+      // 资金明细随快照冻结：月报上的「期间资金变动」必须能追到每一笔，
+      // 否则客户只能看到一个查不到出处的净额（2026-11-25）。
+      flows: report.flows.map(f => ({ ...f })),
       positions: report.positions.map(p => ({ ...p })),
       cash: report.cash.map(c => ({ ...c })),
       fx: report.fx.map(f => ({ ...f })),
-      statements: report.statements.map(s => ({ ...s })),
     },
   };
+  record.deliveries.push({ at: record.issuedAt, channel: 'APP', by: record.issuedBy });
   mandateReports.unshift(record);
   logAudit({
     operator: record.issuedBy,
@@ -14771,10 +15083,7 @@ export function issueMandateMonthlyReport(accountId, period, operator = '') {
   return { ok: true, report: record };
 }
 
-// 日结单种子在模块加载时生成一次（2026-11-13）：
-// 历史快照必须反映「当时」的持仓，而不是用户点开页面那一刻的状态。
-// 若改成首次读取时懒生成，先复核一笔交易再打开结算页，历史单会凭空包含新交易。
-seedDailyStatementsOnce();
+// 日结单不再有种子（2026-11-25）：任一天按结算日回算，种一条快照反而会成为第二份真相。
 
 // ========== 特殊申购（降档）后台审批（2026-11-13 · 11-13 会议 §3） ==========
 //
