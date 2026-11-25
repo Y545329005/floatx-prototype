@@ -4,7 +4,7 @@ import DocViewport from '../components/DocViewport';
 import {
   buildPeriodStatement, formatExactAmount, formatShares, platformBrand,
   requestStatementExport, advanceStatementExport,
-  currentUser, getMonthlyStatementOf, monthRangeOf,
+  currentUser, getMonthlyStatementOf, monthRangeOf, formatCryptoQty,
 } from '../mock/data';
 import { useLang } from '../i18n';
 
@@ -16,8 +16,6 @@ import { useLang } from '../i18n';
    就不存在重排丢字段与两份实现漂移。
    手机上的阅读问题交给查看态（DocViewport：100% / 适应宽度），不改纸面。
    ───────────────────────────────────────────────────────────── */
-
-const fmtQty = (n) => (Number(n) || 0).toLocaleString('en-US', { maximumFractionDigits: 6 });
 
 export default function FundPeriodStatement({ from, to, goBack }) {
   const { t, lang } = useLang();
@@ -48,6 +46,8 @@ export default function FundPeriodStatement({ from, to, goBack }) {
     if (f.kind === 'deposit') return t('入金');
     if (f.kind === 'withdraw') return t('出金');
     if (f.kind === 'dividend') return t('股息');
+    if (f.kind === 'subscription_out') return t('申购打款');
+    if (f.kind === 'subscription_refund') return t('申购退款');
     return t('其他');
   };
   const signed = v => `${v >= 0 ? '+' : '−'}${formatExactAmount(Math.abs(v))}`;
@@ -145,12 +145,19 @@ export default function FundPeriodStatement({ from, to, goBack }) {
             <thead>
               <tr>
                 <th>{t('币种')}</th>
-                <th className="num">{t('期初')}</th>
-                <th className="num">{t('期末')}</th>
+                {/* RO 会议（2026-11-25）：期初/期末下面必须给出是哪一天的资金状况 */}
+                <th className="num">
+                  {t('期初')}
+                  {stmt.openingDate && <span className="doc-th-sub">{stmt.openingDate}</span>}
+                </th>
+                <th className="num">
+                  {t('期末')}
+                  {stmt.closingDate && <span className="doc-th-sub">{stmt.closingDate}</span>}
+                </th>
                 <th className="num">{t('HKD 估值')}</th>
               </tr>
             </thead>
-            {[['fiat', '法币账户'], ['crypto', '数字资产']].map(([group, groupLabel]) => {
+            {[['fiat', '法币账户（自行操作）'], ['crypto', '数字资产（自行操作）']].map(([group, groupLabel]) => {
               const rows = stmt.balances.filter(b => b.account === group);
               if (!rows.length) return null;
               return (
@@ -160,13 +167,25 @@ export default function FundPeriodStatement({ from, to, goBack }) {
                   </tr>
                   {rows.map(b => (
                     <tr key={`${b.account}-${b.currency}`}>
-                      <td>{b.currency}</td>
+                      <td>
+                        {b.currency}
+                        {/* RO 会议：数字资产要明确标注所用汇率，否则折合数无法验算 */}
+                        {b.account === 'crypto' && (() => {
+                          const rate = (stmt.fx || []).find(f => f.currency === b.currency);
+                          if (!rate) return null;
+                          return (
+                            <span className="doc-sub">
+                              1 {b.currency} = {formatExactAmount(rate.rate)} HKD{rate.updatedAt ? ` · ${String(rate.updatedAt).slice(0, 10)}` : ''}
+                            </span>
+                          );
+                        })()}
+                      </td>
                       <td className="num">
                         {b.opening == null
                           ? '—'
-                          : (b.account === 'crypto' ? fmtQty(b.opening) : formatExactAmount(b.opening))}
+                          : (b.account === 'crypto' ? formatCryptoQty(b.currency, b.opening) : formatExactAmount(b.opening))}
                       </td>
-                      <td className="num">{b.account === 'crypto' ? fmtQty(b.closing) : formatExactAmount(b.closing)}</td>
+                      <td className="num">{b.account === 'crypto' ? formatCryptoQty(b.currency, b.closing) : formatExactAmount(b.closing)}</td>
                       <td className="num">{formatExactAmount(b.closingHKD)}</td>
                     </tr>
                   ))}
@@ -176,7 +195,7 @@ export default function FundPeriodStatement({ from, to, goBack }) {
             {stmt.fundPositions.length > 0 && (
               <tbody>
                 <tr className="doc-group">
-                  <td colSpan={4}>{t('基金持仓')}</td>
+                  <td colSpan={4}>{t('基金持仓（自行操作）')}</td>
                 </tr>
                 {stmt.fundPositions.map(p => (
                   <tr key={p.fundId}>
@@ -191,7 +210,7 @@ export default function FundPeriodStatement({ from, to, goBack }) {
             {stmt.mandate && (
               <tbody>
                 <tr>
-                  <td colSpan={3}>{t('其中：委托账户')}</td>
+                  <td colSpan={3}>{t('其中：委托账户（委托管理）')}</td>
                   <td className="num">{formatExactAmount(stmt.mandate.closingHKD)}</td>
                 </tr>
               </tbody>
@@ -280,6 +299,8 @@ export default function FundPeriodStatement({ from, to, goBack }) {
                         <tr>
                           <th>{t('持仓')}</th>
                           <th className="num">{t('数量')}</th>
+                          {/* RO 会议（2026-11-25）：持仓要能看到平均买入价，与券商回单对得上 */}
+                          <th className="num">{t('平均成本')}</th>
                           <th className="num">{t('估值价')}</th>
                           <th className="num">{t('市值（HKD）')}</th>
                         </tr>
@@ -289,8 +310,9 @@ export default function FundPeriodStatement({ from, to, goBack }) {
                           <tr key={p.symbol}>
                             <td className="wrap">{p.symbol} · {p.name}</td>
                             <td className="num">{formatShares(p.quantity)}</td>
+                            <td className="num">{p.avgCost > 0 ? `${p.currency} ${formatExactAmount(p.avgCost)}` : '—'}</td>
                             <td className="num">
-                              {p.valued ? p.price : t('按成本')}
+                              {p.valued ? `${p.currency} ${p.price}` : t('按成本')}
                               {p.priceAt ? <span className="doc-sub">{p.priceAt}</span> : null}
                             </td>
                             <td className="num">{formatExactAmount(p.marketValueHKD)}</td>
@@ -379,7 +401,7 @@ export default function FundPeriodStatement({ from, to, goBack }) {
                     <td className="num">{r.count}</td>
                     <td className="num">
                       {/* 数字资产按数量、法币按金额：同一列两种量纲会把 0.15 印成 0.15 元 */}
-                      {['HKD', 'USD', 'CNH'].includes(r.currency) ? formatExactAmount(r.amount) : fmtQty(r.amount)}
+                      {['HKD', 'USD', 'CNH'].includes(r.currency) ? formatExactAmount(r.amount) : formatCryptoQty(r.currency, r.amount)}
                     </td>
                     <td className="num">{formatExactAmount(r.amountHKD)}</td>
                   </tr>
@@ -419,7 +441,7 @@ export default function FundPeriodStatement({ from, to, goBack }) {
                     <td>{t({ deposit: '充值', withdraw: '提现', 'crypto-deposit': '充币', 'crypto-withdraw': '提币', 'fund-subscribe': '申购', 'fund-redeem': '赎回' }[c.kind])}</td>
                     <td className="num">
                       {c.direction === 'in' ? '+' : '−'}{c.currency} {
-                        c.kind.startsWith('crypto') ? fmtQty(c.amount) : formatExactAmount(c.amount)
+                        c.kind.startsWith('crypto') ? formatCryptoQty(c.currency, c.amount) : formatExactAmount(c.amount)
                       }
                     </td>
                     <td className="wrap">{c.channel || '—'}</td>

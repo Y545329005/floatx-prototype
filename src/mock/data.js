@@ -2873,6 +2873,9 @@ export function buildPeriodStatement({ from, to, userId = currentUser.id } = {})
   return {
     from: start,
     to: end,
+    // 期初 = 期间开始前一刻 = 前一天收盘；期末 = 期间末日（RO 会议：两个余额下都要标日期）
+    openingDate: shiftDayStr(start, -1),
+    closingDate: end,
     clientName,
     clientUid: String(userId).toUpperCase(),
     printedAt: formatNow(),
@@ -10750,11 +10753,31 @@ export const cryptoChains = {
 };
 
 // 资产：hkdRate 为「参考估值」用，接后端换行情源；chainIds 决定可在哪些链充提
+// decimals = 展示精度（2026-11-25 RO 会议：数量不得四舍五入，BTC 需 5–9 位）。
+// 做成配置而不是写死：杨青确认后改这里，不动渲染代码。BTC 协议层 1 satoshi = 1e-8。
 export const cryptoAssets = [
-  { code: 'USDT', name: 'Tether USD', chainIds: ['tron', 'ethereum'], hkdRate: 7.8, color: '#26A17B', glyph: '₮' },
-  { code: 'USDC', name: 'USD Coin', chainIds: ['ethereum'], hkdRate: 7.8, color: '#2775CA', glyph: '$' },
-  { code: 'BTC', name: 'Bitcoin', chainIds: ['bitcoin'], hkdRate: 620000, color: '#F7931A', glyph: '₿' },
+  { code: 'USDT', name: 'Tether USD', chainIds: ['tron', 'ethereum'], hkdRate: 7.8, color: '#26A17B', glyph: '₮', decimals: 2 },
+  { code: 'USDC', name: 'USD Coin', chainIds: ['ethereum'], hkdRate: 7.8, color: '#2775CA', glyph: '$', decimals: 2 },
+  { code: 'BTC', name: 'Bitcoin', chainIds: ['bitcoin'], hkdRate: 620000, color: '#F7931A', glyph: '₿', decimals: 8 },
+  { code: 'ETH', name: 'Ethereum', chainIds: ['ethereum'], hkdRate: 20000, color: '#627EEA', glyph: 'Ξ', decimals: 6 },
 ];
+
+/* 数字资产数量：按资产精度**截断**（不四舍五入）。
+   四舍五入会把 0.000000009 BTC 显示成 0.00000001——数量是计数，末位不能因为显示被改大。
+   至少保留 2 位小数（金额感），超过精度的部分直接截掉。 */
+export function formatCryptoQty(code, n) {
+  const dec = cryptoAssets.find(a => a.code === code)?.decimals ?? 8;
+  const num = Number(n) || 0;
+  if (!Number.isFinite(num)) return '0.00';
+  const sign = num < 0 ? '-' : '';
+  const abs = Math.abs(num);
+  // 先多取 2 位再做字符串截断，避免 toFixed 自身的进位传到目标位
+  const raw = abs.toFixed(Math.min(dec + 2, 12));
+  const dot = raw.indexOf('.');
+  let out = dot < 0 ? raw : raw.slice(0, dot + dec + 1);
+  if (out.includes('.')) out = out.replace(/(\.\d{2}\d*?)0+$/, '$1');
+  return sign + out;
+}
 
 // 用户余额：total = available + locked(T+1 待解锁) + frozen(在途提现)
 export const cryptoBalances = {
@@ -11354,6 +11377,8 @@ export const Storage = {
         mandateReports: mandateReports,
         // 月结单出具记录（2026-11-25）：追加型
         monthlyStatements: monthlyStatements,
+        // 外部申购（2026-11-25）：追加型
+        mandateSubscriptions: mandateSubscriptions,
         specialSubscriptionApprovals: specialSubscriptionApprovals,
         // 基金产品（2026-10-28）：后台「基金产品管理」改了条款/文件/净值必须刷新保留。
         // 只存产品本体，不存由它派生的展示文案（那边已经改成按数字生成）。
@@ -11538,6 +11563,7 @@ export const Storage = {
       restoreMandateArray(mandateWithdrawals, data.mandateWithdrawals);
       restoreMandateArray(mandateReports, data.mandateReports);
       restoreMandateArray(monthlyStatements, data.monthlyStatements);
+      restoreMandateArray(mandateSubscriptions, data.mandateSubscriptions);
       restoreMandateArray(specialSubscriptionApprovals, data.specialSubscriptionApprovals);
       if (Array.isArray(data.statementExports)) {
         statementExports.length = 0;
@@ -12918,6 +12944,10 @@ export const MANDATE_LEDGER_TYPES = {
   TRADE: 'trade',                // 交易结算（1b 起由交易复核自动生成）
   FEE: 'fee',                    // 管理费/设立费/表现费（协议 12，从组合扣减）
   DIVIDEND: 'dividend',          // 股息/分红（协议 11.5(d)，按已收估值）
+  // 外部券商申购（2026-11-25 RO 会议）：IPO/配售打款与退款。
+  // 钱在打款当天离开委托账户，成交时只加持仓、不再扣现金——否则同一笔钱扣两次。
+  SUBSCRIPTION_OUT: 'subscription_out',
+  SUBSCRIPTION_REFUND: 'subscription_refund',
 };
 
 export const MANDATE_LEDGER_LABELS = {
@@ -12928,6 +12958,8 @@ export const MANDATE_LEDGER_LABELS = {
   trade: '交易结算',
   fee: '费用',
   dividend: '股息',
+  subscription_out: '申购打款',
+  subscription_refund: '申购退款',
 };
 
 // 提取申请状态机（协议 10 · 2026-11-16 定稿）：
@@ -13097,6 +13129,35 @@ export const mandateAgreements = [
     createdAt: '2026-11-05 15:00:00',
     createdBy: '李合规',
   },
+  // 第五份协议（2026-11-25）：老板账户（RO 会议造数），一笔 IPO 申购走完三段式
+  {
+    id: 'mag5',
+    no: 'HB-DA-2026-005',
+    userId: 'u21',
+    userName: '陈丽华',
+    status: 'active',
+    signedAt: '2026-11-10 15:00:00',
+    effectiveAt: '2026-11-11 00:00:00',
+    terminatedAt: null,
+    clientWitness: '陈大文',
+    managerDirector: '黎国基',
+    licensedRepName: '林景湖',
+    licensedRepCE: 'BJW456',
+    language: 'zh-HK',
+    scanUrl: null,
+    version: 'v1.0',
+    fees: { managementPct: 1.5, inceptionPct: 0, performancePct: 20, hurdlePct: 8, minimumValue: 1000000 },
+    strategy: {
+      objectives: '以美股与港股为主，兼顾一级半市场机会。',
+      policy: '由持牌基金经理全权决定买入、持有与卖出。',
+      limits: { singleCompanyPct: 20, singleIssuerPct: 30, borrowingPct: 0 },
+    },
+    valuationCurrency: 'HKD',
+    valuationCycle: 'monthly',
+    reportingPeriod: 'monthly',
+    createdAt: '2026-11-10 15:00:00',
+    createdBy: '李合规',
+  },
 ];
 
 // 委托账户 B 号。auth 双人：ops 发起授权、compliance 复核，两人不得同一人（Maker-Checker）。
@@ -13187,10 +13248,54 @@ export const mandateAccounts = [
     openedAt: '2026-09-02 09:30:00',
     createdBy: '王运营',
   },
+  // 老板账户（2026-11-25 RO 会议造数）：一笔已中签的 IPO + 一笔待确认的打款，
+  // 覆盖「打款 → 结果」两个分支；不动 u1 的任何数字。
+  {
+    id: 'mb6',
+    no: 'B00006',
+    userId: 'u21',
+    userName: '陈丽华',
+    agreementId: 'mag5',
+    managerName: '林景湖',
+    custodian: 'HighBlock Securities Limited',
+    status: MANDATE_ACCOUNT_STATUS.ACTIVE,
+    visibleInApp: true,
+    authRequestedBy: '王运营',
+    authReviewedBy: '李合规',
+    authReviewedAt: '2026-11-12 10:00:00',
+    openedAt: '2026-11-12 09:30:00',
+    createdBy: '王运营',
+  },
 ];
 
 // 委托账户资金流水（余额由本表派生，账户本身不存余额）
 export const cashLedger = [
+  // B00006（2026-11-25 RO 会议造数）：入金 → 打款 → 余款退回 → 第二笔待确认打款。
+  // 恒等式：200,012.34 − 150,000 + 8,400 − 30,000 = 28,412.34
+  {
+    id: 'cl8', accountId: 'mb6', no: 'B00006', userId: 'u21',
+    type: 'deposit', currency: 'USD', amount: 200012.34,
+    note: '外部入金（美元）', refType: 'deposit', refId: 'd6',
+    at: '2026-11-18 10:00:00', createdBy: '王财务',
+  },
+  {
+    id: 'cl9', accountId: 'mb6', no: 'B00006', userId: 'u21',
+    type: 'subscription_out', currency: 'USD', amount: -150000,
+    note: '申购打款 CRWV（华盛）· CoreWeave IPO', refType: 'subscription', refId: 'msub1',
+    at: '2026-11-19 10:00:00', createdBy: '王运营',
+  },
+  {
+    id: 'cl10', accountId: 'mb6', no: 'B00006', userId: 'u21',
+    type: 'subscription_refund', currency: 'USD', amount: 8400,
+    note: '申购余款退回 CRWV', refType: 'subscription', refId: 'msub1',
+    at: '2026-11-21 16:00:00', createdBy: '王运营',
+  },
+  {
+    id: 'cl11', accountId: 'mb6', no: 'B00006', userId: 'u21',
+    type: 'subscription_out', currency: 'USD', amount: -30000,
+    note: '申购打款 RDDT（华盛）· 待出结果', refType: 'subscription', refId: 'msub2',
+    at: '2026-11-24 10:00:00', createdBy: '王运营',
+  },
   {
     id: 'cl1',
     accountId: 'mb1',
@@ -13263,6 +13368,34 @@ export const cashLedger = [
 // 钱只动两腿且必须同批发生：completed 时 B 户 cashLedger 记负流水（transfer_out）、
 // A 户钱包入账（wallet + transactions），恒等式「委托资产 −X、可用现金 +X、总资产不变」。
 // 种子自洽：mw1 为 completed 历史单，配套 cl5 划出流水；mw2 为 rejected，不涉资金移动。
+// 外部申购记录（2026-11-25 RO 会议）：一笔打款一个实体，结果为「待确认 / 已成交 / 已退款」。
+// 钱在打款日离开委托账户（subscription_out），成交只加持仓（settleMode='external'），
+// 余款退回记 subscription_refund——三段式才和现金余额对得上。
+export const MANDATE_SUBSCRIPTION_STATUS = {
+  PENDING: 'pending',
+  FILLED: 'filled',
+  REFUNDED: 'refunded',
+};
+export const mandateSubscriptions = [
+  // B00006 造数（2026-11-25）：一笔已中签、一笔待确认，覆盖「打款 → 结果」两个分支
+  {
+    id: 'msub1', accountId: 'mb6', no: 'B00006', userId: 'u21',
+    symbol: 'CRWV', name: 'CoreWeave', broker: '华盛', currency: 'USD',
+    amount: 150000, paidAt: '2026-11-19 10:00:00',
+    status: MANDATE_SUBSCRIPTION_STATUS.FILLED, tradeId: 'mt6',
+    fillQty: 1200, fillPrice: 118, refundAmount: 8400, refundedAt: '2026-11-21 16:00:00',
+    remark: 'CoreWeave IPO 申购', createdBy: '王运营', createdAt: '2026-11-19 10:00:00',
+  },
+  {
+    id: 'msub2', accountId: 'mb6', no: 'B00006', userId: 'u21',
+    symbol: 'RDDT', name: 'Reddit', broker: '华盛', currency: 'USD',
+    amount: 30000, paidAt: '2026-11-24 10:00:00',
+    status: MANDATE_SUBSCRIPTION_STATUS.PENDING, tradeId: '',
+    fillQty: 0, fillPrice: 0, refundAmount: 0, refundedAt: '',
+    remark: '等回执', createdBy: '王运营', createdAt: '2026-11-24 10:00:00',
+  },
+];
+
 export const mandateWithdrawals = [
   {
     // 待审核一单（2026-11-17）：其余两条是终态，若没有在途单，「可提取 = 余额 − 在途」这个核心口径
@@ -13747,6 +13880,162 @@ export function addMandateCashEntry({ accountId, type, currency, amount, note, r
   return { ok: true, entry };
 }
 
+// ---- 外部申购（2026-11-25 RO 会议） ----
+
+export function getMandateSubscriptions(accountId = null) {
+  return mandateSubscriptions
+    .filter(x => !accountId || x.accountId === accountId)
+    .slice()
+    .sort((a, b) => String(b.paidAt).localeCompare(String(a.paidAt)));
+}
+
+// 记录打款：钱当天离开委托账户。此时还不知道中签结果，所以只落一条 cash 腿。
+export function recordMandateSubscription({
+  accountId, symbol, name = '', broker = '', currency = 'HKD', amount, paidAt = '', remark = '',
+} = {}, operator = '') {
+  const account = mandateAccounts.find(a => a.id === accountId);
+  if (!account) return { ok: false, error: '账户不存在' };
+  const amt = Number(amount);
+  if (!(amt > 0)) return { ok: false, error: '打款金额需大于 0' };
+  const sym = String(symbol || '').trim().toUpperCase();
+  if (!sym) return { ok: false, error: '请填写申购标的' };
+  if (getMandateCashBalance(accountId, currency) + 1e-9 < amt) {
+    return { ok: false, error: `${currency} 现金不足（需 ${formatExactAmount(amt)}）` };
+  }
+  const at = String(paidAt || '').trim() || formatNow();
+  const sub = {
+    id: `msub${Date.now()}`,
+    accountId,
+    no: account.no,
+    userId: account.userId,
+    symbol: sym,
+    name: String(name || sym),
+    broker: String(broker || '').trim(),
+    currency,
+    amount: amt,
+    paidAt: at,
+    status: MANDATE_SUBSCRIPTION_STATUS.PENDING,
+    tradeId: '',
+    fillQty: 0,
+    fillPrice: 0,
+    refundAmount: 0,
+    refundedAt: '',
+    remark: String(remark || '').trim(),
+    createdBy: operator || '运营后台',
+    createdAt: formatNow(),
+  };
+  mandateSubscriptions.unshift(sub);
+  const booked = addMandateCashEntry({
+    accountId,
+    type: MANDATE_LEDGER_TYPES.SUBSCRIPTION_OUT,
+    currency,
+    amount: -amt,
+    note: `申购打款 ${sub.symbol}${sub.broker ? `（${sub.broker}）` : ''}${sub.remark ? ` · ${sub.remark}` : ''}`,
+    refType: 'subscription',
+    refId: sub.id,
+  }, operator);
+  if (!booked.ok) { mandateSubscriptions.shift(); return booked; }
+  logAudit({
+    operator: operator || '运营后台', category: 'mandate', action: 'create',
+    target: account.userName, targetId: sub.id,
+    note: `申购打款 ${sub.symbol} ${currency} ${formatExactAmount(amt)}`,
+  });
+  Storage.save();
+  return { ok: true, subscription: sub };
+}
+
+/* 登记结果：
+   · 未中签 → 全额退回（subscription_refund）
+   · 中签   → 生成一笔 settleMode='external' 的买入（走正常复核），余款立刻退回
+   成交不在这一步扣现金——钱在打款日已经走了。 */
+export function settleMandateSubscription(id, { result = 'filled', quantity = 0, price = 0, fxRate = 1, date = '' } = {}, operator = '') {
+  const sub = mandateSubscriptions.find(x => x.id === id);
+  if (!sub) return { ok: false, error: '申购记录不存在' };
+  if (sub.status !== MANDATE_SUBSCRIPTION_STATUS.PENDING) return { ok: false, error: '该申购已登记结果' };
+  const account = mandateAccounts.find(a => a.id === sub.accountId);
+  if (!account) return { ok: false, error: '账户不存在' };
+
+  if (result === 'refunded') {
+    const booked = addMandateCashEntry({
+      accountId: sub.accountId,
+      type: MANDATE_LEDGER_TYPES.SUBSCRIPTION_REFUND,
+      currency: sub.currency,
+      amount: sub.amount,
+      note: `申购退款 ${sub.symbol}（未中签）`,
+      refType: 'subscription',
+      refId: sub.id,
+    }, operator);
+    if (!booked.ok) return booked;
+    sub.status = MANDATE_SUBSCRIPTION_STATUS.REFUNDED;
+    sub.refundAmount = sub.amount;
+    sub.refundedAt = formatNow();
+    logAudit({ operator: operator || '运营后台', category: 'mandate', action: 'update', target: account.userName, targetId: sub.id, note: `申购退款 ${sub.symbol} ${formatExactAmount(sub.amount)}` });
+    Storage.save();
+    return { ok: true, subscription: sub };
+  }
+
+  const q = Number(quantity);
+  const p = Number(price);
+  const fx = Number(fxRate) || 1;
+  if (!(q > 0) || !(p > 0)) return { ok: false, error: '中签数量与成交价需大于 0' };
+  const cost = q * p;
+  if (cost > sub.amount + 1e-6) return { ok: false, error: '成交金额超过打款金额' };
+  const tradeDate = String(date || '').trim() || todayStr();
+  const trade = {
+    id: `mt${Date.now()}`,
+    accountId: sub.accountId,
+    no: account.no,
+    userId: account.userId,
+    symbol: sub.symbol,
+    name: sub.name,
+    side: 'buy',
+    quantity: q,
+    price: p,
+    currency: sub.currency,
+    fxRate: fx,
+    fee: 0,
+    tradeDate,
+    settleDate: '',
+    status: MANDATE_TRADE_STATUS.PENDING,
+    settleMode: 'external',
+    source: 'manual',
+    remark: `外部申购成交（${sub.broker || '券商'}）`,
+    createdBy: operator || '运营后台',
+  };
+  mandateTrades.unshift(trade);
+  sub.status = MANDATE_SUBSCRIPTION_STATUS.FILLED;
+  sub.tradeId = trade.id;
+  sub.fillQty = q;
+  sub.fillPrice = p;
+
+  // 余款退回：打款 150,000、成交 141,600，差的 8,400 要回账，否则余额对不上
+  const diff = Math.round((sub.amount - cost) * 100) / 100;
+  if (diff > 0.005) {
+    const booked = addMandateCashEntry({
+      accountId: sub.accountId,
+      type: MANDATE_LEDGER_TYPES.SUBSCRIPTION_REFUND,
+      currency: sub.currency,
+      amount: diff,
+      note: `申购余款退回 ${sub.symbol}`,
+      refType: 'subscription',
+      refId: sub.id,
+    }, operator);
+    if (!booked.ok) {
+      mandateTrades.shift();
+      sub.status = MANDATE_SUBSCRIPTION_STATUS.PENDING;
+      sub.tradeId = '';
+      sub.fillQty = 0;
+      sub.fillPrice = 0;
+      return booked;
+    }
+    sub.refundAmount = diff;
+    sub.refundedAt = formatNow();
+  }
+  logAudit({ operator: operator || '运营后台', category: 'mandate', action: 'create', target: account.userName, targetId: sub.id, note: `申购中签 ${sub.symbol} ${q} 股 @ ${p}，待复核生效` });
+  Storage.save();
+  return { ok: true, subscription: sub, trade };
+}
+
 // ---- 后台配置 ----
 
 export function updateMandateConfig(patch = {}, operator = '') {
@@ -13951,6 +14240,17 @@ export const mandateTrades = [
     // 已生效但**没有估值标记**：演示「未估值」分支（估值签的筛选与 badge 需要它）
     note: '', correctionOf: '',
   },
+  // B00006 造数（2026-11-25）：外部申购成交——钱在打款日已划出，复核只加持仓不扣现金
+  {
+    id: 'mt6', accountId: 'mb6', no: 'B00006', userId: 'u21',
+    tradeDate: '2026-11-21', settleDate: '2026-11-25',
+    side: 'buy', assetClass: 'us-equity', symbol: 'CRWV', name: 'CoreWeave',
+    currency: 'USD', quantity: 1200, price: 118, fee: 0, fxRate: 7.8,
+    status: MANDATE_TRADE_STATUS.ACTIVE, adviceNo: 'ADV-2026-11-0006',
+    settleMode: 'external', source: 'manual',
+    createdBy: '王运营', reviewedBy: '李合规', reviewedAt: '2026-11-21 16:00:00',
+    note: 'IPO 中签成交（华盛回执）', correctionOf: '',
+  },
 ];
 
 // 估值标记（只追加；最新一条 = 当前价）。不放进 holdings，因为 holdings 是派生视图。
@@ -13964,6 +14264,8 @@ export const mandatePriceMarks = [
   { id: 'mp2', symbol: 'NVDA', currency: 'USD', price: 128.2, fxRate: 7.82, method: 'listed', priceAt: '2026-11-12', updatedBy: '王财务', updatedAt: '2026-11-12 18:00:00' },
   // 非上市按成本：价格即成本，市值 = 成本；口径与上市证券并列时逐行标注
   { id: 'mp3', symbol: 'SPACEX', currency: 'USD', price: 120, fxRate: 7.8, method: 'unlisted-cost', priceAt: '2026-11-12', updatedBy: '王财务', updatedAt: '2026-11-12 18:00:00' },
+  // B00006 造数：CRWV 上市后按收盘价估值（2026-11-25）
+  { id: 'mp6', symbol: 'CRWV', currency: 'USD', price: 122, fxRate: 7.8, method: 'listed', priceAt: '2026-11-24', updatedBy: '王财务', updatedAt: '2026-11-24 18:00:00' },
 ];
 
 // 费用行（协议 12：三类费均从组合扣减，金额手录）
@@ -14055,7 +14357,7 @@ function mandatePositionsAsOf(accountId, date, exclusive = false) {
     .sort((a, b) => String(a.tradeDate).localeCompare(String(b.tradeDate)) || String(a.id).localeCompare(String(b.id)))
     .forEach(t => {
       const row = map.get(t.symbol) || {
-        symbol: t.symbol, name: t.name, currency: t.currency, quantity: 0, buyQty: 0, buyCostHKD: 0,
+        symbol: t.symbol, name: t.name, currency: t.currency, quantity: 0, buyQty: 0, buyCostHKD: 0, buyCostNative: 0,
       };
       const q = Number(t.quantity) || 0;
       if (t.side === 'buy') {
@@ -14065,6 +14367,7 @@ function mandatePositionsAsOf(accountId, date, exclusive = false) {
         // 日结单（按成本估）与账户结单里会差一个手续费（2026-11-20 实测差 7.80）
         row.buyCostHKD += q * (Number(t.price) || 0) * (Number(t.fxRate) || 1)
           + (Number(t.fee) || 0) * (Number(t.fxRate) || 1);
+        row.buyCostNative += q * (Number(t.price) || 0) + (Number(t.fee) || 0);
       } else {
         row.quantity -= q;
       }
@@ -14079,11 +14382,13 @@ function mandatePositionsAsOf(accountId, date, exclusive = false) {
       const price = mark ? Number(mark.price) : null;
       const fxRate = mark ? Number(mark.fxRate) || 1 : 1;
       const avgCostHKD = r.buyQty > 0 ? r.buyCostHKD / r.buyQty : 0;
+      // 原币平均买入价（含买入费用）：RO 会议要求持仓能对上长桥给的平均价
+      const avgCost = r.buyQty > 0 ? r.buyCostNative / r.buyQty : 0;
       const marketValueHKD = price != null ? r.quantity * price * fxRate : r.quantity * avgCostHKD;
       return {
         symbol: r.symbol, name: r.name, currency: r.currency,
         quantity: r.quantity, price, fxRate, priceAt: mark?.priceAt || '', method: mark?.method || '',
-        valued: price != null, marketValueHKD,
+        valued: price != null, marketValueHKD, avgCost, avgCostHKD,
       };
     })
     .sort((a, b) => a.symbol.localeCompare(b.symbol));
@@ -14392,24 +14697,30 @@ export function reviewMandateTrade(id, { decision = 'approve', reviewer = '', re
   const grossHKD = trade.quantity * trade.price * trade.fxRate;
   const feeHKD = (Number(trade.fee) || 0) * trade.fxRate;
   const delta = trade.side === 'buy' ? -(grossHKD + feeHKD) : grossHKD - feeHKD;
-  if (delta < 0 && getMandateCashBalance(account.id, 'HKD') + delta < 0) {
-    return { ok: false, error: `委托账户可用资金不足（需 HK$${Math.abs(delta).toFixed(2)}），请先入金或驳回` };
+  // 外部申购成交（settleMode='external'）：钱在打款日已离开委托账户，
+  // 这里只加持仓，不再扣一次现金，也不做余额校验（2026-11-25 RO 会议口径）。
+  const externalSettle = trade.settleMode === 'external';
+  let booked = { ok: true, entry: null };
+  if (!externalSettle) {
+    if (delta < 0 && getMandateCashBalance(account.id, 'HKD') + delta < 0) {
+      return { ok: false, error: `委托账户可用资金不足（需 HK$${Math.abs(delta).toFixed(2)}），请先入金或驳回` };
+    }
+    booked = addMandateCashEntry({
+      accountId: account.id,
+      type: MANDATE_LEDGER_TYPES.TRADE,
+      currency: 'HKD',
+      amount: Math.round(delta * 100) / 100,
+      note: `${trade.side === 'buy' ? '买入' : '卖出'} ${trade.symbol} ${trade.quantity} 股 @ ${trade.price} ${trade.currency}（含费 ${trade.fee}，汇率 ${trade.fxRate}）${trade.correctionOf ? ' · 更正重录' : ''}`,
+      refType: 'trade',
+      refId: trade.id,
+    }, operator || checker);
+    if (!booked.ok) return booked;
   }
-  const booked = addMandateCashEntry({
-    accountId: account.id,
-    type: MANDATE_LEDGER_TYPES.TRADE,
-    currency: 'HKD',
-    amount: Math.round(delta * 100) / 100,
-    note: `${trade.side === 'buy' ? '买入' : '卖出'} ${trade.symbol} ${trade.quantity} 股 @ ${trade.price} ${trade.currency}（含费 ${trade.fee}，汇率 ${trade.fxRate}）${trade.correctionOf ? ' · 更正重录' : ''}`,
-    refType: 'trade',
-    refId: trade.id,
-  }, operator || checker);
-  if (!booked.ok) return booked;
 
   trade.status = MANDATE_TRADE_STATUS.ACTIVE;
   trade.reviewedBy = checker;
   trade.reviewedAt = formatNow();
-  trade.ledgerId = booked.entry.id;
+  trade.ledgerId = booked.entry ? booked.entry.id : '';
   // 成交通知邮件（协议 11.2）：复核生效后才发——录入值可能被驳回，提前发等于通知一个不存在的事实
   if (mandateConfig.adviceEmail) {
     trade.adviceMail = {
@@ -14443,6 +14754,16 @@ export function voidMandateTrade(id, { reason = '', reviewer = '' } = {}, operat
   const grossHKD = trade.quantity * trade.price * trade.fxRate;
   const feeHKD = (Number(trade.fee) || 0) * trade.fxRate;
   const original = trade.side === 'buy' ? -(grossHKD + feeHKD) : grossHKD - feeHKD;
+  // 外部申购成交（打款时已划出）没有现金腿可冲，作废只回撤持仓
+  if (trade.settleMode === 'external') {
+    trade.status = MANDATE_TRADE_STATUS.VOID;
+    trade.voidReason = String(reason || '').trim() || '未说明原因';
+    trade.voidedBy = checker;
+    trade.voidedAt = formatNow();
+    logAudit({ operator: operator || checker, category: 'mandate', action: 'update', target: account.userName, targetId: trade.id, note: `外部申购成交作废：${trade.symbol}（不冲现金，打款腿保留）` });
+    Storage.save();
+    return { ok: true, trade };
+  }
   const booked = addMandateCashEntry({
     accountId: account.id,
     type: MANDATE_LEDGER_TYPES.TRADE,

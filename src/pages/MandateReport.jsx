@@ -54,6 +54,8 @@ export default function MandateReport({ id, goBack }) {
     if (f.kind === 'deposit') return tf('入金');
     if (f.kind === 'withdraw') return tf('出金');
     if (f.kind === 'dividend') return tf('股息');
+    if (f.kind === 'subscription_out') return tf('申购打款');
+    if (f.kind === 'subscription_refund') return tf('申购退款');
     return tf('其他');
   };
   const nonHKD = (s.fx || []).filter(f => f.currency !== 'HKD');
@@ -185,6 +187,7 @@ export default function MandateReport({ id, goBack }) {
                   <tr>
                     <th>{t('持仓')}</th>
                     <th className="num">{t('数量')}</th>
+                    <th className="num">{t('平均成本')}</th>
                     <th className="num">{t('估值价')}</th>
                     <th>{t('估值方法')}</th>
                     <th className="num">{t('市值（HKD）')}</th>
@@ -195,8 +198,9 @@ export default function MandateReport({ id, goBack }) {
                     <tr key={p.symbol}>
                       <td className="wrap">{p.symbol} · {p.name}</td>
                       <td className="num">{formatShares(p.quantity)}</td>
+                      <td className="num">{p.avgCost > 0 ? `${p.currency} ${formatExactAmount(p.avgCost)}` : '—'}</td>
                       <td className="num">
-                        {p.price == null ? t('按成本') : p.price}
+                        {p.price == null ? t('按成本') : `${p.currency} ${p.price}`}
                         {p.priceAt ? <span className="doc-sub">{p.priceAt}</span> : null}
                       </td>
                       <td>{t(MANDATE_VALUATION_METHODS[p.method] || p.method || '—')}</td>

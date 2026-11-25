@@ -28,6 +28,10 @@ import {
   getStandingAuthOf,
   createStandingAuth,
   revokeStandingAuth,
+  getMandateSubscriptions,
+  recordMandateSubscription,
+  settleMandateSubscription,
+  MANDATE_SUBSCRIPTION_STATUS,
   formatExactAmount,
 } from '../mock/data';
 import { useDrawerFocus } from './useDrawerFocus';
@@ -108,6 +112,14 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
   const [feeMsg, setFeeMsg] = useState('');
   const [feeReview, setFeeReview] = useState({ id: '', reviewer: '' });
   const [feeOpen, setFeeOpen] = useState(false);
+  // 外部申购（2026-11-25 RO 会议）：打款 → 结果两段，钱在打款日就离开委托账户
+  const [subOpen, setSubOpen] = useState(false);
+  const [subMsg, setSubMsg] = useState('');
+  const [subForm, setSubForm] = useState({
+    symbol: '', name: '', broker: '华盛', currency: 'USD', amount: '',
+    paidAt: new Date().toISOString().slice(0, 10), remark: '',
+  });
+  const [subSettle, setSubSettle] = useState({ id: '', qty: '', price: '', fx: '7.8' });
   const [filter, setFilter] = useState('all');
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(1);
@@ -116,6 +128,7 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
   const isNew = detailId === 'new';
   const selected = detailId && !isNew ? mandateAccounts.find(a => a.id === detailId) : null;
   const drawerOpen = isNew || !!selected;
+  const subs = selected ? getMandateSubscriptions(selected.id) : [];
   const investors = useMemo(() => getInvestorUsers(), [tick]);
   const closeDrawer = () => navigate && navigate('#admin/mandate/accounts');
   const drawerRef = useDrawerFocus(drawerOpen, closeDrawer);
@@ -157,6 +170,34 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
     if (!res.ok) { setFeeMsg(res.error); return; }
     setFeeMsg('费用行已录入，待合规复核后从组合扣减。');
     setFeeForm(prev => ({ ...prev, amount: '', note: '' }));
+    refresh();
+  };
+
+  const handleSubCreate = () => {
+    if (!selected) return;
+    const res = recordMandateSubscription({
+      ...subForm, accountId: selected.id, amount: Number(subForm.amount),
+    }, operator);
+    if (!res.ok) { setSubMsg(res.error); return; }
+    setSubMsg(`已记录打款 ${subForm.currency} ${formatExactAmount(Number(subForm.amount))}；结果出来后在下方登记。`);
+    setSubForm(prev => ({ ...prev, symbol: '', name: '', amount: '', remark: '' }));
+    refresh();
+  };
+
+  const handleSubRefund = (id) => {
+    const res = settleMandateSubscription(id, { result: 'refunded' }, operator);
+    if (!res.ok) { setSubMsg(res.error); return; }
+    setSubMsg('已登记未中签，款项全额退回委托账户。');
+    refresh();
+  };
+
+  const handleSubFill = (id) => {
+    const res = settleMandateSubscription(id, {
+      result: 'filled', quantity: Number(subSettle.qty), price: Number(subSettle.price), fxRate: Number(subSettle.fx) || 1,
+    }, operator);
+    if (!res.ok) { setSubMsg(res.error); return; }
+    setSubMsg('已登记中签成交，待「交易」签复核后进入持仓；余款已退回。');
+    setSubSettle({ id: '', qty: '', price: '', fx: '7.8' });
     refresh();
   };
 
@@ -681,6 +722,115 @@ export default function AdminMandateAccounts({ admin, detailId, navigate }) {
                   ) : (
                     <button className="btn btn-md btn-outline" onClick={() => { setFeeOpen(true); setFeeMsg(''); }}>
                       <Plus size={16} /> 录入费用
+                    </button>
+                  )}
+                </div>
+
+                <div className="card">
+                  <div className="card-title">外部申购（IPO / 配售）</div>
+                  {subMsg && <p className="admin-form-hint">{subMsg}</p>}
+                  <p className="admin-form-hint">
+                    打款当天钱就离开委托账户；中签只加持仓、不再扣一次现金，余款退回。
+                  </p>
+                  {subs.length === 0 && <p className="text-muted text-sm">该账户暂无申购记录</p>}
+                  {subs.map(sub => {
+                    const st = sub.status;
+                    const badge = st === MANDATE_SUBSCRIPTION_STATUS.FILLED
+                      ? { cls: 'admin-status-approved', label: '已成交' }
+                      : st === MANDATE_SUBSCRIPTION_STATUS.REFUNDED
+                        ? { cls: 'admin-status-closed', label: '已退款' }
+                        : { cls: 'admin-status-pending', label: '待确认' };
+                    return (
+                      <div key={sub.id} className="mandate-fee-item">
+                        <div className="mandate-fee-line">
+                          <span>{String(sub.paidAt).slice(0, 10)}</span>
+                          <span>{sub.symbol}{sub.broker ? ` · ${sub.broker}` : ''}</span>
+                          <strong className="mandate-fee-amount">{sub.currency} {formatExactAmount(sub.amount)}</strong>
+                          <span className={`status-badge ${badge.cls}`}>{badge.label}</span>
+                          {st === MANDATE_SUBSCRIPTION_STATUS.PENDING ? (
+                            <span className="mandate-subline">
+                              <button className="btn-link" onClick={() => setSubSettle({ id: sub.id, qty: '', price: '', fx: '7.8' })}>中签</button>
+                              {' · '}
+                              <button className="btn-link" onClick={() => handleSubRefund(sub.id)}>未中签</button>
+                            </span>
+                          ) : (
+                            <span className="mandate-subline">
+                              {st === MANDATE_SUBSCRIPTION_STATUS.FILLED
+                                ? `${sub.fillQty} 股 @ ${sub.fillPrice}`
+                                : `退回 ${formatExactAmount(sub.refundAmount)}`}
+                            </span>
+                          )}
+                        </div>
+                        {sub.remark && <div className="mandate-subline">{sub.remark}</div>}
+                        {subSettle.id === sub.id && (
+                          <div className="mandate-fee-expand">
+                            <div className="form-row">
+                              <div className="form-group">
+                                <label className="form-label">中签数量</label>
+                                <input className="form-input" type="number" step="any" value={subSettle.qty} onChange={e => setSubSettle(p => ({ ...p, qty: e.target.value }))} />
+                              </div>
+                              <div className="form-group">
+                                <label className="form-label">成交价（{sub.currency}）</label>
+                                <input className="form-input" type="number" step="any" value={subSettle.price} onChange={e => setSubSettle(p => ({ ...p, price: e.target.value }))} />
+                              </div>
+                            </div>
+                            <div className="form-row">
+                              <div className="form-group">
+                                <label className="form-label">汇率（折 HKD）</label>
+                                <input className="form-input" type="number" step="any" value={subSettle.fx} onChange={e => setSubSettle(p => ({ ...p, fx: e.target.value }))} />
+                              </div>
+                            </div>
+                            <div className="admin-form-actions">
+                              <button className="btn btn-md btn-primary" onClick={() => handleSubFill(sub.id)}>确认成交</button>
+                              <button className="btn btn-md btn-outline" onClick={() => setSubSettle({ id: '', qty: '', price: '', fx: '7.8' })}>取消</button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {subOpen ? (
+                    <div className="mandate-fee-form">
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label className="form-label">申购标的</label>
+                          <input className="form-input" value={subForm.symbol} placeholder="如 XXX" onChange={e => setSubForm(prev => ({ ...prev, symbol: e.target.value }))} />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">券商</label>
+                          <input className="form-input" value={subForm.broker} onChange={e => setSubForm(prev => ({ ...prev, broker: e.target.value }))} />
+                        </div>
+                      </div>
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label className="form-label">币种</label>
+                          <select className="form-input" value={subForm.currency} onChange={e => setSubForm(prev => ({ ...prev, currency: e.target.value }))}>
+                            <option value="USD">USD</option>
+                            <option value="HKD">HKD</option>
+                          </select>
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">打款金额</label>
+                          <input className="form-input" type="number" step="any" value={subForm.amount} onChange={e => setSubForm(prev => ({ ...prev, amount: e.target.value }))} />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">打款日</label>
+                          <input className="form-input" type="date" value={subForm.paidAt} onChange={e => setSubForm(prev => ({ ...prev, paidAt: e.target.value }))} />
+                        </div>
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">备注（申购哪只票）</label>
+                        <input className="form-input" value={subForm.remark} placeholder="如 某某科技 IPO 一手" onChange={e => setSubForm(prev => ({ ...prev, remark: e.target.value }))} />
+                      </div>
+                      <div className="admin-form-actions">
+                        <button className="btn btn-md btn-primary" onClick={handleSubCreate}><Plus size={16} /> 记录打款</button>
+                        <button className="btn btn-md btn-outline" onClick={() => { setSubOpen(false); setSubMsg(''); }}>取消</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button className="btn btn-md btn-outline" onClick={() => { setSubOpen(true); setSubMsg(''); }}>
+                      <Plus size={16} /> 记录申购打款
                     </button>
                   )}
                 </div>

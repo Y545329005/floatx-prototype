@@ -2905,4 +2905,11 @@ export const en = {
   '出': 'Out',
   '期间资金变动明细': 'Cash movement details',
   '本版出具于资金明细上线之前，未附期间明细；如需完整版本，请联系客户经理作废后重出。': 'This version was issued before cash movement details were introduced and has no period breakdown. A complete version requires the statement to be voided and reissued.',
+  '法币账户（自行操作）': 'Fiat accounts (self-directed)',
+  '数字资产（自行操作）': 'Digital assets (self-directed)',
+  '基金持仓（自行操作）': 'Fund holdings (self-directed)',
+  '其中：委托账户（委托管理）': 'of which: mandate accounts (discretionary)',
+  '平均成本': 'Avg. cost',
+  '申购打款': 'IPO / placement payment',
+  '申购退款': 'Subscription refund',
 };

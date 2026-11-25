@@ -11731,6 +11731,16 @@ button.kyc-form-input.picker-trigger {
 
 .doc-attrib .doc-line { padding: 2px 0; }
 .doc-attrib .doc-line-amt { color: var(--text-secondary); }
+/* 表头小字（2026-11-25 RO 会议）：期初/期末下面标出是哪一天的余额 */
+.doc-th-sub {
+  display: block;
+  margin-top: 1px;
+  font-size: 0.85em;
+  font-weight: 400;
+  color: var(--text-tertiary);
+  letter-spacing: 0;
+}
+
 .doc-sub { display: block; font-size: 10px; color: var(--text-secondary); font-weight: 400; }
 /* 在途指令：左侧事由、右侧数量/金额——两端口径，金额靠右成列（与表格数字列同一读法） */
 .doc-line {
