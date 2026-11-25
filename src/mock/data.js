@@ -5688,8 +5688,8 @@ export const agreements = [
   },
   {
     id: 'privacy-policy',
-    version: 'v1.2',
-    effectiveAt: '2026-09-01',
+    version: 'v1.3',
+    effectiveAt: '2026-11-25',
     title: AG('隐私政策', '隱私政策', 'Privacy Policy'),
     sections: privacyPolicySections,
   },
@@ -5930,9 +5930,9 @@ export function hasAgreedOnboarding(userId = null) {
 
 // 条款版本与重新同意（对齐实践案例"条款更新 → 弹窗通知 → 重新勾选"） ----
 export const termsState = {
-  currentVersion: 'v1.3',      // 当前生效条款版本
-  agreedVersion: 'v1.3',       // 当前用户已同意的版本（< currentVersion 时登录后弹重同意弹窗；默认一致不弹，后台「发布新版」后触发——2026-09-15 拍板）
-  updatedAt: '2026-09-15 09:00:00',
+  currentVersion: 'v1.4',      // 当前生效条款版本（2026-11-25：隐私政策新版 v1.3 → 条款包 v1.4，老用户登录后重同意）
+  agreedVersion: 'v1.4',       // 当前用户已同意的版本（< currentVersion 时登录后弹重同意弹窗；默认一致不弹，后台「发布新版」后触发——2026-09-15 拍板）
+  updatedAt: '2026-11-25 09:00:00',
 };
 
 export function bumpTermsVersion(operator = '系统管理员') {
@@ -11477,17 +11477,34 @@ export const Storage = {
       // 「代码新增、快照里没有」的协议整条抹掉——委托协议正文因此在有旧快照的浏览器里渲染成空卡。
       // 规范即「持久化快照只叠加不重建」：旧快照覆盖同名条目，代码新增的条目保留。
       if (Array.isArray(data.agreements)) {
+        // 版本感知合并（2026-11-25）：代码种子升版后（隐私政策 v1.2→v1.3），旧快照里的
+        // 旧版本文案不得回盖种子——否则有旧快照的浏览器永远看旧文本。快照版本 < 种子版本
+        // 时种子胜出；快照版本 ≥ 种子（后台「发布新版」产生的只会更高）→ 快照覆盖，原行为不变。
+        const parseV = (s) => Number(String(s || '').replace('v', '')) || 0;
         data.agreements.forEach(saved => {
           if (!saved || !saved.id) return;
           const live = agreements.find(a => a.id === saved.id);
-          if (live) Object.assign(live, saved);
-          else agreements.push(saved);
+          if (!live) { agreements.push(saved); return; }
+          if (saved.version && live.version && parseV(saved.version) < parseV(live.version)) return;
+          Object.assign(live, saved);
         });
       }
       if (data.termsState) {
-        termsState.currentVersion = data.termsState.currentVersion || termsState.currentVersion;
-        termsState.agreedVersion = data.termsState.agreedVersion ?? termsState.agreedVersion;
-        termsState.updatedAt = data.termsState.updatedAt || termsState.updatedAt;
+        // 版本感知（2026-11-25）：代码种子升版后，旧快照的旧版本号不得回盖 currentVersion——
+        // 否则 agreedVersion 与回盖后的 currentVersion 相等，`!== currentVersion` 永不成立，
+        // 重同意闸门在有旧快照的浏览器里永不弹（构建全绿、新会话测不出的盲区）。
+        // 快照版本 ≥ 种子版本（含后台「发布新版」）→ 快照胜出，原行为不变。
+        const parseV = (s) => Number(String(s || '').replace('v', '')) || 0;
+        if (parseV(data.termsState.currentVersion) >= parseV(termsState.currentVersion)) {
+          termsState.currentVersion = data.termsState.currentVersion || termsState.currentVersion;
+          termsState.agreedVersion = data.termsState.agreedVersion ?? termsState.agreedVersion;
+          termsState.updatedAt = data.termsState.updatedAt || termsState.updatedAt;
+        } else {
+          // 种子胜出（代码升版）：currentVersion/updatedAt 保持种子；agreedVersion 采用快照值——
+          // 用户对旧版（如 v1.3）的同意事实保留，旧版 < 种子新版 → !== 成立 → 登录后弹重同意闸门。
+          // 快照无此键（从未记录过）→ ?? 保持种子，视为同意种子版，不弹。
+          termsState.agreedVersion = data.termsState.agreedVersion ?? termsState.agreedVersion;
+        }
       }
       if (Array.isArray(data.broadcastLogs)) {
         broadcastLogs.length = 0;

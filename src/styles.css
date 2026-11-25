@@ -7522,6 +7522,31 @@ input, select, textarea {
 }
 .agreement-modal-close { flex-shrink: 0; }
 
+/* 协议正文内链按钮：《个人信息收集清单》三语字样（2026-11-25 · 法务批注「请添加链接」），
+   视觉对齐 .agreement-section p a（primary + 下划线）；APP 端无 cursor/:hover，按压反馈走全局 .clickable */
+.agreement-section p .agreement-inline-link {
+  display: inline;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: var(--primary);
+  text-decoration: underline;
+  word-break: break-all;
+}
+
+/* 清单叠加层（2026-11-25）：协议弹窗内的清单查看层。z 210 介于闸门（200）与 lightbox（2000）
+   之间：签署闸门里点清单链接必须盖过闸门卡片与协议弹窗（151），又不得越过 lightbox/ScreenGuard */
+.privacy-list-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  background: var(--bg);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* ===== Canvas 电子签名 v2 · 全屏书写模式（2026-09-15 · 点击签名区进入全屏，对齐银行 APP 交互） ===== */
 .signature-slot { margin-top: var(--space-2); }
 .signature-slot-empty {

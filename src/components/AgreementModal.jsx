@@ -1,23 +1,31 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { getAgreementById } from '../mock/data';
 import { useLang } from '../i18n';
 import AgreementSections from './AgreementSections';
+import PrivacyList from '../pages/PrivacyList';
 
 // 协议详情弹窗（2026-09-15 · 对齐公司协议签署实践：点击协议名称弹窗展示全文，按当前界面语言切换）
 // 全局协议（使用条款/隐私政策/风险披露/PI 条款/银行卡协议）统一走此组件
 // 2026-09-15 audit 修复：role=dialog + aria-modal + Esc 关闭（Esc 为真实键盘路径，ImageLightbox 注释有先例但未实现）；UI 标签接入 t()
 // 2026-11-16：正文渲染抽到 AgreementSections，与委托协议页共用同一套章节/段落语法
+// 2026-11-25：正文《个人信息收集清单》三语字样渲染为内链（法务 docx 批注「请添加链接」）——
+//   点击打开清单叠加层（privacy-list-overlay，z 210 盖过签署闸门 200；签署闸门内 hash 跳转不可见，故不走路由）
 export default function AgreementModal({ agreementId, onClose }) {
   const { t, lang } = useLang();
   const agreement = getAgreementById(agreementId, t);
+  const [privacyListOpen, setPrivacyListOpen] = useState(false);
 
-  // Esc 关闭（hooks 须在 early return 之前注册）
+  // Esc 关闭（hooks 须在 early return 之前注册）；叠加层打开时 Esc 只关叠加层
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      if (privacyListOpen) { setPrivacyListOpen(false); return; }
+      onClose();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onClose, privacyListOpen]);
 
   if (!agreement) return null;
   const pick = (dict) => dict[lang] || dict['zh-CN'];
@@ -34,12 +42,17 @@ export default function AgreementModal({ agreementId, onClose }) {
           <button className="btn-icon" onClick={onClose} aria-label={t('关闭')}><X size={18} /></button>
         </div>
         <div className="agreement-modal-body">
-          <AgreementSections sections={agreement.sections} />
+          <AgreementSections sections={agreement.sections} onOpenPrivacyList={() => setPrivacyListOpen(true)} />
         </div>
         <button className="btn btn-primary btn-full agreement-modal-close" onClick={onClose}>
           {t('我已阅读')}
         </button>
       </div>
+      {privacyListOpen && (
+        <div className="privacy-list-overlay">
+          <PrivacyList goBack={() => setPrivacyListOpen(false)} />
+        </div>
+      )}
     </>
   );
 }
