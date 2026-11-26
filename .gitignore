@@ -12,6 +12,7 @@ node_modules/
 .playwright-cli/
 .openchamber/
 .dev-server.log
+output/
 
 # 内部文档/演示页：不进公开仓库（GitHub Pages 公开托管，最小化公开面）
 # 例外：docs/dev/ 为研发对接文档（2026-11-06 拍板入库，无站内入口、仅链接访问）
@@ -20,6 +21,7 @@ docs/*
 style-demo/docs/
 demo.html
 DESIGN.md
+PRODUCT.md
 *.tar.gz
 AGENTS.md
 AGENTS-state.md
