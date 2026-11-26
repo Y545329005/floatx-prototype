@@ -1,28 +1,22 @@
 import { Fragment, useState } from 'react';
-import { FileCheck, FolderKanban, CalendarCheck, CalendarClock, FileText, ClipboardList, ClipboardCheck, UserCheck, PackageOpen, Users, Landmark, Wallet, Coins, TrendingDown, Bell, ScrollText, Shield, Settings, LogOut, ChevronDown, KeyRound, X, BadgeCheck, HeartHandshake, LockKeyhole, Headphones, ShieldCheck, AlertTriangle, FileWarning, ZoomIn, FileSearch, CircleDollarSign } from 'lucide-react';
+import { FileCheck, FolderKanban, CalendarCheck, CalendarClock, FileText, ClipboardList, ClipboardCheck, UserCheck, PackageOpen, Users, Landmark, Coins, Bell, ScrollText, Shield, Settings, LogOut, ChevronDown, KeyRound, X, BadgeCheck, HeartHandshake, LockKeyhole, Headphones, CircleDollarSign, Send } from 'lucide-react';
 import { ADMIN_MENUS, getRoleMenuKeys, changeAdminPassword, getMenuBadges } from '../mock/data';
 
-// 菜单排序 = 业务联动性配对 + 生命周期（2026-08-12 定稿）：
-// KYC（认证前置门槛）→ 用户管理（账户全貌）→ 路演+报名（活动域，呼应"路演主打"战略）
-// → 项目+申购（投资域）→ 资金审核+资金流水（资金域，2026-08-14 流水拆独立菜单）→ SPV+投后分红+持仓退出（投后域）
-// → 通知触达（运营触达工具）→ 审计日志 → 后台账号 → 配置（系统维护）
-// 配对相邻：内容↔转化、动账↔离场；账户域紧随认证（认证是账户生命周期的第一步）
-// 通知触达（2026-08-13 P1）：运营给投资人发通知，放投后（动账域）后、审计（合规审计）前
-// 后台账号（2026-08-13 P1；2026-08-14 改名"管理员管理"→"后台账号"——本菜单管全部后台登录账号，非仅 super 管理员）：系统级账号维护，仅 super 可见，放审计后、配置前
-// 视觉分组（2026-08-14 落地；2026-08-14 二轮拆投后；2026-08-14 三轮移除工作台）：
-// 7 个分区 Section Title 分组（用户/路演/项目/基金/资金/运营/系统），AntD Sider 惯例——11px uppercase letter-spacing 0.5px 半透明白；
-// 分区语义 = "管什么"：用户 = 认证+账户；路演 = 活动获客；项目 = 项目内容+问卷线索；
-// 基金 = 基金产品+交易（2026-10-29 从项目组拆出——基金与项目数据零耦合，项目模块未来可下线，组名须与组内容一致）；
-// 资金 = 资金进出动账（审核/流水）；
-// 投后 = 已确定投资资产管理（SPV 档案→分红→退出 强联动闭环，2026-08-14 二轮从资金拆出——与资金进出不同生命周期阶段）；
-// 运营 = 跨域触达工具（通知触达）；系统 = 平台治理（审计/管理员/配置）；
-// 路演/项目保持 2+2 平行不合并（用户侧 BottomNav 同为「路演/项目」并列一级 Tab，前后台心智一致）；
+// 菜单排序与分组（2026-11-24 重构，现行 7 组）：
+// 用户（KYC→PI→用户→我的客户，认证到账户）→ 资讯业务（路演→报名→项目→问卷→发布审批：
+// 活动/标的 → 用户参与/意向 → 外发审批，资讯·咨询业务域一条线）→ 基金（产品→交易）
+// → 委托（业务→日结→月报，9 号牌全权委托一本账）→ 资金（审核，资金域单模块）
+// → 运营（通知触达+客户消息，主动/响应式触达成对）→ 系统（审计→角色→账号→配置）。
+// 历史口径（2026-08-12，已推翻）：曾按「路演/项目 2+2 平行」分组，论据是用户侧 BottomNav 两者并列
+// 一级 Tab、前后台心智一致；2026-11-24 用户拍板合并——后台分组按运营工作域切（发布审批本就是
+// 项目+路演共用审批域，报名/问卷是同类意向记录），用户侧双 Tab 是访客内容频道，与后台工作面不同构。
+// 视觉分组：Section Title 分组（AntD Sider 惯例——11px uppercase letter-spacing 0.5px 半透明白）；
 // 单击直达不增加层级（vs 合并父菜单）；按角色过滤后空组自动跳过。
 // 待办 Badge（2026-08-14 三轮）：工作台移除（信息被各模块页头计数完全承接），待办信号下沉到菜单角标——
 // 每个菜单项 label 后显示该模块待处理数（getMenuBadges 单一真源，>0 才渲染；角色过滤天然只显示可见菜单）。
 // 分区折叠（2026-08-14）：
 // 组标题本身可点击折叠/展开该组菜单项（不改变页面跳转，只是节省纵向空间）；
-// 折叠状态持久化到 localStorage（zhifu-admin-sidebar-groups），刷新后保留折叠状态；
+// 折叠状态持久化到 localStorage（zhifu-admin-sidebar-groups，键 = 组名；组改名后旧键自然失效，默认展开）；
 // 折叠态只显示组标题（chevron 旋转 -90°），不渲染该组菜单项。
 // 菜单数据真源 = data.js ADMIN_MENUS（key/label/hash/group，与角色权限页共用单一真源）；
 // icon 属 UI 层关注点，在此映射（新增菜单需同步补 icon）。
@@ -35,6 +29,7 @@ const MENU_ICONS = {
   registrations: ClipboardCheck,
   projects: FolderKanban,
   subscriptions: ClipboardList,
+  publish: Send, // 发布审批进度中心（2026-11-20 BPM 会签主审）
   'fund-products': PackageOpen, // 基金产品维护（条款/文件/净值）
   'fund-trades': Coins,   // 基金交易确认（2026-10-28 一期闭环；2026-11-17 特殊申购并入为第 3 签）
   'mandate': CircleDollarSign, // 委托业务：协议/账户/交易/估值四签（2026-11-20 日结与月报拆出）
@@ -42,14 +37,6 @@ const MENU_ICONS = {
   'mandate-monthly': FileText,    // 委托月报：按账户×期间出具
   'statement-issue': FileCheck,   // 结单出具：全用户月结（2026-11-25）
   funds: Landmark,
-  transactions: Wallet,
-  'transaction-monitor': ShieldCheck,
-  'large-tx': AlertTriangle,
-  anomaly: FileWarning,
-  str: FileSearch,
-  edd: ZoomIn,
-  dividends: Coins,
-  exits: TrendingDown,
   broadcast: Bell,
   messages: Headphones,
   audit: ScrollText,

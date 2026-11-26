@@ -7,6 +7,14 @@ import {
 
 export const BRAND = "HighBlock";
 
+// 外部链接统一出口（2026-11-18）：替代散落各页的 window.open / target="_blank"。
+// noopener 防止新窗口反向操控本页（反向链接攻击）；行为收口一处，WebView 里换成
+// 应用内浏览器时只改这里。
+export function openExternal(url) {
+  if (!url) return;
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
 export const eventModeMeta = {
   online: { label: "线上活动", icon: MonitorPlay },
   offline: { label: "线下活动", icon: MapPin },

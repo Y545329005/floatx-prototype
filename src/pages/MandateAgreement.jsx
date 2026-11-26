@@ -6,6 +6,7 @@ import {
   formatExactAmount,
 } from '../mock/data';
 import { useLang } from '../i18n';
+import { openExternal } from '../lib';
 import AgreementSections from '../components/AgreementSections';
 
 /* ─────────────────────────────────────────────────────────────
@@ -110,7 +111,7 @@ export default function MandateAgreement({ goBack }) {
           <button
             type="button"
             className="menu-item"
-            onClick={() => window.open(agreement.scanUrl, '_blank', 'noopener')}
+            onClick={() => openExternal(agreement.scanUrl)}
           >
             <FileText size={18} aria-hidden="true" />
             <span className="menu-item-label">

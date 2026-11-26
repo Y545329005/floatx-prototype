@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Edit3, Eye, Trash2, Save, X, PlusCircle, Trash, ImageIcon, FileUp, Link2, TrendingUp, Calendar, FileText } from 'lucide-react';
-import { projects, events, subscriptions, getProjectById, projectStatusLabels, sectors, Storage, formatCurrency, getCurrencySymbol, getProjectHeroGradient, getProjectHeroEmoji, getProjectStageSlug, logAudit } from '../mock/data';
+import { Plus, Edit3, Trash2, Save, X, PlusCircle, Trash, ImageIcon, FileUp, Link2, TrendingUp, Calendar, FileText, Send, Undo2, EyeOff } from 'lucide-react';
+import { projects, events, subscriptions, getProjectById, projectStatusLabels, sectors, Storage, formatCurrency, getCurrencySymbol, getProjectHeroGradient, getProjectHeroEmoji, getProjectStageSlug, logAudit, upsertContent, canEditContent, getPublishRecord, unpublishContent, withdrawSubmission, submitForReview } from '../mock/data';
 
 const emptyProject = {
   id: '',
@@ -24,6 +24,7 @@ const emptyProject = {
   tags: [],
   highlights: [],
   description: '',
+  changeSummary: '',
   documents: [],
   events: [],
   team: [],
@@ -54,11 +55,41 @@ export default function AdminProjects({ admin = null }) {
 
   const refresh = () => setItems([...projects]);
 
+  /* 发布审批动作（2026-11-23 简化）：摘要随编辑表单统一填写（必填），行内提交直接用已存摘要——
+     确认框回显摘要，防止旧摘要进 BPM 快照；双过/自动通过 webhook 到达即自动发布。 */
+  const handleWithdraw = (p) => {
+    if (!window.confirm(`确认撤销「${p.title}」的审批？BPM 工单将撤回，内容回到草稿（可编辑）。`)) return;
+    const res = withdrawSubmission('project', p.id, { operator: admin?.name || '运营' });
+    if (res.ok) refresh();
+    else window.alert(res.error);
+  };
+
+  const handleSubmit = (p) => {
+    const summary = String(p.changeSummary || '').trim();
+    if (!summary) { window.alert('缺少变更摘要：请先编辑内容并填写变更摘要，再提交审批。'); return; }
+    if (!window.confirm(`确认提交「${p.title}」进入 BPM 会签？\n\n变更摘要：${summary}\n\n提交后内容编辑锁定，法务 + RO 会签通过即自动发布。`)) return;
+    const res = submitForReview('project', p.id, {
+      operator: admin?.name || '运营',
+      operatorUsername: admin?.username || 'ops',
+      changeSummary: summary,
+    });
+    if (res.ok) refresh();
+    else window.alert(res.error);
+  };
+
+  // 筛选按钮按展示标签分组：closed/sold 同名「已结束」（10-22 RO 中性化）合并为一个按钮，筛多值（2026-11-23）
   const statusFilters = [
-    { value: 'all', label: '全部' },
-    ...statusOptions.map(s => ({ value: s, label: projectStatusLabels[s] })),
+    { value: 'all', label: '全部', values: null },
+    ...statusOptions.reduce((acc, s) => {
+      const label = projectStatusLabels[s];
+      const g = acc.find(x => x.label === label);
+      if (g) g.values.push(s);
+      else acc.push({ value: label, label, values: [s] });
+      return acc;
+    }, []),
   ];
-  const filteredItems = filter === 'all' ? items : items.filter(p => p.status === filter);
+  const activeFilter = statusFilters.find(f => f.value === filter);
+  const filteredItems = filter === 'all' ? items : items.filter(p => (activeFilter?.values || []).includes(p.status));
 
   /* 抽屉打开：锁定背景滚动 + Esc 关闭（AntD Drawer 惯例） */
   const drawerOpen = showForm || detail;
@@ -85,10 +116,14 @@ export default function AdminProjects({ admin = null }) {
   };
 
   const openEdit = (p) => {
+    // 审批锁：审批中锁定编辑（改了也白发，先撤销提交）
+    const guard = canEditContent('project', p.id);
+    if (!guard.ok) { window.alert(guard.reason); return; }
     setEditingId(p.id);
     setForm({
       ...emptyProject,
       ...p,
+      changeSummary: p.changeSummary || '',
       currency: p.currency || 'HKD',
       financials: { ...emptyProject.financials, ...(p.financials || {}) },
       events: p.events || [],
@@ -150,33 +185,44 @@ export default function AdminProjects({ admin = null }) {
   const handleSave = () => {
     const errs = {};
     if (!form.title.trim()) errs.title = '请输入项目名称';
+    if (!String(form.changeSummary || '').trim()) errs.changeSummary = '请填写变更摘要（提交审批时随工单送审）';
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
     const payload = {
       ...form,
+      changeSummary: String(form.changeSummary || '').trim(),
       highlights: highlightsText.split('\n').map(s => s.trim()).filter(Boolean),
       events: form.events || [],
       documents: form.documents || [],
       team: form.team || [],
     };
-    const isNew = !getProjectById(editingId);
-    if (isNew) {
-      projects.unshift({ ...payload });
-    } else {
-      const idx = projects.findIndex(p => p.id === editingId);
-      if (idx > -1) projects[idx] = { ...payload };
+    // 统一走数据层（2026-11-20）：锁定校验 + 发布档案 pendingChanges 标记 + 审计
+    const res = upsertContent('project', payload, { operator: admin?.name || '系统' });
+    if (!res.ok) {
+      setErrors({ title: res.error });
+      return;
     }
-    logAudit({ operator: admin?.name || '系统', category: 'project', action: isNew ? 'create' : 'update', target: form.title, targetId: editingId || '', note: isNew ? '新建项目' : '编辑项目资料' });
-    Storage.save();
     refresh();
     closeDrawer();
   };
 
-  /* ---- 删除保护：有申购记录或关联路演的项目不可删（孤儿引用） ---- */
+  /* ---- 删除保护：有申购记录或关联路演的项目不可删（孤儿引用）；在线内容须先下架 ---- */
   const canDelete = (id) => {
     const hasSub = subscriptions.some(s => s.projectId === id);
     const hasEvent = events.some(e => e.projectId === id);
-    return !hasSub && !hasEvent;
+    const pubRec = getPublishRecord('project', id);
+    const isLive = !!(pubRec && pubRec.live); // 在线内容直接删会造成前台幽灵数据，先下架
+    return !hasSub && !hasEvent && !isLive;
+  };
+
+  /* ---- 下架（内容展示生命周期）：在线内容从前台隐藏；发布审批页可回滚恢复 ---- */
+  const handleUnpublish = (id) => {
+    const proj = projects.find(p => p.id === id);
+    if (!proj) return;
+    if (!window.confirm(`确认下架项目「${proj.title}」？前台将不再展示，审批记录留痕，可在发布审批页回滚恢复。`)) return;
+    const res = unpublishContent('project', id, { operator: admin?.name || '系统' });
+    if (res && res.ok === false) { window.alert(res.error || '下架失败'); return; }
+    refresh();
   };
 
   const handleDelete = (id) => {
@@ -191,6 +237,7 @@ export default function AdminProjects({ admin = null }) {
   };
 
   const detailProject = detail ? getProjectById(detail) : null;
+  const detailPubRec = detailProject ? getPublishRecord('project', detailProject.id) : null;
   const drawerTitle = showForm
     ? (editingId ? '编辑项目' : '新建项目')
     : (detailProject?.title || '');
@@ -429,10 +476,33 @@ export default function AdminProjects({ admin = null }) {
                   </div>
                 </div>
               </div>
+
+              {/* ===== 模块 5 · 变更说明（流程字段：审批人可见、随工单送审，独立于内容小节，置于抽屉末尾） ===== */}
+              <div className="admin-form-section">
+                <div className="admin-form-section-title">变更说明</div>
+                <div className="admin-form-section-body">
+                  <div className="form-group">
+                    <label className="form-label"><span className="required-mark">*</span>变更摘要<span className="admin-field-tag">审批人可见</span></label>
+                    <textarea className={`form-input${errors.changeSummary ? ' field-error' : ''}`} rows={2} value={form.changeSummary || ''} onChange={e => handleField('changeSummary', e.target.value)} placeholder="本次改了什么、为什么改（保存后提交审批时随工单送审）" />
+                    {errors.changeSummary && <span className="form-error">{errors.changeSummary}</span>}
+                  </div>
+                </div>
+              </div>
             </div>
             ) : detailProject ? (
               /* 查看 = APP 移动端卡片流预览（用户侧只有 APP，运营所见即用户所得）；状态流转走编辑表单 status select */
               <div className="admin-app-preview">
+                {/* 低频维护动作区（2026-11-24：下架从发布审批抽屉移入内容原属页；删除仍在此） */}
+                {(admin?.role === 'super' && detailPubRec?.live) || canDelete(detailProject.id) ? (
+                  <div className="admin-app-preview-actions">
+                    {admin?.role === 'super' && detailPubRec?.live && (
+                      <button className="btn btn-md btn-outline" title="从前台隐藏；审批记录留痕，可在发布审批页回滚恢复" onClick={() => handleUnpublish(detailProject.id)}><EyeOff size={14} /> 下架</button>
+                    )}
+                    {canDelete(detailProject.id) && (
+                      <button className="btn btn-md btn-outline admin-preview-danger" onClick={() => handleDelete(detailProject.id)}><Trash2 size={14} /> 删除</button>
+                    )}
+                  </div>
+                ) : null}
                 <div className="project-detail-hero" style={{ background: getProjectHeroGradient(detailProject.sector) }}>
                   {detailProject.coverImage ? (
                     <img src={detailProject.coverImage} alt={detailProject.title} className="detail-hero-img" />
@@ -586,7 +656,7 @@ export default function AdminProjects({ admin = null }) {
           <span className="col-actions">操作</span>
         </div>
         {filteredItems.map(p => (
-          <div key={p.id} className="admin-table-row">
+          <div key={p.id} className="admin-table-row admin-table-row--clickable" onClick={() => setDetail(p.id)}>
             <span className="col-name">
               <strong title={p.title}>{p.title}</strong>
               <span className="text-muted text-sm">{p.company}</span>
@@ -598,16 +668,31 @@ export default function AdminProjects({ admin = null }) {
             <span className="col-progress">{p.intentDeadline || '—'}{p.status === 'raising' && p.intentDeadline && new Date(p.intentDeadline) < new Date() && <span className="admin-deadline-tag">已截止</span>}</span>
             <span className="col-status">
               <span className={`status-badge ${p.status === 'raising' ? 'admin-status-raising' : p.status === 'upcoming' ? 'admin-status-upcoming' : p.status === 'closed' ? 'admin-status-closed' : 'admin-status-sold'}`}>{projectStatusLabels[p.status]}</span>
+              {(() => {
+                // 发布域状态 = 次行小字（流程事实并入次行，2026-11-23 列表收敛；权威在发布审批中心）
+                const rec = getPublishRecord('project', p.id);
+                if (!rec) return null;
+                if (rec.bizState === 'published') return rec.pendingChanges
+                  ? <span className="col-status-sub col-status-sub--warn">有修改待重审</span>
+                  : null;
+                const map = { pending_review: '审批中', rejected: '已驳回', draft: '未发布' };
+                const cls = { pending_review: 'col-status-sub--info', rejected: 'col-status-sub--err', draft: 'col-status-sub--muted' };
+                return <span className={`col-status-sub ${cls[rec.bizState]}`}>{map[rec.bizState]}</span>;
+              })()}
             </span>
             <span className="col-actions">
-              <button className="btn-icon" title="查看" onClick={() => setDetail(p.id)}><Eye size={16} /></button>
-              <button className="btn-icon" title="编辑" onClick={() => openEdit(p)}><Edit3 size={16} /></button>
-              {/* 删除按钮按需展示：仅可删（无申购记录/关联路演）时渲染，避免常态不可删的灰色占位（2026-08-12） */}
-              {canDelete(p.id) && (
-                <button className="btn-icon" title="删除" onClick={() => handleDelete(p.id)}>
-                  <Trash2 size={16} />
-                </button>
-              )}
+              <button className="btn-icon" title="编辑" onClick={ev => { ev.stopPropagation(); openEdit(p); }}><Edit3 size={16} /></button>
+              {(() => {
+                const rec = getPublishRecord('project', p.id);
+                if (rec && rec.bizState === 'pending_review') {
+                  return <button className="btn-icon" title="撤销提交（回草稿）" onClick={ev => { ev.stopPropagation(); handleWithdraw(p); }}><Undo2 size={16} /></button>;
+                }
+                const submittable = rec && (rec.bizState === 'draft' || rec.bizState === 'rejected' || (rec.bizState === 'published' && rec.pendingChanges));
+                if (submittable) {
+                  return <button className="btn-icon" title="提交审批（BPM 会签，通过即发布）" onClick={ev => { ev.stopPropagation(); handleSubmit(p); }}><Send size={16} /></button>;
+                }
+                return null;
+              })()}
             </span>
           </div>
         ))}

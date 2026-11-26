@@ -206,7 +206,6 @@ export default function KYCPI({ navigate, goBack }) {
           <div
             className={`kyc-checkbox-row ${errors.pi_certified ? 'error' : ''}`}
             onClick={() => update('pi_certified', !formData.pi_certified)}
-            style={{ cursor: 'pointer' }}
           >
             <div className={`kyc-checkbox ${formData.pi_certified ? 'checked' : ''}`}>
               {formData.pi_certified && <Check size={12} />}

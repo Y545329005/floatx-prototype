@@ -152,11 +152,15 @@ export default function AdminFundTrades({ admin, tab, detailId, navigate }) {
 
   const fund = selected ? funds.find(f => f.id === selected.fundId) : null;
   const effectiveNav = Number(navInput) > 0 ? Number(navInput) : (fund ? latestNav(fund) : 0);
-  const feeRate = selected?.feeRate ?? FUND_FEE_RATE.subscribe;
+  // 费率兜底按单据类型取（2026-11-19）：缺 feeRate 的赎回单此前误兜 subscribe——
+  // 费率反转后该兜底会算出完全不同的预览费。跟单费率缺失时按当前费率常量兜底。
+  const feeRate = selected?.feeRate ?? (isRedeem ? FUND_FEE_RATE.redeem : FUND_FEE_RATE.subscribe);
   const previewFee = selected
     ? (isRedeem ? Math.round(selected.shares * effectiveNav * feeRate) : Math.round(selected.amount * feeRate))
     : 0;
-  const previewShares = selected && effectiveNav > 0 && !isRedeem ? (selected.amount - previewFee) / effectiveNav : 0;
+  const previewShares = selected && effectiveNav > 0 && !isRedeem
+    ? Math.floor((selected.amount - previewFee) / effectiveNav)
+    : 0;
   const previewNet = selected && isRedeem ? Math.round(selected.shares * effectiveNav) - previewFee : 0;
 
   // 赎回单：确认后持仓剩余（持仓 shares 未扣减，赎回只冻结）
@@ -176,7 +180,7 @@ export default function AdminFundTrades({ admin, tab, detailId, navigate }) {
     // 不立刻关抽屉：确认是不可逆的金钱动作，先把结果（份额/净值/结单）留在眼前当回执
     setDoneMsg(isRedeem
       ? `已确认赎回：${formatShares(selected.shares)} 份 · 净值 ${selected.nav} · 回款 ${selected.currency} ${formatExactAmount(selected.netAmount || 0)}，结单已生成。`
-      : `已确认成交：${formatShares(selected.shares)} 份 · 净值 ${selected.nav} · 认购费 ${selected.currency} ${formatExactAmount(selected.feeAmount || 0)}，结单已生成。`);
+      : `已确认成交：${formatShares(selected.shares)} 份 · 净值 ${selected.nav}${(selected.feeAmount || 0) > 0 ? ` · 认购费 ${selected.currency} ${formatExactAmount(selected.feeAmount)}` : ''}，结单已生成。`);
     refresh();
   };
 
@@ -376,23 +380,25 @@ export default function AdminFundTrades({ admin, tab, detailId, navigate }) {
                     <span>费率</span>
                     <strong>{(feeRate * 100).toFixed(2)}%</strong>
                   </div>
-                  <div className="fund-trade-consequence-row">
-                    <span>{isRedeem ? '赎回费' : '认购费'}</span>
-                    <strong>{selected.currency} {formatExactAmount(previewFee)}</strong>
-                  </div>
+                  {previewFee > 0 && (
+                    <div className="fund-trade-consequence-row">
+                      <span>{isRedeem ? '赎回费' : '认购费'}</span>
+                      <strong>{selected.currency} {formatExactAmount(previewFee)}</strong>
+                    </div>
+                  )}
                   <div className="fund-trade-consequence-row fund-trade-consequence-row--total">
                     <span>{isRedeem ? '预计回款' : '预计入账份额'}</span>
                     <strong>
                       {isRedeem
                         ? `${selected.currency} ${formatExactAmount(previewNet)}`
-                        : `${formatShares(Number(previewShares.toFixed(4)))} 份`}
+                        : `${formatShares(previewShares)} 份`}
                     </strong>
                   </div>
                 </div>
                 <p className="fund-trade-impact">
                   {isRedeem
                     ? `确认后将扣减 ${formatShares(selected.shares)} 份持仓，回款 ${selected.currency} ${formatExactAmount(previewNet)} 进入投资人可用余额，并生成逐笔结单。`
-                    : `确认后将从投资人可用余额扣款 ${selected.currency} ${formatExactAmount(selected.amount)}，并生成逐笔结单。`}
+                    : `确认后按确认份额 × 确认净值据实扣款（不超过申请金额 ${selected.currency} ${formatExactAmount(selected.amount)}），并生成逐笔结单。`}
                 </p>
               </div>
             )}
@@ -422,7 +428,9 @@ export default function AdminFundTrades({ admin, tab, detailId, navigate }) {
                 {isRedeem && (
                   <div className="kyc-review-row"><span>回款净额</span><strong>{selected.currency} {formatExactAmount(selected.netAmount || 0)}</strong></div>
                 )}
-                <div className="kyc-review-row"><span>{isRedeem ? '赎回费' : '认购费'}</span><strong>{selected.currency} {formatExactAmount(selected.feeAmount || 0)}</strong></div>
+                {(selected.feeAmount || 0) > 0 && (
+                  <div className="kyc-review-row"><span>{isRedeem ? '赎回费' : '认购费'}</span><strong>{selected.currency} {formatExactAmount(selected.feeAmount)}</strong></div>
+                )}
                 <div className="kyc-review-row"><span>处理人</span><strong>{selected.confirmedBy || '—'}</strong></div>
                 <div className="kyc-review-row"><span>确认时间</span><strong>{selected.confirmedAt || '—'}</strong></div>
               </div>
@@ -459,7 +467,7 @@ export default function AdminFundTrades({ admin, tab, detailId, navigate }) {
                     <CheckCircle size={16} />
                     {isRedeem
                       ? `确认赎回 · 回款 ${selected.currency} ${formatExactAmount(previewNet)}`
-                      : `确认成交 · 扣款 ${selected.currency} ${formatExactAmount(selected.amount)}`}
+                      : `确认成交 · 扣款 ${selected.currency} ${formatExactAmount(Math.round((previewShares * effectiveNav + previewFee) * 100) / 100)}`}
                   </button>
                 </>
               )}

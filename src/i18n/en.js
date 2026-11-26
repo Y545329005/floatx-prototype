@@ -1736,7 +1736,7 @@ export const en = {
   '最低持有期与通知期': 'Min. holding & notice period',
 
   // ===== 基金交易页四轮（申购/赎回重做，2026-10-28）=====
-  '份额最多 4 位小数': 'Units may have at most 4 decimal places',
+  '份额须为整数': 'Units must be whole numbers',
   '全部 {} 份仍在锁定期内，最近解锁 {}': 'All {} units are still locked up; next unlock {}',
   '当前无可用赎回份额': 'No units available to redeem',
   '提交后份额立即冻结，财务按确认日净值复核后回款进入可用余额；确认前可撤销。': 'Units are frozen on submission. Proceeds go to your available balance once finance confirms at the confirmation-date NAV; you can cancel before then.',

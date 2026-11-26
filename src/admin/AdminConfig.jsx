@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { keyed } from '../lib';
-import { Coins, Tags, ArrowLeftRight, Mail, Landmark, Building2, Edit3, Plus, Trash2, Save, RotateCcw, X, FileText, HelpCircle } from 'lucide-react';
+import { Coins, Tags, ArrowLeftRight, Mail, Landmark, Building2, Edit3, Plus, Trash2, Save, RotateCcw, X, FileText, HelpCircle, Percent } from 'lucide-react';
 import {
   sectors, exchangeRates, businessContact,
   projects, amountPresets, addAmountPreset, removeAmountPreset,
   platformAccounts, updatePlatformAccounts, resetExchangeRates,
   withdrawalFeeConfig, updateWithdrawalFeeConfig,
+  fundFeeConfig, updateFundFeeConfig,
   platformBrand, updatePlatformBrand, logAudit, Storage,
   termsState, bumpTermsVersion,
   agreements, updateAgreementSections,
@@ -28,6 +29,8 @@ const CONFIG_ITEMS = [
   // 委托账户（2026-11-13 批 1a）：协议里所有 [ ] 空值、入口卡文案、成交通知邮件开关都收在这里。
   // 合规未填时值为 0，业务上等于「待填」，不当作免费——改配置不发版。
   { key: 'mandate', name: '委托账户', icon: FileText, desc: '入口卡文案 / 协议费率与限制默认值 / 成交通知邮件开关', summary: () => `管理费 ${mandateConfig.fees.managementPct}% · 表现费 ${mandateConfig.fees.performancePct}% · 邮件${mandateConfig.adviceEmail ? '开' : '关'}`, sensitive: true },
+  // 基金申赎费率（2026-11-20 配置化）：直接入账的对外收费条款，与品牌/条款同级仅 super 可见
+  { key: 'fundFee', name: '基金申赎费率', icon: Percent, desc: '基金认购/赎回费率（全局，用户端公示与账务同源）', summary: () => `认购 ${(fundFeeConfig.subscribe * 100).toFixed(2)}% · 赎回 ${(fundFeeConfig.redeem * 100).toFixed(2)}%`, sensitive: true },
 ];
 
 export default function AdminConfig({ admin }) {
@@ -58,6 +61,12 @@ export default function AdminConfig({ admin }) {
     minCNH: String(withdrawalFeeConfig.minAmount.CNH ?? ''),
   }));
   const [feeErr, setFeeErr] = useState('');
+  // 基金申赎费率抽屉（2026-11-20 配置化）：表单存百分数，保存时转小数
+  const [fundFeeForm, setFundFeeForm] = useState(() => ({
+    subscribe: String(fundFeeConfig.subscribe * 100),
+    redeem: String(fundFeeConfig.redeem * 100),
+  }));
+  const [fundFeeErr, setFundFeeErr] = useState('');
   const [contact, setContact] = useState({ ...businessContact });
   const [contactErr, setContactErr] = useState('');
   const [accounts, setAccounts] = useState(() => ({ deposit: { ...platformAccounts.deposit }, depositUsd: { ...(platformAccounts.depositUsd || {}) }, withdraw: { ...platformAccounts.withdraw }, withdrawUsd: { ...(platformAccounts.withdrawUsd || {}) } }));
@@ -109,13 +118,17 @@ export default function AdminConfig({ admin }) {
       minUSD: String(withdrawalFeeConfig.minAmount.USD),
       minCNH: String(withdrawalFeeConfig.minAmount.CNH ?? ''),
     });
+    if (key === 'fundFee') {
+      setFundFeeForm({ subscribe: String(fundFeeConfig.subscribe * 100), redeem: String(fundFeeConfig.redeem * 100) });
+      setFundFeeErr('');
+    }
     if (key === 'contact') setContact({ ...businessContact });
     if (key === 'accounts') setAccounts({ deposit: { ...platformAccounts.deposit }, depositUsd: { ...(platformAccounts.depositUsd || {}) }, withdraw: { ...platformAccounts.withdraw }, withdrawUsd: { ...(platformAccounts.withdrawUsd || {}) } });
     if (key === 'brand') setBrand({ ...platformBrand });
     if (key === 'mandate') { setMandateState(JSON.parse(JSON.stringify(mandateConfig))); setMandateErr(''); }
     if (key === 'terms') { setLegalDocId('user-agreement'); setLegalLang('zh-CN'); loadLegalDraft('user-agreement', 'zh-CN'); setTermsTag(''); }
     if (key === 'faq') { setFaqEditing(null); setFaqForm({ ...EMPTY_FAQ_FORM }); }
-    setPresetErr(''); setSectorErr(''); setRatesErr(''); setContactErr(''); setAccountErr(''); setBrandErr(''); setFaqErr('');
+    setPresetErr(''); setSectorErr(''); setRatesErr(''); setContactErr(''); setAccountErr(''); setBrandErr(''); setFaqErr(''); setFeeErr(''); setFundFeeErr('');
     setNewSector(''); setPresetWan('');
   };
 
@@ -196,6 +209,13 @@ export default function AdminConfig({ admin }) {
     }, operator);
     if (!res.ok) { setFeeErr(res.error); return; }
     setFeeErr(''); flash('withdrawFee'); closeEdit();
+  };
+
+  // ---- 基金申赎费率抽屉（2026-11-20 配置化；改费率只影响新单，历史单已按 order.feeRate 快照）----
+  const handleFundFeeSave = () => {
+    const res = updateFundFeeConfig({ subscribe: fundFeeForm.subscribe, redeem: fundFeeForm.redeem }, operator);
+    if (!res.ok) { setFundFeeErr(res.error); return; }
+    setFundFeeErr(''); flash('fundFee'); closeEdit();
   };
 
   // ---- 商务联系抽屉 ----
@@ -427,6 +447,23 @@ export default function AdminConfig({ admin }) {
             </div>
             {feeErr && <p className="form-error">{feeErr}</p>}
             <p className="admin-form-hint">费率按卡的开户地区分本地/跨境两档；手续费从提现金额中扣除，用户端提现页实时公示。费率修改只影响新提交的出金单（历史单按下单时费率快照对账）。集团真实粒度是「汇出行 × 渠道 × 币种」，通道接入后按集团口径细化。</p>
+          </>
+        );
+      case 'fundFee':
+        return (
+          <>
+            <div className="admin-config-list">
+              <div className="admin-config-row">
+                <span><strong>认购费率（%）</strong><br /><span className="text-muted text-sm">申购时按金额计收；0 = 不收</span></span>
+                <input type="number" step="0.01" min="0" max="10" className="form-input admin-config-rate" value={fundFeeForm.subscribe} onChange={e => { setFundFeeForm(f => ({ ...f, subscribe: e.target.value })); setFundFeeErr(''); }} />
+              </div>
+              <div className="admin-config-row">
+                <span><strong>赎回费率（%）</strong><br /><span className="text-muted text-sm">赎回时按金额计收；0 = 不收</span></span>
+                <input type="number" step="0.01" min="0" max="10" className="form-input admin-config-rate" value={fundFeeForm.redeem} onChange={e => { setFundFeeForm(f => ({ ...f, redeem: e.target.value })); setFundFeeErr(''); }} />
+              </div>
+            </div>
+            {fundFeeErr && <p className="form-error">{fundFeeErr}</p>}
+            <p className="admin-form-hint">全局费率，用户端申购/赎回页与基金详情实时公示，与账务计算同源。修改只影响新提交的单据（历史单按下单时费率快照对账，不回改）。</p>
           </>
         );
       case 'faq':
@@ -862,6 +899,7 @@ export default function AdminConfig({ admin }) {
   const isAccounts = editKey === 'accounts'; // 内部两个保存按钮，抽屉"完成"关闭
   const isRates = editKey === 'rates';       // 保存 + 恢复默认
   const isWithdrawFee = editKey === 'withdrawFee'; // 保存
+  const isFundFee = editKey === 'fundFee'; // 保存（基金申赎费率，2026-11-20 配置化）
   const hasSaveAction = editKey === 'contact' || editKey === 'brand';
 
   // 页内分级（2026-10-19）：sensitive 配置（资金账户/品牌）与条款发布仅 super 可见；
@@ -970,6 +1008,12 @@ export default function AdminConfig({ admin }) {
               <>
                 <button className="btn btn-md btn-secondary" onClick={closeEdit}>取消</button>
                 <button className="btn btn-md btn-primary" onClick={handleFeeSave}><Save size={15} /> 保存费率</button>
+              </>
+            )}
+            {isFundFee && (
+              <>
+                <button className="btn btn-md btn-secondary" onClick={closeEdit}>取消</button>
+                <button className="btn btn-md btn-primary" onClick={handleFundFeeSave}><Save size={15} /> 保存费率</button>
               </>
             )}
             {isAccounts && <button className="btn btn-md btn-primary" onClick={closeEdit}>完成</button>}

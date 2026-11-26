@@ -36,9 +36,8 @@ export default function FundSubscribe({ id, navigate, goBack, setToast }) {
   const amountNum = Number(amount) || 0;
   const feeAmount = Math.round(amountNum * FUND_FEE_RATE.subscribe);
   const netAmount = amountNum - feeAmount;
-  // 与 confirmFundOrder 同口径（4 位小数）计算；展示用 2 位——预估是近似值，4 位是假精度
-  // （赎回页不同：那里的份额是「能赎多少」的事实，必须 4 位，否则「全部」填出来的数对不上）
-  const estShares = netAmount > 0 && nav > 0 ? Math.round((netAmount / nav) * 10000) / 10000 : 0;
+  // 与 confirmFundOrder 同口径（整数 floor）预估；确认日净值不同，预估与确认份额自然有差
+  const estShares = netAmount > 0 && nav > 0 ? Math.floor(netAmount / nav) : 0;
   const afterBalance = Math.max(0, available - amountNum);
   const shortfall = amountNum > available ? amountNum - available : 0;
   const belowMin = amountNum > 0 && amountNum < minReq;
@@ -150,10 +149,12 @@ export default function FundSubscribe({ id, navigate, goBack, setToast }) {
         )}
 
         <dl className="p-fund-trade-rows">
-          <div className="p-fund-trade-row">
-            <dt>{t('认购费')} ({(FUND_FEE_RATE.subscribe * 100).toFixed(2)}%)</dt>
-            <dd>{amountNum > 0 ? `−${currency} ${formatExactAmount(feeAmount)}` : '—'}</dd>
-          </div>
+          {feeAmount > 0 && (
+            <div className="p-fund-trade-row">
+              <dt>{t('认购费')} ({(FUND_FEE_RATE.subscribe * 100).toFixed(2)}%)</dt>
+              <dd>{amountNum > 0 ? `−${currency} ${formatExactAmount(feeAmount)}` : '—'}</dd>
+            </div>
+          )}
           <div className="p-fund-trade-row">
             <dt>{t('参考净值')}</dt>
             <dd>{nav}</dd>
@@ -206,10 +207,12 @@ export default function FundSubscribe({ id, navigate, goBack, setToast }) {
                 <dt>{t('申购金额')}</dt>
                 <dd>{currency} {formatExactAmount(amountNum)}</dd>
               </div>
-              <div className="p-fund-trade-row">
-                <dt>{t('认购费')}</dt>
-                <dd>−{currency} {formatExactAmount(feeAmount)}</dd>
-              </div>
+              {feeAmount > 0 && (
+                <div className="p-fund-trade-row">
+                  <dt>{t('认购费')}</dt>
+                  <dd>−{currency} {formatExactAmount(feeAmount)}</dd>
+                </div>
+              )}
               <div className="p-fund-trade-row">
                 <dt>{t('预估份额')}</dt>
                 <dd>{formatShares(estShares)} {t('份')}</dd>

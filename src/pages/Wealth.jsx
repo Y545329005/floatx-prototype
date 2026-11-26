@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ChevronRight, Monitor, MapPin, ShieldCheck } from 'lucide-react';
 import { clickable } from '../lib';
 import {
-  events, projects, projectStatusLabels, getProjectHeroGradient,
+  getLiveEvents, getLiveProjects, getLiveProjectById, projectStatusLabels, getProjectHeroGradient,
   subscriptions, currentUser, getInvestorNo, isEventLive, isEventRegistered,
 } from '../mock/data';
 import { useLang } from '../i18n';
@@ -59,9 +59,9 @@ export default function Wealth({ navigate }) {
 
   // 页签内容全量取数（不再 slice 截断）：路演讲全部 upcoming（与 Events 页同源同序），
   // 项目取在募全部 + 即将上线分区（与 ProjectMarket 页同口径）
-  const upcomingEvents = events.filter(e => e.status === 'upcoming');
-  const raisingProjects = projects.filter(p => p.status === 'raising');
-  const upcomingProjects = projects.filter(p => p.status === 'upcoming');
+  const upcomingEvents = getLiveEvents().filter(e => e.status === 'upcoming');
+  const raisingProjects = getLiveProjects().filter(p => p.status === 'raising');
+  const upcomingProjects = getLiveProjects().filter(p => p.status === 'upcoming');
 
   const renderProjectRow = (p) => {
     // 多用户化（2026-08-13）：按投资人过滤，"已申购"仅当前用户的记录

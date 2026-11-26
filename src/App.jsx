@@ -45,6 +45,8 @@ const AdminRoles = lazy(() => import('./admin/AdminRoles'));
 const AdminNotifications = lazy(() => import('./admin/AdminNotifications'));
 const AdminSupport = lazy(() => import('./admin/AdminSupport'));
 const AdminConfig = lazy(() => import('./admin/AdminConfig'));
+const AdminPublish = lazy(() => import('./admin/AdminPublish'));
+const PublishPreview = lazy(() => import('./pages/PublishPreview'));
 
 import { KYC_STATUS, PI_STATUS, getPiStatusForUser, testAccounts, approveKyc, setMockCurrentUser, restoreKycStatus, currentUser as currentUserData, initState, resetSubscriptionForDemo, getRoleMenuKeys, termsState, resetUserSecurityDemo, hasAgreedOnboarding } from './mock/data';
 
@@ -392,6 +394,8 @@ export default function App() {
             {effectiveSub === 'broadcast' && <AdminNotifications admin={adminUser} />}
             {effectiveSub === 'messages' && <AdminSupport admin={adminUser} detailId={hash.param2} navigate={navigate} />}
             {effectiveSub === 'config' && <AdminConfig admin={adminUser} />}
+            {/* 发布审批进度中心（2026-11-20）：只读（审批动作在 BPM），super 有发布/下架/回滚 */}
+            {effectiveSub === 'publish' && <AdminPublish admin={adminUser} navigate={navigate} />}
             </Suspense>
           </ErrorBoundary>
         </main>
@@ -402,6 +406,11 @@ export default function App() {
   // 门控决策与 APP 端路由表已提取至 shell/guard.js + shell/router.jsx（2026-10-09 嵌入方案·方案A），
   // 与嵌入壳共用单一事实源；此处仅执行决策结果（渲染 LoginPage / 执行导航副作用）。
   const renderPage = () => {
+    // 发布审批只读预览（2026-11-20）：BPM 审批人新 tab 打开，无投资人登录态，
+    // 绕过全站登录墙（token 一次性/限时/绑定版本，校验失败在页内分态呈现）
+    if (hash.path === 'publish-preview') {
+      return <PublishPreview token={hash.param} />;
+    }
     const gate = resolveGate({ path: hash.path, isLoggedIn, user: currentUserData });
     if (gate?.type === 'login') {
       return <LoginPage navigate={navigate} setIsLoggedIn={setIsLoggedIn} setUser={setUser} setToast={setToast} />;

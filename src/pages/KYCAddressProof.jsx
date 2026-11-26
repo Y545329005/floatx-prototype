@@ -440,7 +440,7 @@ export default function KYCAddressProof({ navigate, goBack, setIsLoggedIn }) {
               setCrsDeclared(!crsDeclared);
               if (errors.crsDeclared) setErrors(prev => ({ ...prev, crsDeclared: null }));
             }}
-            style={{ cursor: 'pointer', marginTop: 'var(--space-3)' }}
+            style={{ marginTop: 'var(--space-3)' }}
           >
             <div className={`kyc-checkbox ${crsDeclared ? 'checked' : ''}`}>
               {crsDeclared && <Check size={12} />}

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { clickable } from '../lib';
 import { MapPin, Monitor, Search, ChevronDown, Check, ArrowLeft, ShieldCheck } from 'lucide-react';
-import { events, projects, getProjectHeroGradient, getProjectHeroEmoji, isEventRegistered, isEventLive, eventStatusLabels } from '../mock/data';
+import { getLiveEvents, getLiveProjectById, getProjectHeroGradient, getProjectHeroEmoji, isEventRegistered, isEventLive, eventStatusLabels } from '../mock/data';
 import { useLang } from '../i18n';
 import BusinessContact from '../components/BusinessContact';
 
@@ -32,8 +32,9 @@ export default function Events({ navigate, setToast, isLoggedIn = false, embed =
 
   const currentTypeLabel = (TYPE_OPTIONS.find(o => o.value === typeFilter) || TYPE_OPTIONS[0]).labelKey;
 
-  const upcoming = events.filter(e => e.status === 'upcoming');
-  const past = events.filter(e => e.status === 'past');
+  const liveEvents = getLiveEvents();
+  const upcoming = liveEvents.filter(e => e.status === 'upcoming');
+  const past = liveEvents.filter(e => e.status === 'past');
 
   const filterByType = (list) => {
     if (typeFilter === 'all') return list;
@@ -41,7 +42,7 @@ export default function Events({ navigate, setToast, isLoggedIn = false, embed =
   };
 
   const renderEvent = (e) => {
-    const proj = projects.find(p => p.id === e.projectId);
+    const proj = e.projectId ? getLiveProjectById(e.projectId) : null;
     const heroSector = proj ? proj.sector : e.projectName;
     const live = isEventLive(e);
     return (

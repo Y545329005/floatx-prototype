@@ -27,10 +27,6 @@ export default function DateWheelPicker({ value, onChange, t, lang, minYear = 19
   const curMonth = parseInt(parts[1]) || (now.getMonth() + 1);
   const curDay = parseInt(parts[2]) || now.getDate();
 
-  const years = Array.from({ length: maxYear - minYear + 1 }, (_, i) => minYear + i);
-  const months = Array.from({ length: 12 }, (_, i) => i + 1);
-  const days = Array.from({ length: daysInMonth(curYear, curMonth) }, (_, i) => i + 1);
-
   const setDate = (y, m, d) => {
     const yy = String(y).padStart(4, '0');
     const mm = String(m).padStart(2, '0');
@@ -61,8 +57,9 @@ export default function DateWheelPicker({ value, onChange, t, lang, minYear = 19
     day: d => `${d}${lang === 'zh-CN' || lang === 'zh-HK' ? t('日') : ''}`,
   };
 
-  // 简化的 wheel column：▲ + value-wrap(select 透明覆盖中间) + ▼
-  const Column = ({ field, options, current }) => (
+  // 简化的 wheel column：▲ + value + ▼（2026-11-18 移除内嵌原生 <select>：真机会唤起系统选择器，
+  // 与滚轮语义重复且脱离 App 视觉；步进按钮 + 弹层外的直接取值已覆盖全部路径）
+  const Column = ({ field, current }) => (
     <div className="kyc-date-wheel-col">
       <button
         type="button"
@@ -74,20 +71,6 @@ export default function DateWheelPicker({ value, onChange, t, lang, minYear = 19
       </button>
       <div className="kyc-date-wheel-value-wrap">
         <div className="kyc-date-wheel-value">{formatDisplay[field](current)}</div>
-        <select
-          className="kyc-date-wheel-select"
-          value={current}
-          onChange={e => {
-            const v = parseInt(e.target.value);
-            if (field === 'year') setDate(v, curMonth, curDay);
-            else if (field === 'month') setDate(curYear, v, curDay);
-            else setDate(curYear, curMonth, v);
-          }}
-        >
-          {options.map(opt => (
-            <option key={opt} value={opt}>{formatDisplay[field](opt)}</option>
-          ))}
-        </select>
       </div>
       <button
         type="button"
@@ -102,9 +85,9 @@ export default function DateWheelPicker({ value, onChange, t, lang, minYear = 19
 
   return (
     <div className="kyc-date-wheels">
-      <Column field="year" options={years} current={curYear} />
-      <Column field="month" options={months} current={curMonth} />
-      <Column field="day" options={days} current={curDay} />
+      <Column field="year" current={curYear} />
+      <Column field="month" current={curMonth} />
+      <Column field="day" current={curDay} />
     </div>
   );
 }

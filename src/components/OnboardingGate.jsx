@@ -53,7 +53,6 @@ function OnboardingGate({ onAgreed, onDecline }) {
           checked={agreed}
           onToggle={() => setAgreed(!agreed)}
           className="form-checkbox-group terms-gate-agree"
-          style={{ cursor: 'pointer' }}
           label={t('我已阅读并同意上述协议')}
         >
           <span>{t('我已阅读并同意上述协议')}</span>

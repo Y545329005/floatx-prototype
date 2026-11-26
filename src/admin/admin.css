@@ -452,6 +452,10 @@
 
 .admin-table-row:last-child { border-bottom: none; }
 .admin-table-row:hover { background: var(--bg); }
+/* 发布审批：行点击开抽屉（无查看 icon），hover 反馈强化提示可点（2026-11-24 用户反馈「抽屉入口不明显」） */
+.admin-table--publish .admin-table-row { cursor: pointer; }
+.admin-table--publish .admin-table-row:hover { background: var(--primary-light); }
+.admin-table--publish .col-name strong:hover { color: var(--primary); }
 
 /* 空态行（§四 4.5）：跨全列 + 居中，禁止空白表格 */
 .admin-table-row > .admin-table-empty {
@@ -501,7 +505,8 @@
 }
 .admin-table--events .admin-table-header,
 .admin-table--events .admin-table-row {
-  grid-template-columns: minmax(180px, 1.8fr) minmax(120px, 1fr) 110px 90px 110px 100px 100px;
+  /* 2026-11-23 列表收敛：col-type（线上/线下）并入日期列次行，7 列 → 6 列 */
+  grid-template-columns: minmax(200px, 2fr) minmax(130px, 1.1fr) 110px 110px 110px 100px;
 }
 
 /* 单元格对齐（列宽由模板控制，内部对齐按语义） */
@@ -561,6 +566,48 @@
   opacity: 0.35;
   cursor: not-allowed;
 }
+
+/* 行点击进抽屉=查看（2026-11-23 列表收敛：查看 icon 删除，对齐 KYC/委托交互；桌面后台允许 cursor/hover，APP 端禁用规则不适用 admin） */
+.admin-table-row--clickable { cursor: pointer; }
+
+/* 状态列：业务 badge 主行 + 发布域状态次行（流程事实并入次行；不再与业务 badge 并排抢列宽） */
+.admin-table--events .col-status,
+.admin-table--projects .col-status {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: flex-start;
+}
+.col-status-sub {
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  white-space: nowrap;
+  padding-left: 10px; /* = .status-badge 水平 padding：次行文字与 badge 文字左缘对齐（badge 有内边距，盒子对齐会显得文字内缩） */
+}
+.col-status-sub--info  { color: var(--primary); }         /* 审批中 */
+.col-status-sub--warn  { color: var(--warning-text); }    /* 有修改待重审 */
+.col-status-sub--err   { color: var(--compliance); }      /* 已驳回 */
+.col-status-sub--muted { color: var(--text-secondary); }  /* 未发布 */
+
+/* 日期列次行（events：类型并入日期列） */
+.admin-table--events .col-date {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.col-date-sub { font-size: var(--text-xs); color: var(--text-secondary); }
+
+/* 抽屉查看态顶部动作区（低频维护动作：签到/归档/删除，从列表行内迁入） */
+.admin-app-preview-actions {
+  display: flex;
+  gap: var(--space-2);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-light);
+  margin-bottom: var(--space-4);
+}
+.admin-app-preview-actions .btn-outline.admin-preview-archive { color: var(--warning-strong); border-color: var(--warning); }
+.admin-app-preview-actions .btn-outline.admin-preview-danger { color: var(--compliance); border-color: var(--compliance); }
+
 /* 行内快捷归档按钮（upcoming 且已过结束时间，warning 橙语义突出） */
 .admin-table .btn-icon.admin-archive-btn {
   color: var(--warning);
@@ -687,6 +734,17 @@
 @keyframes adminDrawerIn {
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
+}
+/* 抽屉标题：6 个 admin 页共用此类，此前从未定义（h3 吃浏览器默认样式，2026-11-24 补） */
+.admin-drawer-title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .admin-drawer-head {
   display: flex;
@@ -819,6 +877,7 @@
 .status-badge.admin-status-pending    { color: var(--warning-text); }      /* 待处理/待审核（2026-08-24 对比度整改：#E65100 小字号 3.79:1 → 文字档 #B24000） */
 .status-badge.admin-status-requires   { color: var(--warning-text); }      /* KYC 需补件（2026-08-13 P1：退回补件待用户补充） */
 .status-badge.admin-status-approved   { color: var(--success); }
+.status-badge.admin-status-active     { color: var(--success); }      /* 发布审批：已发布/在线（与 approved 同语义；此前未定义，白字落白底隐形，2026-11-24 补） */
 .status-badge.admin-status-rejected   { color: var(--compliance); }
 .status-badge.admin-status-raising    { color: var(--success); }      /* 项目：申购开放 */
 .status-badge.admin-status-upcoming   { color: var(--primary); }      /* 项目/路演：即将上线 */
@@ -4377,3 +4436,86 @@
 /* 表单实时起投额对照：默认灰，达到起投额转红 */
 .special-amt-hint { margin-top: 6px; font-size: var(--text-xs); color: var(--text-secondary); }
 .special-amt-hint.is-over { color: var(--compliance); }
+
+/* ============================================================
+ * 发布审批进度中心（2026-11-20 · BPM 会签主审）
+ * ============================================================ */
+.admin-table--publish .admin-table-header,
+.admin-table--publish .admin-table-row {
+  grid-template-columns: minmax(180px, 1fr) 108px 170px 88px;
+}
+.pub-col-state { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+.pub-col-time { color: var(--text-secondary); }
+
+/* 状态徽章进抽屉标题行：标题可省略，徽章不压缩 */
+.pub-drawer-heading { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.pub-drawer-heading .status-badge { flex: 0 0 auto; }
+
+/* 会签是并行阶段：法务/RO 两节点竖向并列在同一阶段内；连接线垂直居中对齐 */
+.pub-steps { align-items: center; }
+.pub-steps-cosign { display: flex; flex-direction: column; gap: var(--space-2); }
+.pub-steps-line { align-self: center; margin-top: 0; }
+
+/* 区块 */
+.pub-section { margin-bottom: var(--space-5); }
+.pub-section-title { font-size: var(--text-sm); font-weight: 600; color: var(--text); margin-bottom: var(--space-2); }
+.pub-meta-row { font-size: var(--text-sm); color: var(--text); margin-top: var(--space-2); }
+
+/* 审批时间线 */
+.pub-timeline { display: flex; flex-direction: column; }
+.pub-timeline-item { display: flex; gap: var(--space-3); padding: var(--space-2) 0; position: relative; }
+.pub-timeline-item:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 10px; top: 30px; bottom: -6px;
+  width: 1px; background: var(--border-light);
+}
+.pub-timeline-icon {
+  flex: 0 0 auto;
+  width: 21px; height: 21px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--primary-light, rgba(37,99,235,0.08));
+  color: var(--primary);
+}
+.pub-timeline-item.is-voided .pub-timeline-icon { background: var(--border-light); color: var(--text-tertiary); }
+.pub-timeline-item.is-pending .pub-timeline-icon { background: var(--border-light); color: var(--text-tertiary); }
+.pub-timeline-body { flex: 1; min-width: 0; }
+.pub-timeline-head { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
+.pub-timeline-head strong { font-size: var(--text-sm); }
+.pub-timeline-time { margin-left: auto; font-size: var(--text-xs); color: var(--text-tertiary); }
+.pub-timeline-item.is-voided .pub-timeline-head strong { color: var(--text-tertiary); text-decoration: line-through; }
+
+/* 会签意见：轨迹节点内的引文，浅底弱化；不再用 2px 彩色左边框做装饰 */
+.pub-opinion {
+  margin-top: var(--space-1);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+}
+.pub-timeline-note { margin-top: var(--space-1); font-size: var(--text-xs); color: var(--warning-text); }
+
+/* 动作区 */
+.pub-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+/* 确认/提交弹层（复用 admin-drawer-mask 遮罩） */
+.pub-confirm {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 95; /* 高于 .admin-drawer-mask(90)：确认窗曾被遮罩压暗（2026-11-24 用户反馈） */
+  width: min(480px, calc(100vw - 48px));
+  background: #fff;
+  border-radius: var(--radius-lg, 14px);
+  padding: var(--space-5);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+}
+.pub-confirm h4 { margin: 0 0 var(--space-2); font-size: 16px; }
+.pub-confirm-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-2); }
+.pub-confirm-head h4 { margin: 0; }
+.pub-confirm-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-4); }
+.pub-error-text { color: var(--compliance); }
+.pub-submit-modal { width: min(560px, calc(100vw - 48px)); }

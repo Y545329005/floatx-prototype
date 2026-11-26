@@ -131,7 +131,7 @@ export default function FundOrders({ navigate, goBack, setToast }) {
         const rows = [];
         if (done && !isRedeem) {
           rows.push({ k: t('申购金额'), v: money(o.currency, o.amount || 0) });
-          rows.push({ k: t('认购费'), v: money(o.currency, o.feeAmount || 0) });
+          if ((o.feeAmount || 0) > 0) rows.push({ k: t('认购费'), v: money(o.currency, o.feeAmount) });
           rows.push({ k: t('确认净值'), v: `${o.nav}（${o.navDate}）` });
         }
         if (done && isRedeem) {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { clickable } from '../lib';
+import { clickable, openExternal } from '../lib';
 import { Briefcase, Mail, Phone, MessageCircle, ChevronRight, X } from 'lucide-react';
 import { businessContact } from '../mock/data';
 import { useLang } from '../i18n';
@@ -86,8 +86,7 @@ export default function BusinessContact({ setToast, variant = 'banner', isLogged
               <a
                 className="business-contact-row"
                 href={`https://wa.me/${businessContact.whatsapp.replace(/[^0-9]/g, '')}`}
-                target="_blank"
-                rel="noopener noreferrer"
+                onClick={e => { e.preventDefault(); openExternal(`https://wa.me/${businessContact.whatsapp.replace(/[^0-9]/g, '')}`); }}
               >
                 <div className="business-contact-row-icon"><MessageCircle size={16} /></div>
                 <div className="business-contact-row-info">

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Upload, Check, AlertCircle, ShieldCheck, RotateCcw, ChevronDown } from "lucide-react";
+import { ArrowLeft, Upload, Check, AlertCircle, ShieldCheck, RotateCcw, ChevronDown, X } from "lucide-react";
 import BottomPicker from "../components/BottomPicker";
+import DateWheelPicker from "../components/DateWheelPicker";
 import { useLang } from "../i18n";
 import { currentUser, updateKycProfile } from "../mock/data";
 
@@ -15,7 +16,7 @@ const EKYC_STATE = {
 const EKYC_MAX_ATTEMPTS = 3; // 重试次数限制（24h 内，mock 会话级）
 
 export default function KYCIdUpload({ navigate, goBack, setIsLoggedIn }) {
- const { t } = useLang();
+ const { t, lang } = useLang();
  const profile = currentUser.kyc_profile || {};
  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
@@ -50,6 +51,7 @@ const changeIdType = v => {
 const [idNumber, setIdNumber] = useState(profile.idDocNumber || "");
 const [idExpiry, setIdExpiry] = useState(profile.idDocExpiry === 'permanent' ? "" : (profile.idDocExpiry || ""));
 const [idNoExpiry, setIdNoExpiry] = useState(profile.idDocExpiry === 'permanent');
+const [showExpirySheet, setShowExpirySheet] = useState(false);   // 有效期 wheel picker 弹层（2026-11-18 替代原生 date input）
 const [frontFile, setFrontFile] = useState(null);
 const [backFile, setBackFile] = useState(null);
  const [errors, setErrors] = useState({});
@@ -268,20 +270,19 @@ const [backFile, setBackFile] = useState(null);
  </div>
  ) : (
  <>
- <input
- type="date"
- className={`kyc-form-input ${errors.idExpiry ? 'error' : ''}`}
- value={idExpiry}
- onChange={e => {
- setIdExpiry(e.target.value);
- if (errors.idExpiry) setErrors(prev => ({ ...prev, idExpiry: null }));
- }}
- />
+ <button
+ type="button"
+ className={`kyc-form-input picker-trigger ${errors.idExpiry ? 'error' : ''}`}
+ onClick={() => setShowExpirySheet(true)}
+ >
+ <span className="picker-trigger-value">{idExpiry || t('请选择日期')}</span>
+ <ChevronDown size={16} className="picker-caret" />
+ </button>
  {errors.idExpiry && <span className="kyc-form-error">{errors.idExpiry}</span>}
  <div
  className="kyc-checkbox-row"
  onClick={() => setIdNoExpiry(true)}
- style={{ cursor: 'pointer', marginTop: 'var(--space-2)' }}
+ style={{ marginTop: 'var(--space-2)' }}
  >
  <div className="kyc-checkbox" />
  <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>{t('证件永久有效（如香港身份证）')}</span>
@@ -454,6 +455,39 @@ const [backFile, setBackFile] = useState(null);
    onSelect={changeIdType}
    onClose={() => setPicker(null)}
  />
+
+ {/* 证件有效期 wheel picker 弹层（2026-11-18：替代原生 date input） */}
+ {showExpirySheet && (
+ <div className="sheet-mask" onClick={() => setShowExpirySheet(false)}>
+   <div className="sheet" onClick={e => e.stopPropagation()}>
+     <div className="sheet-header">
+       <span className="sheet-title">{t('选择证件有效期')}</span>
+       <button className="btn-icon" onClick={() => setShowExpirySheet(false)} aria-label={t('关闭')}>
+         <X size={20} />
+       </button>
+     </div>
+     <div className="sheet-body">
+       <DateWheelPicker
+         value={idExpiry}
+         onChange={v => {
+           setIdExpiry(v);
+           if (errors.idExpiry) setErrors(prev => ({ ...prev, idExpiry: null }));
+         }}
+         t={t}
+         lang={lang}
+         minYear={2026}
+         maxYear={2046}
+         initialYear={2031}
+       />
+     </div>
+     <div className="sheet-footer">
+       <button className="kyc-btn kyc-btn-primary" onClick={() => setShowExpirySheet(false)}>
+         {t('完成')}
+       </button>
+     </div>
+   </div>
+ </div>
+ )}
  </div>
  );
 }

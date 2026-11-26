@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { clickable } from '../lib';
 import { ArrowLeft, Search, X } from 'lucide-react';
-import { projects, events, projectStatusLabels, getProjectHeroGradient, getProjectHeroEmoji, subscriptions, sectors, isEventRegistered, currentUser, getInvestorNo } from '../mock/data';
+import { getLiveProjects, getLiveEvents, getLiveProjectById, projectStatusLabels, getProjectHeroGradient, getProjectHeroEmoji, subscriptions, sectors, isEventRegistered, currentUser, getInvestorNo } from '../mock/data';
 import { useLang } from '../i18n';
 
 export default function SearchPage({ navigate, goBack }) {
@@ -24,7 +24,7 @@ export default function SearchPage({ navigate, goBack }) {
   };
 
   // 过滤项目
-  const filteredProjects = projects.filter(p => {
+  const filteredProjects = getLiveProjects().filter(p => {
     if (search) {
       const q = search.toLowerCase();
       if (!p.title.toLowerCase().includes(q) && !p.company.toLowerCase().includes(q)) return false;
@@ -34,10 +34,10 @@ export default function SearchPage({ navigate, goBack }) {
   });
 
   // 过滤路演
-  const filteredEvents = events.filter(e => {
+  const filteredEvents = getLiveEvents().filter(e => {
     if (search) {
       const q = search.toLowerCase();
-      const proj = e.projectId ? projects.find(p => p.id === e.projectId) : null;
+      const proj = e.projectId ? getLiveProjectById(e.projectId) : null;
       if (!e.title.toLowerCase().includes(q) &&
           !(proj?.sector && proj.sector.toLowerCase().includes(q)) &&
           !(e.projectName && e.projectName.toLowerCase().includes(q)) &&
@@ -82,7 +82,7 @@ export default function SearchPage({ navigate, goBack }) {
   };
 
   const renderEventCard = (e) => {
-    const proj = projects.find(p => p.id === e.projectId);
+    const proj = e.projectId ? getLiveProjectById(e.projectId) : null;
     const heroSector = proj ? proj.sector : e.projectName;
     return (
       <div key={e.id} className="card project-card" {...clickable(() => navigate(`#event/${e.id}`))}>

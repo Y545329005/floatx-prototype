@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { ArrowLeft, Download, Upload, ChevronRight, ClipboardList, CreditCard, History } from 'lucide-react';
+import { ArrowLeft, Download, Upload, ChevronRight, ChevronDown, ClipboardList, CreditCard, History } from 'lucide-react';
 import { wallet, CURRENCY_META, convertToHKD, getAvailableCash, getFundFrozen, getWithdrawFrozen, formatExactAmount } from '../mock/data';
 import { useLang } from '../i18n';
+import BottomPicker from '../components/BottomPicker';
 
 // ⚠ 死页（2026-11-02 资金审查摘除）：#wallet 路由已从 router.jsx 摘除，全仓无正向入口，
 // 仅深链可达。资金域归属地为 #asset（资产总览），本页的多币种余额/冻结拆解信息 #asset 已覆盖。
@@ -28,6 +29,7 @@ const CURRENCIES = ['HKD', 'USD', 'CNH'].map(code => ({ code, ...CURRENCY_META[c
 export default function Wallet({ navigate, goBack }) {
   const { t } = useLang();
   const [heroCurrency, setHeroCurrency] = useState('HKD');
+  const [picker, setPicker] = useState(null);
 
   const totalHKD = CURRENCIES.reduce((s, c) => {
     const acc = wallet[c.walletKey];
@@ -53,16 +55,15 @@ export default function Wallet({ navigate, goBack }) {
         <div className="wallet-hero-head">
           <span className="wallet-hero-label">{t('资产总览')}</span>
           <div className="wallet-currency-dropdown">
-            <select
-              className="wallet-currency-select"
-              value={heroCurrency}
-              onChange={e => setHeroCurrency(e.target.value)}
+            <button
+              type="button"
+              className="wallet-currency-select picker-trigger"
+              onClick={() => setPicker('currency')}
+              aria-label={t('折合币种')}
             >
-              {CURRENCIES.map(opt => (
-                <option key={opt.code} value={opt.code}>{opt.code}</option>
-              ))}
-            </select>
-            <ChevronRight size={14} className="wallet-currency-chevron" />
+              <span className="picker-trigger-value">{heroCurrency}</span>
+              <ChevronDown size={14} className="picker-caret" />
+            </button>
           </div>
         </div>
         <div className="wallet-hero-main">
@@ -146,6 +147,16 @@ export default function Wallet({ navigate, goBack }) {
           })}
         </div>
       </div>
+
+      {/* 折合币种底部弹层（替代原生 select，统一 APP 交互） */}
+      <BottomPicker
+        open={picker === 'currency'}
+        title={t('折合币种')}
+        value={heroCurrency}
+        options={CURRENCIES.map(c => ({ value: c.code, label: `${c.code} · ${t(c.label)}` }))}
+        onSelect={v => setHeroCurrency(v)}
+        onClose={() => setPicker(null)}
+      />
     </div>
   );
 }

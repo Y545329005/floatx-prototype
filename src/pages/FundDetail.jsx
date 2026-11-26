@@ -7,6 +7,7 @@ import {
   fundRangeReturns, getHoldings, getHoldingRedeemInfo, formatShares, formatExactAmount, FUND_FEE_RATE,
   fundMonthsLabel, formatFundSize,
 } from '../mock/data';
+import { openExternal } from '../lib';
 import { useLang } from '../i18n';
 
 // 基金详情（2026-10-28 决策档案改版 · 对抗性审查后定稿）
@@ -358,7 +359,7 @@ export default function FundDetail({ id, navigate, goBack }) {
                 {d.url && d.updatedAt && (
                   <span className="p-fund-detail-doc-date">{t('更新 {}').replace('{}', d.updatedAt)}</span>
                 )}
-                {d.url ? <a href={d.url} target="_blank" rel="noreferrer">{t('查看')}</a> : t('联系客户经理获取')}
+                {d.url ? <a href={d.url} onClick={e => { e.preventDefault(); openExternal(d.url); }}>{t('查看')}</a> : t('联系客户经理获取')}
               </dd>
             </div>
           )) : (

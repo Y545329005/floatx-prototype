@@ -1,5 +1,5 @@
 import { ArrowLeft, User, Building2, Zap } from 'lucide-react';
-import { getProjectById, formatCurrency, formatISODateTime, historyTypeLabels, actorLabels, subscriptionStatusLabels, subscriptions } from '../mock/data';
+import { getLiveProjectById, formatCurrency, formatISODateTime, historyTypeLabels, actorLabels, subscriptionStatusLabels, subscriptions } from '../mock/data';
 import SubscriptionMilestone from '../components/SubscriptionMilestone';
 import { useLang } from '../i18n';
 
@@ -34,7 +34,8 @@ export default function MySubscription({ id, navigate, goBack }) {
     );
   }
 
-  const project = getProjectById(subRecord.projectId);
+  // 前台只读已发布版本：项目下架/未发布时 project 为空，页头仍展示问卷记录，CTA 自动隐藏
+  const project = getLiveProjectById(subRecord.projectId);
   // 2026-10-22 RO 整改：移除「我的位次」（排位属竞争性招揽语义，与热度页同批下线）
 
   return (

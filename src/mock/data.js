@@ -639,6 +639,26 @@ export function resetExchangeRates(operator) {
   return true;
 }
 
+// ---- 种子日期相对化（2026-11-23）：路演/项目日期跟随真实时间 ----
+// 种子不再写死 ISO 日期，以「今天 + 偏移」生成；快照恢复后跨天重锚（reanchorSeedDates，load 末尾调用）。
+// 演示语义：状态分布恒定——e1 今天当前小时（进行中）、e2/e4/e5/e7 未来（即将开始）、
+// e3 前天（已超时 + 已驳回，承载签到/归档/驳回重审分支）、e6 六周前（已结束）；
+// 项目 p1 意向截止已过 3 天（已截止）、p2/p6 募集中。同一天内运营手动改的日期保留，
+// 跨天重锚会覆盖种子条目的手动日期调整（演示新鲜感优先；新建/非种子条目不受影响）。
+export function seedShiftDate(days) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+// 当前小时区间（e1「进行中」样例依赖；h=23 时 24:00 由 Date 构造进位次日 0 点，isEventLive 可解析）
+export function currentHourRange() {
+  const h = new Date().getHours();
+  return `${String(h).padStart(2, '0')}:00-${String(h + 1).padStart(2, '0')}:00`;
+}
+const EVENT_SEED_SHIFTS = { e1: 0, e2: 10, e3: -2, e4: 14, e5: 21, e6: -40, e7: 30 };
+const PROJECT_SEED_SHIFTS = { p1: -3, p2: 12, p6: 20 };
+
 export const projects = [
   {
     id: 'p1',
@@ -654,7 +674,7 @@ export const projects = [
     riskLevel: '中高风险',
     ipoPlan: '目标港股 / 美股 IPO，预计 2028 年递交上市申请',
     roundNote: '公司释放少量老股供专业投资者参与，额度有限，以平台与项目方协调结果为准。',
-    intentDeadline: '2026-08-31',
+    intentDeadline: seedShiftDate(PROJECT_SEED_SHIFTS.p1),  // 已过 3 天 → 「已截止」分支（相对化 2026-11-23）
     allocationRule: 'large-first',
     waitlist: [],
     investorCount: 42,
@@ -702,7 +722,7 @@ export const projects = [
     riskLevel: '高风险',
     ipoPlan: '目标港股 18A 上市，预计 2027 年递交上市申请',
     roundNote: '公司开放少量新增份额给专业投资者，额度优先分配。',
-    intentDeadline: '2026-08-15',
+    intentDeadline: seedShiftDate(PROJECT_SEED_SHIFTS.p2),  // 募集中（相对化 2026-11-23）
     allocationRule: 'pro-rata',
     waitlist: [],
     investorCount: 28,
@@ -882,7 +902,7 @@ export const projects = [
     riskLevel: '中高风险',
     ipoPlan: '目标港股 IPO，预计 2028 年递交上市申请',
     roundNote: '公司释放少量份额，优先满足已有意向的投资人。',
-    intentDeadline: '2026-09-05',
+    intentDeadline: seedShiftDate(PROJECT_SEED_SHIFTS.p6),  // 募集中（相对化 2026-11-23）
     allocationRule: 'pro-rata',
     waitlist: [],
     investorCount: 21,
@@ -1377,7 +1397,25 @@ export const fundBankAccounts = [
 // 「问卷记录」不是交易，同名会误导下一个接手的人（2026-10-28 对抗性审查结论）。
 // 资金模型：余额申购 → 后台人工确认 → 份额入账 + 逐笔结单；冻结不落 wallet.frozen，
 // 按「待确认申购单金额」实时派生（single source of truth）。
-export const FUND_FEE_RATE = { subscribe: 0.01, redeem: 0 };
+/* 费率口径（2026-11-19 反转定版）：认购无费，赎回才扣费。
+   费率跟单存储（下单时快照到 order.feeRate），配置只影响新单。
+   2026-11-20 配置化：后台「系统配置」可改（updateFundFeeConfig，sensitive 仅 super），
+   展示与账务一律读 FUND_FEE_RATE——两者是同一对象引用，mutate 属性即全端生效。 */
+export const fundFeeConfig = { subscribe: 0, redeem: 0.01 };
+export const FUND_FEE_RATE = fundFeeConfig; // 兼容别名：全部历史 import 零改动
+
+// 后台改基金申赎费率（改费率只影响新单，历史单已按 order.feeRate 快照）
+export function updateFundFeeConfig({ subscribe, redeem }, operator = '') {
+  const sub = Number(subscribe);
+  const red = Number(redeem);
+  if (![sub, red].every(n => Number.isFinite(n) && n >= 0)) return { ok: false, error: '费率需为不小于 0 的数字' };
+  if (sub > 10 || red > 10) return { ok: false, error: '费率需在 0~10 之间（百分数）' };
+  fundFeeConfig.subscribe = sub / 100;   // 表单收百分数，存储为小数（与 FUND_FEE_RATE 既有口径一致）
+  fundFeeConfig.redeem = red / 100;
+  logAudit({ operator, category: 'config', action: 'update', target: '基金申赎费率配置', targetId: '', note: `认购 ${sub}% / 赎回 ${red}%` });
+  Storage.save();
+  return { ok: true };
+}
 
 export const FUND_ORDER_STATUS = {
   PENDING: 'pending_confirm',
@@ -2135,7 +2173,6 @@ export const FUND_SEED_RESULT = { redeemNet: 0, redeemAt: '' };
 
 (function seedFundPortfolio() {
   const r2 = v => Math.round(v * 100) / 100;
-  const r4 = v => Math.round(v * 10000) / 10000;
 
   // ---------- ① 主持仓：AIDC 基金，26 个月前确认（24 个月锁定期已过） ----------
   const fund = funds.find(f => f.id === FUND_SEED.fundId);
@@ -2143,7 +2180,7 @@ export const FUND_SEED_RESULT = { redeemNet: 0, redeemAt: '' };
   const seedWeeks = Math.round(FUND_SEED.monthsAgo * 30.44 / 7);   // 26 个月 ≈ 113 周
   const nav = navWeeksAgo(fund, seedWeeks);
   const feeAmount = Math.round(FUND_SEED.amount * FUND_FEE_RATE.subscribe);
-  const sharesBought = r4((FUND_SEED.amount - feeAmount) / nav);
+  const sharesBought = Math.floor((FUND_SEED.amount - feeAmount) / nav);
   const confirmedAt = monthsAgoStamp(FUND_SEED.monthsAgo);
   const statementNo = genOrderNo('FS', confirmedAt);
 
@@ -2196,13 +2233,13 @@ export const FUND_SEED_RESULT = { redeemNet: 0, redeemAt: '' };
   const redNav = navWeeksAgo(fund, REDEEM_SEED.weeksAgo);
   const redAt = weeksAgoStamp(REDEEM_SEED.weeksAgo);
   const redDate = weeksAgoDate(REDEEM_SEED.weeksAgo);
-  const avgNavBought = FUND_SEED.amount / sharesBought;      // 含认购费的成本净值
+  const avgNavBought = FUND_SEED.amount / sharesBought;      // 每份成本（认购无费，≈买入净值，floor 使其微高）
   const costOut = r2(redShares * avgNavBought);
   const grossRed = r2(redShares * redNav);
   const redFee = r2(grossRed * FUND_FEE_RATE.redeem);
   const netRed = r2(grossRed - redFee);
   const realized = r2(netRed - costOut);
-  const sharesLeft = r4(sharesBought - redShares);
+  const sharesLeft = sharesBought - redShares;
   const costLeft = r2(FUND_SEED.amount - costOut);
 
   fundOrders.push({
@@ -2272,12 +2309,13 @@ export const FUND_SEED_RESULT = { redeemNet: 0, redeemAt: '' };
 
   // ---------- ③ 第二只持仓：美股 IPO 配置基金，6 周前买入 ----------
   // 12 个月锁定期 → 资产页显示「锁定期至」而不是「可赎回」；
-  // 买入点取近端净值高点（1.115 > 现值 1.112），含 1% 认购费后为负收益 → 跌色分支不再无数据可测。
+  // 买入点取近端净值高点（1.115 > 现值 1.112），认购无费（2026-11-19），成本高于市值 → 天然微负收益，
+  // 跌色分支不再无数据可测。
   const fund2 = funds.find(f => f.id === SECOND_SEED.fundId);
   if (!fund2) return;
   const nav2 = navWeeksAgo(fund2, SECOND_SEED.weeksAgo);
   const fee2 = Math.round(SECOND_SEED.amount * FUND_FEE_RATE.subscribe);
-  const shares2 = r4((SECOND_SEED.amount - fee2) / nav2);
+  const shares2 = Math.floor((SECOND_SEED.amount - fee2) / nav2);
   const at2 = weeksAgoStamp(SECOND_SEED.weeksAgo);
   const date2 = weeksAgoDate(SECOND_SEED.weeksAgo);
 
@@ -2400,7 +2438,7 @@ export const FUND_SEED_RESULT = { redeemNet: 0, redeemAt: '' };
   if (holdingForRedeem && holdingForRedeem.shares >= redeemPendingShares) {
     const redeemAt = hoursAgoStamp(26);
     const redeemNav = latestNav(fund);
-    holdingForRedeem.frozenShares = r4((holdingForRedeem.frozenShares || 0) + redeemPendingShares);
+    holdingForRedeem.frozenShares = (holdingForRedeem.frozenShares || 0) + redeemPendingShares;
     fundOrders.push({
       id: 'fo-seed-5',
       type: 'redeem',
@@ -3229,10 +3267,15 @@ export function confirmFundOrder(orderId, { nav = null, operator = '运营专员
   const confirmNav = Number(nav) > 0 ? Number(nav) : latestNav(fund);
   const feeAmount = Math.round(order.amount * (order.feeRate ?? FUND_FEE_RATE.subscribe));
   const netAmount = order.amount - feeAmount;
-  const shares = Math.round((netAmount / confirmNav) * 10000) / 10000;
+  // 份额整数化（2026-11-19）：份额是计数不是度量，一律向下取整。
+  // 据实扣款：实扣 = 份额 × 确认净值 + 费；申请金额只做门槛校验，差额留在钱包（无找零动作）。
+  // order.amount 在确认时改写为实扣额——结单/流水/成本同源读它，单据数字互相乘除吻合。
+  const shares = Math.floor(netAmount / confirmNav);
   if (!(shares > 0)) return { ok: false, error: '净值异常，无法计算份额' };
 
-  acc.balance -= order.amount;
+  const charged = round2(shares * confirmNav + feeAmount);
+  acc.balance -= charged;
+  order.amount = charged;
 
   const now = formatNow();
   order.status = FUND_ORDER_STATUS.CONFIRMED;
@@ -3262,7 +3305,7 @@ export function confirmFundOrder(orderId, { nav = null, operator = '运营专员
     };
     fundHoldings.push(holding);
   }
-  holding.shares = Math.round((holding.shares + shares) * 10000) / 10000;
+  holding.shares = (holding.shares || 0) + shares;
   holding.costAmount += order.amount;
   holding.avgNav = holding.shares > 0 ? holding.costAmount / holding.shares : confirmNav;
   holding.updatedAt = now;
@@ -3332,7 +3375,6 @@ function addMonths(dateStr, months) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
-const round4 = v => Math.round(v * 10000) / 10000;
 const round2 = v => Math.round(v * 100) / 100;
 
 // 持仓的可赎口径（同时供 UI 文案：可赎 X 份 / 另有 N 份锁定至 YYYY-MM）
@@ -3352,6 +3394,8 @@ export function getHoldingRedeemInfo(holding) {
     ? buys.reduce((s, o) => s + (o.shares || 0), 0)
     : buys.filter(o => monthsSince(o.confirmedAt) >= lockMonths).reduce((s, o) => s + (o.shares || 0), 0);
 
+  // 可赎口径 floor 兜底（2026-11-19）：份额整数化后新数据天然整数；
+  // 老快照残留 4 位小数份额时 floor 保证输出仍是整数（不升版迁移，展示差 ≤1 份可接受）。
   const unlockedRemaining = Math.max(0, unlockedTotal - (holding.redeemedShares || 0));
   const redeemable = Math.max(0, Math.min(holding.shares || 0, unlockedRemaining - (holding.frozenShares || 0)));
   // 锁定中的份额 = 持仓总量 − 已解锁剩余（冻结份额属于已解锁，不重复计入）
@@ -3364,7 +3408,7 @@ export function getHoldingRedeemInfo(holding) {
       .sort()[0] || null
     : null;
 
-  return { redeemable: round4(redeemable), locked: round4(locked), lockMonths, earliestUnlock };
+  return { redeemable: Math.floor(redeemable), locked: Math.floor(locked), lockMonths, earliestUnlock };
 }
 
 export function getHolding(holdingId, userId = currentUser.id) {
@@ -3386,7 +3430,8 @@ export function submitRedemptionOrder({ holdingId, shares }) {
   if (!fund) return { ok: false, error: '基金不存在' };
   const n = Number(shares);
   if (!Number.isFinite(n) || n <= 0) return { ok: false, error: '请输入有效份额' };
-  if (round4(n) !== n) return { ok: false, error: '份额最多 4 位小数' };
+  // 份额整数化（2026-11-19）：份额是计数，不允许小数
+  if (!Number.isInteger(n)) return { ok: false, error: '份额须为整数' };
   const info = getHoldingRedeemInfo(holding);
   if (info.redeemable <= 0) return { ok: false, error: '当前无可赎回份额（锁定期内）' };
   if (n > info.redeemable) return { ok: false, error: `超过可赎回份额（上限 ${formatShares(info.redeemable)} 份）` };
@@ -3407,14 +3452,14 @@ export function submitRedemptionOrder({ holdingId, shares }) {
     currency: holding.currency,
     shares: n,
     nav,                       // 提交时参考净值；确认时按确认日净值重算
-    amount: round2(n * nav),   // 预估回款（确认后以 order.netAmount 为准）
+    amount: round2(n * nav * (1 - FUND_FEE_RATE.redeem)),   // 预估回款=净额（毛额×(1−赎回费)）；确认后以 order.netAmount 为准
     feeRate: FUND_FEE_RATE.redeem,
     status: FUND_ORDER_STATUS.PENDING,
     createdAt: now,
     updatedAt: now,
     history: [{ type: 'submitted', timestamp: now, actor: 'user', note: `提交赎回申请（冻结 ${n} 份）` }],
   };
-  holding.frozenShares = round4((holding.frozenShares || 0) + n);
+  holding.frozenShares = Math.max(0, (holding.frozenShares || 0) + n);
   holding.updatedAt = now;
   fundOrders.unshift(order);
   pushNotification({
@@ -3453,9 +3498,9 @@ export function confirmRedemptionOrder(orderId, { nav = null, operator = '运营
 
   const now = formatNow();
   const costOut = round2(shares * (holding.avgNav || 0));
-  holding.frozenShares = Math.max(0, round4((holding.frozenShares || 0) - shares));
-  holding.shares = Math.max(0, round4((holding.shares || 0) - shares));
-  holding.redeemedShares = round4((holding.redeemedShares || 0) + shares);
+  holding.frozenShares = Math.max(0, (holding.frozenShares || 0) - shares);
+  holding.shares = Math.max(0, (holding.shares || 0) - shares);
+  holding.redeemedShares = (holding.redeemedShares || 0) + shares;
   holding.costAmount = Math.max(0, round2((holding.costAmount || 0) - costOut));
   holding.realizedPnl = round2((holding.realizedPnl || 0) + (netAmount - costOut));
   holding.avgNav = holding.shares > 0 ? holding.costAmount / holding.shares : (holding.avgNav || 0);
@@ -3531,7 +3576,7 @@ function releaseRedemptionFreeze(order) {
   const holding = fundHoldings.find(h =>
     h.userId === order.userId && h.fundId === order.fundId && h.currency === order.currency);
   if (!holding) return;
-  holding.frozenShares = Math.max(0, round4((holding.frozenShares || 0) - (order.shares || 0)));
+  holding.frozenShares = Math.max(0, (holding.frozenShares || 0) - (order.shares || 0));
   holding.updatedAt = formatNow();
 }
 
@@ -3658,8 +3703,8 @@ export const events = [
     coverImage: 'images/e1-quantum-roadshow.jpg',
     type: 'online',
     title: 'QuantumCore 线上路演 — 量子计算的商业化路径',
-    date: new Date().toISOString().slice(0, 10),  // 演示用：始终为今天
-    time: (() => { const d = new Date(); const h = d.getHours(); return `${String(h).padStart(2,'0')}:00-${String(h+1).padStart(2,'0')}:00`; })(),  // 演示用：始终为当前小时
+    date: seedShiftDate(EVENT_SEED_SHIFTS.e1),  // 演示用：始终为今天（相对化 2026-11-23）
+    time: currentHourRange(),  // 演示用：始终为当前小时 → isEventLive 判「进行中」
     timezone: 'HKT',
     description: '本次路演将由QuantumCore CEO张振宇先生介绍公司最新技术进展、商业化规划和本轮投资机会。活动设有Q&A环节，参会者可以实时提问。',
     agenda: [
@@ -3689,7 +3734,7 @@ export const events = [
     coverImage: 'images/e2-biotech-clinical.jpg',
     type: 'online',
     title: 'BioNova 临床数据解读会',
-    date: '2026-08-22',
+    date: seedShiftDate(EVENT_SEED_SHIFTS.e2),  // +10 天（相对化 2026-11-23）
     time: '15:00-16:30',
     timezone: 'HKT',
     description: 'BioNova CSO将详细解读核心管线BN-001的最新临床II期数据，并讨论PROTAC技术在肿瘤治疗领域的未来发展前景。',
@@ -3720,7 +3765,7 @@ export const events = [
     coverImage: 'images/e3-quantum-lab.jpg',
     type: 'offline',
     title: '参观日：QuantumCore 香港实验室',
-    date: '2026-09-05',
+    date: seedShiftDate(EVENT_SEED_SHIFTS.e3),  // -2 天 → 已超时（签到/归档/驳回重审分支）
     time: '10:00-12:00',
     timezone: 'HKT',
     location: '香港科学园 科技大道西 8 号 QuantumCore 量子计算中心 3 楼',
@@ -3752,7 +3797,7 @@ export const events = [
     coverImage: 'images/e4-robot-demo.jpg',
     type: 'online',
     title: 'SkyNet 产品演示会 — AMR 仓储自动化解决方案',
-    date: '2026-09-12',
+    date: seedShiftDate(EVENT_SEED_SHIFTS.e4),  // +14 天（相对化 2026-11-23）
     time: '14:00-15:00',
     timezone: 'HKT',
     description: 'SkyNet Robotics将进行AMR产品现场演示，展示其在真实仓储环境下的运行效果，并分享与头部物流企业的合作案例。',
@@ -3783,7 +3828,7 @@ export const events = [
     coverImage: 'images/e5-rwa-fintech.jpg',
     type: 'online',
     title: 'Aurora FinTech — RWA 代币化如何改变私募市场',
-    date: '2026-09-20',
+    date: seedShiftDate(EVENT_SEED_SHIFTS.e5),  // +21 天（相对化 2026-11-23）
     time: '16:00-17:30',
     timezone: 'HKT',
     description: 'Aurora FinTech CEO将分享RWA代币化的最新行业趋势、监管动态和平台的商业化策略。',
@@ -3814,7 +3859,7 @@ export const events = [
     coverImage: 'images/e6-energy-ipo.jpg',
     type: 'online',
     title: 'GreenCell 上市前投资人交流会',
-    date: '2026-07-20',
+    date: seedShiftDate(EVENT_SEED_SHIFTS.e6),  // -40 天 → 已结束（相对化 2026-11-23）
     time: '14:00-15:30',
     timezone: 'HKT',
     description: 'GreenCell管理层介绍上市筹备进展、未来发展战略及Pre-IPO轮投资条款。',
@@ -3843,7 +3888,7 @@ export const events = [
     coverImage: 'images/e7-market-outlook.jpg',
     type: 'online',
     title: '2026 夏季私募市场展望 — 新经济赛道投资策略',
-    date: '2026-09-25',
+    date: seedShiftDate(EVENT_SEED_SHIFTS.e7),  // +30 天（相对化 2026-11-23）
     time: '19:00-20:30',
     timezone: 'HKT',
     description: 'HighBlock 研究院年度分享：解析下半年私募市场趋势、新经济赛道估值逻辑与高净值配置建议，并预告四季度上新项目。',
@@ -5400,6 +5445,7 @@ eventRegistrationsList.forEach(r => {
 // 用户报名：写入报名名单（后台报名管理可查）
 // phone/email = 报名表单联系方式（用户可改）——报名表是客户线索（发掘潜在客户），联系方式为核心字段
 export function registerEvent(id, accompanying = 0, phone = '', email = '') {
+  if (previewViewer) return { ok: false, error: '审批预览模式为只读，不可报名' }; // 预览会话防误写
   const evt = events.find(e => e.id === id);
   const regPhone = String(phone || '').trim();
   const regEmail = String(email || currentUser.email || '').trim();
@@ -6380,6 +6426,1084 @@ export function updatePlatformAccounts(kind, account, operator) {
 }
 
 
+// ========== 内容发布审批域（2026-11-20 · BPM 会签主审 + 本地合规内核）==========
+// 职责划分（已拍板，2026-11-19 周会 + BPM API 文档评估）：
+//   审批执行 → 集团 BPM：法务+RO 会签节点、一驳即驳、意见互见、审批留痕；状态权威 = instanceState
+//   合规内核 → 本地：内容指纹 + 版本冻结 + 发布门校验 + reviewedRender 同源渲染
+// 状态机（2026-11-23 简化：审批是唯一质量门，发布是审批通过的自然结果，无独立「待发布」态）：
+//   draft            无工单 / instanceState ∈ {3 撤回, -3 作废, 8 超期终止}（回编辑 + 告警）
+//   pending_review   instanceState = 0（锁定编辑；撤销提交 → 撤单 → draft）
+//   published        instanceState ∈ {1 双过, 4 自动通过} webhook 触发发布门，通过即自动发布：
+//                      指纹(工作副本) === 指纹(payloadSnapshot) → live 生效 + prevLive 留档（可回滚）；
+//                      指纹不一致（内容在审期间被改，多 tab 滞后是真实触发源）→ 不发布，退回 rejected。
+//                      =4 超期自动通过同样直接发布，时间线标注「未经人工审阅」（合规留痕）。
+//   rejected         instanceState ∈ {2, 5}（人工驳回/自动拒绝，一驳即驳终态；含指纹失效退回）
+// 审批动线（A+B 混合）：formData 带只读预览链接（token 化）+ HTML 内容快照附件（兜底）；
+//   审批操作只发生在 BPM（模拟页 public/bpm.html），本地 AdminPublish 仅展示进度与意见。
+// mock 边界：bpmClient 为 mock 适配层（localStorage 工单表 + 事件队列），接口面与真实 API
+//   （start/query/webhook）一一对应；真实接入只替换本模块 bpmClient 实现。
+
+export const PUBLISH_BIZ_STATE = {
+  DRAFT: 'draft',
+  PENDING: 'pending_review',
+  PUBLISHED: 'published',
+  REJECTED: 'rejected',
+};
+
+// 进指纹 / 冻结快照的前台可见内容字段（payload 边界）。
+// 不含：status（纯状态变更免审实时生效，见 mergeLive）、investorCount/recentInvestors/waitlist/
+// registered（运行时数据，渲染时从活数组回填）、allocationDate（退出分配运行时）。
+export const CONTENT_FIELDS = {
+  project: ['id', 'coverImage', 'title', 'company', 'stage', 'sector', 'location', 'valuation', 'currency', 'riskLevel', 'ipoPlan', 'roundNote', 'intentDeadline', 'allocationRule', 'tags', 'highlights', 'description', 'documents', 'events', 'team', 'financials'],
+  event: ['id', 'projectId', 'projectName', 'sector', 'coverImage', 'type', 'title', 'date', 'time', 'timezone', 'description', 'agenda', 'highlights', 'speakerBio', 'joinNote', 'joinUrl', 'location', 'streamUrl', 'status', 'speaker', 'capacity'],
+};
+
+const BPM_PROCESS_KEY = 'content_publish_review';
+const BPM_STATE_KEY = 'zhifu-bpm-state';        // 模拟 BPM 工单表（跨 tab 与 public/bpm.html 共享）
+const BPM_EVENTS_KEY = 'zhifu-bpm-events';      // webhook 事件队列（bpm.html 写、主应用事件泵消费）
+const BPM_PROCESSED_KEY = 'zhifu-bpm-processed'; // eventId 幂等表（webhook 重试必带同 eventId）
+const PREVIEW_TOKEN_KEY = 'zhifu-preview-tokens';
+const PREVIEW_TOKEN_TTL = 10 * 60 * 1000;
+
+// BPM 侧演示账号（模拟 sys_user；bpm.html 登录身份与之对应）
+export const BPM_USERS = [
+  { username: 'bpm-legal', name: '李法务', node: 'legal' },
+  { username: 'bpm-ro', name: '陈主任', node: 'ro' },
+];
+
+export const BPM_TASKS = [
+  { taskKey: 'legal_review', taskName: '法务审阅', assignee: 'bpm-legal', assigneeName: '李法务' },
+  { taskKey: 'ro_review', taskName: 'RO 合规审阅', assignee: 'bpm-ro', assigneeName: '陈主任' },
+];
+
+// instanceState → 归类（BPM审批状态枚举标准 §7）
+export function bpmStateBucket(instanceState) {
+  if (instanceState === 0) return 'reviewing';
+  if (instanceState === 1) return 'humanApproved';
+  if (instanceState === 4) return 'autoApproved';
+  if (instanceState === 2 || instanceState === 5) return 'rejected';
+  if (instanceState === 3 || instanceState === -3 || instanceState === 8) return 'closed';
+  return 'unknown';
+}
+
+const bpmStateDesc = (v) => ({
+  [-3]: '作废', [-2]: '已暂停', [-1]: '暂存', 0: '审批中', 1: '已完成', 2: '已拒绝',
+  3: '已撤回', 4: '自动通过', 5: '自动拒绝', 8: '超期自动终止',
+}[v] || '未知');
+
+// ---- 内容指纹（canonicalize 后 hash；status 剔除 = 纯状态变更免审）----
+function canonicalizeValue(v) {
+  if (v === undefined) return null;
+  if (Array.isArray(v)) return v.map(canonicalizeValue);
+  if (v && typeof v === 'object') {
+    const out = {};
+    Object.keys(v).sort().forEach(k => { out[k] = canonicalizeValue(v[k]); });
+    return out;
+  }
+  return v;
+}
+
+export function fingerprintContent(payload) {
+  const clean = canonicalizeValue({ ...payload, status: undefined });
+  const s = JSON.stringify(clean);
+  // FNV-1a 双 seed（64bit 位宽拼接；指纹用途是同域内容变化检测，此位宽足够）
+  const fnv = (seed) => {
+    let h = seed;
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+    return h.toString(16).padStart(8, '0');
+  };
+  return fnv(0x811c9dc5) + fnv(0x193a1c81);
+}
+
+function pickContentFields(contentType, obj) {
+  const keys = CONTENT_FIELDS[contentType] || [];
+  return Object.fromEntries(keys.map(k => [k, obj ? obj[k] : undefined]));
+}
+
+// ---- 模拟 BPM 文件服务（IndexedDB；localStorage 5MB 存不了快照，对抗性审查 A2 修正）----
+const BPM_FILES_DB = 'zhifu-bpm-files';
+function withBpmFilesDb(fn) {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(BPM_FILES_DB, 1);
+    req.onupgradeneeded = () => { req.result.createObjectStore('files', { keyPath: 'key' }); };
+    req.onsuccess = () => fn(req.result, resolve, reject);
+    req.onerror = () => reject(req.error);
+  });
+}
+export function putBpmFile(key, value) {
+  return withBpmFilesDb((db, resolve, reject) => {
+    const tx = db.transaction('files', 'readwrite');
+    tx.objectStore('files').put({ key, ...value });
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+export function getBpmFile(key) {
+  return withBpmFilesDb((db, resolve, reject) => {
+    const tx = db.transaction('files', 'readonly');
+    const req = tx.objectStore('files').get(key);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+// HTML 内容快照（附件兜底）：BPM 审批人在 BPM 内可见的最小内容文本。
+// 注意：这是文本快照（兜底附件），同源真实渲染走预览链接（主通道）。
+export function buildContentSnapshotHtml(contentType, payload) {
+  const isProject = contentType === 'project';
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const rows = [];
+  const add = (label, val) => { if (val !== undefined && val !== null && val !== '') rows.push(`<tr><th>${esc(label)}</th><td>${esc(val)}</td></tr>`); };
+  if (isProject) {
+    add('项目名称', payload.title); add('公司名称', payload.company);
+    add('阶段 / 行业', `${payload.stage || ''} / ${payload.sector || ''}`);
+    add('所在地 / 币种', `${payload.location || ''} / ${payload.currency || ''}`);
+    add('估值', payload.valuation ? `${payload.currency || ''} ${Number(payload.valuation).toLocaleString()}` : '');
+    add('上市计划', payload.ipoPlan); add('意向截止', payload.intentDeadline);
+    add('本轮情况', payload.roundNote);
+  } else {
+    add('路演主题', payload.title); add('关联项目', payload.projectName);
+    add('形式 / 时间', `${payload.type === 'online' ? '线上' : '线下'} / ${payload.date || ''} ${payload.time || ''}`);
+    add('主讲人', payload.speaker); add('地点 / 链接', payload.location || payload.joinUrl);
+  }
+  const sections = [];
+  if (Array.isArray(payload.highlights) && payload.highlights.length) {
+    sections.push(`<h3>要点</h3><ul>${payload.highlights.map(h => `<li>${esc(h)}</li>`).join('')}</ul>`);
+  }
+  if (payload.description) sections.push(`<h3>简介</h3><p>${esc(payload.description)}</p>`);
+  if (isProject && payload.team && payload.team.length) {
+    sections.push(`<h3>核心团队</h3><ul>${payload.team.map(m => `<li>${esc(m.name)} · ${esc(m.role)} — ${esc(m.bg)}</li>`).join('')}</ul>`);
+  }
+  if (!isProject && Array.isArray(payload.agenda) && payload.agenda.length) {
+    sections.push(`<h3>议程</h3><ul>${payload.agenda.map(a => `<li>${esc(a.time)} ${esc(a.topic)}</li>`).join('')}</ul>`);
+  }
+  return `<!doctype html><html lang="zh"><head><meta charset="utf-8"><style>
+    body{font:14px/1.7 -apple-system,'PingFang SC','Microsoft YaHei',sans-serif;color:#1a1a1a;background:#fff;margin:24px auto;max-width:640px}
+    h1{font-size:18px;margin:0 0 4px}h3{font-size:14px;margin:20px 0 6px;color:#444}
+    .meta{color:#888;font-size:12px;margin-bottom:16px}
+    table{border-collapse:collapse;width:100%}th,td{border:1px solid #e3e3e3;padding:6px 10px;text-align:left;vertical-align:top;font-size:13px}
+    th{background:#f7f7f7;width:120px;color:#666;font-weight:500;white-space:nowrap}
+    .note{background:#fff7e6;border:1px solid #ffe0a3;border-radius:6px;padding:8px 12px;font-size:12px;color:#8a6100;margin-bottom:16px}
+    li{margin:2px 0}</style></head><body>
+    <div class="note">BPM 附件 · 内容文本快照（兜底）。最终视觉以工单内「预览链接」为准（与前台同源渲染）。</div>
+    <h1>${esc(payload.title || '(未命名)')}</h1>
+    <div class="meta">${esc(payload.projectName || payload.company || '')}</div>
+    <table>${rows.join('')}</table>${sections.join('')}</body></html>`;
+}
+
+// ---- BPM localStorage 基建（必须在 ensurePublishSeed() 之前声明：种子工单写入依赖）----
+const memoryStore = {}; // localStorage 不可用时兜底（node 直连单测 / 浏览器隐私模式；仅会话内存活）
+// 启动时探测一次：node ≥26 存在全局 localStorage 但未配 --localstorage-file 时读写静默失败，
+// typeof 检查会误判可用，必须真实读写探针验证。
+let localStorageWorks = false;
+try {
+  if (typeof localStorage !== 'undefined') {
+    const probe = '__zhifu_storage_probe__';
+    localStorage.setItem(probe, '1');
+    localStorageWorks = localStorage.getItem(probe) === '1';
+    localStorage.removeItem(probe);
+  }
+} catch (e) { localStorageWorks = false; }
+
+// ---- 只读预览 token（未发布内容不裸奔：一次性语义 + 10 分钟 TTL + 绑定版本）----
+// 声明位置必须在 ensurePublishSeed() 调用之前：种子工单会为在审版本生成预览链接
+let previewTokens = readJson(PREVIEW_TOKEN_KEY, {});
+function persistPreviewTokens() { writeJson(PREVIEW_TOKEN_KEY, previewTokens); }
+
+export function createPublishPreviewToken(contentType, contentId, payload, versionId) {
+  const token = `pt-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  previewTokens[token] = { contentType, contentId, versionId, payload, expiresAt: Date.now() + PREVIEW_TOKEN_TTL };
+  // 惰性清理过期 token
+  Object.keys(previewTokens).forEach(k => {
+    if (previewTokens[k].expiresAt < Date.now()) delete previewTokens[k];
+  });
+  persistPreviewTokens();
+  return token;
+}
+
+export function resolvePublishPreviewToken(token) {
+  previewTokens = readJson(PREVIEW_TOKEN_KEY, {});
+  const hit = token && previewTokens[token];
+  if (!hit) return { ok: false, reason: 'invalid' };
+  if (hit.expiresAt < Date.now()) {
+    delete previewTokens[token];
+    persistPreviewTokens();
+    return { ok: false, reason: 'expired' };
+  }
+  return { ok: true, data: hit };
+}
+
+// ---- 发布档案（每条对外内容一条）----
+export const publishRecords = [];
+
+function pubIdOf(contentType, contentId) { return `pub-${contentType}-${contentId}`; }
+function versionIdOf(contentType, contentId, seq) { return `pub-${contentType}-${contentId}-v${seq}`; }
+export function businessIdOf(contentType, contentId, seq) { return `PUB-${contentType.toUpperCase()}-${contentId}-v${seq}`; }
+
+function liveSourceOf(contentType) { return contentType === 'project' ? projects : events; }
+function findLiveSourceObj(contentType, contentId) { return liveSourceOf(contentType).find(x => x.id === contentId) || null; }
+
+function makeTrailEntry(kind, actor, action, extra = {}) {
+  return { at: formatNow(), kind, actor, action, ...extra };
+}
+
+// 种子：全部存量内容 = 已发布 v1（前台演示现状不变）；审批分支用「已发布内容的修改 v2」覆盖——
+//   e4 v2 审批中（法务已过 RO 待审） / e5 v2 双过已自动发布（prevLive=v1 可回滚） / e3 v2 被驳（法务已过意见作废）。
+// draft 分支不占种子：由「新建内容」动线演示（零破坏现状）。
+function seedTrailBase(submitAt, legalAt, roAt, finalAt, publishAt) {
+  return [
+    { at: submitAt, kind: 'submit', actor: '王运营', action: '提交审批（v1）' },
+    { at: legalAt, kind: 'bpm-task', actor: '李法务', action: '法务审阅通过', node: 'legal', opinion: '表述合规，未见收益承诺与保本表述。' },
+    { at: roAt, kind: 'bpm-task', actor: '陈主任', action: 'RO 审阅通过', node: 'ro', opinion: '风险披露充分，与发售文件一致。' },
+    { at: finalAt, kind: 'bpm-final', actor: 'BPM 系统', action: '会签完成，流程结束（已完成）' },
+    { at: publishAt, kind: 'publish', actor: 'BPM 系统', action: 'BPM 自动发布（会签通过即上线）' },
+  ];
+}
+
+function makeSeedRecord(contentType, obj, opts = {}) {
+  const seq = opts.seq || 1;
+  const snapshot = pickContentFields(contentType, obj);
+  const rec = {
+    id: pubIdOf(contentType, obj.id),
+    contentType,
+    contentId: obj.id,
+    bizState: 'published',
+    submissionSeq: seq,
+    pendingChanges: false,
+    current: null,
+    live: {
+      versionId: versionIdOf(contentType, obj.id, 1),
+      fingerprint: fingerprintContent(snapshot),
+      payloadSnapshot: snapshot,
+      publishedAt: opts.publishAt || '2026-11-10 10:00:00',
+      publishedBy: 'BPM 自动发布',
+      trail: opts.trail || [],   // v1 的会签轨迹（发布即冻结，抽屉可回看）
+    },
+    prevLive: null,
+    archived: null,
+  };
+  if (opts.current) {
+    // v2 在审/已批/被驳：live 保留（v1 继续在线），current 为新版本
+    const cur = opts.current;
+    const snap2 = pickContentFields(contentType, { ...obj, ...(cur.patch || {}) });
+    rec.submissionSeq = 2;
+    rec.bizState = cur.bizState;
+    rec.pendingChanges = false;
+    rec.current = {
+      versionId: versionIdOf(contentType, obj.id, 2),
+      fingerprint: fingerprintContent(snap2),
+      payloadSnapshot: snap2,
+      submittedAt: cur.submittedAt,
+      submittedBy: '王运营',
+      changeSummary: cur.changeSummary,
+      bpm: {
+        instanceId: `bpm-${contentType}${obj.id}-2076`,
+        businessId: businessIdOf(contentType, obj.id, 2),
+        processKey: BPM_PROCESS_KEY,
+        approvalUrl: `/approve/todo?id=bpm-${contentType}${obj.id}-2076`,
+      },
+      instanceState: cur.instanceState,
+      instanceStateDesc: bpmStateDesc(cur.instanceState),
+      closedReason: cur.closedReason || null,
+      tasks: BPM_TASKS.map(t => {
+        const status = cur.tasks[t.taskKey] || 'PENDING';
+        const voided = cur.instanceState === 2 && status === 'COMPLETED' && t.taskKey !== 'ro_review';
+        return {
+          ...t,
+          status,
+          opinion: (cur.opinions && cur.opinions[t.taskKey]) || null,
+          operateTime: (cur.operateTimes && cur.operateTimes[t.taskKey]) || null,
+          voided: voided || undefined,
+        };
+      }),
+      trail: cur.trail || [],
+    };
+  }
+  publishRecords.push(rec);
+  return rec;
+}
+
+function ensurePublishSeed() {
+  if (publishRecords.length) return;
+  // 全量已发布 v1（2026-11-24：会签完成即自动发布，发布戳与流程结束仅差 2 秒；
+  // publishedAt 与轨迹 publish 节点同源，避免列表「最后更新」与抽屉轨迹对不上）
+  projects.forEach(p => makeSeedRecord('project', p, {
+    publishAt: '2026-11-10 16:41:40',
+    trail: seedTrailBase('2026-11-10 09:30:00', '2026-11-10 14:05:12', '2026-11-10 16:41:37', '2026-11-10 16:41:38', '2026-11-10 16:41:40'),
+  }));
+  events.forEach(e => makeSeedRecord('event', e, {
+    publishAt: '2026-11-10 15:52:12',
+    trail: seedTrailBase('2026-11-10 09:40:00', '2026-11-10 14:18:22', '2026-11-10 15:52:09', '2026-11-10 15:52:10', '2026-11-10 15:52:12'),
+  }));
+  // v2 审批分支：在 v1 基础记录上追加 current（live=v1 继续在线），覆盖全部演示场景
+  const applySeedCurrent = (contentType, id, cur) => {
+    const rec = getPublishRecord(contentType, id);
+    if (!rec) return;
+    const obj = findLiveSourceObj(contentType, id);
+    const snap2 = pickContentFields(contentType, { ...obj, ...(cur.patch || {}) });
+    rec.submissionSeq = 2;
+    rec.bizState = cur.bizState;
+    rec.pendingChanges = false;
+    rec.current = {
+      versionId: versionIdOf(contentType, id, 2),
+      fingerprint: fingerprintContent(snap2),
+      payloadSnapshot: snap2,
+      submittedAt: cur.submittedAt,
+      submittedBy: '王运营',
+      changeSummary: cur.changeSummary,
+      bpm: {
+        instanceId: `bpm-${contentType}${id}-2076`,
+        businessId: businessIdOf(contentType, id, 2),
+        processKey: BPM_PROCESS_KEY,
+        approvalUrl: `/approve/todo?id=bpm-${contentType}${id}-2076`,
+      },
+      instanceState: cur.instanceState,
+      instanceStateDesc: bpmStateDesc(cur.instanceState),
+      closedReason: cur.closedReason || null,
+      tasks: BPM_TASKS.map(t => {
+        const status = cur.tasks[t.taskKey] || 'PENDING';
+        const voided = cur.instanceState === 2 && status === 'COMPLETED' && t.taskKey !== 'ro_review';
+        return {
+          ...t,
+          status,
+          opinion: (cur.opinions && cur.opinions[t.taskKey]) || null,
+          operateTime: (cur.operateTimes && cur.operateTimes[t.taskKey]) || null,
+          voided: voided || undefined,
+        };
+      }),
+      trail: cur.trail || [],
+    };
+  };
+  // e4 v2 审批中：法务已过（意见互见），RO 待审 —— 演示跨系统审批主动线
+  if (events.some(e => e.id === 'e4')) applySeedCurrent('event', 'e4', {
+    bizState: 'pending_review', instanceState: 0,
+    submittedAt: '2026-11-19 10:21:44',
+    changeSummary: '更新产品演示描述与议程第三项（新增 SLAM 精度指标表述）。',
+    tasks: { legal_review: 'COMPLETED', ro_review: 'PENDING' },
+    opinions: { legal_review: '更新表述未见收益承诺，同意。' },
+    operateTimes: { legal_review: '2026-11-19 11:32:05' },
+    trail: [
+      { at: '2026-11-19 10:21:44', kind: 'submit', actor: '王运营', action: '提交审批（v2）' },
+      { at: '2026-11-19 11:32:05', kind: 'bpm-task', actor: '李法务', action: '法务审阅通过', node: 'legal', opinion: '更新表述未见收益承诺，同意。' },
+    ],
+  });
+  // e5 v2 双过即发布（2026-11-23 简化后种子）：BPM 双过 webhook 自动发布，v2 在线、v1 留 prevLive 可回滚
+  {
+    const rec5 = getPublishRecord('event', 'e5');
+    const e5obj = events.find(e => e.id === 'e5');
+    if (rec5 && rec5.live && e5obj) {
+      const snap5 = pickContentFields('event', e5obj);
+      rec5.prevLive = rec5.live;
+      rec5.submissionSeq = 2;
+      rec5.bizState = 'published';
+      rec5.pendingChanges = false;
+      rec5.current = null;
+      rec5.live = {
+        versionId: versionIdOf('event', 'e5', 2),
+        fingerprint: fingerprintContent(snap5),
+        payloadSnapshot: snap5,
+        publishedAt: '2026-11-18 17:44:05',
+        publishedBy: 'BPM 自动发布',
+        approvedAt: '2026-11-18 17:44:03',
+        trail: [
+          { at: '2026-11-18 15:03:10', kind: 'submit', actor: '王运营', action: '提交审批（v2）' },
+          { at: '2026-11-18 16:20:31', kind: 'bpm-task', actor: '李法务', action: '法务审阅通过', node: 'legal', opinion: 'RWA 表述中性，同意。' },
+          { at: '2026-11-18 17:44:02', kind: 'bpm-task', actor: '陈主任', action: 'RO 审阅通过', node: 'ro', opinion: '已核对与对外口径一致，同意。' },
+          { at: '2026-11-18 17:44:03', kind: 'bpm-final', actor: 'BPM 系统', action: '会签完成，流程结束（已完成）' },
+          { at: '2026-11-18 17:44:05', kind: 'publish', actor: 'BPM 系统', action: 'BPM 自动发布（会签通过即上线）' },
+        ],
+      };
+    }
+  }
+  // e3 v2 被驳：RO 驳回带意见，法务已过的通过意见标记作废（一驳即驳）
+  if (events.some(e => e.id === 'e3')) applySeedCurrent('event', 'e3', {
+    bizState: 'rejected', instanceState: 2,
+    submittedAt: '2026-11-17 11:11:00',
+    changeSummary: '新增实验室参观名额与签到流程说明。',
+    closedReason: null,
+    tasks: { legal_review: 'COMPLETED', ro_review: 'REJECTED' },
+    opinions: {
+      legal_review: '参观流程描述无合规问题，同意。',
+      ro_review: '「亲眼观看原型机运行演示」属业绩暗示表述，请改为中性描述后重新提交；另请补充名额有限的风险提示。',
+    },
+    operateTimes: { legal_review: '2026-11-17 13:40:00', ro_review: '2026-11-17 15:05:44' },
+    trail: [
+      { at: '2026-11-17 11:11:00', kind: 'submit', actor: '王运营', action: '提交审批（v2）' },
+      { at: '2026-11-17 13:40:00', kind: 'bpm-task', actor: '李法务', action: '法务审阅通过', node: 'legal', opinion: '参观流程描述无合规问题，同意。', voided: true },
+      { at: '2026-11-17 15:05:44', kind: 'bpm-task', actor: '陈主任', action: 'RO 审阅驳回', node: 'ro', opinion: '「亲眼观看原型机运行演示」属业绩暗示表述，请改为中性描述后重新提交；另请补充名额有限的风险提示。' },
+      { at: '2026-11-17 15:05:45', kind: 'bpm-final', actor: 'BPM 系统', action: '流程结束（已拒绝）——一驳即驳' },
+    ],
+  });
+  // 种子工单同步落 BPM 工单表：bpm.html 待办/已办可见，bpm* 动作可操作
+  ensureBpmSeedTickets();
+}
+
+// 为带 current 的种子档案生成模拟 BPM 工单（幂等：按 instanceId 去重），并附预览 token。
+// 语义：种子代表「BPM 里已经存在的历史工单」——审批中的进待办，终态的进已办。
+function ensureBpmSeedTickets() {
+  const tickets = readTickets();
+  let dirty = false;
+  publishRecords.forEach(rec => {
+    const cur = rec.current;
+    if (!cur || !cur.bpm) return;
+    if (tickets.some(tk => tk.instanceId === cur.bpm.instanceId)) return;
+    const token = createPublishPreviewToken(rec.contentType, rec.contentId, cur.payloadSnapshot, cur.versionId);
+    const base = typeof window !== 'undefined'
+      ? `${window.location.origin}${window.location.pathname}`
+      : 'https://demo.local/';
+    const terminal = cur.instanceState !== 0;
+    tickets.push({
+      instanceId: cur.bpm.instanceId,
+      processKey: BPM_PROCESS_KEY,
+      businessId: cur.bpm.businessId,
+      applicantUsername: 'ops',
+      instanceState: cur.instanceState,
+      createTime: cur.submittedAt,
+      endTime: terminal ? ((cur.trail[cur.trail.length - 1] || {}).at || cur.submittedAt) : null,
+      formData: {
+        contentTitle: cur.payloadSnapshot.title || '',
+        contentTypeLabel: rec.contentType === 'project' ? '项目' : '路演',
+        changeSummary: cur.changeSummary,
+        complianceNotes: '审批依据：SFO s.103（证券广告）、Code of Conduct 2.3（误导性陈述）、FMCC 7.2。本流程仅审中文表述；状态字段为业务免审项。',
+        previewUrl: `${base}#publish-preview/${token}`,
+        businessId: cur.bpm.businessId,
+      },
+      attachments: [],
+      tasks: cur.tasks.map(t => ({ ...t })),
+    });
+    dirty = true;
+  });
+  if (dirty) writeTickets(tickets);
+}
+
+ensurePublishSeed();
+
+// ---- 工单表与事件队列（跨 tab 与 bpm.html 共享的存储 schema，即 mock BPM 的"内部表"）----
+function readJson(key, fallback) {
+  try {
+    const raw = localStorageWorks ? localStorage.getItem(key) : (key in memoryStore ? memoryStore[key] : null);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch (e) { return fallback; }
+}
+function writeJson(key, val) {
+  try {
+    const raw = JSON.stringify(val);
+    if (localStorageWorks) localStorage.setItem(key, raw);
+    else memoryStore[key] = raw;
+  } catch (e) { /* 存储不可用 */ }
+}
+function readTickets() {
+  const st = readJson(BPM_STATE_KEY, { tickets: [] });
+  return Array.isArray(st.tickets) ? st.tickets : [];
+}
+function writeTickets(tickets) { writeJson(BPM_STATE_KEY, { tickets }); }
+
+function pushBpmEvent(eventType, ticket, taskInfo) {
+  const queue = readJson(BPM_EVENTS_KEY, []);
+  queue.push({
+    eventId: `evt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    eventType,
+    eventTime: formatNow(),
+    webhookVersion: '1.0',
+    payload: {
+      processInfo: {
+        instanceId: ticket.instanceId,
+        processKey: ticket.processKey,
+        processName: '内容发布审批',
+        instanceState: ticket.instanceState,
+        instanceStateDesc: bpmStateDesc(ticket.instanceState),
+        applicantUsername: ticket.applicantUsername,
+        formData: { businessId: ticket.businessId, contentTitle: ticket.formData.contentTitle },
+      },
+      taskInfo: taskInfo || undefined,
+    },
+  });
+  writeJson(BPM_EVENTS_KEY, queue);
+}
+
+// ---- bpmClient（mock 适配层：接口面 = start / query / webhook，与真实 API 一一对应）----
+export const bpmClient = {
+  // POST /internal/v1/processes/start：同 businessId 幂等（replay=true 返回已有单）
+  start({ username, businessId, formData, attachments }) {
+    const tickets = readTickets();
+    const existed = tickets.find(tk => tk.businessId === businessId);
+    if (existed) {
+      return { sourceSystem: 'HIGHBLOCK-PROTO', businessId, instanceId: existed.instanceId, processKey: existed.processKey, approvalUrl: existed.approvalUrl, replay: true };
+    }
+    const instanceId = `bpm-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const ticket = {
+      instanceId,
+      processKey: BPM_PROCESS_KEY,
+      businessId,
+      applicantUsername: username,
+      instanceState: 0,
+      createTime: formatNow(),
+      endTime: null,
+      formData: { ...formData },
+      attachments: attachments || [],
+      // 会签节点：法务 + RO 并行，双 COMPLETED 才终态通过；任一 REJECTED → 一驳即驳
+      tasks: BPM_TASKS.map(t => ({ ...t, status: 'PENDING', opinion: null, operateTime: null, closedNote: null })),
+    };
+    tickets.push(ticket);
+    writeTickets(tickets);
+    pushBpmEvent('PROCESS_STARTED', ticket);
+    return {
+      sourceSystem: 'HIGHBLOCK-PROTO', businessId, instanceId, processKey: BPM_PROCESS_KEY,
+      approvalUrl: `/approve/todo?id=${instanceId}`, replay: false,
+    };
+  },
+  // POST /internal/v1/processes/query
+  query({ businessId }) {
+    const ticket = readTickets().find(tk => tk.businessId === businessId);
+    if (!ticket) return null;
+    return {
+      businessId: ticket.businessId,
+      instanceId: ticket.instanceId,
+      processName: '内容发布审批',
+      instanceState: ticket.instanceState,
+      instanceStateDesc: bpmStateDesc(ticket.instanceState),
+      createTime: ticket.createTime,
+      endTime: ticket.endTime,
+      approvalUrl: ticket.instanceState === 0 ? `/approve/todo?id=${ticket.instanceId}` : `/approve/approved?id=${ticket.instanceId}`,
+      tasks: ticket.tasks,
+      formData: ticket.formData,
+    };
+  },
+};
+
+// ---- bpm.html 侧动作（在模拟 BPM 页操作工单；与 data.js 事件 schema 对齐）----
+export function bpmApproveTask(instanceId, taskKey, opinion, operatorUsername) {
+  const tickets = readTickets();
+  const ticket = tickets.find(tk => tk.instanceId === instanceId);
+  if (!ticket) return { ok: false, error: '工单不存在' };
+  const task = ticket.tasks.find(t => t.taskKey === taskKey);
+  if (!task || task.status !== 'PENDING') return { ok: false, error: '任务不在待审状态' };
+  const user = BPM_USERS.find(u => u.username === operatorUsername) || { name: operatorUsername };
+  task.status = 'COMPLETED';
+  task.opinion = opinion || '同意';
+  task.operateTime = formatNow();
+  const allDone = ticket.tasks.every(t => t.status === 'COMPLETED');
+  if (allDone) {
+    ticket.instanceState = 1;
+    ticket.endTime = formatNow();
+  }
+  writeTickets(tickets);
+  pushBpmEvent(allDone ? 'PROCESS_COMPLETED' : 'TASK_APPROVED', ticket, {
+    taskId: task.taskKey, taskName: task.taskName, taskKey: task.taskKey,
+    state: 'COMPLETED', operatorUsername, operatorName: user.name,
+    opinion: task.opinion, triggerSource: 'USER',
+  });
+  pumpBpmEvents(); // 同 tab 即时回写（跨 tab 场景由 storage 事件/轮询兜底）
+  return { ok: true };
+}
+
+export function bpmRejectTask(instanceId, taskKey, opinion, operatorUsername) {
+  const tickets = readTickets();
+  const ticket = tickets.find(tk => tk.instanceId === instanceId);
+  if (!ticket) return { ok: false, error: '工单不存在' };
+  const task = ticket.tasks.find(t => t.taskKey === taskKey);
+  if (!task || task.status !== 'PENDING') return { ok: false, error: '任务不在待审状态' };
+  const user = BPM_USERS.find(u => u.username === operatorUsername) || { name: operatorUsername };
+  task.status = 'REJECTED';
+  task.opinion = opinion || '驳回';
+  task.operateTime = formatNow();
+  // 一驳即驳：另一方待审任务自动关闭（保留查看），意见不作废标记由本地 trail 呈现
+  ticket.tasks.forEach(t => { if (t.status === 'PENDING') { t.status = 'CLOSED'; t.closedNote = '因驳回关闭'; } });
+  ticket.instanceState = 2;
+  ticket.endTime = formatNow();
+  writeTickets(tickets);
+  const ev = {
+    taskId: task.taskKey, taskName: task.taskName, taskKey: task.taskKey,
+    state: 'REJECTED', operatorUsername, operatorName: user.name,
+    opinion: task.opinion, triggerSource: 'USER',
+  };
+  pushBpmEvent('TASK_REJECTED', ticket, ev);
+  pushBpmEvent('PROCESS_COMPLETED', ticket);
+  pumpBpmEvents();
+  return { ok: true };
+}
+
+export function bpmRevokeInstance(instanceId) {
+  const tickets = readTickets();
+  const ticket = tickets.find(tk => tk.instanceId === instanceId);
+  if (!ticket || ticket.instanceState !== 0) return { ok: false, error: '仅审批中的工单可撤回' };
+  ticket.instanceState = 3;
+  ticket.endTime = formatNow();
+  ticket.tasks.forEach(t => { if (t.status === 'PENDING') { t.status = 'CLOSED'; t.closedNote = '因撤回关闭'; } });
+  writeTickets(tickets);
+  pushBpmEvent('PROCESS_REVOKED', ticket);
+  pumpBpmEvents();
+  return { ok: true };
+}
+
+export function bpmAutoTerminate(instanceId) {
+  const tickets = readTickets();
+  const ticket = tickets.find(tk => tk.instanceId === instanceId);
+  if (!ticket || ticket.instanceState !== 0) return { ok: false, error: '仅审批中的工单可模拟超期终止' };
+  ticket.instanceState = 8;
+  ticket.endTime = formatNow();
+  ticket.tasks.forEach(t => { if (t.status === 'PENDING') { t.status = 'CLOSED'; t.closedNote = '因超期自动终止关闭'; } });
+  writeTickets(tickets);
+  pushBpmEvent('PROCESS_AUTO_TERMINATED', ticket);
+  pumpBpmEvents();
+  return { ok: true };
+}
+
+export function bpmAutoApprove(instanceId) {
+  const tickets = readTickets();
+  const ticket = tickets.find(tk => tk.instanceId === instanceId);
+  if (!ticket || ticket.instanceState !== 0) return { ok: false, error: '仅审批中的工单可模拟自动通过' };
+  ticket.instanceState = 4;
+  ticket.endTime = formatNow();
+  ticket.tasks.forEach(t => { if (t.status === 'PENDING') { t.status = 'CLOSED'; t.closedNote = '因自动通过关闭'; } });
+  writeTickets(tickets);
+  pushBpmEvent('PROCESS_TIMEOUT', ticket);
+  pumpBpmEvents();
+  return { ok: true };
+}
+
+// ---- webhook 事件泵（幂等：eventId 去重；BPM 重试复用同 eventId）----
+let bpmPumpTimer = null;
+function processedEvents() { return readJson(BPM_PROCESSED_KEY, []); }
+function markProcessed(eventId) {
+  const seen = processedEvents();
+  seen.push(eventId);
+  writeJson(BPM_PROCESSED_KEY, seen.slice(-500)); // 防膨胀：只留最近 500
+}
+
+// 发布档案快照重载（仅 publishRecords 域，按 id 合并；供 webhook 查找失败时多 tab 自愈）
+function reloadPublishRecordsFromSnapshot() {
+  try {
+    const raw = localStorageWorks ? localStorage.getItem(STORAGE_KEY) : (STORAGE_KEY in memoryStore ? memoryStore[STORAGE_KEY] : null);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (!data || !Array.isArray(data.publishRecords)) return;
+    data.publishRecords.forEach(rec => {
+      if (!rec || !rec.id) return;
+      const idx = publishRecords.findIndex(r => r.id === rec.id);
+      if (idx > -1) publishRecords[idx] = rec;
+      else publishRecords.push(rec);
+    });
+  } catch (e) { /* 快照损坏：按原逻辑丢弃事件 */ }
+}
+
+// ---- 种子日期跨天重锚（2026-11-23）----
+// 路演/项目种子日期已相对化（见 EVENT_SEED_SHIFTS 注释）。快照会把播种那天的日期固化，
+// 跨天后在此重锚回「今天 + 偏移」，保证进行中/已超时/已截止等演示分支永远有活样例。
+let seedAnchor = seedShiftDate(0);   // 播种锚点日，随快照持久化（save/load）；旧快照缺此键 → 视为需重锚
+// 各版本 payloadSnapshot 与指纹必须同步刷新——live 对象日期一变，指纹不一致会把
+// 全部种子条目误判成「有修改待重审」（pendingChanges 判定 = 工作副本指纹 vs 快照指纹）。
+function reanchorSeedDates(today) {
+  const bump = (rec, patch) => {
+    if (!rec) return;
+    ['live', 'prevLive', 'current', 'archived'].forEach(k => {
+      const ver = rec[k];
+      if (ver && ver.payloadSnapshot) {
+        Object.assign(ver.payloadSnapshot, patch);
+        ver.fingerprint = fingerprintContent(ver.payloadSnapshot);
+      }
+    });
+  };
+  Object.entries(EVENT_SEED_SHIFTS).forEach(([id, days]) => {
+    const e = events.find(x => x.id === id);
+    if (!e) return;
+    const patch = { date: seedShiftDate(days) };
+    if (id === 'e1') patch.time = currentHourRange(); // 「进行中」依赖当前小时
+    Object.assign(e, patch);
+    bump(getPublishRecord('event', id), patch);
+  });
+  Object.entries(PROJECT_SEED_SHIFTS).forEach(([id, days]) => {
+    const p = projects.find(x => x.id === id);
+    if (!p) return;
+    const patch = { intentDeadline: seedShiftDate(days) };
+    Object.assign(p, patch);
+    bump(getPublishRecord('project', id), patch);
+  });
+}
+
+export function handleWebhookEvent(event) {
+  if (!event || !event.eventId) return true;
+  if (processedEvents().includes(event.eventId)) return true; // 幂等：同 eventId 重试只消费一次
+  const info = event.payload && event.payload.processInfo;
+  const businessId = info && info.formData && info.formData.businessId;
+  const findRec = () => businessId && publishRecords.find(r => r.current && r.current.bpm && r.current.bpm.businessId === businessId);
+  let rec = findRec();
+  if (!rec && businessId) {
+    // 多 tab 自愈（2026-11-20）：本 tab 内存可能滞后于其他 tab 刚写入的档案
+    //（如 BPM 审批预览页比提交页早开），从快照重载发布档案后再找一次；
+    // 仍找不到才消费丢弃（旧队列残留防死循环）
+    reloadPublishRecordsFromSnapshot();
+    rec = findRec();
+  }
+  if (!rec) {
+    // 工单找不到归属（旧队列残留等）：消费丢弃，避免死循环
+    markProcessed(event.eventId);
+    return true;
+  }
+  const cur = rec.current;
+  // 多 tab 竞态防护（2026-11-23）：BPM 侧写事件队列与写工单表是两次 storage 写，
+  // 本 tab 的泵可能在工单表落盘前消费事件——此时镜像会读到旧任务状态（如全 PENDING）。
+  // 工单状态落后于事件时不消费、不幂等标记，事件留队列，下轮泵（1.2s 兜底）重处理。
+  const ticketNow = readTickets().find(tk => tk.instanceId === info.instanceId);
+  if (!ticketNow) {
+    // 工单表无此单（被清等）：无镜像源，消费丢弃
+    markProcessed(event.eventId);
+    return true;
+  }
+  if ((ticketNow.instanceState || 0) < (info.instanceState || 0)) return false;
+  cur.instanceState = info.instanceState;
+  cur.instanceStateDesc = info.instanceStateDesc || bpmStateDesc(info.instanceState);
+  // 任务镜像同步（进度条与意见卡数据源）
+  cur.tasks = ticketNow.tasks.map(t => ({
+    taskKey: t.taskKey, taskName: t.taskName, assignee: t.assignee, assigneeName: t.assigneeName,
+    status: t.status, opinion: t.opinion, operateTime: t.operateTime, closedNote: t.closedNote || null,
+  }));
+  // 法务已过的意见在驳回终态标记作废（整版作废口径）
+  if (cur.instanceState === 2) {
+    cur.tasks.forEach(t => { if (t.status === 'COMPLETED' && t.taskKey !== 'ro_review') t.voided = true; });
+  }
+  // 轨迹增量（webhook taskInfo）
+  const ti = event.payload.taskInfo;
+  if (ti && ti.taskKey) {
+    const last = cur.trail[cur.trail.length - 1];
+    const dup = last && last.kind === 'bpm-task' && last.node === ti.taskKey && last.at === ti.operateTime;
+    if (!dup) {
+      const isReject = event.eventType === 'TASK_REJECTED';
+      cur.trail.push({
+        at: ti.operateTime || formatNow(),
+        kind: 'bpm-task',
+        actor: (BPM_USERS.find(u => u.username === ti.operatorUsername) || {}).name || ti.operatorUsername || 'BPM 用户',
+        action: `${ti.taskName || ''}${isReject ? '驳回' : '通过'}`,
+        node: ti.taskKey,
+        opinion: ti.opinion || null,
+        voided: false,
+      });
+    }
+  }
+  if (event.eventType === 'PROCESS_COMPLETED' || event.eventType === 'PROCESS_TIMEOUT') {
+    cur.trail.push(makeTrailEntry('bpm-final', 'BPM 系统', `流程结束（${cur.instanceStateDesc}）${cur.instanceState === 2 ? '——一驳即驳' : ''}`));
+  }
+  // 业务态重映射（2026-11-23：双过(1)/自动通过(4) webhook 到达即过发布门，通过即自动发布）
+  const bucket = bpmStateBucket(cur.instanceState);
+  if (bucket === 'reviewing') rec.bizState = 'pending_review';
+  else if (bucket === 'humanApproved' || bucket === 'autoApproved') {
+    const isAuto = bucket === 'autoApproved';
+    const liveObj = findLiveSourceObj(rec.contentType, rec.contentId);
+    const fpOk = !!liveObj && fingerprintContent(pickContentFields(rec.contentType, liveObj)) === cur.fingerprint;
+    if (!fpOk) {
+      // 内容在审批期间被改（多 tab 滞后等）：审批失效，不发布，退回已驳回（工单侧已终态）
+      rec.bizState = 'rejected';
+      cur.trail.push(makeTrailEntry('bpm-final', 'BPM 系统', '内容指纹与审批版本不一致（内容已变更），审批失效，退回已驳回'));
+    } else {
+      // 发布门全绿：自动发布（prevLive 留档保证回滚不静默失效）
+      if (rec.live) rec.prevLive = { ...rec.live };
+      rec.live = {
+        versionId: cur.versionId,
+        fingerprint: cur.fingerprint,
+        payloadSnapshot: cur.payloadSnapshot,
+        publishedAt: formatNow(),
+        publishedBy: 'BPM 自动发布',
+        approvedAt: (cur.trail.filter(t => t.kind === 'bpm-final').pop() || {}).at || null,
+        trail: cur.trail.slice(),
+      };
+      rec.live.trail.push(makeTrailEntry('publish', 'BPM 系统', isAuto
+        ? 'BPM 自动发布（超期自动通过，未经人工审阅）'
+        : 'BPM 自动发布（会签通过即上线）'));
+      rec.current = null;
+      rec.bizState = 'published';
+      rec.pendingChanges = false;
+      logAudit({ operator: 'BPM Webhook', category: rec.contentType, action: 'publish', target: cur.payloadSnapshot.title, targetId: rec.contentId, note: `审批通过自动发布（${rec.live.versionId}${isAuto ? ' · 超期自动通过' : ''}）` });
+    }
+  }
+  else if (bucket === 'rejected') rec.bizState = 'rejected';
+  else if (bucket === 'closed') { rec.bizState = 'draft'; cur.closedReason = cur.instanceStateDesc; }
+  markProcessed(event.eventId);
+  logAudit({ operator: 'BPM Webhook', category: 'publish', action: event.eventType, target: rec.current ? (rec.current.payloadSnapshot.title || '') : '', targetId: rec.id, note: `${businessId} → ${cur.instanceStateDesc}` });
+  Storage.save();
+  return true;
+}
+
+export function startBpmEventPump() {
+  if (bpmPumpTimer) return;
+  if (typeof window === 'undefined') return; // node 直连单测环境无 window/DOM
+  // 审批预览页不跑泵（2026-11-20）：预览 tab 是只读查看器，却会消费事件队列——
+  // 其内存滞后于提交页，消费后按滞后状态 Storage.save 全量快照会覆盖新进度。
+  // 预览页跳过泵后，webhook 只由运营/后台 tab 消费。
+  if (window.location.hash.startsWith('#publish-preview/')) return;
+  // 1.2s 轮询兜底 + storage 事件即时消费（跨 tab 双保险）
+  bpmPumpTimer = setInterval(pumpBpmEvents, 1200);
+  window.addEventListener('storage', (e) => { if (e.key === BPM_EVENTS_KEY) pumpBpmEvents(); });
+}
+
+function pumpBpmEvents() {
+  const queue = readJson(BPM_EVENTS_KEY, []);
+  if (!queue.length) return;
+  // 返回 false = 工单表滞后于事件（多 tab 竞态），事件留在队列等下轮消费
+  const remaining = [];
+  let consumed = false;
+  queue.forEach(ev => {
+    try {
+      if (handleWebhookEvent(ev) !== false) { consumed = true; return; }
+      remaining.push(ev);
+    } catch (err) { console.error('webhook 处理失败', ev && ev.eventType, err); }
+  });
+  writeJson(BPM_EVENTS_KEY, remaining);
+  // 通知 React 层刷新（webhook 回调不经过 React 状态，挂载页监听此事件重读数据）
+  if (consumed && typeof window !== 'undefined' && window.dispatchEvent) {
+    try { window.dispatchEvent(new CustomEvent('zhifu-bpm-consumed')); } catch (e) { /* 非浏览器环境忽略 */ }
+  }
+}
+
+// ---- 发布档案 API ----
+export function getPublishRecords() { return publishRecords; }
+export function getPublishRecord(contentType, contentId) {
+  return publishRecords.find(r => r.contentType === contentType && r.contentId === contentId) || null;
+}
+export function getPublishStats() {
+  const by = { pending: 0, rejected: 0, published: 0, draft: 0 };
+  publishRecords.forEach(r => {
+    if (r.bizState === 'pending_review') by.pending += 1;
+    else if (r.bizState === 'rejected') by.rejected += 1;
+    else if (r.bizState === 'published') by.published += 1;
+    else by.draft += 1;
+  });
+  return by;
+}
+
+// 编辑锁：审批中锁定编辑（改了也白发，先撤销提交）
+export function canEditContent(contentType, contentId) {
+  const rec = getPublishRecord(contentType, contentId);
+  if (!rec) return { ok: true };
+  if (rec.bizState === 'pending_review') return { ok: false, reason: '审批进行中（BPM 会签），编辑已锁定；如需修改请先撤销提交' };
+  return { ok: true };
+}
+
+// 内容保存（录入/编辑统一入口）：锁定校验 + published 编辑打 pendingChanges 标记
+export function upsertContent(contentType, payload, { operator = '' } = {}) {
+  const isNew = !findLiveSourceObj(contentType, payload.id);
+  if (!isNew) {
+    const guard = canEditContent(contentType, payload.id);
+    if (!guard.ok) return { ok: false, error: guard.reason };
+  }
+  const arr = liveSourceOf(contentType);
+  if (isNew) {
+    arr.unshift(payload);
+    makeSeedRecord(contentType, payload); // 新内容：draft 档案（无 live 无 current）
+    const rec = getPublishRecord(contentType, payload.id);
+    rec.bizState = 'draft';
+    rec.live = null;
+    rec.submissionSeq = 0;
+    logAudit({ operator, category: contentType, action: 'create', target: payload.title || payload.id, targetId: payload.id, note: `新建${contentType === 'project' ? '项目' : '路演'}（草稿，未发布）` });
+  } else {
+    const idx = arr.findIndex(x => x.id === payload.id);
+    arr[idx] = { ...arr[idx], ...payload };
+    const rec = getPublishRecord(contentType, payload.id);
+    logAudit({ operator, category: contentType, action: 'update', target: payload.title || payload.id, targetId: payload.id, note: '编辑内容' });
+    if (rec && rec.bizState === 'published' && rec.live) {
+      // 线上保留旧版：编辑只动工作副本，指纹变了 → 标记待重审（提交后走 v(n+1)）
+      rec.pendingChanges = fingerprintContent(pickContentFields(contentType, arr[idx])) !== rec.live.fingerprint;
+    }
+  }
+  Storage.save();
+  return { ok: true };
+}
+
+// 提交审批（v(n+1)）：冻结快照 + 指纹 + BPM 建单（formData 带预览链接与快照附件）
+export function submitForReview(contentType, contentId, { operator = '', operatorUsername = 'ops', changeSummary = '' } = {}) {
+  const rec = getPublishRecord(contentType, contentId);
+  const liveObj = findLiveSourceObj(contentType, contentId);
+  if (!liveObj) return { ok: false, error: '内容不存在' };
+  if (!rec) return { ok: false, error: '发布档案缺失' };
+  if (rec.bizState === 'pending_review') return { ok: false, error: '已有版本在审，请先撤销提交' };
+  const snapshot = pickContentFields(contentType, liveObj);
+  if (!snapshot.title || !String(snapshot.title).trim()) return { ok: false, error: '标题必填' };
+  const fp = fingerprintContent(snapshot);
+  if (rec.bizState === 'published' && rec.live && fp === rec.live.fingerprint) {
+    return { ok: false, error: '内容无实质变更（指纹一致），无需重新审批' };
+  }
+  const seq = rec.submissionSeq + 1;
+  const businessId = businessIdOf(contentType, contentId, seq);
+  const token = createPublishPreviewToken(contentType, contentId, snapshot, versionIdOf(contentType, contentId, seq));
+  const base = typeof window !== 'undefined'
+    ? `${window.location.origin}${window.location.pathname}`
+    : 'https://demo.local/'; // node 直连单测环境
+  const previewUrl = `${base}#publish-preview/${token}`;
+  // HTML 快照附件（IndexedDB，BPM 内兜底可见）
+  const fileId = `att-${businessId}`;
+  const snapshotHtml = buildContentSnapshotHtml(contentType, snapshot);
+  putBpmFile(fileId, { name: `内容快照-${businessId}.html`, html: snapshotHtml }).catch(() => {});
+  const res = bpmClient.start({
+    username: operatorUsername,
+    businessId,
+    formData: {
+      contentTitle: snapshot.title || '',
+      contentTypeLabel: contentType === 'project' ? '项目' : '路演',
+      changeSummary: changeSummary || '内容更新',
+      complianceNotes: '审批依据：SFO s.103（证券广告）、Code of Conduct 2.3（误导性陈述）、FMCC 7.2。本流程仅审中文表述；状态字段为业务免审项。',
+      previewUrl,
+      businessId,
+    },
+    attachments: [{ name: `内容快照-${businessId}.html`, url: `/v1/oss/download?objectName=${fileId}`, fileId }],
+  });
+  if (rec.bizState === 'published' && rec.live) {
+    // 已发布内容修改重审：线上保留旧版
+    rec.prevLive = rec.prevLive || rec.live;
+  }
+  rec.submissionSeq = seq;
+  rec.current = {
+    versionId: versionIdOf(contentType, contentId, seq),
+    fingerprint: fp,
+    payloadSnapshot: snapshot,
+    submittedAt: formatNow(),
+    submittedBy: operator || operatorUsername,
+    changeSummary: changeSummary || '内容更新',
+    bpm: { instanceId: res.instanceId, businessId: res.businessId, processKey: res.processKey, approvalUrl: res.approvalUrl },
+    instanceState: 0,
+    instanceStateDesc: bpmStateDesc(0),
+    closedReason: null,
+    tasks: BPM_TASKS.map(t => ({ ...t, status: 'PENDING', opinion: null, operateTime: null, closedNote: null })),
+    trail: [makeTrailEntry('submit', operator || '运营', `提交审批（v${seq}）${res.replay ? '·幂等重放' : ''}`, { opinion: changeSummary || null })],
+  };
+  rec.bizState = 'pending_review';
+  rec.pendingChanges = false;
+  logAudit({ operator: operator || '运营', category: contentType, action: 'submitReview', target: snapshot.title, targetId: contentId, note: `提交审批 v${seq}（${businessId}）` });
+  Storage.save();
+  return { ok: true, businessId, instanceId: res.instanceId, replay: res.replay };
+}
+
+// 撤销提交（pending_review → draft）：撤 BPM 单 + 本地立即同步（事件泵幂等兜底）
+export function withdrawSubmission(contentType, contentId, { operator = '' } = {}) {
+  const rec = getPublishRecord(contentType, contentId);
+  if (!rec || !rec.current) return { ok: false, error: '当前无可撤回版本' };
+  if (rec.bizState === 'pending_review') {
+    const ticket = readTickets().find(tk => tk.instanceId === rec.current.bpm.instanceId);
+    if (ticket && ticket.instanceState === 0) {
+      const res = bpmRevokeInstance(rec.current.bpm.instanceId);
+      if (!res.ok) return res;
+      rec.current.instanceState = 3;
+      rec.current.instanceStateDesc = bpmStateDesc(3);
+      rec.current.tasks.forEach(t => { if (t.status === 'PENDING') t.status = 'CLOSED'; });
+      rec.current.trail.push(makeTrailEntry('withdraw', operator || '运营', '撤销提交，工单已撤回（回草稿）'));
+    } else {
+      // 工单已终态（3/4/8，webhook 丢失或 BPM 侧先行关闭）：本地归档解锁编辑，不回抛错误卡死
+      rec.current.trail.push(makeTrailEntry('withdraw', operator || '运营', '撤销提交（工单已终态），退回草稿'));
+    }
+    rec.current.closedReason = '已撤回';
+  } else {
+    return { ok: false, error: '当前状态不可撤销（仅审批中可撤回）' };
+  }
+  rec.bizState = 'draft';
+  logAudit({ operator: operator || '运营', category: contentType, action: 'withdraw', target: rec.current.payloadSnapshot.title, targetId: contentId, note: '撤销提交' });
+  Storage.save();
+  return { ok: true };
+}
+
+// 发布（super 手动发布已随 2026-11-23 简化移除：双过/自动通过 webhook 到达即自动发布，见 handleWebhookEvent）
+
+// 下架（published → 隐藏；在审版本自动撤回并标记因下架关闭）
+export function unpublishContent(contentType, contentId, { operator = '' } = {}) {
+  const rec = getPublishRecord(contentType, contentId);
+  if (!rec || rec.bizState !== 'published' || !rec.live) return { ok: false, error: '当前无在线版本' };
+  if (rec.current && rec.bizState === 'pending_review') withdrawSubmission(contentType, contentId, { operator });
+  rec.archived = { ...rec.live, unpublishedAt: formatNow() }; // 下架时间：列表「下架 · 时间」动词列的数据源（2026-11-24）
+  rec.live = null;
+  rec.bizState = 'draft';
+  logAudit({ operator: operator || 'super', category: contentType, action: 'unpublish', target: rec.archived.payloadSnapshot.title, targetId: contentId, note: '下架（前台已隐藏，可回滚恢复）' });
+  Storage.save();
+  return { ok: true };
+}
+
+// 回滚上一版（下架后恢复；或 published 时快速回退）
+export function rollbackLive(contentType, contentId, { operator = '' } = {}) {
+  const rec = getPublishRecord(contentType, contentId);
+  if (!rec) return { ok: false, error: '发布档案缺失' };
+  const restore = rec.prevLive || rec.archived;
+  if (!restore) return { ok: false, error: '无可回滚的历史版本' };
+  rec.live = { ...restore };
+  rec.prevLive = null;
+  rec.archived = null;
+  rec.bizState = 'published';
+  rec.pendingChanges = false;
+  logAudit({ operator: operator || 'super', category: contentType, action: 'rollback', target: rec.live.payloadSnapshot.title, targetId: contentId, note: `回滚上线（${rec.live.versionId}）` });
+  Storage.save();
+  return { ok: true };
+}
+
+// 演示重置（仅 super；清 BPM 工单/事件/幂等表 + 发布档案回种子）
+export function resetPublishDemo({ operator = '' } = {}) {
+  publishRecords.length = 0;
+  [BPM_STATE_KEY, BPM_EVENTS_KEY, BPM_PROCESSED_KEY, PREVIEW_TOKEN_KEY].forEach(k => {
+    delete memoryStore[k];
+    if (localStorageWorks) { try { localStorage.removeItem(k); } catch (e) { /* 忽略 */ } }
+  });
+  ensurePublishSeed();
+  logAudit({ operator: operator || 'super', category: 'publish', action: 'reset', target: '发布审批演示数据', targetId: '', note: '重置到初始演示态（含种子审批记录）' });
+  Storage.save();
+  return { ok: true };
+}
+
+// ---- 前台 live 读取（getLive*：只返回已发布版本；status 免审实时 = 合并时取活数组）----
+function mergeLiveRecord(rec) {
+  const liveObj = findLiveSourceObj(rec.contentType, rec.contentId);
+  const merged = { ...rec.live.payloadSnapshot };
+  if (liveObj) {
+    merged.status = liveObj.status; // 纯状态变更免审实时生效
+    if (rec.contentType === 'project') {
+      merged.investorCount = liveObj.investorCount;
+      merged.recentInvestors = liveObj.recentInvestors;
+      merged.waitlist = liveObj.waitlist;
+      merged.allocationDate = liveObj.allocationDate;
+    } else {
+      merged.registered = liveObj.registered;
+    }
+  }
+  return merged;
+}
+
+// ---- 预览注入（#publish-preview 会话专用）：审批页用快照 payload + 固定 viewer 渲染前台组件 ----
+// 生命周期：预览页 mount 时 beginPublishPreview，unmount 时 clearPublishPreview；仅内存，不持久化。
+const previewOverrideById = {}; // 内容 id → 审批版本 payload 快照（getLive*ById 优先命中）
+let previewViewer = null;       // 标准专业投资人画像（预览期替代 currentUser 参与门控判定）
+export function beginPublishPreview(payload, viewer) {
+  clearPublishPreview();
+  if (payload && payload.id) previewOverrideById[payload.id] = payload;
+  previewViewer = viewer || null;
+}
+export function clearPublishPreview() {
+  Object.keys(previewOverrideById).forEach(k => delete previewOverrideById[k]);
+  previewViewer = null;
+}
+
+export function getLiveProjects() {
+  // 前台可见性 = live 存在（v2 在审/被驳不影响 v1 在线；下架后 live=null 即隐藏）
+  return publishRecords
+    .filter(r => r.contentType === 'project' && r.live)
+    .map(mergeLiveRecord);
+}
+export function getLiveProjectById(id) {
+  if (previewOverrideById[id]) return previewOverrideById[id]; // 预览会话：命中审批快照
+  const rec = getPublishRecord('project', id);
+  return rec && rec.live ? mergeLiveRecord(rec) : undefined;
+}
+export function getLiveEvents() {
+  return publishRecords
+    .filter(r => r.contentType === 'event' && r.live)
+    .map(mergeLiveRecord);
+}
+export function getLiveEventById(id) {
+  if (previewOverrideById[id]) return previewOverrideById[id]; // 预览会话：命中审批快照
+  const rec = getPublishRecord('event', id);
+  return rec && rec.live ? mergeLiveRecord(rec) : undefined;
+}
+export function getLiveEventsByProject(projectId) {
+  return getLiveEvents().filter(e => e.projectId === projectId);
+}
+
+startBpmEventPump();
+
 // ========== 项目行业分类（2026-08-07 从 Search.jsx 迁入） ==========
 export const sectors = ['量子计算', '生物医药', '机器人', '新能源', '金融科技', '医疗健康'];
 
@@ -6398,6 +7522,9 @@ export let adminUsers = [
   { id: 'ad5', username: 'advisor1', password: 'advisor123', name: '王慧敏', role: 'advisor', roleLabel: '专属顾问', managerId: 'am1', email: 'wanghuimin@highblockhk.com' },
   { id: 'ad6', username: 'advisor2', password: 'advisor123', name: '陈志豪', role: 'advisor', roleLabel: '专属顾问', managerId: 'am2', email: 'chenzhihao@highblockhk.com' },
   { id: 'ad7', username: 'advisor3', password: 'advisor123', name: '李雅婷', role: 'advisor', roleLabel: '专属顾问', managerId: 'am3', email: 'liyating@highblockhk.com' },
+  // 法务 / RO（2026-11-20）：本地只读（BPM 主审，账号与 BPM_USERS 对应：李法务/陈主任）
+  { id: 'ad9', username: 'legal', password: 'legal123', name: '李法务', role: 'legal', roleLabel: '法务专员', email: 'legal@highblockhk.com' },
+  { id: 'ad10', username: 'ro', password: 'ro123456', name: '陈主任', role: 'ro', roleLabel: 'RO 代表', email: 'ro@highblockhk.com' },
 ];
 
 // ===== 角色权限管理（2026-08-24 · 预置角色可配置）=====
@@ -6410,6 +7537,8 @@ export let adminUsers = [
 export const ADMIN_ROLES = [
   { key: 'super', label: '超级管理员' },
   { key: 'ops', label: '运营专员' },
+  { key: 'legal', label: '法务专员' },
+  { key: 'ro', label: 'RO 代表' },
   { key: 'compliance', label: '合规专员' },
   { key: 'service', label: '客服专员' },
   { key: 'finance', label: '财务专员' },
@@ -6418,18 +7547,25 @@ export const ADMIN_ROLES = [
 
 // 后台菜单清单（key/label/hash/group 数据真源；icon 属 UI 层由 AdminSidebar 映射，AdminRoles 分组勾选共用）
 // 排序 = 业务联动性配对 + 生命周期（详见 AdminSidebar 头注）
+// 2026-11-24 菜单分组重构（用户拍板）：路演/项目/内容三组合并为「资讯业务」——三者同属资讯·咨询
+// 业务域：发布审批本就是项目+路演共用审批域；报名/问卷分别是路演/项目的用户参与与意向记录，
+// 同类工作不拆两组。只改 group 值，key 集合不变，不升 ROLE_MENUS_KEY。
 export const ADMIN_MENUS = [
   { key: 'kyc', label: 'KYC 审核', hash: '#admin/kyc', group: '用户' },
   { key: 'pi', label: 'PI 认证', hash: '#admin/pi', group: '用户' },
   { key: 'users', label: '用户管理', hash: '#admin/users', group: '用户' },
   { key: 'my-clients', label: '我的客户', hash: '#admin/my-clients', group: '用户' },
-  { key: 'events', label: '路演管理', hash: '#admin/events', group: '路演' },
-  { key: 'registrations', label: '报名管理', hash: '#admin/registrations', group: '路演' },
-  { key: 'projects', label: '项目管理', hash: '#admin/projects', group: '项目' },
+  { key: 'events', label: '路演管理', hash: '#admin/events', group: '资讯业务' },
+  { key: 'registrations', label: '报名管理', hash: '#admin/registrations', group: '资讯业务' },
+  { key: 'projects', label: '项目管理', hash: '#admin/projects', group: '资讯业务' },
   // 2026-10-16 口径修订：问卷记录（线上收集投资意愿，后台跟进登记）；
   // 资金/交易监控/投后 10 模块保持摘除（funds/transactions/transaction-monitor/large-tx/
   // anomaly/str/edd/spvs/dividends/exits）——2026-10-22 RO 整改：SPV 概念整体移除。
-  { key: 'subscriptions', label: '问卷记录', hash: '#admin/subscriptions', group: '项目' },
+  { key: 'subscriptions', label: '问卷记录', hash: '#admin/subscriptions', group: '资讯业务' },
+  // 发布审批（2026-11-20）：外发内容的 BPM 会签进度中心（项目+路演共用一个审批域）。
+  // 提交/撤销在 projects/events 页，这里只看进度、意见与发布/回滚动作（super）。
+  // 2026-11-24 并入「资讯业务」组：审批对象本就是本组的路演与项目，不再独立成组。
+  { key: 'publish', label: '发布审批', hash: '#admin/publish', group: '资讯业务' },
   // 2026-10-28 基金一期闭环：基金交易（申购/赎回人工确认）+ 资金审核（充值/提现/换汇核销）恢复。
   // 前者是交易域（钱换份额），后者是资金域（银行 ↔ 平台），两者不合并。
   // 基金产品（2026-10-28）：条款/文件/净值的填写入口。与 fund-trades（成交确认）分属不同动作，
@@ -6468,8 +7604,12 @@ export const roleMenuKeys = {
   // 超级管理员 = 最高权限：全部菜单（2026-08-15 用户确认"所有页面所有功能都有"——my-clients 原 advisor 专属，补上）；锁定不可编辑
   // 2026-10-16 口径修订：问卷记录恢复（意向收集链），其余资金/交易/投后 10 key 保持摘除
   // 2026-11-17 IA 收敛：mandate-* 四 key + special-subs → mandate / fund-trades
-  super: ['kyc', 'pi', 'users', 'my-clients', 'projects', 'events', 'registrations', 'subscriptions', 'fund-products', 'fund-trades', 'mandate', 'mandate-daily', 'mandate-monthly', 'statement-issue', 'funds', 'broadcast', 'messages', 'audit', 'roles', 'admins', 'config'],
-  ops: ['projects', 'events', 'registrations', 'subscriptions', 'fund-products', 'fund-trades', 'mandate', 'mandate-daily', 'mandate-monthly', 'statement-issue', 'funds', 'broadcast', 'users', 'config'],
+  super: ['kyc', 'pi', 'users', 'my-clients', 'projects', 'events', 'registrations', 'subscriptions', 'publish', 'fund-products', 'fund-trades', 'mandate', 'mandate-daily', 'mandate-monthly', 'statement-issue', 'funds', 'broadcast', 'messages', 'audit', 'roles', 'admins', 'config'],
+  ops: ['projects', 'events', 'registrations', 'subscriptions', 'publish', 'fund-products', 'fund-trades', 'mandate', 'mandate-daily', 'mandate-monthly', 'statement-issue', 'funds', 'broadcast', 'users', 'config'],
+  // 法务 / RO（2026-11-20）：会签主审在集团 BPM（模拟页 bpm.html），本地角色只读——
+  // 仅看发布审批进度中心（意见互见/时间线），无本地审批动作
+  legal: ['publish'],
+  ro: ['publish'],
   // 合规角色：KYC审核 + PI认证 + 用户管理 + 问卷记录 + 审计日志（交易监控类 7 key 随资金流下线摘除）
   // 2026-11-13：委托协议归合规（协议档案由合规登记、super 复核）+ 委托账户授权复核（Maker-Checker 的 Checker）
   // 2026-11-17：委托域收成一页（mandate），协议台账在账户签内，合规仍管登记与授权复核
@@ -6492,6 +7632,7 @@ export const roleMenuKeys = {
 // 旧覆盖表只含旧 key，VALID 过滤后 mandate 消失，与 v3/v6 同源，升 key 让覆盖失效回默认值）。
 // 2026-11-20：key 升 v8（日结/月报拆独立菜单 mandate-daily / mandate-monthly，同源原因）。
 // 2026-11-25：key 升 v9（新增 statement-issue，同源原因）。
+// 2026-11-20：key 升 v9（发布审批 publish 菜单 + legal/ro 新角色默认表，同源原因）。
 // 与 v1→v2、v2→v3、v3→v4 同源：getRoleMenuKeys 只做 VALID 过滤、不补默认值，
 // 老浏览器里存过的覆盖表不含新 key，不升版新菜单会整片消失。
 const ROLE_MENUS_KEY = 'zhifu-admin-role-menus-v9';
@@ -6697,8 +7838,7 @@ export function getMenuBadges(role, admin) {
   // 待办含 requires_evidence（2026-11-02：待补凭证同样是「球在财务侧跟进」的待办，不再只认 pending）
   const pendingDeposits = depositRequests.filter(r => r.status === 'pending' || r.status === 'requires_evidence').length;
   const pendingWithdraws = withdrawRequests.filter(r => r.status === 'pending').length;
-  const pendingExits = exitEvents.filter(r => r.status === 'announced' || r.status === 'paying').length; // 退出分配待办（待确认 + 打款中）
-  const pendingDividends = dividendRequests.filter(r => r.status === 'pending').length;
+  // dividends/exits 待办计数已删（2026-11-24）：投后域菜单 2026-10-22 随 RO 整改摘除，角标无消费方。
   // 客服待回复："球在客服这边"的会话数（isTicketPendingReply 单一真源）
   const pendingTickets = supportTickets.filter(isTicketPendingReply).length;
 
@@ -6752,20 +7892,13 @@ export function getMenuBadges(role, admin) {
       + mandateFees.filter(f => f.status === 'pending').length
       + getMandateValuationBoard().filter(v => !v.valued).length,
     subscriptions: pendingAlloc + pendingSignSubs,
-    dividends: pendingDividends,
-    exits: pendingExits,
+    // 发布审批待办（2026-11-23 简化）：只数审批中（双过/自动通过即自动发布，无待发布态）
+    publish: publishRecords.filter(r => r.bizState === 'pending_review').length,
     messages: pendingTickets,
     registrations: leadPendingCount,
     'my-clients': myClientsBadge,
-    // 合规工作台待办（T12：大额交易审查/异常检测/STR/EDD 待办徽章）
-    'large-tx': largeTransactionReviews.filter(r => r.status === COMPLIANCE_STATUS.PENDING).length,
-    anomaly: anomalyDetectionLogs.filter(r => r.status === COMPLIANCE_STATUS.PENDING).length,
-    str: strReports.filter(r =>
-      r.assessmentStatus === STR_ASSESSMENT_STATUS.PENDING
-      || r.assessmentStatus === STR_ASSESSMENT_STATUS.IN_PROGRESS
-      || r.reportStatus === STR_REPORT_STATUS.PENDING_APPROVAL
-    ).length,
-    edd: enhancedDueDiligence.filter(r => r.status === COMPLIANCE_STATUS.PENDING).length,
+    // large-tx/anomaly/str/edd 待办计数已删（2026-11-24）：合规监控菜单 2026-10-16 随资金流摘除，
+    // 对应 key 不在 ADMIN_MENUS，badge 每次渲染白算（角标只按可见菜单 key 消费）。
   };
 }
 
@@ -9271,15 +10404,15 @@ export function formatExactAmount(v) {
   return Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-/* 份额精确显示：最多 4 位小数（与 submitRedemptionOrder 的 4 位校验同源）。
-   若按金额口径（2 位）格式化，966,796.875 会显示成 966,796.88，与「全部」实际填入的值对不上——
-   同一事实两处不同精度，用户会以为是可赎额度少了。 */
+/* 份额精确显示（2026-11-19 整数化）：份额是计数，一律整数千分位。
+   金额才走 formatExactAmount（固定 2 位）。若按金额口径格式化，
+   整数份额会多出 .00，与输入框里填的数对不上——同一事实两处不同写法。 */
 export function formatShares(v) {
   if (v == null || Number.isNaN(Number(v))) return '—';
-  return Number(v).toLocaleString('en-US', { maximumFractionDigits: 4 });
+  return Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 });
 }
 
-/* 2026-10-28 口径定版：金额一律 2 位小数（formatExactAmount），份额最多 4 位（formatShares）。
+/* 2026-11-19 口径定版：金额一律 2 位小数（formatExactAmount），份额一律整数（formatShares）。
    旧 helper `formatExact`（整数显示整数、小数两位）已删除——同一个数在资产页显示 966,796.80、
    在结单显示 966,796，用户没法判断哪个才是账上的数字。两种口径各留一个显式函数，
    调用点必须自己选，不再有「按页面自动变精度」的第三个函数。 */
@@ -10374,7 +11507,8 @@ export function deleteUserAccount(userId) {
 // 返回 { ok: true } 通过；{ ok: false, target, labelKey } 未通过——target=应跳转的认证页路径，
 // labelKey=引导文案（简体中文原文即 i18n key，ProjectDetail CTA / SubscribeSheet 防御校验共用）
 export function getSubscriptionGate(user) {
-  const u = user || currentUser;
+  // 预览会话（发布审批）：viewer 固定为标准专业投资人画像，门控恒通过（审投资人实见效果）
+  const u = previewViewer || user || currentUser;
   if (u.kyc_status !== KYC_STATUS.APPROVED) {
     return { ok: false, target: 'kyc-start', labelKey: '完成实名认证后再提交问卷' };
   }
@@ -10397,6 +11531,7 @@ export function getSubscriptionGate(user) {
 }
 
 export function submitSubscription({ project, amount, currency = 'HKD' }) {
+  if (previewViewer) return { ok: false, error: '审批预览模式为只读，不可提交' }; // 预览会话防误写
   const now = formatNow();
   const newSub = {
     id: `s${Date.now()}`,
@@ -10671,17 +11806,17 @@ const STORAGE_KEY = 'zhifu-app-state';
 // 页面只读开关/假设后的结果，不直接读托管字段——接口文档到位只改适配层。
 export const cryptoModuleEnabled = true;
 
-// 托管能力开关（文档 §1.1：多项「需适配 / 建设中」，开放范围以验收为准）
+// 托管能力开关（依据：托管总方案 v1.0 2026-11-02 + 详细设计 05 系列；多项「需适配 / 建设中」，开放范围以验收为准）
 export const cryptoCapabilities = [
   { key: 'addressApi', label: '充值地址分配', available: true, note: '每个用户按链申请，地址长期使用' },
   { key: 'depositWebhook', label: '入金 Webhook', available: true, note: '核心资金 Webhook 必发；确认中状态可能只能查询' },
   { key: 'whitelistApi', label: '提现白名单 API', available: true, note: '受理 ≠ 启用，以启用状态为准' },
   { key: 'withdrawApi', label: '提现 API', available: false, note: '文档标注需适配；本期演示走人工处理通道' },
-  { key: 'preExecutionConfirm', label: '执行前确认', available: false, note: '建设中，可后开' },
+  { key: 'preExecutionConfirm', label: '执行前确认', available: false, note: '托管侧首版强制逐笔，不提供关闭/金额豁免/钱包例外，Webhook 接收成功不是执行批准；平台确认接口为必建项，本期演示走人工通道' },
   { key: 'chainLiquidity', label: '网络可出金资金查询', available: false, note: '文档只提示「可能需要整理或补充资金」' },
 ];
 
-// 我们要的接口契约（反向给钱包组）：字段名待他们的接口文档确认，语义已按 §3–§6 定义
+// 我们要的接口契约（反向给钱包组）：字段名待他们的接口文档确认，语义依据托管总方案 v1.0（2026-11-02）；详细章节以 05 系列文档为准
 export const cryptoApiContract = [
   { method: 'requestDepositAddress', request: 'userId · chain', response: 'requestNo · addressId · address · status', note: '同一 requestNo 幂等' },
   { method: 'listDepositFlows', request: 'userId · from · to · cursor', response: 'flowId · chain · asset · amount · txHash · transferIndex · status', note: '逐笔识别，同一 tx 可多笔' },
@@ -10689,9 +11824,10 @@ export const cryptoApiContract = [
   { method: 'applyWhitelist', request: 'addressId · chain · asset · address', response: 'applicationId · status · reason', note: '受理 ≠ 启用' },
   { method: 'createWithdrawal', request: 'businessNo · addressId · amount · feeCap', response: 'orderNo · status', note: '同号不同内容拒绝' },
   { method: 'queryWithdrawal', request: 'businessNo', response: 'status · custodyOrderNo · txHash · fee · reason', note: '超时只查原单' },
+  { method: 'confirmExecution', request: '托管回调：businessNo · wallet · asset · amount · targetAddress', response: 'approved / rejected(reason)', note: '托管→平台反向回调；平台逐笔核对原始订单后返回；拒绝/超时/无效/不可用均不执行，首版强制不可关闭' },
 ];
 
-// 五个待确认项：值 = 当前假设，basis = 依据章节，impact = 答案不同会改什么
+// 待确认项：值 = 当前假设（已有答案的标「已确认/部分确认」），basis = 依据章节，impact = 答案不同会改什么；依据：托管总方案 v1.0（2026-11-02）
 export const cryptoAssumptions = [
   {
     key: 'evmAddressShared',
@@ -10717,15 +11853,15 @@ export const cryptoAssumptions = [
   {
     key: 'oldAddressPolicy',
     label: '旧地址充值归属',
-    value: '假设：停用后仍识别并归属原用户',
-    basis: '§5.1 停用或替换后保留历史归属，旧地址「按约定继续识别或进入异常处理」',
+    value: '部分确认：原有地址长期继续使用、归属不变；停用/替换后的识别语义仍待详细文档',
+    basis: '总方案 §3.1「原有地址继续使用」；详细文档 §5.1 停用或替换后「按约定继续识别或进入异常处理」',
     impact: '若默认进异常，未匹配队列与客服流程要按量级设计',
   },
   {
     key: 'withdrawRecall',
     label: '提现撤回语义',
-    value: '假设：提交托管后不可撤回，取消请求不等于取消成功',
-    basis: '§6.4 取消请求也不等于取消成功；超时只能查原单',
+    value: '已确认：提交托管后不可撤回，取消请求不等于取消成功',
+    basis: '总方案 §3.4/§4.3：取消提交附带提现签名；超时先查原单，不能重复出金',
     impact: '决定了提现页是否给「撤回」按钮——当前设计为不给',
   },
 ];
@@ -11402,6 +12538,7 @@ export const Storage = {
         cryptoWithdrawals: cryptoWithdrawals,
         exchangeRequests: exchangeRequests,       // 换汇申请（2026-08-19 人工换汇）
         withdrawalFeeConfig: withdrawalFeeConfig, // 出金费率配置（2026-11-04：后台可配，刷新保留）
+        fundFeeConfig: fundFeeConfig,             // 基金申赎费率配置（2026-11-20：后台可配，刷新保留；与 FUND_FEE_RATE 同对象，序列化只落此键）
         bankCards: bankCards,                    // 银行卡持久化（2026-11-02 修复：此前缺键，加卡/解绑刷新即回滚；
                                                  // 旧快照缺此键时恢复守卫跳过、保留代码默认值，故无需升快照版本）
         exitEvents: exitEvents,                   // 持仓退出·事件驱动分配（2026-08-21 重构，替代 exitRequests）
@@ -11415,6 +12552,7 @@ export const Storage = {
         piSubmissions: piSubmissions,         // PI 认证审核队列（2026-08-14 独立审核流）
         projects: projects,   // 后台 CRUD 内容持久化（2026-08-12）
         events: events,       // 后台 CRUD 内容持久化（2026-08-12）
+        seedAnchor: seedAnchor,   // 种子日期锚点日（2026-11-23 相对化；跨天 load 时重锚）
         faqItems: faqItems,   // 帮助 FAQ（2026-10-19 三语化 + 后台可配置）
         // 系统配置持久化（2026-08-12 规范审查 P1-④：配置中心"已保存"需刷新保留）
         sectors: sectors,
@@ -11437,6 +12575,10 @@ export const Storage = {
         crossBorderTransactions: crossBorderTransactions,
         // 2FA 用户安全档案（2026-09-22 · GA/Passkey/冻结/历史/紧急登录中间态）
         userSecurityStore: userSecurityStore,
+        // 内容发布审批域（2026-11-20）：发布档案 + 预览 token。档案按 id 合并恢复
+        //（快照有 → 快照版；快照缺的 id（代码新种子）→ 追加），不升 STATE_VERSION
+        publishRecords: publishRecords,
+        publishPreviewTokens_arr: Object.entries(previewTokens),
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
     } catch (e) {
@@ -11528,6 +12670,20 @@ export const Storage = {
       if (data.demoMode && typeof data.demoMode === 'object') {
         demoMode.on = !!data.demoMode.on;
         demoMode.updatedAt = data.demoMode.updatedAt || null;
+      }
+      // 内容发布审批域（2026-11-20）：发布档案按 id 合并——快照有 → 快照版；
+      // 快照缺的 id（代码后来新增的种子内容）→ 保留种子追加，不抹掉
+      if (Array.isArray(data.publishRecords)) {
+        data.publishRecords.forEach(rec => {
+          if (!rec || !rec.id) return;
+          const idx = publishRecords.findIndex(r => r.id === rec.id);
+          if (idx > -1) publishRecords[idx] = rec;
+          else publishRecords.push(rec);
+        });
+      }
+      // 预览 token（短 TTL）：有则恢复，resolvePublishPreviewToken 会惰性清过期
+      if (Array.isArray(data.publishPreviewTokens_arr)) {
+        previewTokens = Object.fromEntries(data.publishPreviewTokens_arr.filter(([k]) => k));
       }
       // 委托账户（2026-11-13 批 1a）：追加型实体，旧快照缺 key → 保留代码种子。
       // 逐字段恢复配置（对象整体替换会让以后新增的配置项在旧快照里消失），数组整表替换。
@@ -11661,6 +12817,12 @@ export const Storage = {
         if (f.minAmount && typeof f.minAmount === 'object') {
           withdrawalFeeConfig.minAmount = { ...withdrawalFeeConfig.minAmount, ...f.minAmount };
         }
+      }
+      // 基金申赎费率配置（2026-11-20）：只覆盖存在的字段，缺字段保留代码默认值
+      if (data.fundFeeConfig) {
+        const f = data.fundFeeConfig;
+        if (Number.isFinite(Number(f.subscribe))) fundFeeConfig.subscribe = Number(f.subscribe);
+        if (Number.isFinite(Number(f.redeem))) fundFeeConfig.redeem = Number(f.redeem);
       }
       if (Array.isArray(data.bankCards)) {
         bankCards.length = 0;
@@ -11827,6 +12989,13 @@ export const Storage = {
       if (Array.isArray(data.crossBorderTransactions)) {
         crossBorderTransactions.length = 0;
         data.crossBorderTransactions.forEach(r => crossBorderTransactions.push(r));
+      }
+      // 种子日期跨天重锚（2026-11-23）：放恢复末尾——events/projects/publishRecords 都已就位。
+      // 锚点不同（含旧快照缺 seedAnchor 键）才重锚；同一天内反复 load 幂等跳过，手动改的日期得以保留。
+      const today = seedShiftDate(0);
+      if (data.seedAnchor !== today) {
+        reanchorSeedDates(today);
+        seedAnchor = today;
       }
       return true;
     } catch (e) {

@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Edit3, Eye, Trash2, Save, Archive, X, PlusCircle, Trash, ImageIcon, Link2, TrendingUp, MapPin, Monitor, Calendar, UserCheck, RotateCcw, CheckCircle } from 'lucide-react';
+import { Plus, Edit3, Trash2, Save, Archive, X, PlusCircle, Trash, ImageIcon, Link2, TrendingUp, MapPin, Monitor, Calendar, UserCheck, RotateCcw, CheckCircle, Send, Undo2, EyeOff } from 'lucide-react';
 import {
   events, projects, eventRegistrationsList,
   Storage, isEventLive, isEventOverdue, syncEventRegistered, logAudit,
   checkInRegistration, undoCheckInRegistration, formatISODateTime,
   getProjectHeroGradient, getProjectHeroEmoji,
+  upsertContent, canEditContent, getPublishRecord, unpublishContent, withdrawSubmission, submitForReview,
 } from '../mock/data';
 
 const typeOptions = [
@@ -48,6 +49,7 @@ const emptyEvent = {
   location: '',
   agenda: [],
   highlights: [],
+  changeSummary: '',
 };
 
 export default function AdminEvents({ admin = null }) {
@@ -67,12 +69,35 @@ export default function AdminEvents({ admin = null }) {
 
   const refresh = () => setItems([...events]);
 
+  /* 发布审批动作（2026-11-23 简化）：摘要随编辑表单统一填写（必填），行内提交直接用已存摘要——
+     确认框回显摘要，防止旧摘要进 BPM 快照；双过/自动通过 webhook 到达即自动发布。 */
+  const handleWithdraw = (e) => {
+    if (!window.confirm(`确认撤销「${e.title}」的审批？BPM 工单将撤回，内容回到草稿（可编辑）。`)) return;
+    const res = withdrawSubmission('event', e.id, { operator: admin?.name || '运营' });
+    if (res.ok) refresh();
+    else window.alert(res.error);
+  };
+
+  const handleSubmit = (e) => {
+    const summary = String(e.changeSummary || '').trim();
+    if (!summary) { window.alert('缺少变更摘要：请先编辑内容并填写变更摘要，再提交审批。'); return; }
+    if (!window.confirm(`确认提交「${e.title}」进入 BPM 会签？\n\n变更摘要：${summary}\n\n提交后内容编辑锁定，法务 + RO 会签通过即自动发布。`)) return;
+    const res = submitForReview('event', e.id, {
+      operator: admin?.name || '运营',
+      operatorUsername: admin?.username || 'ops',
+      changeSummary: summary,
+    });
+    if (res.ok) refresh();
+    else window.alert(res.error);
+  };
+
   const eventFilters = [
     { value: 'all', label: '全部' },
     ...statusOptions.map(s => ({ value: s.value, label: s.label })),
   ];
   const filteredEvents = filter === 'all' ? items : items.filter(e => e.status === filter);
   const detailEvent = detail ? events.find(e => e.id === detail) : null;
+  const detailPubRec = detailEvent ? getPublishRecord('event', detailEvent.id) : null;
 
   /* 抽屉打开：锁定背景滚动 + Esc 关闭（AntD Drawer 惯例） */
   const drawerOpen = showForm || detail || signInEvent;
@@ -103,8 +128,11 @@ export default function AdminEvents({ admin = null }) {
   };
 
   const openEdit = (e) => {
+    // 审批锁：审批中锁定编辑（改了也白发，先撤销提交）
+    const guard = canEditContent('event', e.id);
+    if (!guard.ok) { window.alert(guard.reason); return; }
     setEditingId(e.id);
-    setForm({ ...emptyEvent, ...e });
+    setForm({ ...emptyEvent, ...e, changeSummary: e.changeSummary || '' });
     setShowCoverUrl(false);
     setErrors({});
     setWindowWarn('');
@@ -217,6 +245,7 @@ export default function AdminEvents({ admin = null }) {
   const handleSave = () => {
     const errs = {};
     if (!form.title.trim()) errs.title = '请输入路演标题';
+    if (!String(form.changeSummary || '').trim()) errs.changeSummary = '请填写变更摘要（提交审批时随工单送审）';
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
     // 议程时间窗校验：议程项时间须落在活动时间（HH:mm-HH:mm）范围内（超范围黄条提示，不硬拦阻断）
@@ -236,28 +265,28 @@ export default function AdminEvents({ admin = null }) {
     setWindowWarn('');
     const payload = {
       ...form,
+      changeSummary: String(form.changeSummary || '').trim(),
       agenda: (form.agenda || []).filter(a => a.topic && a.topic.trim()).map(a => ({ time: a.time, topic: a.topic.trim() })),
       highlights: (form.highlights || []).map(s => s.trim()).filter(Boolean),
     };
-    const exists = events.some(e => e.id === editingId);
-    if (!exists) {
-      events.unshift({ ...payload });
-    } else {
-      const idx = events.findIndex(e => e.id === editingId);
-      if (idx > -1) events[idx] = { ...payload };
+    // 统一走数据层（2026-11-20）：锁定校验 + 新建/编辑入库 + 发布档案 pendingChanges 标记 + 审计
+    const res = upsertContent('event', payload, { operator: admin?.name || '系统' });
+    if (!res.ok) {
+      setWindowWarn(res.error);
+      return;
     }
     syncEventRegistered(); // 保存后报名人数由名单派生重算（表单已不可手填）
-    logAudit({ operator: admin?.name || '系统', category: 'event', action: exists ? 'update' : 'create', target: form.title, targetId: editingId || '', note: exists ? '编辑路演资料' : '新建路演' });
-    Storage.save();
     refresh();
     closeDrawer();
   };
 
-  /* ---- 删除保护：有报名记录或项目关联的路演不可删（孤儿引用） ---- */
+  /* ---- 删除保护：有报名记录或项目关联的路演不可删（孤儿引用）；在线内容须先下架 ---- */
   const canDelete = (id) => {
     const hasReg = eventRegistrationsList.some(r => r.eventId === id);
     const hasProjectRef = projects.some(p => (p.events || []).includes(id));
-    return !hasReg && !hasProjectRef;
+    const pubRec = getPublishRecord('event', id);
+    const isLive = !!(pubRec && pubRec.live); // 在线路演直接删会造成前台幽灵数据，先下架
+    return !hasReg && !hasProjectRef && !isLive;
   };
 
   const handleDelete = (id) => {
@@ -268,6 +297,16 @@ export default function AdminEvents({ admin = null }) {
     if (idx > -1) events.splice(idx, 1);
     logAudit({ operator: admin?.name || '系统', category: 'event', action: 'delete', target: evt?.title || id, targetId: id, note: '删除路演' });
     Storage.save();
+    refresh();
+  };
+
+  /* ---- 下架（内容展示生命周期）：在线路演从前台隐藏；发布审批页可回滚恢复 ---- */
+  const handleUnpublish = (id) => {
+    const evt = events.find(e => e.id === id);
+    if (!evt) return;
+    if (!window.confirm(`确认下架路演「${evt.title}」？前台将不再展示，审批记录留痕，可在发布审批页回滚恢复。`)) return;
+    const res = unpublishContent('event', id, { operator: admin?.name || '系统' });
+    if (res && res.ok === false) { window.alert(res.error || '下架失败'); return; }
     refresh();
   };
 
@@ -511,10 +550,39 @@ export default function AdminEvents({ admin = null }) {
                     </div>
                   </div>
                 </div>
+
+                {/* ===== 模块 5 · 变更说明（流程字段：审批人可见、随工单送审，独立于内容小节，置于抽屉末尾） ===== */}
+                <div className="admin-form-section">
+                  <div className="admin-form-section-title">变更说明</div>
+                  <div className="admin-form-section-body">
+                    <div className="form-group">
+                      <label className="form-label"><span className="required-mark">*</span>变更摘要<span className="admin-field-tag">审批人可见</span></label>
+                      <textarea className={`form-input${errors.changeSummary ? ' field-error' : ''}`} rows={2} value={form.changeSummary || ''} onChange={e => handleField('changeSummary', e.target.value)} placeholder="本次改了什么、为什么改（保存后提交审批时随工单送审）" />
+                      {errors.changeSummary && <span className="form-error">{errors.changeSummary}</span>}
+                    </div>
+                  </div>
+                </div>
               </div>
             ) : detailEvent ? (
               /* 查看 = APP 移动端卡片流预览（用户侧只有 APP，运营所见即用户所得）；状态流转走编辑表单 status select */
               <div className="admin-app-preview">
+                {/* 低频维护动作区（2026-11-24：下架从发布审批抽屉移入内容原属页；签到/归档/删除仍在此） */}
+                {((detailEvent.type === 'offline' && detailEvent.status === 'upcoming') || isEventOverdue(detailEvent) || (admin?.role === 'super' && detailPubRec?.live) || canDelete(detailEvent.id)) && (
+                  <div className="admin-app-preview-actions">
+                    {detailEvent.type === 'offline' && detailEvent.status === 'upcoming' && (
+                      <button className="btn btn-md btn-outline" onClick={() => setSignInEvent(detailEvent)}><UserCheck size={14} /> 现场签到核销</button>
+                    )}
+                    {isEventOverdue(detailEvent) && (
+                      <button className="btn btn-md btn-outline admin-preview-archive" onClick={() => handleArchive(detailEvent.id)}><Archive size={14} /> 归档为已结束</button>
+                    )}
+                    {admin?.role === 'super' && detailPubRec?.live && (
+                      <button className="btn btn-md btn-outline" title="从前台隐藏；审批记录留痕，可在发布审批页回滚恢复" onClick={() => handleUnpublish(detailEvent.id)}><EyeOff size={14} /> 下架</button>
+                    )}
+                    {canDelete(detailEvent.id) && (
+                      <button className="btn btn-md btn-outline admin-preview-danger" onClick={() => handleDelete(detailEvent.id)}><Trash2 size={14} /> 删除</button>
+                    )}
+                  </div>
+                )}
                 <div className="project-detail-hero" style={{ background: getProjectHeroGradient(detailEvent.sector) }}>
                   {detailEvent.coverImage ? (
                     <img src={detailEvent.coverImage} alt={detailEvent.title} className="detail-hero-img" />
@@ -648,54 +716,66 @@ export default function AdminEvents({ admin = null }) {
           <span className="col-name">路演标题</span>
           <span className="col-project">关联项目</span>
           <span className="col-date">日期</span>
-          <span className="col-type">类型</span>
           <span className="col-registration">报名情况</span>
           <span className="col-status">状态</span>
           <span className="col-actions">操作</span>
         </div>
-            {filteredEvents.map(e => (
-              <div key={e.id} className="admin-table-row">
-                <span className="col-name">
-                  <span className="col-name-title">
-                    <strong title={e.title}>{e.title}</strong>
-                    {isEventOverdue(e) && <span className="admin-overdue-tag">已超时</span>}
-                  </span>
-                </span>
-                <span className="col-project">{e.projectName || '平台自办'}</span>
-                <span className="col-date">{e.date}</span>
-                <span className="col-type">{e.type === 'online' ? '线上' : '线下'}</span>
-                <span className="col-registration">{e.registered}/{e.capacity || '不限'}</span>
-                <span className="col-status">
-                  {(() => {
-                    const live = isEventLive(e);
-                    const badge = e.status === 'past' ? 'admin-status-closed' : live ? 'admin-status-live' : 'admin-status-upcoming';
-                    const label = e.status === 'past' ? '已结束' : live ? '进行中' : '即将开始';
-                    // 超时（超过设定结束时间）= 待运营二选一（归档/改时间），由操作列橙色归档按钮承载，状态列不叠加文字标记
-                    return <span className={`status-badge ${badge}`}>{label}</span>;
-                  })()}
-                </span>
-                <span className="col-actions">
-                  <button className="btn-icon" title="查看" onClick={() => setDetail(e.id)}><Eye size={16} /></button>
-                  <button className="btn-icon" title="编辑" onClick={() => openEdit(e)}><Edit3 size={16} /></button>
-                  {/* 删除按钮按需展示：仅可删（无报名记录/项目关联）时渲染，避免常态不可删的灰色占位（2026-08-12） */}
-                  {canDelete(e.id) && (
-                    <button className="btn-icon" title="删除" onClick={() => handleDelete(e.id)}>
-                      <Trash2 size={16} />
-                    </button>
-                  )}
-                  {isEventOverdue(e) && (
-                    <button className="btn-icon admin-archive-btn" title="活动已结束，归档为已结束" onClick={() => handleArchive(e.id)}>
-                      <Archive size={16} />
-                    </button>
-                  )}
-                  {e.type === 'offline' && e.status === 'upcoming' && (
-                    <button className="btn-icon" title="现场签到核销" onClick={() => { setSignInEvent(e); }}>
-                      <UserCheck size={16} />
-                    </button>
-                  )}
-                </span>
-              </div>
-            ))}
+        {filteredEvents.map(e => (
+          <div key={e.id} className="admin-table-row admin-table-row--clickable" onClick={() => setDetail(e.id)}>
+            <span className="col-name">
+              <span className="col-name-title">
+                <strong title={e.title}>{e.title}</strong>
+                {isEventOverdue(e) && <span className="admin-overdue-tag">已超时</span>}
+              </span>
+            </span>
+            <span className="col-project">{e.projectName || '平台自办'}</span>
+            <span className="col-date">
+              <span className="col-date-main">{e.date}</span>
+              <span className="col-date-sub">{e.type === 'online' ? '线上' : '线下'}</span>
+            </span>
+            <span className="col-registration">{e.registered}/{e.capacity || '不限'}</span>
+            <span className="col-status">
+              {(() => {
+                const live = isEventLive(e);
+                const badge = e.status === 'past' ? 'admin-status-closed' : live ? 'admin-status-live' : 'admin-status-upcoming';
+                const label = e.status === 'past' ? '已结束' : live ? '进行中' : '即将开始';
+                // 发布域状态 = 次行小字（流程事实并入次行，2026-11-23 列表收敛；权威在发布审批中心）
+                // 超时（超过设定结束时间）= 待运营二选一（归档/改时间），归档入口在抽屉查看态，状态列不叠加文字标记
+                const rec = getPublishRecord('event', e.id);
+                let sub = null;
+                if (rec) {
+                  if (rec.bizState === 'published') {
+                    if (rec.pendingChanges) sub = { text: '有修改待重审', cls: 'col-status-sub--warn' };
+                  } else {
+                    const map = { pending_review: '审批中', rejected: '已驳回', draft: '未发布' };
+                    const cls = { pending_review: 'col-status-sub--info', rejected: 'col-status-sub--err', draft: 'col-status-sub--muted' };
+                    sub = { text: map[rec.bizState], cls: cls[rec.bizState] };
+                  }
+                }
+                return (
+                  <>
+                    <span className={`status-badge ${badge}`}>{label}</span>
+                    {sub && <span className={`col-status-sub ${sub.cls}`}>{sub.text}</span>}
+                  </>
+                );
+              })()}
+            </span>
+            <span className="col-actions">
+              <button className="btn-icon" title="编辑" onClick={ev => { ev.stopPropagation(); openEdit(e); }}><Edit3 size={16} /></button>
+              {(() => {
+                const rec = getPublishRecord('event', e.id);
+                if (rec && rec.bizState === 'pending_review') {
+                  return <button className="btn-icon" title="撤销提交（回草稿）" onClick={ev => { ev.stopPropagation(); handleWithdraw(e); }}><Undo2 size={16} /></button>;
+                }
+                const submittable = rec && (rec.bizState === 'draft' || rec.bizState === 'rejected' || (rec.bizState === 'published' && rec.pendingChanges));
+                if (submittable) {
+                  return <button className="btn-icon" title="提交审批（BPM 会签，通过即发布）" onClick={ev => { ev.stopPropagation(); handleSubmit(e); }}><Send size={16} /></button>;
+                }
+                return null;
+              })()}
+            </span>
+          </div>
+        ))}
             {filteredEvents.length === 0 && (
               <div className="admin-table-row"><span className="admin-table-empty">暂无符合条件的路演</span></div>
             )}

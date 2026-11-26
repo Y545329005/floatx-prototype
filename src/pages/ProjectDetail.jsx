@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { clickable } from '../lib';
 import { ArrowLeft, Calendar, TrendingUp, FileText, Headphones, X, ChevronRight, Check } from 'lucide-react';
-import { getProjectById, getEventsByProject, projectStatusLabels, getProjectHeroGradient, getProjectHeroEmoji, subscriptions, currentUser, getInvestorNo, formatCurrency, getProjectStageSlug, getCurrencySymbol, getSubscriptionGate } from '../mock/data';
+import { getLiveProjectById, getLiveEventsByProject, projectStatusLabels, getProjectHeroGradient, getProjectHeroEmoji, subscriptions, currentUser, getInvestorNo, formatCurrency, getProjectStageSlug, getCurrencySymbol, getSubscriptionGate } from '../mock/data';
 import AccountManager from '../components/AccountManager';
 import SubscribeSheet from '../components/SubscribeSheet';
 import { useLang } from '../i18n';
@@ -20,8 +20,8 @@ export default function ProjectDetail({ id, navigate, goBack }) {
   const [showManager, setShowManager] = useState(false);
   const [showSubscribe, setShowSubscribe] = useState(false);
   const [, setRefresh] = useState(0);
-  const project = getProjectById(id);
-  const relatedEvents = getEventsByProject(id);
+  const project = getLiveProjectById(id);
+  const relatedEvents = getLiveEventsByProject(id);
   const isOpen = project && (project.status === 'raising' || project.status === 'upcoming');
   // 2026-08-17 申购资格校验：KYC + PI 强制拦截（未认证/审核中/过期 → CTA 变引导去认证页）
   const gate = getSubscriptionGate(currentUser);
@@ -48,7 +48,7 @@ export default function ProjectDetail({ id, navigate, goBack }) {
       <div className="detail-sticky">
         <div className="page-header no-margin">
           <button className="back-btn" onClick={() => goBack('#projects')}><ArrowLeft size={20} /></button>
-          <h1>{project.title}</h1>
+          <h1>{t(project.title)}</h1>
           <span className={`detail-header-badge status-${project.status}`}>{t(projectStatusLabels[project.status])}</span>
         </div>
       </div>
@@ -70,7 +70,7 @@ export default function ProjectDetail({ id, navigate, goBack }) {
           <span className={`tag tag-stage-${getProjectStageSlug(project.stage)}`}>{t(project.stage)}</span>
           <span className="tag tag-outline tag-on-hero">{t(project.sector)}</span>
         </div>
-        <div className="project-detail-hero-company">{project.company}</div>
+        <div className="project-detail-hero-company">{t(project.company)}</div>
       </div>
 
       <div className="illustration-note">{t('界面及项目资料仅作示意')}</div>

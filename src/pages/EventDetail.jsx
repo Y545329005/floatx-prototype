@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { clickable } from '../lib';
+import { clickable, openExternal } from '../lib';
 import { ArrowLeft, Calendar, Monitor, MapPin, TrendingUp, ChevronRight, X, Link2, Copy, Navigation, Users, ShieldCheck } from 'lucide-react';
-import { events, projects, currentUser, getProjectHeroGradient, getProjectHeroEmoji, projectStageColors, projectStatusLabels, registerEvent, unregisterEvent, isEventRegistered, getEventRegistration, getCheckInCode, getLastContactPhone, formatCurrency, formatDateCN, getProjectStageSlug, isEventLive, getCurrencySymbol } from '../mock/data';
+import { getLiveEventById, getLiveProjectById, currentUser, getProjectHeroGradient, getProjectHeroEmoji, projectStageColors, projectStatusLabels, registerEvent, unregisterEvent, isEventRegistered, getEventRegistration, getCheckInCode, getLastContactPhone, formatCurrency, formatDateCN, getProjectStageSlug, isEventLive, getCurrencySymbol } from '../mock/data';
 import AgreementModal from '../components/AgreementModal';
 import { useLang } from '../i18n';
 
 export default function EventDetail({ id, navigate, goBack, setToast }) {
   const { t } = useLang();
-  const event = events.find(e => e.id === id);
+  const event = getLiveEventById(id);
   const [isRegistered, setIsRegistered] = useState(() => isEventRegistered(id));
   const [showForm, setShowForm] = useState(false);
   const [showPiDefinition, setShowPiDefinition] = useState(false); // 2026-10-22 RO 整改：专业投资者定义解释
@@ -30,7 +30,7 @@ export default function EventDetail({ id, navigate, goBack, setToast }) {
     );
   }
 
-  const project = projects.find(p => p.id === event.projectId);
+  const project = getLiveProjectById(event.projectId);
   const heroSector = project ? project.sector : event.projectName;
   const isPast = event.status === 'past';
   const isLive = isEventLive(event);
@@ -91,7 +91,7 @@ export default function EventDetail({ id, navigate, goBack, setToast }) {
 
   const openMaps = () => {
     const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`;
-    window.open(url, '_blank');
+    openExternal(url);
   };
 
   const copyStreamUrl = async () => {
@@ -175,7 +175,7 @@ export default function EventDetail({ id, navigate, goBack, setToast }) {
                 <div className="event-stream-row">
                   <span className="event-meta-label">{t('直播')}</span>
                   <div className="event-stream-content">
-                    <a href={event.streamUrl} target="_blank" rel="noopener noreferrer" className="event-stream-link">
+                    <a href={event.streamUrl} onClick={e => { e.preventDefault(); openExternal(event.streamUrl); }} className="event-stream-link">
                       {event.streamUrl}
                     </a>
                     <button className="btn-icon" onClick={copyStreamUrl} title={t('复制链接')}><Copy size={16} /></button>

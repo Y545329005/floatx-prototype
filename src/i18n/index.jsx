@@ -3,6 +3,9 @@ import { platformBrand } from '../mock/data';
 
 const LanguageContext = createContext({ lang: 'zh-CN', setLang: () => {}, t: k => k });
 
+// LanguageContext 具名导出（2026-11-24）：预览页等场景需要嵌套 Provider 做「子树局部语言」
+// （局部 state + 字典，不写回全局 zhifu-lang），复用同一 context 类型保证 useLang 语义一致。
+export { LanguageContext };
 export const LANGUAGES = [
   { code: 'zh-CN', label: '简体中文' },
   { code: 'zh-HK', label: '繁體中文' },

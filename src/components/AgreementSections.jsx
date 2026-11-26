@@ -1,4 +1,5 @@
 import { useLang } from '../i18n';
+import { openExternal } from '../lib';
 
 // 协议正文渲染（2026-11-16）：全 APP 唯一一套「章节 + 段落」语法。
 // 通用条款走 AgreementModal（底部弹层），本人签署的委托协议走独立页（MandateAgreement），
@@ -32,7 +33,7 @@ function Paragraph({ text, onOpenPrivacyList }) {
 function UrlPart({ part, i }) {
   return (
         IS_URL.test(part)
-          ? <a key={i} href={part} target="_blank" rel="noopener noreferrer">{part}</a>
+          ? <a key={i} href={part} onClick={e => { e.preventDefault(); openExternal(part); }}>{part}</a>
           : part
   );
 }

@@ -33,19 +33,20 @@ export default function FundRedeem({ id, from, navigate, goBack, setToast }) {
   const [confirming, setConfirming] = useState(false);
 
   const shareNum = Number(shares) || 0;
-  const rounded = Math.round(shareNum * 10000) / 10000;
-  const tooPrecise = shareNum > 0 && rounded !== shareNum;
-  const over = rounded > info.redeemable;
-  const gross = rounded * nav;
+  // 份额整数化（2026-11-19）：份额是计数，非整数输入只拦不取整
+  const notInteger = shareNum > 0 && !Number.isInteger(shareNum);
+  const over = shareNum > info.redeemable;
+  const gross = shareNum * nav;
   const fee = gross * FUND_FEE_RATE.redeem;
   const net = gross - fee;
-  const remaining = Math.max(0, (holding?.shares || 0) - rounded);
-  // 最低赎回金额（2026-11-13 Term Sheet 模板条款）：按本单预估赎回金额判定（与数据层同口径），
+  const remaining = Math.max(0, (holding?.shares || 0) - shareNum);
+  // 最低赎回金额（2026-11-13 Term Sheet 模板条款）：按本单预估赎回毛额判定（与数据层同口径），
   // 全额赎回豁免——持仓不足最低赎回量的客户仍可清仓离场，不被困死
   const minRedemption = (fund?.minRedemption || 0) > 0 ? fund.minRedemption : 0;
-  const belowMinRedeem = minRedemption > 0 && rounded > 0 && rounded < info.redeemable && gross < minRedemption;
-  const validInput = rounded > 0 && !over && !tooPrecise && !belowMinRedeem;
+  const belowMinRedeem = minRedemption > 0 && shareNum > 0 && shareNum < info.redeemable && gross < minRedemption;
+  const validInput = shareNum > 0 && !over && !notInteger && !belowMinRedeem;
   const canSubmit = validInput && info.redeemable > 0 && !!holding;
+  const half = Math.floor(info.redeemable / 2);
 
   const onShares = (e) => { applyNumberInput(e, setShares); setError(''); };
 
@@ -113,7 +114,7 @@ export default function FundRedeem({ id, from, navigate, goBack, setToast }) {
   }
 
   const submit = () => {
-    const res = submitRedemptionOrder({ holdingId: holding.id, shares: rounded });
+    const res = submitRedemptionOrder({ holdingId: holding.id, shares: shareNum });
     if (!res.ok) {
       setConfirming(false);
       setError(t(res.error));
@@ -172,7 +173,7 @@ export default function FundRedeem({ id, from, navigate, goBack, setToast }) {
         <div className="p-fund-trade-labelrow">
           <label className="p-fund-trade-label" htmlFor="red-shares">{t('赎回份额')}</label>
           <div className="p-fund-trade-quick">
-            <button type="button" onClick={() => { setShares(String(Math.round(info.redeemable / 2 * 10000) / 10000)); setError(''); }}>
+            <button type="button" disabled={half < 1} onClick={() => { setShares(String(half)); setError(''); }}>
               {t('一半')}
             </button>
             <button type="button" onClick={() => { setShares(String(info.redeemable)); setError(''); }}>
@@ -197,8 +198,8 @@ export default function FundRedeem({ id, from, navigate, goBack, setToast }) {
             {t('超过可赎回份额，上限')} {formatShares(info.redeemable)} {t('份')}
           </p>
         )}
-        {tooPrecise && (
-          <p className="p-fund-trade-alert is-plain">{t('份额最多 4 位小数')}</p>
+        {notInteger && (
+          <p className="p-fund-trade-alert is-plain">{t('份额须为整数')}</p>
         )}
         {belowMinRedeem && (
           <p className="p-fund-trade-alert is-plain">
@@ -256,7 +257,7 @@ export default function FundRedeem({ id, from, navigate, goBack, setToast }) {
             <dl className="p-fund-trade-rows is-sheet">
               <div className="p-fund-trade-row">
                 <dt>{t('赎回份额')}</dt>
-                <dd>{formatShares(rounded)} {t('份')}</dd>
+                <dd>{formatShares(shareNum)} {t('份')}</dd>
               </div>
               <div className="p-fund-trade-row">
                 <dt>{t('赎回费')}</dt>

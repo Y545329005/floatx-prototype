@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Clock, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Clock, ChevronRight, ChevronDown } from 'lucide-react';
 import { clickable } from '../lib';
+import BottomPicker from '../components/BottomPicker';
 import {
   transactions, depositRequests, withdrawRequests, walletAccountOf, formatExactAmount, currentUser,
 } from '../mock/data';
@@ -61,6 +62,7 @@ export default function Transactions({ navigate, goBack }) {
   const [kind, setKind] = useState('all');
   const [status, setStatus] = useState('all');
   const [range, setRange] = useState('all');
+  const [picker, setPicker] = useState(null);
   const [shownGroups, setShownGroups] = useState(INITIAL_GROUPS);
 
   const resetPaging = () => setShownGroups(INITIAL_GROUPS);
@@ -168,25 +170,45 @@ export default function Transactions({ navigate, goBack }) {
         </div>
 
         <div className="transaction-toolbar">
-          <select
-            className="form-input transaction-range"
-            value={status}
-            onChange={e => { setStatus(e.target.value); resetPaging(); }}
+          <button
+            type="button"
+            className="form-input transaction-range picker-trigger"
+            onClick={() => setPicker('status')}
             aria-label={t('状态')}
           >
-            {STATUS_FILTERS.map(s => <option key={s.key} value={s.key}>{t(s.labelKey)}</option>)}
-          </select>
-          <select
-            className="form-input transaction-range"
-            value={range}
-            onChange={e => { setRange(e.target.value); resetPaging(); }}
+            <span className="picker-trigger-value">{t(STATUS_FILTERS.find(s => s.key === status)?.labelKey || '全部状态')}</span>
+            <ChevronDown size={14} className="picker-caret" />
+          </button>
+          <button
+            type="button"
+            className="form-input transaction-range picker-trigger"
+            onClick={() => setPicker('range')}
             aria-label={t('时间范围')}
           >
-            {RANGES.map(r => <option key={r.key} value={r.key}>{t(r.labelKey)}</option>)}
-          </select>
+            <span className="picker-trigger-value">{t(RANGES.find(r => r.key === range)?.labelKey || '全部时间')}</span>
+            <ChevronDown size={14} className="picker-caret" />
+          </button>
           <span className="transaction-count text-muted text-sm">{t('共 {} 条').replace('{}', rows.length)}</span>
         </div>
       </div>
+
+      {/* 筛选底部弹层（替代原生 select，统一 APP 交互） */}
+      <BottomPicker
+        open={picker === 'status'}
+        title={t('状态')}
+        value={status}
+        options={STATUS_FILTERS.map(s => ({ value: s.key, label: t(s.labelKey) }))}
+        onSelect={v => { setStatus(v); resetPaging(); }}
+        onClose={() => setPicker(null)}
+      />
+      <BottomPicker
+        open={picker === 'range'}
+        title={t('时间范围')}
+        value={range}
+        options={RANGES.map(r => ({ value: r.key, label: t(r.labelKey) }))}
+        onSelect={v => { setRange(v); resetPaging(); }}
+        onClose={() => setPicker(null)}
+      />
 
       <div className="card">
         {groups.length === 0 && (

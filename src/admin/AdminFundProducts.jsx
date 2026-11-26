@@ -688,7 +688,7 @@ export default function AdminFundProducts({ admin, detailId, navigate }) {
           {funds.length} 只产品 · 在售 {openCount} 只
           {draftCount > 0 ? ` · 草稿 ${draftCount}` : ''}
           {closedCount > 0 ? ` · 已下架 ${closedCount}` : ''} ·
-          认购费 {(FUND_FEE_RATE.subscribe * 100).toFixed(2)}% / 赎回费 {(FUND_FEE_RATE.redeem * 100).toFixed(2)}%（全局费率，产品页只读）
+          认购费 {(FUND_FEE_RATE.subscribe * 100).toFixed(2)}% / 赎回费 {(FUND_FEE_RATE.redeem * 100).toFixed(2)}%（全局费率，系统配置可改）
         </span>
         <button className="btn btn-md btn-primary" onClick={() => navigate('#admin/fund-products/new')}>
           <Plus size={16} /> 新建基金产品
@@ -772,7 +772,7 @@ export default function AdminFundProducts({ admin, detailId, navigate }) {
               <div className="admin-drawer-meta">
                 <span className="fund-product-meta-item">编号 <strong className="fund-product-meta-id">{selected.id}</strong></span>
                 <span className="fund-product-meta-item">币种 <strong>{selected.currency?.join(' · ') || selected.navMeta?.currency || 'HKD'}</strong></span>
-                <span className="fund-product-meta-item">费率 <strong>认购 {(FUND_FEE_RATE.subscribe * 100).toFixed(2)}% · 赎回 {(FUND_FEE_RATE.redeem * 100).toFixed(2)}%</strong></span>
+                <span className="fund-product-meta-item">费率 <strong>认购 {(FUND_FEE_RATE.subscribe * 100).toFixed(2)}% · 赎回 {(FUND_FEE_RATE.redeem * 100).toFixed(2)}%</strong>（系统配置）</span>
                 <div className="fund-product-meta-actions">
                   {selected.status !== 'open' && (
                     <button className="btn btn-md btn-primary" onClick={handlePublish}>

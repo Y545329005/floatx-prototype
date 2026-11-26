@@ -149,7 +149,6 @@
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-3) 0;
-  cursor: pointer;
 }
 
 .wealth-project-row + .wealth-project-row {
@@ -239,7 +238,6 @@
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   margin-bottom: 0;
-  cursor: pointer;
 }
 
 .wealth-asset-icon {

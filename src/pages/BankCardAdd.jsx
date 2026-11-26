@@ -167,7 +167,6 @@ export default function BankCardAdd({ navigate, goBack, setToast, currency }) {
           <div
             className="form-checkbox-group"
             onClick={() => setAgreed(!agreed)}
-            style={{ cursor: 'pointer' }}
           >
             <div className={`kyc-checkbox ${agreed ? 'checked' : ''}`}>
               {agreed && <Check size={12} />}

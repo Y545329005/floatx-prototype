@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { clickable } from '../lib';
 import { Search, ArrowLeft } from 'lucide-react';
-import { projects, projectStatusLabels, getProjectHeroGradient, getProjectHeroEmoji, subscriptions, currentUser, getInvestorNo } from '../mock/data';
+import { getLiveProjects, projectStatusLabels, getProjectHeroGradient, getProjectHeroEmoji, subscriptions, currentUser, getInvestorNo } from '../mock/data';
 import { useLang } from '../i18n';
 
 // 2026-10-16 口径修订：原型需展示完整业务流形态——恢复在售项目展示与申购意向收集
@@ -12,9 +12,9 @@ export default function ProjectMarket({ navigate, embed = false, goBack }) {
   const { t } = useLang();
   const [tab, setTab] = useState('active');
 
-  const raising = projects.filter(p => p.status === 'raising');
-  const upcoming = projects.filter(p => p.status === 'upcoming');
-  const closed = projects.filter(p => p.status === 'closed' || p.status === 'sold');
+  const raising = getLiveProjects().filter(p => p.status === 'raising');
+  const upcoming = getLiveProjects().filter(p => p.status === 'upcoming');
+  const closed = getLiveProjects().filter(p => p.status === 'closed' || p.status === 'sold');
 
   const renderCard = (p) => {
     // 多用户化（2026-08-13）：按投资人过滤，"已提交问卷"仅当前用户的记录
